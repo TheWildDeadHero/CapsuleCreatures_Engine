@@ -43,8 +43,9 @@ src/hal/soft/           software GBA video model (registers, VRAM, palette, comp
 src/hal/sdl2/           desktop HAL: window, frame pacing, keyboard (SDL2)
 src/hal/dc/             Dreamcast HAL: full-screen PowerVR scaling, Maple controller (KallistiOS)
 src/hal/headless/       headless HAL: video model only, no display or input (CI, big-endian check)
-src/hal/common/         HAL parts shared by every target: the VRAM upload queue (A-5) and
-                        first-press seeding of the random streams (A-4)
+src/hal/common/         HAL parts shared by every target: the VRAM upload queue (A-5),
+                        first-press seeding of the random streams (A-4), the audio step hook and
+                        the sound output model of the desktop and headless audio backends (M4)
 apps/<app>/             apps laid out like games: reference/project.json, data/, src/ (see Apps)
 apps/hello/             hello world: greeting on BG0, D-pad scrolls it
 apps/input_viewer/      live view of buttons -> actions and shoulder events for the target
@@ -57,6 +58,9 @@ apps/sandbox_sequence/  module sandbox: the sequence player full-screen with sha
 apps/sandbox_map/       module sandbox: overworld traversal and map events on a shape-art world (HUD, collision view, noclip)
 apps/test_battle/       test app: the battle engine's logic stepped one unit at a time, state and event log
 apps/starter_battle/    the battle module's sandbox: the Starter sample played, unowned and rival battles (1v1, 2v2)
+apps/test_audio/        test app: the audio tour over the test songs and clips (players, the GBA's cost per blank)
+apps/sandbox_audio/     the audio module's sandbox: sounds and clips by hand, fades, pause, mono / stereo
+apps/audio_render/      CLI: a sound, clip or the tour rendered headless -> ring segments, tone writes, state, WAV
 samples/starter/        the Starter sample: the engine's neutral sample game and reference fixture, which new games copy
 apps/common/            test_kit: the on-screen console the test and sandbox apps share
 Doxyfile                API reference config; fails on anything undocumented (see Conventions)
@@ -2006,6 +2010,8 @@ checked on any target without the rest of a game. They build with every app
 | `capsule_test_text` | `capsule/text` | 1 every glyph by code; 2 one line per palette bank; 3 newlines, edge columns, a 32×32 layer that wraps | 3: D-pad scroll |
 | `capsule_test_sequence` | `capsule/seq` | picks a test manifest, runs it, shows stage, clocks, fade/blend levels, each track's position and wait, and the last port calls | menu: Up/Down, A run or toggle a condition, Left/Right list length; running: L+R pause; paused: A one frame, START resume, B menu |
 | `capsule_sandbox_party` | `capsule/inventory`, `capsule/save` | the Starter's party (pools, status), bag pockets with item use, shops, the save image (sizes, copies, write / read) | L/R page; Bag: Left/Right pocket, A use (member, slot), B back; Shop: A buy; Save: A save, START load, SELECT reset |
+| `capsule_test_audio` | `capsule/audio`, `hal::audio` | the audio tour (every sound, then fades / pause / volume / pitch / tempo / mono / a lag frame, then clips): its phase, each player's tracks, pause, sound and clock, the audio step's cycles (GBA: timer 1) | runs by itself; when done: A again, SELECT mono / stereo |
+| `capsule_sandbox_audio` | `capsule/audio` | sound number and clip voice, output, reverb, the DMA counter, every player (tracks, pause, sound, clock, fade), the step's cycles | Up/Down sound, A play (B held: pause / resume), B stop, Left/Right clip, START play clip, L fade out, R fade in, SELECT mono |
 | `capsule_test_battle` | `capsule/battle` | picks a scenario (1v1 unowned and party, 2v2, 3v3 AI vs AI, statuses, weather), steps the engine one unit at a time; positions with HP, status and stages, the event texts | menu: Up/Down, A start; running: A one step, START run / pause, R next seed, B menu |
 
 The sequence app links its own port instead of `sequence_port_hal.cpp`: it
@@ -2018,6 +2024,23 @@ constexpr`, so they reach a ROM only when something uses them.
 New engine systems get an `apps/test_SYSTEM/` (reference/project.json and
 src/test_SYSTEM.cpp, using `apps/common/test_kit.h`) and an entry in the
 `foreach(app ...)` list in `CMakeLists.txt`.
+
+## Audio output
+
+`include/capsule/hal/audio.h` is what the audio core (`capsule/audio/core.h`) calls to play: on the GBA the
+DirectSound FIFOs fed by DMA1 / DMA2 from the core's ring, timer 0 at the mix rate, the VCOUNT interrupt at line 150
+(the DMA counter) and the core's step on every VBlank, lag frames included; on desktop an integer model of the sound
+hardware (`src/hal/common/apu_model.h`: the four tone channels and the final mix, register writes applied at the
+frame's start) sent to an SDL audio device (`CAPSULE_AUDIO=0`: none); headless the same model, every frame kept for
+tests; Dreamcast silent (the core still steps, so timing is the same). Nothing of it is linked until a program calls
+`audio::init()`.
+
+`capsule_audio_render` (desktop and headless builds) renders a sound number (`--sound N`, `--song KEY`), a clip
+(`--clip N` with `--clip-*` parameters) or the test apps' audio tour (`--tour`) of a build's audio table and writes
+`segments.bin` (the ring segment mixed each frame), `tones.txt` (the ordered tone register writes), `state.jsonl`
+(the core's state per frame), `out.wav` and `summary.json` (hashes of the four). `capsule_audio_render_hq` is the
+same with the high-quality desktop mix (4x the rate; the ring and state are unchanged). `capsule_audio_render()` in
+`cmake/parts/audio_hal.cmake` builds one for another manifest.
 
 ## Sequence sandbox
 

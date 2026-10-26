@@ -9,6 +9,7 @@
 #include "capsule/hal/system.h"
 #include "capsule/hal/vram_queue.h"
 
+#include "../common/audio_hook.h"
 #include "../soft/soft_video.h"
 
 #include <cstdio>
@@ -28,6 +29,7 @@ void init()
 {
    soft::reset();
    vram::reset();
+   rng::set_blank_hook(audio::hook::spend);   // C14a (D-34): modelled lag blanks step the sound too
    rng::seed(entropy());
 }
 
@@ -41,6 +43,7 @@ bool update()
    vram::flush();   // A-5: queued uploads land at "VBlank", with the registers
    soft::latch();
    soft::compose(g_frame);
+   audio::hook::vblank();   // M4: the audio step, once per blank (nothing until audio starts)
    ++g_frames;
    rng::frame_advance();   // N1: a game's per-frame draw at the vertical blank (off by default)
    return true;

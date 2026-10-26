@@ -1,0 +1,20 @@
+{
+  "schema": "capsule.project/1",
+  "name": "test_audio",
+  "editor": {
+    "notes": "Test app for the audio core and its backend: plays the audio tour over the engine's generated test songs and clips; GBA: the timer-1 cost of each vertical blank's audio step."
+  },
+  "rom": {
+    "title": "AUDIO TEST",
+    "code": "CTAU",
+    "maker": "00"
+  },
+  "sources": [
+    "src/test_audio.cpp",
+    "../common/audio_tour.cpp"
+  ],
+  "libraries": [
+    "test_kit"
+  ],
+  "audio": "../../tests/data/audio/audio.json"
+}

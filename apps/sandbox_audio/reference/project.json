@@ -1,0 +1,19 @@
+{
+  "schema": "capsule.project/1",
+  "name": "sandbox_audio",
+  "editor": {
+    "notes": "The audio module's sandbox: play sounds and clips of the engine's generated test content by hand, fade, pause, mono / stereo, and watch the players."
+  },
+  "rom": {
+    "title": "SND SANDBOX",
+    "code": "CSAU",
+    "maker": "00"
+  },
+  "sources": [
+    "src/sandbox_audio.cpp"
+  ],
+  "libraries": [
+    "test_kit"
+  ],
+  "audio": "../../tests/data/audio/audio.json"
+}

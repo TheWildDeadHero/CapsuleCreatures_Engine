@@ -125,6 +125,41 @@ void test_spend_blanks()
    rng::set_frame_advance(nullptr);
 }
 
+uint32_t g_hook_calls = 0;    ///< C14a: blank hook calls seen.
+uint32_t g_hook_blanks = 0;   ///< C14a: blanks they carried.
+uint32_t g_hook_state = 0;    ///< C14a: the gameplay state when the hook ran.
+
+/// C14a: a blank hook that records its calls (the audio backends step the sound here).
+/// @param blanks  the modelled blanks
+void count_blanks(uint32_t blanks)
+{
+   ++g_hook_calls;
+   g_hook_blanks += blanks;
+   g_hook_state = rng::gameplay.state;
+}
+
+/// C14a (the audio clock): spend_blanks() hands its count to the blank hook once, after its draws; 0 blanks call
+/// nothing; no hook, nothing.
+void test_blank_hook()
+{
+   constexpr uint32_t kBlanks = 9;   // the boot save read's modelled blanks
+   rng::set_frame_advance(allowed);
+   rng::set_advance_clock(rng::AdvanceClock::Frame);
+   rng::gameplay.state = 0x0BADF00Du;
+   const uint32_t start = rng::gameplay.state;
+   rng::set_blank_hook(count_blanks);
+   rng::spend_blanks(kBlanks);
+   check(g_hook_calls == 1 && g_hook_blanks == kBlanks, "the hook gets the call's blanks, once");
+   check(g_hook_state == after(start, static_cast<int>(kBlanks)), "after the call's draws");
+   rng::spend_blanks(0);
+   check(g_hook_calls == 1, "no blanks, no call");
+   rng::set_blank_hook(nullptr);
+   rng::spend_blanks(1);
+   check(g_hook_calls == 1, "no hook, nothing called");
+   rng::set_advance_clock(rng::AdvanceClock::Blank);
+   rng::set_frame_advance(nullptr);
+}
+
 } // namespace
 
 /// Runs the tests.
@@ -134,6 +169,7 @@ int main()
    test_frame_advance();
    test_advance_clock();
    test_spend_blanks();
+   test_blank_hook();
    std::printf("n1 tests: %s\n", g_failures == 0 ? "ok" : "FAILED");
    return g_failures == 0 ? 0 : 1;
 }

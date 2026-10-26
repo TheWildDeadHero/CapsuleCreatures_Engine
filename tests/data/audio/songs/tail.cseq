@@ -1,0 +1,18 @@
+# Interpolation past a sample's end at a high pitch, reverse to its start, DPCM across block edges.
+TRACK
+VOLUME 120
+PROGRAM 21
+NOTE 12 c6 v127
+WAIT 12
+NOTE 12 g7 v127
+WAIT 12
+PROGRAM 22
+NOTE 12 c6 v127
+WAIT 12
+PROGRAM 23
+NOTE 24 c7 v127
+WAIT 24
+PROGRAM 4
+NOTE 36 c7 v127
+WAIT 36
+END

@@ -26,6 +26,9 @@
 ///   the text's start; Control::ClearTo n: Clear up to that pixel (nothing when the pen is there or past it);
 ///   Control::MinSpacing n: from then on every glyph advances at least n pixels (the rest cleared as Clear does).
 ///   Clear and ClearTo of a positive width type as a glyph does (they end a typed frame);
+/// - E1 (M4), as the handheld games' printer: Control::Se n / Bgm n play the sound or the music, PauseMusic /
+///   ResumeMusic pause and resume it (sound::control(): the game's, the default does nothing); Control::WaitSe
+///   ends the frame and waits until sound::waiting() is false (the frame that sees it so still waits);
 /// - field placeholders (FD 80-FE): the field resolver's text (capsule/text/placeholder.h);
 /// - every other control is skipped with its arguments (escape_length()).
 ///
@@ -162,6 +165,7 @@ enum class Pause : uint8_t
    Scrolling,   ///< Scrolling a line up.
    Button,      ///< WaitButton: a button, no arrow.
    Frames,      ///< Control::Pause: frames.
+   Sound,       ///< E1 (M4): Control::WaitSe: until the sound effect ends (sound::waiting()).
    NUM_PAUSES   ///< Number of pauses.
 };
 
@@ -401,3 +405,18 @@ void set_colors(Window& w, uint8_t ink, uint8_t background, uint8_t shadow);
 int line_width(const PropFont& font, const Code* codes);
 
 } // namespace capsule::text::window
+
+/// E1 (M4): the text's sound controls (the game's audio; weak defaults: nothing plays, nothing is waited for).
+namespace capsule::text::sound
+{
+
+/// A sound control met while typing: Control::Se / Bgm (value: the sound number), PauseMusic, ResumeMusic (0).
+/// @param c      the control
+/// @param value  its 16-bit argument (low byte first), or 0
+void control(Control c, uint16_t value);
+
+/// Whether Control::WaitSe still waits (the game's sound effect plays).
+/// @return true while it does
+bool waiting();
+
+} // namespace capsule::text::sound

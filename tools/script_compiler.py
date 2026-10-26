@@ -426,7 +426,7 @@ SET_WARP_KINDS = ["next", "dynamic", "dive", "hole", "escape"]
 SOUND_KINDS = {"bgm": 2, "bgm_save": 1, "fade_default": 0, "fade_new": 1, "fade_out": 1, "fade_in": 1, "se": 1,
                "fanfare": 1, "cry": 2}
 ## `wait_sound` kinds in capsule::script::SoundWait order.
-SOUND_WAITS = ["se", "fanfare", "cry"]
+SOUND_WAITS = ["se", "fanfare", "cry", "bgm"]
 ## Most items of one mart (16-bit count).
 MAX_MART_ITEMS = 0xFFFF
 ## Most game route steps (8-bit ids).

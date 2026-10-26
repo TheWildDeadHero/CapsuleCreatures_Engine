@@ -17,6 +17,7 @@ namespace video = hal::video;
 /// @name Tile layout (4bpp)
 ///@{
 constexpr int kTileSide = 8;         ///< Pixels per tile side.
+constexpr int kByteBits = 8;         ///< E1: the high byte of a control's 16-bit argument.
 constexpr int kTileShift = 3;        ///< Pixel to tile: p >> 3.
 constexpr int kPixelMask = 7;        ///< Pixel within its tile.
 constexpr int kNibbleBits = 4;       ///< Bits of one 4bpp pixel.
@@ -667,6 +668,18 @@ bool control(const Code* p)
    case Control::ResetFont:
       w.glyphs = w.c.font;
       break;
+   case Control::Se:
+   case Control::Bgm:
+      // E1: PLAY_SE / PLAY_BGM n (two bytes, low first)
+      sound::control(k, static_cast<uint16_t>(a | p[kEscapeHead + 1] << kByteBits));
+      break;
+   case Control::PauseMusic:
+   case Control::ResumeMusic:
+      sound::control(k, 0);
+      break;
+   case Control::WaitSe:
+      w.pause = Pause::Sound;   // E1: RENDER_STATE_WAIT_SE
+      break;
    default:
       break;   // nothing to draw
    }
@@ -873,6 +886,13 @@ void counter_frame(bool pressed, bool held)
             w.pause = Pause::None;
          }
          return;
+      case Pause::Sound:
+         // E1: RENDER_STATE_WAIT_SE: the frame that sees the sound ended still waits
+         if (!sound::waiting())
+         {
+            w.pause = Pause::None;
+         }
+         return;
       case Pause::None:
       case Pause::NUM_PAUSES:
          break;
@@ -921,7 +941,7 @@ void counter_frame(bool pressed, bool held)
       {
          const bool drew = c == kCodeControl && w.next[1] != kCodeEnd && control(w.next);
          w.next += escape_length(w.next);
-         if (w.pause == Pause::Button || w.pause == Pause::Scroll)
+         if (w.pause == Pause::Button || w.pause == Pause::Scroll || w.pause == Pause::Sound)
          {
             w.blink = 0;
             return;   // a wait ends the frame (a Pause control's first frame counts below, at once)
@@ -1217,6 +1237,7 @@ void update(Window& w, bool pressed, bool held)
       upload();
       return;
    }
+   bool sound_ended = false;   // E1: the frame a WaitSe ends types nothing
    switch (w.pause)
    {
    case Pause::Prompt:
@@ -1233,6 +1254,13 @@ void update(Window& w, bool pressed, bool held)
    case Pause::Scrolling:
       scroll_step();
       break;
+   case Pause::Sound:
+      if (!sound::waiting())
+      {
+         w.pause = Pause::None;   // E1: as the counter's printer, the next frame types on
+         sound_ended = true;
+      }
+      break;
    case Pause::Frames:
       if (w.frames > 0)
       {
@@ -1247,7 +1275,7 @@ void update(Window& w, bool pressed, bool held)
    case Pause::NUM_PAUSES:
       break;
    }
-   if (w.pause == Pause::None && w.next != nullptr)
+   if (w.pause == Pause::None && w.next != nullptr && !sound_ended)
    {
       if (w.instant || held)
       {
@@ -1500,3 +1528,19 @@ void clear_frame(const Config& c, const Frame& f, video::MapCell blank)
 }
 
 } // namespace capsule::text::window
+
+namespace capsule::text::sound
+{
+
+CAPSULE_WEAK void control(Control c, uint16_t value)
+{
+   static_cast<void>(c);
+   static_cast<void>(value);
+}
+
+CAPSULE_WEAK bool waiting()
+{
+   return false;
+}
+
+} // namespace capsule::text::sound

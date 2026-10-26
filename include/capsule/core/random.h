@@ -155,13 +155,24 @@ AdvanceClock advance_clock();
 /// frame outlasts a blank at a known point (a load, a blocking write) and draws at every blank it spans, where this
 /// build's frame does not lag. Makes the per-frame advance @p blanks more times now, each under the condition as
 /// the reference's interrupt checks it. The count is the game's data (measured on the reference); nothing here
-/// knows a point. Meant for AdvanceClock::Frame: with Blank, this build's own lag blanks draw as well.
+/// knows a point. Meant for AdvanceClock::Frame: with Blank, this build's own lag blanks draw as well. C14a: then
+/// the blank hook (set_blank_hook()) runs them too: with audio started, the sound driver steps @p blanks times now.
 /// @param blanks  the extra blanks (0: nothing)
 void spend_blanks(uint32_t blanks);
 
 /// The extra blanks spend_blanks() has spent so far (the condition's skips included).
 /// @return the count
 uint32_t spent_blanks();
+
+/// C14a (D-34, the audio clock): what else runs at a modelled blank. spend_blanks() calls it once with the count,
+/// after its draws, in program order; the sound driver's backend installs it when audio starts, so the sound runs on
+/// the same clock as the generator (capsule/hal/audio.h) while this module knows nothing of it.
+/// @param blanks  the extra blanks (never 0)
+using BlankHook = void (*)(uint32_t blanks);
+
+/// Installs the hook spend_blanks() calls (nullptr, the default: nothing else steps).
+/// @param hook  the hook, or nullptr
+void set_blank_hook(BlankHook hook);
 ///@}
 
 /// @name Press seeding (U5, D-33: a game whose reference never reseeds its generator after power-on)

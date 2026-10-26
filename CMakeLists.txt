@@ -746,6 +746,11 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_asset_compiler.py)
    add_test(NAME bitmap_tests
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_bitmap.py)
+   # A6 (M4): the audio author tools (MIDI -> song, WAV -> sample, DPCM)
+   add_test(NAME midi_song_tests
+            COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_midi_song.py)
+   add_test(NAME wav_sample_tests
+            COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_wav_sample.py)
 
    # Map renderer, field movement and map events against a compiled test world
    # (with the scripts its events run).
@@ -975,6 +980,8 @@ include(cmake/parts/effect.cmake)   # effect VM (D-22 decision 1)
 include(cmake/parts/bench.cmake)    # battle test bench (apps/battle_bench)
 include(cmake/parts/ui.cmake)       # N3: the ui module (menus, lists, key repeat, scroll arrows), its tests, sandbox
 include(cmake/parts/screen.cmake)   # UC: full-screen scenes (layers, sprites, tasks, fades, field return)
+include(cmake/parts/audio.cmake)       # M4 B1a: the audio core, its compiler and tests
+include(cmake/parts/audio_hal.cmake)   # M4 B1b: audio backends, output model, audio_render, test/sandbox apps (after audio.cmake)
 capsule_transfer_tests()            # record transfer v2 tests (cmake/parts/transfer.cmake)
 
 # A parent repository (the engine as a subproject) calls the engine's functions (capsule_game(),
@@ -988,7 +995,8 @@ if(NOT PROJECT_IS_TOP_LEVEL)
                CAPSULE_TRANSFER_DEPENDS CAPSULE_EFFECT_COMPILER_DEPENDS
                CAPSULE_BENCH_SOURCES CAPSULE_BENCH_TOOL CAPSULE_BENCH_HOST_FUNCTIONS
                CAPSULE_INVENTORY_SOURCES CAPSULE_SCRIPT_ITEMS_SOURCES CAPSULE_GROWTH_SOURCES
-               CAPSULE_GROWTH_DEFAULT_SOURCES)
+               CAPSULE_GROWTH_DEFAULT_SOURCES
+               CAPSULE_AUDIO_HOOK_SOURCES CAPSULE_AUDIO_MODEL_SOURCES CAPSULE_AUDIO_HEADLESS_SOURCES)
       set(${var} "${${var}}" PARENT_SCOPE)
    endforeach()
    # P-10: the parent's games are LTO builds on the GBA too.

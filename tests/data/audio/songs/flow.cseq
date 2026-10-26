@@ -1,0 +1,92 @@
+# Flow: VAR (all 18 operations), CALL / RETURN to depth 3, REPEAT n and REPEAT 0, JUMP.
+TRACK
+PROGRAM 0
+VOLUME 90
+RETURN
+VAR 0 0 5
+VAR 1 0 3
+VAR 2 0 1
+VAR 0 1 7
+VAR 3 2 0
+VAR 4 2 1
+VAR 5 2 0
+VAR 6 0 7 @eq_ok
+NOTE 6 c2 v50
+@eq_ok:
+VAR 7 0 7 @bad1
+VAR 8 0 6 @gt_ok
+@bad1:
+NOTE 6 c2 v50
+@gt_ok:
+VAR 9 0 8 @bad2
+VAR 10 0 7 @le_ok
+@bad2:
+NOTE 6 c2 v50
+@le_ok:
+VAR 11 0 7 @bad3
+VAR 12 0 1 @eqv
+@bad3:
+NOTE 6 c2 v50
+@eqv:
+VAR 13 0 1 @bad4
+VAR 14 0 2 @bad4
+VAR 15 0 2 @gev
+@bad4:
+NOTE 6 c2 v50
+@gev:
+VAR 16 0 2 @lev
+NOTE 6 c2 v50
+@lev:
+VAR 17 0 2 @bad5
+VAR 0 3 1
+CALL @pat1
+@rep:
+NOTE 6 g4 v100
+WAIT 6
+REPEAT 3 @rep
+@again:
+NOTE 3 c5 v90
+WAIT 4
+REPEAT 0 @again
+@bad5:
+NOTE 6 c2 v50
+END
+@pat1:
+NOTE 6 e4 v100
+WAIT 6
+CALL @pat2
+RETURN
+@pat2:
+NOTE 6 f4 v100
+WAIT 6
+CALL @pat3
+RETURN
+@pat3:
+NOTE 6 a4 v100
+WAIT 6
+RETURN
+TRACK
+PROGRAM 1
+VOLUME 70
+VAR 6 3 1 @t2go
+END
+@t2go:
+NOTE 12 c3 v80
+WAIT 12
+CALL @d1
+NOTE 12 d3 v80
+WAIT 12
+END
+@d1:
+CALL @d2
+RETURN
+@d2:
+CALL @d3
+RETURN
+@d3:
+CALL @d4
+RETURN
+@d4:
+NOTE 12 g2 v80
+WAIT 12
+RETURN

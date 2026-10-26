@@ -10,6 +10,7 @@
 #include "capsule/hal/video.h"
 #include "capsule/hal/vram_queue.h"
 
+#include "../common/audio_hook.h"
 #include "../soft/soft_video.h"
 
 /// Apps keep a plain main() on every OS; init() tells SDL that main is handled.
@@ -181,6 +182,7 @@ void init()
    soft::reset();
    vram::reset();
    g_next_frame = SDL_GetPerformanceCounter();
+   rng::set_blank_hook(audio::hook::spend);   // C14a (D-34): modelled lag blanks step the sound too
    rng::seed(entropy());
 }
 
@@ -208,6 +210,7 @@ bool update()
    SDL_RenderClear(g_sdl.renderer);
    SDL_RenderCopy(g_sdl.renderer, g_sdl.texture, nullptr, nullptr);
    SDL_RenderPresent(g_sdl.renderer);
+   audio::hook::vblank();   // M4: the audio step, once per blank (nothing until audio starts)
 
    SDL_Event event;
    while (SDL_PollEvent(&event))

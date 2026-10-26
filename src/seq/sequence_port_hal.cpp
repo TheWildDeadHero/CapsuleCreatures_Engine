@@ -10,7 +10,7 @@
 /// | window | hal::video windows 0 and 1 |
 /// | palette_fade | gfx::palette software fade |
 /// | text_* | text::layer (assets looked up in asset::kTable) |
-/// | song_*, sfx_play | timing stub: songs run for presenter::set_song_length() frames, silently |
+/// | song_*, sfx_play | the audio system once started (capsule/seq/sequence_audio.h); else a silent timing stub |
 /// | map_*, scanline, emitter, palette_anim | not yet: recorded in presenter::missing() |
 #include "capsule/seq/sequence_port.h"
 
@@ -19,9 +19,11 @@
 #include "capsule/gfx/palette.h"
 #include "capsule/gfx/slots.h"
 #include "capsule/gfx/sprites.h"
+#include "capsule/core/memory.h"
 #include "capsule/hal/video.h"
 #include "capsule/seq/presenter.h"
 #include "capsule/seq/sequence.h"
+#include "capsule/seq/sequence_audio.h"
 #include "capsule/text/text_layer.h"
 
 namespace capsule::seq
@@ -63,6 +65,7 @@ uint32_t g_song_length = kDefaultSongFrames;        ///< Stub song length; 0 = u
 uint8_t g_song_on = 0;              ///< A song was started and not stopped.
 uint32_t g_song_start = 0;           ///< g_clock when it started.
 uint32_t g_song_end = 0;             ///< g_clock when it ends (0 with no length = never).
+uint8_t g_song_audio = 0;           ///< The song plays on the audio system (not the stub).
 
 /// Records a feature the port cannot show.
 /// @param m  the feature
@@ -164,6 +167,7 @@ void reset()
    g_missing_key = AssetKey{0};
    g_clock = 0;
    g_song_on = 0;
+   g_song_audio = 0;
 }
 
 void frame()
@@ -401,13 +405,18 @@ void map_camera(int16_t, int16_t)
    note(presenter::MISSING_MAP_VIEW);
 }
 
-// --- audio (timing stub) ---
-void song_play(AssetKey song, uint16_t)
+// --- audio: the audio system when started (M4), else the timing stub ---
+void song_play(AssetKey song, uint16_t fade_in_frames)
 {
+   if (raw(song) == 0 && g_song_audio != 0)
+   {
+      audio_link::stop_song();
+   }
    g_song_on = raw(song) != 0 ? 1 : 0;
+   g_song_audio = g_song_on != 0 && audio_link::start_song(song, fade_in_frames) ? 1 : 0;
    g_song_start = g_clock;
-   g_song_end = g_song_length != 0 ? g_clock + g_song_length : 0;
-   if (g_song_on)
+   g_song_end = g_song_audio == 0 && g_song_length != 0 ? g_clock + g_song_length : 0;
+   if (g_song_on && g_song_audio == 0)
    {
       note(presenter::MISSING_AUDIO);
    }
@@ -419,6 +428,11 @@ void song_fade(uint16_t frames)
    {
       return;
    }
+   if (g_song_audio != 0)
+   {
+      audio_link::fade_song(frames);
+      return;
+   }
    const uint32_t end = g_clock + frames;
    if (g_song_end == 0 || end < g_song_end)
    {
@@ -428,6 +442,11 @@ void song_fade(uint16_t frames)
 
 bool song_playing()
 {
+   if (g_song_audio != 0)
+   {
+      // The frame it started in counts (the audio system steps at the next vertical blank).
+      return g_song_on && (g_clock == g_song_start || audio_link::song_sounding());
+   }
    return g_song_on && (g_song_end == 0 || g_clock < g_song_end);
 }
 
@@ -436,10 +455,44 @@ uint32_t song_frame()
    return song_playing() ? g_clock - g_song_start : 0;
 }
 
-void sfx_play(AssetKey)
+void sfx_play(AssetKey sound)
 {
-   note(presenter::MISSING_AUDIO);
+   if (!audio_link::play_sound(sound))
+   {
+      note(presenter::MISSING_AUDIO);
+   }
 }
 
 } // namespace port
 } // namespace capsule::seq
+
+/// The link's defaults for a program without the audio system (the audio system's own definitions replace them:
+/// src/audio/audio.cpp). They report no audio, so the port keeps its timing stub.
+namespace capsule::seq::audio_link
+{
+
+CAPSULE_WEAK bool start_song(AssetKey, uint16_t)
+{
+   return false;
+}
+
+CAPSULE_WEAK void stop_song()
+{
+}
+
+CAPSULE_WEAK bool fade_song(uint16_t)
+{
+   return false;
+}
+
+CAPSULE_WEAK bool song_sounding()
+{
+   return false;
+}
+
+CAPSULE_WEAK bool play_sound(AssetKey)
+{
+   return false;
+}
+
+} // namespace capsule::seq::audio_link

@@ -16,6 +16,8 @@
 #include "capsule/hal/vram_queue.h"
 #include "capsule/text/font.h"
 
+#include "../common/audio_hook.h"
+
 #include <gba_input.h>
 #include <gba_interrupt.h>
 #include <gba_systemcalls.h>
@@ -382,23 +384,34 @@ volatile uint16_t& bios_if()
 }
 
 /// VBlank interrupt: commits a finished frame (registers, OAM, queued VRAM
-/// uploads) at the start of VBlank; does nothing on a lag frame.
+/// uploads) at the start of VBlank; commits nothing on a lag frame. M4: then
+/// the audio step (audio_hook.h); C14a (D-34, the audio clock): only on the
+/// blank that finishes a game frame, so a lag frame of this build steps no
+/// sound (the backend repeats the segment the DMA played instead).
 void on_vblank()
 {
    g_vblank_irqs = g_vblank_irqs + 1;   // C11: every blank counts, a lag frame's too (vblanks())
-   if (g_frame_ready == 0)
+   const bool frame = g_frame_ready != 0;
+   if (frame)
    {
-      return;
+      commit_registers();
+      // libgba's dispatcher calls handlers with IME off; the flush can take most
+      // of VBlank, so other interrupts (keypad, the audio VCOUNT, timers, serial)
+      // may nest meanwhile. A second VBlank cannot arrive before this one ends.
+      {
+         const ImeScope nested(true);
+         vram::flush();
+      }
+      g_frame_ready = 0;
    }
-   commit_registers();
-   // libgba's dispatcher calls handlers with IME off; the flush can take most
-   // of VBlank, so other interrupts (keypad now; audio, timers, serial later)
-   // may nest meanwhile. A second VBlank cannot arrive before this one ends.
+   // M4 (D-34): the sound driver steps after the frame's commit (nothing when audio was never started: no audio
+   // code is linked then). C14a (the audio clock): once per game frame, as on every other target; this build's own
+   // lag blanks step nothing, the reference's modelled ones step through rng::spend_blanks()
+   if (frame && audio::hook::g_vblank_step != nullptr)
    {
       const ImeScope nested(true);
-      vram::flush();
+      audio::hook::g_vblank_step();
    }
-   g_frame_ready = 0;
 }
 
 /// Resets the shadows: registers cleared, identity affine transforms, every
@@ -443,6 +456,7 @@ void init()
    g_shadow.dispcnt = kDispcntForcedBlank;
    REG_DISPCNT = g_shadow.dispcnt;
    g_blanks_advanced = g_vblank_irqs;   // C11: the boot's blanks (before the first frame) draw nothing
+   rng::set_blank_hook(audio::hook::spend);   // C14a (D-34): modelled lag blanks step the sound too
    rng::seed(entropy());
 }
 

@@ -420,6 +420,7 @@ enum class SoundWait : uint8_t
    Se,   ///< The sound effect.
    Fanfare,   ///< The fanfare.
    Cry,   ///< The cry.
+   Bgm,   ///< E1 (M4): the music paused or stopped (a fade-out's end).
    NUM_SOUND_WAITS   ///< Number of kinds.
 };
 

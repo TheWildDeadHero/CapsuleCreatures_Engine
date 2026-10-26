@@ -23,6 +23,12 @@
 ///     bus cannot fetch ROM code while the flash answers in id or status mode;
 ///   - interrupts are masked only while a command sequence and each status poll run (SaveScope per poll), not for a
 ///     whole erase, so VBlank keeps its pace during a sector erase (about 100 ms);
+///   - C15a (R10 L3): reads do not mask interrupts at all (ReadScope: only the 8 wait states), as the reference's
+///     flash reads: a boot or Continue read of tens of KB no longer merges vertical blanks or delays the audio's
+///     VCOUNT interrupt past the ring's end. A read runs in the chip's read mode, after any command has finished
+///     (every erase and program waits for its status poll), from IWRAM; no interrupt handler touches the save chip
+///     or WAITCNT, so one that runs in the middle of a read changes nothing the read sees. The same holds for the
+///     checks after an erase (erased()) and the page reads of an Atmel program;
 ///   - an erase is checked over the whole sector (every byte reads 0xFF), a program byte by byte.
 #include "capsule/hal/save.h"
 
@@ -137,6 +143,28 @@ struct SaveScope
    {
       *reinterpret_cast<volatile uint16_t*>(kWaitcntAddress) = waitcnt;
       REG_IME = ime;
+   }
+};
+
+/// 8 wait states for the save chip while a scope lasts, interrupts left as they are (a read in read mode, C15a).
+struct ReadScope
+{
+   const uint16_t waitcnt;   ///< WAITCNT before.
+
+   /// Sets the wait states.
+   ReadScope() : waitcnt(*reinterpret_cast<volatile uint16_t*>(kWaitcntAddress))
+   {
+      *reinterpret_cast<volatile uint16_t*>(kWaitcntAddress) =
+         static_cast<uint16_t>((waitcnt & ~kSramWaitMask) | kSramWait8);
+      // the tag must stay in the ROM: this use keeps the linker from dropping it
+      asm volatile("" : : "r"(kSaveTag));
+   }
+   ReadScope(const ReadScope&) = delete;              ///< Not copyable.
+   ReadScope& operator=(const ReadScope&) = delete;   ///< Not copyable.
+   /// Restores them.
+   ~ReadScope()
+   {
+      *reinterpret_cast<volatile uint16_t*>(kWaitcntAddress) = waitcnt;
    }
 };
 
@@ -305,7 +333,7 @@ bool erased(uint32_t offset, uint32_t size)
    {
       const uint32_t n = size - done < kAtmelPage ? size - done : kAtmelPage;
       {
-         const SaveScope scope;
+         const ReadScope scope;
          copy_out(offset + done, buf, n);
       }
       for (uint32_t i = 0; i < n; ++i)
@@ -357,7 +385,7 @@ bool atmel_program(uint32_t offset, const uint8_t* src, uint32_t size)
       }
       else
       {
-         const SaveScope scope;
+         const ReadScope scope;
          copy_out(at, page, kAtmelPage);
       }
       uint32_t i = offset + done - at;
@@ -415,7 +443,7 @@ bool read(uint32_t offset, uint8_t* dst, uint32_t size)
    {
       return false;
    }
-   const SaveScope scope;
+   const ReadScope scope;   // interrupts stay on (see the file comment)
    copy_out(offset, dst, size);
    return true;
 }

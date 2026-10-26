@@ -30,6 +30,7 @@ uint32_t g_frame_advances = 0;                ///< N1: its draws so far.
 bool g_press_seeding = true;                  ///< U5: the first press reseeds the streams.
 AdvanceClock g_advance_clock = AdvanceClock::Blank;   ///< C13b: the per-frame advance's clock.
 uint32_t g_spent_blanks = 0;                  ///< C13d: the extra blanks spend_blanks() spent.
+BlankHook g_blank_hook = nullptr;             ///< C14a: what else steps at a modelled blank (the audio clock).
 
 } // namespace
 
@@ -70,6 +71,16 @@ void spend_blanks(uint32_t blanks)
       frame_advance();
    }
    g_spent_blanks += blanks;
+   // C14a (D-34): the audio clock steps the same blanks (the hook the sound backend installed)
+   if (blanks != 0 && g_blank_hook != nullptr)
+   {
+      g_blank_hook(blanks);
+   }
+}
+
+void set_blank_hook(BlankHook hook)
+{
+   g_blank_hook = hook;
 }
 
 uint32_t spent_blanks()
