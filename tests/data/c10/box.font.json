@@ -1,0 +1,25 @@
+{
+ "schema": "capsule.font/2",
+ "name": "c10_box",
+ "cell": [
+  4,
+  2
+ ],
+ "line_height": 4,
+ "glyphs": {
+  "A": {
+   "width": 3,
+   "rows": [
+    "1110",
+    "2220"
+   ]
+  },
+  "B": {
+   "width": 2,
+   "rows": [
+    "0100",
+    "0200"
+   ]
+  }
+ }
+}

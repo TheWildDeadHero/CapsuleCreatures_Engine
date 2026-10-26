@@ -1,0 +1,72 @@
+{
+  "schema": "capsule.sequence/1",
+  "id": "cave_preview",
+  "editor": {
+    "notes": "Location preview of Echo Cave (D-17, FRLG / HGSS style): the cave fades in with its name, then out; A or B skips."
+  },
+  "exits": [
+    "done"
+  ],
+  "start": "show",
+  "stages": [
+    {
+      "name": "show",
+      "flags": [
+        "reset_visuals"
+      ],
+      "skip": [
+        "A",
+        "B"
+      ],
+      "on": {
+        "done": "exit:done",
+        "skip": "exit:done"
+      },
+      "tracks": [
+        [
+          {
+            "op": "video_mode",
+            "mode": 0
+          },
+          {
+            "op": "bg_load",
+            "bg": 3,
+            "asset": "image:ECHO CAVE PREVIEW"
+          },
+          {
+            "op": "bg_show",
+            "bg": 3
+          },
+          {
+            "op": "text",
+            "target": "bg0",
+            "x": 15,
+            "y": 16,
+            "align": "center",
+            "asset": "text:ECHO CAVE"
+          },
+          {
+            "op": "fade",
+            "dir": "in",
+            "color": "black",
+            "frames": 16
+          },
+          {
+            "op": "wait",
+            "frames": 90
+          },
+          {
+            "op": "fade",
+            "dir": "out",
+            "color": "black",
+            "frames": 16
+          },
+          {
+            "op": "wait",
+            "frames": 4
+          }
+        ]
+      ]
+    }
+  ]
+}

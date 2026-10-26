@@ -1,0 +1,25 @@
+// B2 (D-28 sections 2 and 3): the combination fixture's nursery statements and its hatch script.
+var n : u8 0..99;
+var money : u16 0..9999;
+var member : u8 0..9;
+
+// an egg hatched (the structure's eggs.hatch_script): its party slot is in egg_member
+script orb_hatch {
+    msgbox "The orb cracks open!";
+    nursery name var(egg_member) -> var(n);
+    close_msg;
+}
+
+// every nursery statement once (the compiler's encoding: tests/test_battle_nursery.py)
+script keeper {
+    nursery pick -> var(member);
+    nursery deposit var(member) -> var(n);
+    nursery count -> var(n);
+    nursery levels 0 -> var(n);
+    nursery fee 0 -> var(n);
+    nursery withdraw 0 pay var(money) -> var(n);
+    nursery withdraw 1 -> var(n);
+    nursery ready -> var(n);
+    nursery odds -> var(n);
+    nursery take -> var(n);
+}

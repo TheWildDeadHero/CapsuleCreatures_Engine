@@ -1,0 +1,104 @@
+{
+ "schema": "capsule.world/1",
+ "id": "c13b_world",
+ "editor": {
+  "notes": "C13b test fixture (tests/c13b_tests.cpp, tests/test_map_compiler.py): the world's cell interaction rules on one room (a PC under an object without a script, a screen read facing up only, a shelf with a flag rule before its plain rule, a level-checked base, a sign and an object over interaction cells, water below a raised bank, a fall with rules kept for after the field actions). It reuses the D-30 fixture's tileset and sprites (simple shapes)."
+ },
+ "vehicle_classes": [
+  {
+   "name": "foot",
+   "passable": [
+    "normal",
+    "pc",
+    "screen",
+    "shelf",
+    "base"
+   ]
+  },
+  {
+   "name": "swim",
+   "passable": [
+    "water",
+    "fall"
+   ]
+  }
+ ],
+ "behaviors": [
+  {
+   "name": "normal"
+  },
+  {
+   "name": "wall",
+   "solid": true
+  },
+  {
+   "name": "pc"
+  },
+  {
+   "name": "screen"
+  },
+  {
+   "name": "shelf"
+  },
+  {
+   "name": "base"
+  },
+  {
+   "name": "water"
+  },
+  {
+   "name": "fall"
+  }
+ ],
+ "tilesets": {
+  "yard": "../d30/tilesets/yard.json"
+ },
+ "maps": {
+  "den": "maps/den.json"
+ },
+ "start": {
+  "map": "den",
+  "x": 2,
+  "y": 3,
+  "facing": "up"
+ },
+ "scripts": "scripts/scripts.json",
+ "interactions": [
+  {
+   "behavior": "pc",
+   "script": "use_pc"
+  },
+  {
+   "behavior": "screen",
+   "facing": "up",
+   "script": "watch"
+  },
+  {
+   "behavior": "shelf",
+   "flag": "shelf_open",
+   "script": "read_open"
+  },
+  {
+   "behavior": "shelf",
+   "script": "read"
+  },
+  {
+   "behavior": "base",
+   "same_level": true,
+   "script": "base_pc"
+  },
+  {
+   "behavior": "fall",
+   "vehicle": "swim",
+   "facing": "up",
+   "flag": "climb",
+   "after_actions": true,
+   "script": "climb_up"
+  },
+  {
+   "behavior": "fall",
+   "after_actions": true,
+   "script": "cannot_climb"
+  }
+ ]
+}

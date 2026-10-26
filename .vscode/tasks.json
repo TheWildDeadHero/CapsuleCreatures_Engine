@@ -1,0 +1,79 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "GBA: build ROM",
+      "type": "shell",
+      "command": "make -C platform/gba -j$(nproc)",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "GBA: build ROM (release)",
+      "type": "shell",
+      "command": "make -C platform/gba -j$(nproc) RELEASE=1",
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "GBA: run in mGBA",
+      "type": "shell",
+      "command": "mgba-qt platform/gba/capsule_hello.gba",
+      "dependsOn": "GBA: build ROM",
+      "problemMatcher": []
+    },
+    {
+      "label": "GBA: run input viewer in mGBA",
+      "type": "shell",
+      "command": "make -C platform/gba -j$(nproc) APP=input_viewer && mgba-qt platform/gba/capsule_input_viewer.gba",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "GBA: clean",
+      "type": "shell",
+      "command": "make -C platform/gba clean",
+      "problemMatcher": []
+    },
+    {
+      "label": "Desktop: build (debug)",
+      "type": "shell",
+      "command": "cmake --preset desktop-debug && cmake --build --preset desktop-debug",
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "Desktop: run hello world",
+      "type": "shell",
+      "command": "./build/desktop-debug/capsule_hello",
+      "dependsOn": "Desktop: build (debug)",
+      "problemMatcher": []
+    },
+    {
+      "label": "Desktop: run input viewer",
+      "type": "shell",
+      "command": "./build/desktop-debug/capsule_input_viewer",
+      "dependsOn": "Desktop: build (debug)",
+      "problemMatcher": []
+    },
+    {
+      "label": "Check: all tests + principles",
+      "type": "shell",
+      "command": "cmake --preset desktop-debug && cmake --build --preset desktop-debug && ctest --preset desktop-debug --output-on-failure && ./tools/ci/check_principles.sh",
+      "group": "test",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "schema": "capsule.sequence/1",
+  "id": "test_title_timeout",
+  "editor": {
+    "notes": "Test fixture: copyright -> skippable intro -> title enter (skip snaps to final state) -> title run with a 2700-frame idle timeout back to the start, a held-keys clear-save combo and a confirm stage (sound, wait, fade) that exits."
+  },
+  "exits": ["main_menu", "clear_save"],
+  "start": "copyright",
+  "stages": [
+    {
+      "name": "copyright",
+      "flags": ["reset_visuals"],
+      "on": {"done": "stage:intro"},
+      "tracks": [
+        [
+          {"op": "video_mode", "mode": 0},
+          {"op": "bg_load", "bg": 0, "asset": "image:COPYRIGHT SCREEN"},
+          {"op": "bg_show", "bg": 0},
+          {"op": "fade", "dir": "in", "color": "black", "frames": 16},
+          {"op": "wait", "frames": 140},
+          {"op": "fade", "dir": "out", "color": "black", "frames": 16},
+          {"op": "wait", "frames": 16}
+        ]
+      ]
+    },
+    {
+      "name": "intro",
+      "flags": ["reset_visuals"],
+      "skip": ["A", "B", "START"],
+      "on": {"done": "stage:title_enter", "skip": "stage:title_enter"},
+      "editor": {
+        "notes": "Intro cutscene content is a separate asset; this is a placeholder timeline."
+      },
+      "tracks": [
+        [
+          {"op": "song", "asset": "song:INTRO"},
+          {"op": "bg_load", "bg": 3, "asset": "image:INTRO SKY"},
+          {"op": "bg_show", "bg": 3},
+          {"op": "fade", "dir": "in", "color": "black", "frames": 16},
+          {"op": "wait", "frames": 600},
+          {"op": "fade", "dir": "out", "color": "white", "frames": 16},
+          {"op": "wait", "frames": 16}
+        ],
+        [
+          {"op": "spr_load", "slot": 0, "asset": "sprite:INTRO STAR"},
+          {"op": "spr_pos", "slot": 0, "x": 248, "y": 8},
+          {"op": "spr_show", "slot": 0},
+          {"op": "spr_move", "slot": 0, "vx": -2.5, "vy": 1.0, "frames": 100}
+        ]
+      ]
+    },
+    {
+      "name": "title_enter",
+      "flags": ["reset_visuals"],
+      "skip": ["A", "B", "START"],
+      "on": {"done": "stage:title_run", "skip": "stage:title_snap"},
+      "tracks": [
+        [
+          {"op": "song", "asset": "song:TITLE"},
+          {"op": "bg_load", "bg": 0, "asset": "image:TITLE LOGO"},
+          {"op": "bg_load", "bg": 1, "asset": "image:TITLE BOX ART"},
+          {"op": "bg_load", "bg": 2, "asset": "image:TITLE BACKDROP"},
+          {"op": "bg_show", "bg": 0},
+          {"op": "bg_show", "bg": 1},
+          {"op": "bg_show", "bg": 2},
+          {"op": "bg_pos", "bg": 2, "x": 120, "y": 0},
+          {"op": "bg_scroll", "bg": 2, "vx": -4},
+          {"op": "fade", "dir": "in", "color": "white", "frames": 30},
+          {"op": "wait", "frames": 30},
+          {"op": "bg_scroll", "bg": 2, "vx": 0},
+          {"op": "bg_pos", "bg": 2, "x": 0, "y": 0}
+        ]
+      ]
+    },
+    {
+      "name": "title_snap",
+      "editor": {
+        "notes": "Skip target: final title state in one frame."
+      },
+      "on": {"done": "stage:title_run"},
+      "tracks": [
+        [
+          {"op": "bg_scroll", "bg": 2, "vx": 0},
+          {"op": "bg_pos", "bg": 2, "x": 0, "y": 0},
+          {"op": "fade", "dir": "in", "color": "white", "frames": 0}
+        ]
+      ]
+    },
+    {
+      "name": "title_run",
+      "flags": ["seed_on_press"],
+      "timeout": 2700,
+      "on": {"timeout": "stage:copyright"},
+      "combos": [
+        {"held": ["B", "SELECT", "UP"], "to": "exit:clear_save"},
+        {"pressed": ["A", "START"], "to": "stage:confirm"}
+      ],
+      "tracks": [
+        [
+          {"op": "spr_load", "slot": 1, "asset": "sprite:PRESS START"},
+          {"op": "spr_pos", "slot": 1, "x": 88, "y": 128},
+          {"op": "label", "name": "blink"},
+          {"op": "spr_hide", "slot": 1},
+          {"op": "wait", "frames": 60},
+          {"op": "spr_show", "slot": 1},
+          {"op": "wait", "frames": 30},
+          {"op": "jump", "to": "blink"}
+        ],
+        [
+          {"op": "emitter", "slot": 0, "asset": "emitter:TITLE PARTICLES"}
+        ],
+        [
+          {"op": "spr_load", "slot": 2, "asset": "sprite:TITLE SLASH"},
+          {"op": "spr_obj_window", "slot": 2},
+          {"op": "label", "name": "slash"},
+          {"op": "spr_pos", "slot": 2, "x": -32, "y": 0},
+          {"op": "spr_show", "slot": 2},
+          {"op": "spr_move", "slot": 2, "vx": 8, "frames": 34},
+          {"op": "wait", "frames": 34},
+          {"op": "spr_hide", "slot": 2},
+          {"op": "wait", "frames": 506},
+          {"op": "jump", "to": "slash"}
+        ]
+      ]
+    },
+    {
+      "name": "confirm",
+      "on": {"done": "exit:main_menu"},
+      "tracks": [
+        [
+          {"op": "sfx", "asset": "sound:TITLE CRY"},
+          {"op": "wait", "frames": 90},
+          {"op": "song_fade", "frames": 16},
+          {"op": "fade", "dir": "out", "color": "white", "frames": 16},
+          {"op": "wait", "frames": 16}
+        ]
+      ]
+    }
+  ]
+}

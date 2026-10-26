@@ -1,0 +1,119 @@
+{
+ "schema": "capsule.assets/1",
+ "id": "screen_tests",
+ "editor": {
+  "notes": "UC (D-33): the screen framework's test assets (simple shapes): tiles, a tilemap and palettes, a sprite sheet."
+ },
+ "assets": [
+  {
+   "key": "tiles:SCREEN_BG",
+   "kind": "tiles",
+   "width": 16,
+   "height": 8,
+   "shapes": [
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "rect",
+     "x": 8,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 2
+    }
+   ]
+  },
+  {
+   "key": "tilemap:SCREEN_BG",
+   "kind": "tilemap",
+   "cells": [
+    0,
+    1,
+    4097,
+    2048
+   ]
+  },
+  {
+   "key": "palette:SCREEN_BG",
+   "kind": "palette",
+   "colors": [
+    "#000000",
+    "#ff0000",
+    "#00ff00",
+    "#0000ff",
+    31,
+    992,
+    31744,
+    32767,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    "#808080",
+    "#f8f8f8"
+   ]
+  },
+  {
+   "key": "tiles:SCREEN_SHEET",
+   "kind": "tiles",
+   "width": 32,
+   "height": 16,
+   "block": [
+    2,
+    2
+   ],
+   "shapes": [
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 3
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 4
+    }
+   ]
+  },
+  {
+   "key": "sprite:SCREEN_WALKER",
+   "kind": "sprite",
+   "width": 16,
+   "height": 16,
+   "palette": [
+    "#ffffff",
+    "#202020"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "rect",
+       "x": 2,
+       "y": 2,
+       "w": 12,
+       "h": 12,
+       "color": 1
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,351 @@
+{
+ "schema": "capsule.ruleset/2",
+ "editor": {
+  "notes": "The neutral effects ruleset with each stat's own stage (stage_scale), the type chart's combine mode (type_scale) and a formula stage (pace_curve). tests/battle_tiers_tests.cpp."
+ },
+ "constants": {
+  "HP_FLAT": 10,
+  "HP_START": 8,
+  "HP_DIV": 22,
+  "CORE_FLAT": 3,
+  "CORE_START": 16,
+  "CORE_DIV": 36,
+  "PCT": 100,
+  "DAMAGE_LEVEL_BIAS": 5,
+  "DEFENCE_PAD": 10,
+  "DAMAGE_DIV": 50,
+  "DAMAGE_FLAT": 1,
+  "CRIT": 416,
+  "SAME_TYPE": 307,
+  "SPREAD": 180,
+  "ROLL_LOW": 92,
+  "ROLL_SPAN": 17,
+  "ROLL_DEN": 100,
+  "REWARD_FLAT": 8,
+  "REWARD_DIV": 2,
+  "ESCAPE_BASE": 96,
+  "ESCAPE_SHARE": 128,
+  "ESCAPE_TRY": 48,
+  "EXP_DIV": 10,
+  "EXP_LEVEL_BIAS": 10,
+  "EXP_RANK_BASE": 4
+ },
+ "inputs": {
+  "base": [
+   1,
+   255
+  ],
+  "gene": [
+   0,
+   15
+  ],
+  "training": [
+   0,
+   255
+  ],
+  "awaken": [
+   0,
+   255
+  ],
+  "level": [
+   1,
+   50
+  ],
+  "trait_pct": [
+   88,
+   115
+  ],
+  "power": [
+   1,
+   1023
+  ],
+  "attack": [
+   1,
+   700
+  ],
+  "defense": [
+   1,
+   700
+  ],
+  "yield": [
+   0,
+   65535
+  ],
+  "victor_level": [
+   1,
+   50
+  ],
+  "participants": [
+   1,
+   24
+  ],
+  "foe_rank": [
+   0,
+   1
+  ],
+  "outsider": [
+   0,
+   1
+  ],
+  "speed": [
+   1,
+   700
+  ],
+  "foe_speed": [
+   1,
+   700
+  ],
+  "attempts": [
+   0,
+   255
+  ],
+  "reward_base": [
+   0,
+   65535
+  ],
+  "v": [
+   1,
+   700
+  ],
+  "st": [
+   -3,
+   3
+  ]
+ },
+ "formulas": {
+  "damage_base": {
+   "args": [
+    "level",
+    "power",
+    "attack",
+    "defense"
+   ],
+   "expr": "attack * power * (level + DAMAGE_LEVEL_BIAS) / ((defense + DEFENCE_PAD) * DAMAGE_DIV) + DAMAGE_FLAT",
+   "range": [
+    1,
+    65535
+   ]
+  },
+  "exp_gain": {
+   "expr": "max(1, yield * level / EXP_DIV * (level + EXP_LEVEL_BIAS) / (victor_level + EXP_LEVEL_BIAS) * (EXP_RANK_BASE + foe_rank) / EXP_RANK_BASE / participants)",
+   "range": [
+    1,
+    16777215
+   ]
+  },
+  "reward": {
+   "expr": "reward_base * (level + REWARD_FLAT) / REWARD_DIV",
+   "range": [
+    0,
+    1900515
+   ]
+  },
+  "escape_odds": {
+   "expr": "ESCAPE_BASE + ESCAPE_SHARE * speed / (speed + foe_speed) + ESCAPE_TRY * attempts",
+   "range": [
+    0,
+    65535
+   ]
+  },
+  "pace_curve": {
+   "args": [
+    "v",
+    "st"
+   ],
+   "expr": "v + v * st / 4",
+   "range": [
+    1,
+    700
+   ]
+  }
+ },
+ "stat_formulas": {
+  "pool": {
+   "expr": "HP_FLAT + base / HP_START + level * (base + gene) / HP_DIV",
+   "range": [
+    1,
+    700
+   ]
+  },
+  "core": {
+   "expr": "(CORE_FLAT + base / CORE_START + level * (base + gene) / CORE_DIV) * trait_pct / PCT",
+   "range": [
+    1,
+    700
+   ]
+  }
+ },
+ "points": {},
+ "pipelines": {
+  "damage": [
+   {
+    "let": "attack",
+    "expr": "stage_scale(offense_stage_id, offense_raw, offense_stage)",
+    "range": [
+     1,
+     "STAT_CAP"
+    ]
+   },
+   {
+    "let": "defense",
+    "expr": "if(crit, defense_raw, stage_scale(defense_stage_id, defense_raw, defense_stage))",
+    "range": [
+     1,
+     "STAT_CAP"
+    ]
+   },
+   {
+    "let": "power",
+    "expr": "move_power"
+   },
+   {
+    "let": "d",
+    "expr": "damage_base(level, power, attack, defense)",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "let": "d",
+    "expr": "if(crit, mulq8(d, CRIT), d)",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "let": "d",
+    "expr": "if(same_type, mulq8(d, SAME_TYPE), d)",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "let": "d",
+    "expr": "type_scale(d)",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "let": "d",
+    "expr": "if(spread, mulq8(d, SPREAD), d)",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "roll": "r",
+    "span": "ROLL_SPAN"
+   },
+   {
+    "let": "d",
+    "expr": "d * (ROLL_LOW + r) / ROLL_DEN",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "let": "damage",
+    "expr": "max(d, 1)",
+    "range": [
+     1,
+     65535
+    ]
+   }
+  ],
+  "self_hit": [
+   {
+    "let": "attack",
+    "expr": "stage_scale(offense_stage_id, offense_raw, offense_stage)",
+    "range": [
+     1,
+     "STAT_CAP"
+    ]
+   },
+   {
+    "let": "defense",
+    "expr": "stage_scale(defense_stage_id, defense_raw, defense_stage)",
+    "range": [
+     1,
+     "STAT_CAP"
+    ]
+   },
+   {
+    "let": "d",
+    "expr": "damage_base(level, move_power, attack, defense)"
+   },
+   {
+    "roll": "r",
+    "span": "ROLL_SPAN"
+   },
+   {
+    "let": "d",
+    "expr": "d * (ROLL_LOW + r) / ROLL_DEN"
+   },
+   {
+    "let": "damage",
+    "expr": "max(d, 1)",
+    "range": [
+     1,
+     65535
+    ]
+   }
+  ],
+  "speed": [
+   {
+    "let": "speed",
+    "expr": "stage_scale(speed_stage_id, speed_raw, speed_stage)",
+    "range": [
+     1,
+     "STAT_CAP"
+    ]
+   }
+  ],
+  "accuracy": [
+   {
+    "let": "chance",
+    "expr": "accuracy_staged(move_accuracy, accuracy_stage - evasion_stage)"
+   },
+   {
+    "let": "out_of",
+    "expr": "100"
+   },
+   {
+    "roll": "r",
+    "span": "if(chance > 0 && chance < out_of, out_of, 0)"
+   },
+   {
+    "let": "hit",
+    "expr": "chance >= out_of || r < chance"
+   }
+  ],
+  "crit": [
+   {
+    "let": "stage",
+    "expr": "crit_stage + move_crit_stage"
+   },
+   {
+    "let": "chance",
+    "expr": "crit_chance(stage)"
+   },
+   {
+    "let": "out_of",
+    "expr": "crit_out_of(stage)"
+   },
+   {
+    "roll": "r",
+    "span": "if(chance > 0 && chance < out_of, out_of, 0)"
+   },
+   {
+    "let": "crit",
+    "expr": "out_of != 0 && (chance >= out_of || r < chance)"
+   }
+  ]
+ }
+}

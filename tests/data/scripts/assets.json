@@ -1,0 +1,7 @@
+{
+  "schema": "capsule.assets/1",
+  "id": "script_test_assets",
+  "assets": [
+    {"key": "text:TEST LINE", "kind": "text", "text": "From an asset."}
+  ]
+}

@@ -1,0 +1,11 @@
+# Move logic of the stage and chart test data (E6a). A damaging move without logic here hits once per target.
+
+move "Surge" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      stage user power 2;
+      yield;
+   }
+}

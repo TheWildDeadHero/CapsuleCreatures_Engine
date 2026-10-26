@@ -1,0 +1,45 @@
+{
+ "schema": "capsule.transfer_cases/1",
+ "tables": {
+  "sample": {"source": "../../../samples/starter/battle.json"},
+  "twin": {"source": "twin.json", "namespace": "twin"},
+  "six": {"source": "six.json", "namespace": "six"},
+  "four": {"source": "four.json", "namespace": "four"},
+  "shuffled": {"source": "shuffled.json", "namespace": "shuffled"}
+ },
+ "records": {
+  "starter": {"species_key": 305419896, "seed": 3735928559, "owner_id": 54321, "experience": 1000000, "level": 120,
+              "moves": [1, 300, 2, 65535, 7, 65535, 65535, 27],
+              "stat_genes": {"hp": 15, "mp": 1, "ep": 2, "attack": 3, "magic": 4, "defence": 5, "protection": 6,
+                             "intelligence": 7, "agility": 8},
+              "trait": 12, "passive_selector": 1, "held_item": 200, "current_hp": 250, "current_mp": 900,
+              "current_ep": 33, "primary_status": 3, "nickname": [10, 11, 12, 13, 14, 15, 16, 17, 255, 255]},
+  "six": {"species_key": 305419896, "seed": 3735928559, "owner_id": 54321, "owner_secret": 4660, "experience": 1000000,
+          "level": 120, "moves": [1, 300, 2, 65535], "pp": [10, 20, 30, 0], "pp_ups": [3, 0, 1, 0],
+          "stat_genes": {"hp": 31, "atk": 20, "def": 3, "spa": 17, "spd": 9, "spe": 15},
+          "stat_training": {"hp": 252, "atk": 6, "def": 0, "spa": 100, "spd": 50, "spe": 255},
+          "trait": 12, "passive_selector": 1, "held_item": 300, "current_hp": 250, "primary_status": 0,
+          "friendship": 200, "nicknamed": 1, "nickname": [10, 11, 12, 13, 14, 15, 16, 255, 255, 255, 255, 255]},
+  "six_short_name": {"species_key": 7, "level": 5, "moves": [4, 65535, 65535, 65535], "pp": [35, 0, 0, 0],
+                     "stat_genes": {"hp": 1, "atk": 2, "def": 3, "spa": 4, "spd": 5, "spe": 6},
+                     "current_hp": 20, "friendship": 70, "nickname": [1, 2, 3, 255, 255, 255, 255, 255, 255, 255, 255, 255]},
+  "four": {"species_key": 99, "experience": 4321, "level": 100, "moves": [17, 1023], "pp": [5, 0],
+           "stat_genes": {"vigor": 15, "power": 9, "def": 0, "pace": 7},
+           "stat_training": {"vigor": 1, "power": 2, "def": 3, "pace": 4},
+           "trait": 3, "held_item": 200, "current_hp": 77, "primary_status": 19, "met_level": 12, "friendship": 63,
+           "gender": 2, "nickname": [20, 21, 22, 23, 24]}
+ },
+ "cases": [
+  {"name": "six_same", "from": "six", "to": "six", "record": "six"},
+  {"name": "six_to_four", "from": "six", "to": "four", "record": "six"},
+  {"name": "six_short_name_to_four", "from": "six", "to": "four", "record": "six_short_name"},
+  {"name": "four_to_six", "from": "four", "to": "six", "record": "four"},
+  {"name": "four_same", "from": "four", "to": "four", "record": "four"},
+  {"name": "six_to_shuffled", "from": "six", "to": "shuffled", "record": "six"},
+  {"name": "shuffled_to_six", "from": "shuffled", "to": "six", "record": "six"},
+  {"name": "shuffled_to_four", "from": "shuffled", "to": "four", "record": "six"},
+  {"name": "sample_to_twin", "from": "sample", "to": "twin", "record": "starter"},
+  {"name": "sample_to_six", "from": "sample", "to": "six", "record": "starter"},
+  {"name": "four_to_sample", "from": "four", "to": "sample", "record": "four"}
+ ]
+}

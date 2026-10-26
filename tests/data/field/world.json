@@ -1,0 +1,51 @@
+{
+ "schema": "capsule.world/1",
+ "id": "field_fixture",
+ "editor": {
+  "notes": "The field rules fixture's world (F2): what its field actions target (the water behavior, the boulder object kind, the dark map tag) and a flight point; one blank map."
+ },
+ "vehicle_classes": [
+  "foot",
+  {
+   "name": "swim",
+   "dismount": true,
+   "passable": [
+    "water"
+   ]
+  }
+ ],
+ "behaviors": [
+  {
+   "name": "normal"
+  },
+  {
+   "name": "water",
+   "passable": [
+    "swim"
+   ]
+  }
+ ],
+ "object_kinds": [
+  "boulder"
+ ],
+ "map_tags": [
+  "dark"
+ ],
+ "flight_points": [
+  {
+   "name": "plain",
+   "label": "Plain",
+   "map": "plain",
+   "x": 0,
+   "y": 0
+  }
+ ],
+ "maps": {
+  "plain": "plain.json"
+ },
+ "start": {
+  "map": "plain",
+  "x": 0,
+  "y": 0
+ }
+}

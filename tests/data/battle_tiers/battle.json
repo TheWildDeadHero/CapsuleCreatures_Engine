@@ -1,0 +1,233 @@
+{
+ "schema": "capsule.battle/1",
+ "id": "battle_tiers",
+ "editor": {
+  "notes": "Neutral test data for manifest stages and chart tiers (D-22 A6 / A7, E6a): a sequential chart with non-power-of-two tiers and decisive tiers, species with two types, stages with their own ranges, tables and a formula. tests/battle_tiers_tests.cpp runs it."
+ },
+ "ruleset": "ruleset.json",
+ "structure": "structure.json",
+ "types": [
+  {
+   "name": "Plain",
+   "color": 0
+  },
+  {
+   "name": "Hot",
+   "color": 1
+  },
+  {
+   "name": "Cold",
+   "color": 2
+  },
+  {
+   "name": "Void",
+   "color": 3
+  }
+ ],
+ "moves": [
+  {
+   "name": "Tap",
+   "type": "Plain",
+   "category": "strike",
+   "power": 40,
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected"
+  },
+  {
+   "name": "Blaze",
+   "type": "Hot",
+   "category": "strike",
+   "power": 60,
+   "accuracy": 90,
+   "pp": 20,
+   "target": "selected",
+   "crit_stage": 1
+  },
+  {
+   "name": "Frost",
+   "type": "Cold",
+   "category": "strike",
+   "power": 60,
+   "accuracy": 90,
+   "pp": 20,
+   "target": "selected"
+  },
+  {
+   "name": "Surge",
+   "type": "Plain",
+   "category": "support",
+   "pp": 20,
+   "target": "self"
+  }
+ ],
+ "traits": [
+  {
+   "name": "Even"
+  },
+  {
+   "name": "Quick",
+   "up": "pace",
+   "down": "power",
+   "pct": [
+    115,
+    88
+   ]
+  }
+ ],
+ "species": [
+  {
+   "name": "Ember",
+   "types": [
+    "Hot"
+   ],
+   "base": [
+    80,
+    40,
+    30
+   ],
+   "growth": "flat",
+   "exp_yield": 50,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ],
+    [
+     1,
+     "Blaze"
+    ],
+    [
+     1,
+     "Surge"
+    ]
+   ]
+  },
+  {
+   "name": "Slush",
+   "types": [
+    "Cold",
+    "Hot"
+   ],
+   "base": [
+    80,
+    45,
+    35
+   ],
+   "growth": "flat",
+   "exp_yield": 50,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ],
+    [
+     1,
+     "Frost"
+    ]
+   ]
+  },
+  {
+   "name": "Shade",
+   "types": [
+    "Void",
+    "Cold"
+   ],
+   "base": [
+    80,
+    45,
+    35
+   ],
+   "growth": "flat",
+   "exp_yield": 50,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ]
+  }
+ ],
+ "parties": [
+  {
+   "name": "Left",
+   "members": [
+    {
+     "species": "Ember",
+     "level": 20,
+     "moves": [
+      "Surge",
+      "Blaze",
+      "Tap"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Right",
+   "members": [
+    {
+     "species": "Slush",
+     "level": 20,
+     "moves": [
+      "Frost",
+      "Tap"
+     ]
+    }
+   ]
+  }
+ ],
+ "messages": {
+  "appeared": "{user} blocks the way!",
+  "party_challenge": "{party} wants to battle!",
+  "send_out": "Go, {user}!",
+  "party_sends": "{party} sent out {user}!",
+  "come_back": "{user}, come back!",
+  "used_move": "{user} used {move}!",
+  "missed": "{user}'s attack missed!",
+  "no_effect": "It doesn't affect {target}...",
+  "super_effective": "It's very effective!",
+  "not_very_effective": "It's not very effective...",
+  "critical": "A critical hit!",
+  "hit_count": "Hit {value} time(s)!",
+  "fainted": "{user} fainted!",
+  "stat_up": "{user}'s {stat} rose!",
+  "stat_up2": "{user}'s {stat} rose sharply!",
+  "stat_down": "{user}'s {stat} fell!",
+  "stat_down2": "{user}'s {stat} harshly fell!",
+  "stat_max": "{user}'s {stat} won't go any higher!",
+  "stat_min": "{user}'s {stat} won't go any lower!",
+  "confused": "{user} is dazed!",
+  "confusion_hit": "It hurt itself in its daze!",
+  "confusion_end": "{user} is no longer dazed!",
+  "became_confused": "{user} became dazed!",
+  "already_confused": "{user} is already dazed!",
+  "flinched": "{user} flinched!",
+  "protected": "{target} protected itself!",
+  "protect_start": "{user} is guarding itself!",
+  "recoil": "{user} is hit with recoil!",
+  "drained": "{user} had its energy drained!",
+  "healed": "{user} regained health!",
+  "hp_full": "{user}'s HP is full!",
+  "failed": "But it failed!",
+  "no_target": "But there was no target...",
+  "passive": "[{user}'s {passive}]",
+  "item_used": "{user}'s {item} activated!",
+  "absorbed": "{user} soaked it up!",
+  "exp_gained": "{user} gained {value} EXP!",
+  "level_up": "{user} grew to Lv. {value}!",
+  "learned": "{user} learned {move}!",
+  "not_learned": "{user} couldn't learn {move}.",
+  "got_away": "Got away safely!",
+  "cant_escape": "Can't escape!",
+  "escape_blocked": "No running from this battle!",
+  "party_defeated": "{party} was defeated!",
+  "reward": "You got ${value} for winning!",
+  "out_of_creatures": "You have no creatures left!",
+  "no_usable_move": "{user} has no moves left!",
+  "blocked": "It didn't work on {user}!"
+ },
+ "effects": [
+  "effects/moves.ceffect"
+ ]
+}

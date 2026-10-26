@@ -1,0 +1,2237 @@
+{
+ "schema": "capsule.battle/1",
+ "id": "starter",
+ "editor": {
+  "notes": "The Starter sample (E9, D-25): the engine's neutral sample game and reference fixture, the data set new games copy from (README \"Starting a new game from the Starter sample\"). Invented creatures, moves, talents and charms; test art is simple shapes."
+ },
+ "ruleset": "ruleset.json",
+ "structure": "structure.json",
+ "types": [
+  {
+   "name": "Fire",
+   "color": 1
+  },
+  {
+   "name": "Wind",
+   "color": 2
+  },
+  {
+   "name": "Lightning",
+   "color": 3
+  },
+  {
+   "name": "Water",
+   "color": 4
+  },
+  {
+   "name": "Earth",
+   "color": 5
+  },
+  {
+   "name": "Darkness",
+   "color": 6
+  },
+  {
+   "name": "Light",
+   "color": 7
+  },
+  {
+   "name": "Cosmic",
+   "color": 8
+  },
+  {
+   "name": "Bio",
+   "color": 9
+  }
+ ],
+ "moves": [
+  {
+   "name": "Strike",
+   "type": "Cosmic",
+   "category": "physical",
+   "power": 20,
+   "accuracy": null,
+   "target": "selected",
+   "cost": {},
+   "flags": [
+    "contact",
+    "protect"
+   ]
+  },
+  {
+   "name": "Flare Claw",
+   "type": "Fire",
+   "category": "physical",
+   "power": 55,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "ep": 5
+   },
+   "flags": [
+    "contact",
+    "protect"
+   ]
+  },
+  {
+   "name": "Fireball",
+   "type": "Fire",
+   "category": "elemental",
+   "power": 70,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "mp": 8
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Smolder",
+   "type": "Fire",
+   "category": "status",
+   "accuracy": null,
+   "target": "selected",
+   "cost": {
+    "mp": 5
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Gale Kick",
+   "type": "Wind",
+   "category": "physical",
+   "power": 40,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "ep": 4
+   },
+   "flags": [
+    "contact",
+    "protect"
+   ],
+   "priority": 1
+  },
+  {
+   "name": "Cyclone",
+   "type": "Wind",
+   "category": "elemental",
+   "power": 65,
+   "accuracy": 95,
+   "target": "selected",
+   "cost": {
+    "mp": 7
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Updraft",
+   "type": "Wind",
+   "category": "status",
+   "accuracy": null,
+   "target": "self",
+   "cost": {
+    "mp": 4
+   }
+  },
+  {
+   "name": "Shock Fang",
+   "type": "Lightning",
+   "category": "physical",
+   "power": 55,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "ep": 5
+   },
+   "flags": [
+    "contact",
+    "protect"
+   ]
+  },
+  {
+   "name": "Arc Bolt",
+   "type": "Lightning",
+   "category": "elemental",
+   "power": 70,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "mp": 8
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Static Field",
+   "type": "Lightning",
+   "category": "status",
+   "accuracy": null,
+   "target": "selected",
+   "cost": {
+    "mp": 5
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Tide Slam",
+   "type": "Water",
+   "category": "physical",
+   "power": 60,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "ep": 6
+   },
+   "flags": [
+    "contact",
+    "protect"
+   ]
+  },
+  {
+   "name": "Torrent",
+   "type": "Water",
+   "category": "elemental",
+   "power": 70,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "mp": 8
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Mist Veil",
+   "type": "Water",
+   "category": "status",
+   "accuracy": null,
+   "target": "self",
+   "cost": {
+    "mp": 4
+   }
+  },
+  {
+   "name": "Boulder Bash",
+   "type": "Earth",
+   "category": "physical",
+   "power": 75,
+   "accuracy": 90,
+   "target": "selected",
+   "cost": {
+    "ep": 7
+   },
+   "flags": [
+    "contact",
+    "protect"
+   ]
+  },
+  {
+   "name": "Quake",
+   "type": "Earth",
+   "category": "elemental",
+   "power": 60,
+   "accuracy": 100,
+   "target": "all_foes",
+   "cost": {
+    "mp": 9
+   }
+  },
+  {
+   "name": "Harden",
+   "type": "Earth",
+   "category": "status",
+   "accuracy": null,
+   "target": "self",
+   "cost": {
+    "mp": 4
+   }
+  },
+  {
+   "name": "Shadow Bite",
+   "type": "Darkness",
+   "category": "physical",
+   "power": 55,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "ep": 5
+   },
+   "flags": [
+    "contact",
+    "protect"
+   ]
+  },
+  {
+   "name": "Night Pulse",
+   "type": "Darkness",
+   "category": "elemental",
+   "power": 65,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "mp": 7
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Dread Gaze",
+   "type": "Darkness",
+   "category": "status",
+   "accuracy": null,
+   "target": "selected",
+   "cost": {
+    "mp": 4
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Radiant Strike",
+   "type": "Light",
+   "category": "physical",
+   "power": 55,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "ep": 5
+   },
+   "flags": [
+    "contact",
+    "protect"
+   ]
+  },
+  {
+   "name": "Prism Beam",
+   "type": "Light",
+   "category": "elemental",
+   "power": 70,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "mp": 8
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Mend Light",
+   "type": "Light",
+   "category": "status",
+   "accuracy": null,
+   "target": "self",
+   "cost": {
+    "mp": 8
+   }
+  },
+  {
+   "name": "Comet Punch",
+   "type": "Cosmic",
+   "category": "physical",
+   "power": 60,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "ep": 6
+   },
+   "flags": [
+    "contact",
+    "protect"
+   ]
+  },
+  {
+   "name": "Starfall",
+   "type": "Cosmic",
+   "category": "elemental",
+   "power": 80,
+   "accuracy": 90,
+   "target": "selected",
+   "cost": {
+    "mp": 10
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Stardust Lull",
+   "type": "Cosmic",
+   "category": "status",
+   "accuracy": null,
+   "target": "selected",
+   "cost": {
+    "mp": 6
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Vine Lash",
+   "type": "Bio",
+   "category": "physical",
+   "power": 50,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "ep": 4
+   },
+   "flags": [
+    "contact",
+    "protect"
+   ]
+  },
+  {
+   "name": "Spore Burst",
+   "type": "Bio",
+   "category": "elemental",
+   "power": 65,
+   "accuracy": 100,
+   "target": "selected",
+   "cost": {
+    "mp": 7
+   },
+   "flags": [
+    "protect"
+   ]
+  },
+  {
+   "name": "Toxic Pollen",
+   "type": "Bio",
+   "category": "status",
+   "accuracy": null,
+   "target": "selected",
+   "cost": {
+    "mp": 5
+   },
+   "flags": [
+    "protect"
+   ]
+  }
+ ],
+ "passives": [
+  {
+   "name": "Blaze Heart",
+   "announce": false
+  },
+  {
+   "name": "Thick Hide",
+   "announce": false
+  },
+  {
+   "name": "Insight",
+   "announce": false
+  },
+  {
+   "name": "Stubborn",
+   "announce": false
+  },
+  {
+   "name": "Quick Feet",
+   "announce": false
+  },
+  {
+   "name": "Recharge"
+  },
+  {
+   "name": "Static Coat"
+  },
+  {
+   "name": "Second Wind"
+  },
+  {
+   "name": "Lightfoot"
+  },
+  {
+   "name": "Nurture"
+  }
+ ],
+ "items": [
+  {
+   "name": "Mana Drop",
+   "pocket": "charms",
+   "price": 120
+  },
+  {
+   "name": "Vigor Bar",
+   "pocket": "charms",
+   "price": 120
+  },
+  {
+   "name": "Focus Lens",
+   "announce": false,
+   "pocket": "charms",
+   "price": 200
+  },
+  {
+   "name": "Tonic",
+   "pocket": "supplies",
+   "price": 30,
+   "use": "both",
+   "target": "member"
+  },
+  {
+   "name": "Mana Tea",
+   "pocket": "supplies",
+   "price": 40,
+   "use": "field",
+   "target": "member"
+  },
+  {
+   "name": "Spark Snack",
+   "pocket": "supplies",
+   "price": 25,
+   "use": "field",
+   "target": "member"
+  },
+  {
+   "name": "Remedy",
+   "pocket": "supplies",
+   "price": 50,
+   "use": "field",
+   "target": "member"
+  },
+  {
+   "name": "Orb",
+   "pocket": "orbs",
+   "price": 20,
+   "use": "battle",
+   "target": "battler"
+  },
+  {
+   "name": "Gate Pass",
+   "pocket": "key",
+   "key": true
+  },
+  {
+   "name": "Bloom Charm",
+   "pocket": "charms",
+   "price": 400,
+   "use": "field",
+   "target": "member"
+  },
+  {
+   "name": "Glow Charm",
+   "pocket": "key",
+   "key": true,
+   "use": "field",
+   "target": "member"
+  },
+  {
+   "name": "Drill Notes",
+   "pocket": "supplies",
+   "price": 250,
+   "use": "field",
+   "target": "member"
+  },
+  {
+   "name": "Ward Charm",
+   "pocket": "charms",
+   "price": 300,
+   "use": "field",
+   "consumed": true
+  }
+ ],
+ "traits": [
+  {
+   "name": "Even"
+  },
+  {
+   "name": "Fierce",
+   "up": "attack",
+   "down": "protection",
+   "pct": [
+    115,
+    88
+   ]
+  },
+  {
+   "name": "Mystic",
+   "up": "magic",
+   "down": "attack",
+   "pct": [
+    115,
+    88
+   ]
+  },
+  {
+   "name": "Sturdy",
+   "up": "defence",
+   "down": "agility",
+   "pct": [
+    115,
+    88
+   ]
+  },
+  {
+   "name": "Bright",
+   "up": "intelligence",
+   "down": "agility",
+   "pct": [
+    115,
+    88
+   ]
+  },
+  {
+   "name": "Swift",
+   "up": "agility",
+   "down": "defence",
+   "pct": [
+    115,
+    88
+   ]
+  }
+ ],
+ "species": [
+  {
+   "name": "Emberkit",
+   "types": [
+    "Fire"
+   ],
+   "base": [
+    45,
+    40,
+    50,
+    62,
+    58,
+    44,
+    42,
+    48,
+    61
+   ],
+   "passives": [
+    "Blaze Heart",
+    "Quick Feet"
+   ],
+   "growth": "steady",
+   "exp_yield": 62,
+   "front": "sprite:EMBERKIT FRONT",
+   "back": "sprite:EMBERKIT BACK",
+   "learnset": [
+    [
+     1,
+     "Flare Claw"
+    ],
+    [
+     1,
+     "Smolder"
+    ],
+    [
+     5,
+     "Fireball"
+    ],
+    [
+     10,
+     "Gale Kick"
+    ],
+    [
+     16,
+     "Comet Punch"
+    ],
+    [
+     22,
+     "Harden"
+    ],
+    [
+     30,
+     "Radiant Strike"
+    ],
+    [
+     38,
+     "Boulder Bash"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 110,
+    "yield_attack": 1,
+    "kin": "paw"
+   },
+   "transforms": [
+    {
+     "into": "Emberbrand",
+     "when": "level >= 20",
+     "on": [
+      "level_up"
+     ]
+    }
+   ],
+   "combine_moves": [
+    "Smolder"
+   ]
+  },
+  {
+   "name": "Breezle",
+   "types": [
+    "Wind"
+   ],
+   "base": [
+    42,
+    45,
+    52,
+    50,
+    60,
+    40,
+    46,
+    52,
+    72
+   ],
+   "passives": [
+    "Quick Feet",
+    "Lightfoot"
+   ],
+   "growth": "brisk",
+   "exp_yield": 58,
+   "front": "sprite:BREEZLE FRONT",
+   "back": "sprite:BREEZLE BACK",
+   "learnset": [
+    [
+     1,
+     "Gale Kick"
+    ],
+    [
+     1,
+     "Updraft"
+    ],
+    [
+     5,
+     "Cyclone"
+    ],
+    [
+     10,
+     "Vine Lash"
+    ],
+    [
+     16,
+     "Arc Bolt"
+    ],
+    [
+     22,
+     "Mist Veil"
+    ],
+    [
+     30,
+     "Starfall"
+    ],
+    [
+     38,
+     "Shadow Bite"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 150,
+    "yield_agility": 1,
+    "kin": "wing"
+   },
+   "transforms": [
+    {
+     "into": "Breezmaw",
+     "when": "level >= 20",
+     "on": [
+      "level_up"
+     ]
+    }
+   ],
+   "combine_moves": [
+    "Updraft"
+   ]
+  },
+  {
+   "name": "Voltmink",
+   "types": [
+    "Lightning"
+   ],
+   "base": [
+    44,
+    50,
+    46,
+    55,
+    68,
+    40,
+    48,
+    56,
+    66
+   ],
+   "passives": [
+    "Static Coat",
+    "Insight"
+   ],
+   "growth": "brisk",
+   "exp_yield": 60,
+   "front": "sprite:VOLTMINK FRONT",
+   "back": "sprite:VOLTMINK BACK",
+   "learnset": [
+    [
+     1,
+     "Shock Fang"
+    ],
+    [
+     1,
+     "Static Field"
+    ],
+    [
+     5,
+     "Arc Bolt"
+    ],
+    [
+     10,
+     "Gale Kick"
+    ],
+    [
+     16,
+     "Night Pulse"
+    ],
+    [
+     22,
+     "Updraft"
+    ],
+    [
+     30,
+     "Prism Beam"
+    ],
+    [
+     38,
+     "Comet Punch"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 120,
+    "yield_magic": 1,
+    "kin": "paw"
+   },
+   "transforms": [
+    {
+     "into": "Voltwolf",
+     "when": "level >= 20",
+     "on": [
+      "level_up"
+     ]
+    }
+   ],
+   "combine_moves": [
+    "Static Field"
+   ]
+  },
+  {
+   "name": "Tidepup",
+   "types": [
+    "Water"
+   ],
+   "base": [
+    55,
+    48,
+    48,
+    52,
+    62,
+    54,
+    58,
+    50,
+    44
+   ],
+   "passives": [
+    "Thick Hide",
+    "Recharge"
+   ],
+   "growth": "steady",
+   "exp_yield": 63,
+   "front": "sprite:TIDEPUP FRONT",
+   "back": "sprite:TIDEPUP BACK",
+   "learnset": [
+    [
+     1,
+     "Tide Slam"
+    ],
+    [
+     1,
+     "Mist Veil"
+    ],
+    [
+     5,
+     "Torrent"
+    ],
+    [
+     10,
+     "Quake"
+    ],
+    [
+     16,
+     "Shadow Bite"
+    ],
+    [
+     22,
+     "Mend Light"
+    ],
+    [
+     30,
+     "Spore Burst"
+    ],
+    [
+     38,
+     "Harden"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 130,
+    "yield_hp": 1,
+    "kin": "fin"
+   },
+   "transforms": [
+    {
+     "into": "Tidehawk",
+     "when": "level >= 20",
+     "on": [
+      "level_up"
+     ]
+    }
+   ],
+   "combine_moves": [
+    "Mist Veil"
+   ]
+  },
+  {
+   "name": "Clodbun",
+   "types": [
+    "Earth"
+   ],
+   "base": [
+    62,
+    30,
+    60,
+    70,
+    40,
+    72,
+    50,
+    38,
+    32
+   ],
+   "passives": [
+    "Thick Hide",
+    "Stubborn"
+   ],
+   "growth": "steady",
+   "exp_yield": 66,
+   "front": "sprite:CLODBUN FRONT",
+   "back": "sprite:CLODBUN BACK",
+   "learnset": [
+    [
+     1,
+     "Boulder Bash"
+    ],
+    [
+     1,
+     "Harden"
+    ],
+    [
+     5,
+     "Quake"
+    ],
+    [
+     10,
+     "Tide Slam"
+    ],
+    [
+     16,
+     "Flare Claw"
+    ],
+    [
+     22,
+     "Dread Gaze"
+    ],
+    [
+     30,
+     "Comet Punch"
+    ],
+    [
+     38,
+     "Shock Fang"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 160,
+    "yield_hp": 1,
+    "kin": "paw"
+   },
+   "transforms": [
+    {
+     "into": "Clodmane",
+     "when": "level >= 20",
+     "on": [
+      "level_up"
+     ]
+    }
+   ],
+   "combine_moves": [
+    "Harden"
+   ]
+  },
+  {
+   "name": "Duskowl",
+   "types": [
+    "Darkness"
+   ],
+   "base": [
+    48,
+    52,
+    46,
+    58,
+    64,
+    46,
+    50,
+    66,
+    56
+   ],
+   "passives": [
+    "Insight",
+    "Stubborn"
+   ],
+   "growth": "steady",
+   "exp_yield": 64,
+   "front": "sprite:DUSKOWL FRONT",
+   "back": "sprite:DUSKOWL BACK",
+   "learnset": [
+    [
+     1,
+     "Shadow Bite"
+    ],
+    [
+     1,
+     "Dread Gaze"
+    ],
+    [
+     5,
+     "Night Pulse"
+    ],
+    [
+     10,
+     "Gale Kick"
+    ],
+    [
+     16,
+     "Cyclone"
+    ],
+    [
+     22,
+     "Stardust Lull"
+    ],
+    [
+     30,
+     "Fireball"
+    ],
+    [
+     38,
+     "Static Field"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 100,
+    "yield_magic": 1,
+    "kin": "wing"
+   },
+   "transforms": [
+    {
+     "into": "Duskhoot",
+     "when": "level >= 20",
+     "on": [
+      "level_up"
+     ]
+    }
+   ],
+   "combine_moves": [
+    "Dread Gaze"
+   ]
+  },
+  {
+   "name": "Glimmet",
+   "types": [
+    "Light"
+   ],
+   "base": [
+    50,
+    60,
+    40,
+    44,
+    66,
+    46,
+    62,
+    60,
+    50
+   ],
+   "passives": [
+    "Recharge",
+    "Insight"
+   ],
+   "growth": "steady",
+   "exp_yield": 61,
+   "front": "sprite:GLIMMET FRONT",
+   "back": "sprite:GLIMMET BACK",
+   "learnset": [
+    [
+     1,
+     "Radiant Strike"
+    ],
+    [
+     1,
+     "Mend Light"
+    ],
+    [
+     5,
+     "Prism Beam"
+    ],
+    [
+     10,
+     "Torrent"
+    ],
+    [
+     16,
+     "Starfall"
+    ],
+    [
+     22,
+     "Updraft"
+    ],
+    [
+     30,
+     "Arc Bolt"
+    ],
+    [
+     38,
+     "Smolder"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 140,
+    "yield_magic": 1,
+    "kin": "glow"
+   },
+   "transforms": [
+    {
+     "into": "Glimmonde",
+     "when": "level >= 20",
+     "on": [
+      "level_up"
+     ]
+    }
+   ],
+   "forms": [
+    {
+     "name": "Radiant",
+     "types": [
+      "Light",
+      "Cosmic"
+     ],
+     "base": [
+      50,
+      60,
+      40,
+      44,
+      78,
+      46,
+      62,
+      72,
+      50
+     ],
+     "front": "sprite:GLIMMET RADIANT FRONT",
+     "back": "sprite:GLIMMET RADIANT BACK",
+     "when": "time_of_day == night",
+     "on": [
+      "after_battle",
+      "script"
+     ]
+    }
+   ],
+   "combine_moves": [
+    "Mend Light"
+   ]
+  },
+  {
+   "name": "Starmote",
+   "types": [
+    "Cosmic",
+    "Light"
+   ],
+   "base": [
+    46,
+    62,
+    42,
+    48,
+    70,
+    44,
+    60,
+    64,
+    52
+   ],
+   "passives": [
+    "Second Wind",
+    "Insight"
+   ],
+   "growth": "brisk",
+   "exp_yield": 70,
+   "front": "sprite:STARMOTE FRONT",
+   "back": "sprite:STARMOTE BACK",
+   "learnset": [
+    [
+     1,
+     "Comet Punch"
+    ],
+    [
+     1,
+     "Stardust Lull"
+    ],
+    [
+     5,
+     "Starfall"
+    ],
+    [
+     10,
+     "Prism Beam"
+    ],
+    [
+     16,
+     "Night Pulse"
+    ],
+    [
+     22,
+     "Mend Light"
+    ],
+    [
+     30,
+     "Cyclone"
+    ],
+    [
+     38,
+     "Toxic Pollen"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 90,
+    "yield_magic": 1,
+    "kin": "glow"
+   },
+   "transforms": [
+    {
+     "into": "Starquill",
+     "when": "level >= 20",
+     "on": [
+      "level_up"
+     ]
+    }
+   ],
+   "combine_moves": [
+    "Stardust Lull"
+   ]
+  },
+  {
+   "name": "Sproutle",
+   "types": [
+    "Bio"
+   ],
+   "base": [
+    56,
+    50,
+    50,
+    54,
+    56,
+    52,
+    56,
+    48,
+    46
+   ],
+   "passives": [
+    "Second Wind",
+    "Stubborn",
+    "Nurture"
+   ],
+   "growth": "steady",
+   "exp_yield": 59,
+   "front": "sprite:SPROUTLE FRONT",
+   "back": "sprite:SPROUTLE BACK",
+   "learnset": [
+    [
+     1,
+     "Vine Lash"
+    ],
+    [
+     1,
+     "Toxic Pollen"
+    ],
+    [
+     5,
+     "Spore Burst"
+    ],
+    [
+     10,
+     "Tide Slam"
+    ],
+    [
+     16,
+     "Quake"
+    ],
+    [
+     22,
+     "Mend Light"
+    ],
+    [
+     30,
+     "Boulder Bash"
+    ],
+    [
+     38,
+     "Harden"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 170,
+    "yield_hp": 1,
+    "kin": "leaf"
+   },
+   "transforms": [
+    {
+     "into": "Sprigshield",
+     "when": "item == bloom_charm",
+     "on": [
+      "item_use"
+     ]
+    },
+    {
+     "into": "Sprouthorn",
+     "when": "level >= 20",
+     "on": [
+      "level_up"
+     ]
+    }
+   ],
+   "combine_moves": [
+    "Toxic Pollen"
+   ]
+  },
+  {
+   "name": "Emberbrand",
+   "types": [
+    "Fire"
+   ],
+   "base": [
+    56,
+    50,
+    62,
+    77,
+    72,
+    55,
+    52,
+    60,
+    76
+   ],
+   "passives": [
+    "Blaze Heart",
+    "Quick Feet"
+   ],
+   "growth": "steady",
+   "exp_yield": 92,
+   "front": "sprite:EMBERKIT FRONT",
+   "back": "sprite:EMBERKIT BACK",
+   "learnset": [
+    [
+     1,
+     "Flare Claw"
+    ],
+    [
+     1,
+     "Smolder"
+    ],
+    [
+     5,
+     "Fireball"
+    ],
+    [
+     10,
+     "Gale Kick"
+    ],
+    [
+     16,
+     "Comet Punch"
+    ],
+    [
+     22,
+     "Harden"
+    ],
+    [
+     30,
+     "Radiant Strike"
+    ],
+    [
+     38,
+     "Boulder Bash"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 73,
+    "yield_attack": 2,
+    "kin": "paw"
+   }
+  },
+  {
+   "name": "Breezmaw",
+   "types": [
+    "Wind"
+   ],
+   "base": [
+    52,
+    56,
+    65,
+    62,
+    75,
+    50,
+    57,
+    65,
+    90
+   ],
+   "passives": [
+    "Quick Feet",
+    "Lightfoot"
+   ],
+   "growth": "brisk",
+   "exp_yield": 88,
+   "front": "sprite:BREEZLE FRONT",
+   "back": "sprite:BREEZLE BACK",
+   "learnset": [
+    [
+     1,
+     "Gale Kick"
+    ],
+    [
+     1,
+     "Updraft"
+    ],
+    [
+     5,
+     "Cyclone"
+    ],
+    [
+     10,
+     "Vine Lash"
+    ],
+    [
+     16,
+     "Arc Bolt"
+    ],
+    [
+     22,
+     "Mist Veil"
+    ],
+    [
+     30,
+     "Starfall"
+    ],
+    [
+     38,
+     "Shadow Bite"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 100,
+    "yield_agility": 2,
+    "kin": "wing"
+   }
+  },
+  {
+   "name": "Voltwolf",
+   "types": [
+    "Lightning"
+   ],
+   "base": [
+    55,
+    62,
+    57,
+    68,
+    85,
+    50,
+    60,
+    70,
+    82
+   ],
+   "passives": [
+    "Static Coat",
+    "Insight"
+   ],
+   "growth": "brisk",
+   "exp_yield": 90,
+   "front": "sprite:VOLTMINK FRONT",
+   "back": "sprite:VOLTMINK BACK",
+   "learnset": [
+    [
+     1,
+     "Shock Fang"
+    ],
+    [
+     1,
+     "Static Field"
+    ],
+    [
+     5,
+     "Arc Bolt"
+    ],
+    [
+     10,
+     "Gale Kick"
+    ],
+    [
+     16,
+     "Night Pulse"
+    ],
+    [
+     22,
+     "Updraft"
+    ],
+    [
+     30,
+     "Prism Beam"
+    ],
+    [
+     38,
+     "Comet Punch"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 80,
+    "yield_magic": 2,
+    "kin": "paw"
+   }
+  },
+  {
+   "name": "Tidehawk",
+   "types": [
+    "Water"
+   ],
+   "base": [
+    68,
+    60,
+    60,
+    65,
+    77,
+    67,
+    72,
+    62,
+    55
+   ],
+   "passives": [
+    "Thick Hide",
+    "Recharge"
+   ],
+   "growth": "steady",
+   "exp_yield": 93,
+   "front": "sprite:TIDEPUP FRONT",
+   "back": "sprite:TIDEPUP BACK",
+   "learnset": [
+    [
+     1,
+     "Tide Slam"
+    ],
+    [
+     1,
+     "Mist Veil"
+    ],
+    [
+     5,
+     "Torrent"
+    ],
+    [
+     10,
+     "Quake"
+    ],
+    [
+     16,
+     "Shadow Bite"
+    ],
+    [
+     22,
+     "Mend Light"
+    ],
+    [
+     30,
+     "Spore Burst"
+    ],
+    [
+     38,
+     "Harden"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 86,
+    "yield_hp": 2,
+    "kin": "fin"
+   }
+  },
+  {
+   "name": "Clodmane",
+   "types": [
+    "Earth"
+   ],
+   "base": [
+    77,
+    37,
+    75,
+    87,
+    50,
+    90,
+    62,
+    47,
+    40
+   ],
+   "passives": [
+    "Thick Hide",
+    "Stubborn"
+   ],
+   "growth": "steady",
+   "exp_yield": 96,
+   "front": "sprite:CLODBUN FRONT",
+   "back": "sprite:CLODBUN BACK",
+   "learnset": [
+    [
+     1,
+     "Boulder Bash"
+    ],
+    [
+     1,
+     "Harden"
+    ],
+    [
+     5,
+     "Quake"
+    ],
+    [
+     10,
+     "Tide Slam"
+    ],
+    [
+     16,
+     "Flare Claw"
+    ],
+    [
+     22,
+     "Dread Gaze"
+    ],
+    [
+     30,
+     "Comet Punch"
+    ],
+    [
+     38,
+     "Shock Fang"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 106,
+    "yield_hp": 2,
+    "kin": "paw"
+   }
+  },
+  {
+   "name": "Duskhoot",
+   "types": [
+    "Darkness"
+   ],
+   "base": [
+    60,
+    65,
+    57,
+    72,
+    80,
+    57,
+    62,
+    82,
+    70
+   ],
+   "passives": [
+    "Insight",
+    "Stubborn"
+   ],
+   "growth": "steady",
+   "exp_yield": 94,
+   "front": "sprite:DUSKOWL FRONT",
+   "back": "sprite:DUSKOWL BACK",
+   "learnset": [
+    [
+     1,
+     "Shadow Bite"
+    ],
+    [
+     1,
+     "Dread Gaze"
+    ],
+    [
+     5,
+     "Night Pulse"
+    ],
+    [
+     10,
+     "Gale Kick"
+    ],
+    [
+     16,
+     "Cyclone"
+    ],
+    [
+     22,
+     "Stardust Lull"
+    ],
+    [
+     30,
+     "Fireball"
+    ],
+    [
+     38,
+     "Static Field"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 66,
+    "yield_magic": 2,
+    "kin": "wing"
+   }
+  },
+  {
+   "name": "Glimmonde",
+   "types": [
+    "Light"
+   ],
+   "base": [
+    62,
+    75,
+    50,
+    55,
+    82,
+    57,
+    77,
+    75,
+    62
+   ],
+   "passives": [
+    "Recharge",
+    "Insight"
+   ],
+   "growth": "steady",
+   "exp_yield": 91,
+   "front": "sprite:GLIMMET FRONT",
+   "back": "sprite:GLIMMET BACK",
+   "learnset": [
+    [
+     1,
+     "Radiant Strike"
+    ],
+    [
+     1,
+     "Mend Light"
+    ],
+    [
+     5,
+     "Prism Beam"
+    ],
+    [
+     10,
+     "Torrent"
+    ],
+    [
+     16,
+     "Starfall"
+    ],
+    [
+     22,
+     "Updraft"
+    ],
+    [
+     30,
+     "Arc Bolt"
+    ],
+    [
+     38,
+     "Smolder"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 93,
+    "yield_magic": 2,
+    "kin": "glow"
+   }
+  },
+  {
+   "name": "Starquill",
+   "types": [
+    "Cosmic",
+    "Light"
+   ],
+   "base": [
+    57,
+    77,
+    52,
+    60,
+    87,
+    55,
+    75,
+    80,
+    65
+   ],
+   "passives": [
+    "Second Wind",
+    "Insight"
+   ],
+   "growth": "brisk",
+   "exp_yield": 100,
+   "front": "sprite:STARMOTE FRONT",
+   "back": "sprite:STARMOTE BACK",
+   "learnset": [
+    [
+     1,
+     "Comet Punch"
+    ],
+    [
+     1,
+     "Stardust Lull"
+    ],
+    [
+     5,
+     "Starfall"
+    ],
+    [
+     10,
+     "Prism Beam"
+    ],
+    [
+     16,
+     "Night Pulse"
+    ],
+    [
+     22,
+     "Mend Light"
+    ],
+    [
+     30,
+     "Cyclone"
+    ],
+    [
+     38,
+     "Toxic Pollen"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 60,
+    "yield_magic": 2,
+    "kin": "glow"
+   }
+  },
+  {
+   "name": "Sprouthorn",
+   "types": [
+    "Bio"
+   ],
+   "base": [
+    70,
+    62,
+    62,
+    67,
+    70,
+    65,
+    70,
+    60,
+    57
+   ],
+   "passives": [
+    "Second Wind",
+    "Stubborn",
+    "Nurture"
+   ],
+   "growth": "steady",
+   "exp_yield": 89,
+   "front": "sprite:SPROUTLE FRONT",
+   "back": "sprite:SPROUTLE BACK",
+   "learnset": [
+    [
+     1,
+     "Vine Lash"
+    ],
+    [
+     1,
+     "Toxic Pollen"
+    ],
+    [
+     5,
+     "Spore Burst"
+    ],
+    [
+     10,
+     "Tide Slam"
+    ],
+    [
+     16,
+     "Quake"
+    ],
+    [
+     22,
+     "Mend Light"
+    ],
+    [
+     30,
+     "Boulder Bash"
+    ],
+    [
+     38,
+     "Harden"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 113,
+    "yield_hp": 2,
+    "kin": "leaf"
+   }
+  },
+  {
+   "name": "Sprigshield",
+   "types": [
+    "Bio"
+   ],
+   "base": [
+    70,
+    62,
+    62,
+    67,
+    70,
+    65,
+    70,
+    60,
+    57
+   ],
+   "passives": [
+    "Second Wind",
+    "Stubborn",
+    "Nurture"
+   ],
+   "growth": "steady",
+   "exp_yield": 89,
+   "front": "sprite:SPROUTLE FRONT",
+   "back": "sprite:SPROUTLE BACK",
+   "learnset": [
+    [
+     1,
+     "Vine Lash"
+    ],
+    [
+     1,
+     "Toxic Pollen"
+    ],
+    [
+     5,
+     "Spore Burst"
+    ],
+    [
+     10,
+     "Tide Slam"
+    ],
+    [
+     16,
+     "Quake"
+    ],
+    [
+     22,
+     "Mend Light"
+    ],
+    [
+     30,
+     "Boulder Bash"
+    ],
+    [
+     38,
+     "Harden"
+    ]
+   ],
+   "fields": {
+    "recruit_rate": 113,
+    "yield_hp": 2,
+    "kin": "leaf"
+   }
+  }
+ ],
+ "presenters": [
+  {
+   "name": "Coach",
+   "sprite": "sprite:PRESENTER",
+   "at": [
+    0,
+    0
+   ],
+   "enter": {
+    "style": "slide",
+    "frames": 24,
+    "from": "side"
+   },
+   "exit": {
+    "style": "slide",
+    "frames": 16,
+    "from": "side",
+    "when": "send_out"
+   },
+   "intro": "{party} wants to battle!"
+  }
+ ],
+ "ai_profiles": [
+  {
+   "name": "Basic",
+   "default": true,
+   "rules": [
+    {
+     "rule": "noise",
+     "max": 16
+    },
+    {
+     "rule": "status_move",
+     "score": 8
+    }
+   ]
+  },
+  {
+   "name": "Battler",
+   "rules": [
+    {
+     "rule": "noise",
+     "max": 16
+    },
+    {
+     "rule": "damage",
+     "weight": 4,
+     "ko_bonus": 40
+    },
+    {
+     "rule": "avoid_useless"
+    },
+    {
+     "rule": "status_move",
+     "score": 8
+    }
+   ]
+  },
+  {
+   "name": "Strategist",
+   "rules": [
+    {
+     "rule": "noise",
+     "max": 16
+    },
+    {
+     "rule": "damage",
+     "weight": 4,
+     "ko_bonus": 40
+    },
+    {
+     "rule": "avoid_useless"
+    },
+    {
+     "rule": "status",
+     "score": 60
+    },
+    {
+     "rule": "status_move",
+     "score": 8
+    },
+    {
+     "rule": "save_resources",
+     "whole_pool": 40
+    }
+   ],
+   "items": [
+    {
+     "rule": "below_hp",
+     "item": "Tonic",
+     "percent": 25
+    }
+   ]
+  }
+ ],
+ "parties": [
+  {
+   "name": "Novice Kit",
+   "presenters": [
+    "Coach"
+   ],
+   "reward": 20,
+   "rank": 1,
+   "escape": false,
+   "ai": "Battler",
+   "members": [
+    {
+     "species": "Sproutle",
+     "level": 6
+    },
+    {
+     "species": "Breezle",
+     "level": 7
+    }
+   ]
+  },
+  {
+   "name": "Scholar Wen",
+   "presenters": [
+    "Coach"
+   ],
+   "reward": 30,
+   "rank": 1,
+   "escape": false,
+   "ai": "Strategist",
+   "members": [
+    {
+     "species": "Duskowl",
+     "level": 12,
+     "item": "Focus Lens"
+    },
+    {
+     "species": "Glimmet",
+     "level": 12,
+     "item": "Mana Drop"
+    },
+    {
+     "species": "Voltmink",
+     "level": 13
+    }
+   ],
+   "items": [
+    "Tonic"
+   ]
+  },
+  {
+   "name": "Duo Ash & Bly",
+   "presenters": [
+    "Coach"
+   ],
+   "reward": 25,
+   "rank": 1,
+   "escape": false,
+   "ai": "Battler",
+   "members": [
+    {
+     "species": "Clodbun",
+     "level": 14,
+     "item": "Vigor Bar"
+    },
+    {
+     "species": "Tidepup",
+     "level": 14
+    },
+    {
+     "species": "Emberkit",
+     "level": 15,
+     "moves": [
+      "Flare Claw",
+      "Smolder",
+      "Fireball",
+      "Gale Kick",
+      "Comet Punch",
+      "Harden",
+      "Radiant Strike",
+      "Boulder Bash"
+     ]
+    }
+   ]
+  }
+ ],
+ "shops": [
+  {
+   "name": "Corner Shop",
+   "items": [
+    "Tonic",
+    "Mana Tea",
+    "Spark Snack",
+    "Remedy",
+    "Orb"
+   ]
+  },
+  {
+   "name": "Charm Stall",
+   "items": [
+    "Mana Drop",
+    "Vigor Bar",
+    "Focus Lens"
+   ]
+  }
+ ],
+ "messages": {
+  "appeared": "{user} blocks the way!",
+  "party_challenge": "{party} wants to battle!",
+  "send_out": "Go, {user}!",
+  "party_sends": "{party} sent out {user}!",
+  "come_back": "{user}, come back!",
+  "used_move": "{user} used {move}!",
+  "missed": "{user}'s attack missed!",
+  "no_effect": "It doesn't affect {target}...",
+  "super_effective": "It's very effective!",
+  "not_very_effective": "It's not very effective...",
+  "critical": "A critical hit!",
+  "fainted": "{user} fainted!",
+  "stat_up": "{user}'s {stat} rose!",
+  "stat_up2": "{user}'s {stat} rose sharply!",
+  "stat_down": "{user}'s {stat} fell!",
+  "stat_down2": "{user}'s {stat} harshly fell!",
+  "stat_max": "{user}'s {stat} won't go any higher!",
+  "stat_min": "{user}'s {stat} won't go any lower!",
+  "dazed": "{user} is dazed!",
+  "daze_hit": "It hurt itself in its daze!",
+  "daze_end": "{user} is no longer dazed!",
+  "became_dazed": "{user} became dazed!",
+  "already_dazed": "{user} is already dazed!",
+  "staggered": "{user} staggered!",
+  "drained": "{user} had its energy drained!",
+  "healed": "{user} regained health!",
+  "hp_full": "{user}'s HP is full!",
+  "failed": "But it failed!",
+  "no_target": "But there was no target...",
+  "passive": "[{user}'s {passive}]",
+  "item_used": "{user}'s {item} activated!",
+  "absorbed": "{user} soaked it up!",
+  "exp_gained": "{user} gained {value} EXP!",
+  "level_up": "{user} grew to Lv. {value}!",
+  "learned": "{user} learned {move}!",
+  "not_learned": "{user} couldn't learn {move}.",
+  "got_away": "Got away safely!",
+  "cant_escape": "Can't escape!",
+  "escape_blocked": "You can't run from a {@party} battle!",
+  "party_defeated": "{party} was defeated!",
+  "reward": "You got {value} {@reward:many} for winning!",
+  "out_of_creatures": "You have no creatures left!",
+  "no_usable_move": "{user} has no energy left!",
+  "blocked": "It didn't work on {user}!",
+  "orb_wobble": "The Orb wobbles... ({value})",
+  "orb_caught": "Gotcha! {target} joined you!",
+  "orb_free": "Oh no! {target} slipped out of the Orb!",
+  "orb_refused": "{target} belongs to someone else!",
+  "orb_blocked": "The Orb won't work here!",
+  "orb_no_room": "There is no room for {target}!",
+  "orb_to_party": "{target} joined the party.",
+  "orb_to_box": "{target} was sent to Box {value}.",
+  "blight_survived": "{user} held on at 1 HP! The blight faded.",
+  "merge_done": "{user} rose from the Merge Altar!",
+  "merge_unfit": "{user} is not ready for the altar.",
+  "merge_refused": "The altar stays silent.",
+  "merge_no_room": "There is no room for {user}."
+ },
+ "effects": [
+  "effects/moves.ceffect",
+  "effects/passives.ceffect",
+  "effects/items.ceffect",
+  "effects/conditions.ceffect",
+  "effects/field.ceffect"
+ ],
+ "texts": {
+  "tonic_used": "{user} feels better!",
+  "mana_tea_used": "{user}'s MP came back!",
+  "spark_snack_used": "{user} is full of energy!",
+  "orb_thrown": "{target} threw an Orb!"
+ }
+}

@@ -1,0 +1,10 @@
+{
+ "schema": "capsule.scripts/1",
+ "editor": {
+  "notes": "Scripts of the C13b fixture (tests/c13b_tests.cpp): empty scripts the interaction rules name."
+ },
+ "sources": [
+  "c13b.cscript"
+ ],
+ "world": "../world.json"
+}

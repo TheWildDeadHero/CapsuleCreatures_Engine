@@ -1,0 +1,26 @@
+{
+ "schema": "capsule.world/1",
+ "id": "c10_world",
+ "editor": {
+  "notes": "C10 test fixture (tests/c10_tests.cpp, tests/test_c10_formats.py): an immediate trigger before a plain one on one cell, on_resume hiding an object before the objects spawn, an object walking onto a raised cell, a removable object that comes back when its flag clears, a spotter, script VM options (resume next frame, modulo random, wrapping u16 variables), session flags and variables. Simple shapes only."
+ },
+ "behaviors": [
+  {
+   "name": "normal"
+  }
+ ],
+ "tilesets": {
+  "yard": "../d30/tilesets/yard.json"
+ },
+ "maps": {
+  "plain": "maps/plain.json",
+  "annex": "maps/annex.json"
+ },
+ "start": {
+  "map": "plain",
+  "x": 1,
+  "y": 4,
+  "facing": "right"
+ },
+ "scripts": "scripts/scripts.json"
+}

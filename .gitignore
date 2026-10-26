@@ -1,0 +1,28 @@
+# Desktop (CMake) builds
+/build/
+
+# GBA builds
+/platform/gba/build/
+/platform/gba/*.gba
+/platform/gba/*.elf
+/platform/gba/*.map
+
+# Emulator output
+*.sav
+*.ss[0-9]
+
+# Editor state
+/.cache/
+
+# Imported third-party content (capsule-pret-import output; never committed here, D-3 / D-29)
+assets-imported/
+
+# Other build folders, environments and caches (D-37: never committed)
+/build-*/
+/build_*/
+/cmake-build-*/
+.venv/
+__pycache__/
+*.pyc
+.local/
+*.sqlite

@@ -1,0 +1,488 @@
+{
+ "schema": "capsule.assets/1",
+ "id": "d30_assets",
+ "editor": {
+  "notes": "D-30 fixture assets (tests/d30_tests.cpp): direction grids (three columns: right mirrors left; four columns), a walker, a tiles door and an override door. Shapes only."
+ },
+ "assets": [
+  {
+   "key": "sprite:WALKER",
+   "kind": "sprite",
+   "width": 16,
+   "height": 32,
+   "palette": [
+    "#ff0000",
+    "#00ff00",
+    "#0000ff",
+    "#ffff00",
+    "#ff00ff",
+    "#00ffff",
+    "#808080",
+    "#404040",
+    "#c0c0c0",
+    "#800000",
+    "#008000",
+    "#000080",
+    "#808000",
+    "#800080",
+    "#ffffff"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "rect",
+       "x": 2,
+       "y": 4,
+       "w": 12,
+       "h": 28,
+       "color": 15
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:GRID3",
+   "kind": "sprite",
+   "width": 16,
+   "height": 32,
+   "palette": [
+    "#ff0000",
+    "#00ff00",
+    "#0000ff",
+    "#ffff00",
+    "#ff00ff",
+    "#00ffff",
+    "#808080",
+    "#404040",
+    "#c0c0c0",
+    "#800000",
+    "#008000",
+    "#000080",
+    "#808000",
+    "#800080",
+    "#ffffff"
+   ],
+   "layout": "direction_grid",
+   "rows": [
+    "stand",
+    "step"
+   ],
+   "grid": [
+    [
+     {
+      "shapes": [
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 8,
+        "w": 8,
+        "h": 24,
+        "color": 1
+       },
+       {
+        "shape": "rect",
+        "x": 6,
+        "y": 12,
+        "w": 4,
+        "h": 4,
+        "color": 15
+       }
+      ]
+     },
+     {
+      "shapes": [
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 8,
+        "w": 8,
+        "h": 24,
+        "color": 2
+       },
+       {
+        "shape": "rect",
+        "x": 6,
+        "y": 12,
+        "w": 4,
+        "h": 4,
+        "color": 15
+       }
+      ]
+     },
+     {
+      "shapes": [
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 8,
+        "w": 8,
+        "h": 24,
+        "color": 3
+       },
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 12,
+        "w": 4,
+        "h": 4,
+        "color": 15
+       }
+      ]
+     }
+    ],
+    [
+     {
+      "shapes": [
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 8,
+        "w": 8,
+        "h": 24,
+        "color": 4
+       },
+       {
+        "shape": "rect",
+        "x": 6,
+        "y": 12,
+        "w": 4,
+        "h": 4,
+        "color": 15
+       }
+      ]
+     },
+     {
+      "shapes": [
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 8,
+        "w": 8,
+        "h": 24,
+        "color": 2
+       },
+       {
+        "shape": "rect",
+        "x": 6,
+        "y": 12,
+        "w": 4,
+        "h": 4,
+        "color": 15
+       }
+      ]
+     },
+     {
+      "shapes": [
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 8,
+        "w": 8,
+        "h": 24,
+        "color": 5
+       },
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 12,
+        "w": 4,
+        "h": 4,
+        "color": 15
+       }
+      ]
+     }
+    ]
+   ],
+   "animations": [
+    {
+     "rows": [
+      "stand"
+     ],
+     "period": 1
+    },
+    {
+     "rows": [
+      "step",
+      "stand"
+     ],
+     "period": 8
+    }
+   ]
+  },
+  {
+   "key": "sprite:GRID4",
+   "kind": "sprite",
+   "width": 16,
+   "height": 32,
+   "palette": [
+    "#ff0000",
+    "#00ff00",
+    "#0000ff",
+    "#ffff00",
+    "#ff00ff",
+    "#00ffff",
+    "#808080",
+    "#404040",
+    "#c0c0c0",
+    "#800000",
+    "#008000",
+    "#000080",
+    "#808000",
+    "#800080",
+    "#ffffff"
+   ],
+   "layout": "direction_grid",
+   "rows": [
+    "stand"
+   ],
+   "grid": [
+    [
+     {
+      "shapes": [
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 8,
+        "w": 8,
+        "h": 24,
+        "color": 1
+       },
+       {
+        "shape": "rect",
+        "x": 6,
+        "y": 12,
+        "w": 4,
+        "h": 4,
+        "color": 15
+       }
+      ]
+     },
+     {
+      "shapes": [
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 8,
+        "w": 8,
+        "h": 24,
+        "color": 2
+       },
+       {
+        "shape": "rect",
+        "x": 6,
+        "y": 12,
+        "w": 4,
+        "h": 4,
+        "color": 15
+       }
+      ]
+     },
+     {
+      "shapes": [
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 8,
+        "w": 8,
+        "h": 24,
+        "color": 3
+       },
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 12,
+        "w": 4,
+        "h": 4,
+        "color": 15
+       }
+      ]
+     },
+     {
+      "shapes": [
+       {
+        "shape": "rect",
+        "x": 4,
+        "y": 8,
+        "w": 8,
+        "h": 24,
+        "color": 6
+       },
+       {
+        "shape": "rect",
+        "x": 6,
+        "y": 12,
+        "w": 4,
+        "h": 4,
+        "color": 15
+       }
+      ]
+     }
+    ]
+   ],
+   "animations": [
+    {
+     "rows": [
+      "stand"
+     ],
+     "period": 1
+    }
+   ]
+  },
+  {
+   "key": "door:GATE",
+   "kind": "door",
+   "cells": [
+    1,
+    2
+   ],
+   "show": "tiles",
+   "layers": 2,
+   "sheet": {
+    "size": [
+     16,
+     64
+    ],
+    "shapes": [
+     {
+      "shape": "rect",
+      "x": 0,
+      "y": 0,
+      "w": 16,
+      "h": 32,
+      "color": 8
+     },
+     {
+      "shape": "rect",
+      "x": 0,
+      "y": 32,
+      "w": 16,
+      "h": 32,
+      "color": 9
+     }
+    ]
+   },
+   "frame_tiles": 8,
+   "entries": [
+    [
+     [
+      {
+       "tile": 0
+      },
+      {
+       "tile": 1
+      },
+      {
+       "tile": 2
+      },
+      {
+       "tile": 3
+      }
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ]
+    ],
+    [
+     [
+      {
+       "tile": 4
+      },
+      {
+       "tile": 5
+      },
+      {
+       "tile": 6
+      },
+      {
+       "tile": 7
+      }
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   ],
+   "open": [
+    [
+     "closed",
+     2
+    ],
+    [
+     0,
+     3
+    ],
+    [
+     1,
+     3
+    ]
+   ],
+   "close": "reverse",
+   "sounds": {
+    "open": "sound:DOOR_OPEN",
+    "close": "sound:DOOR_SHUT"
+   },
+   "exit": "down"
+  },
+  {
+   "key": "door:HATCH",
+   "kind": "door",
+   "cells": [
+    1,
+    1
+   ],
+   "show": "override",
+   "layers": 1,
+   "frames": [
+    [
+     [
+      [
+       4097,
+       4097,
+       4097,
+       4097
+      ]
+     ]
+    ],
+    [
+     [
+      [
+       8193,
+       8193,
+       8193,
+       8193
+      ]
+     ]
+    ]
+   ],
+   "open": [
+    [
+     0,
+     2
+    ],
+    [
+     1,
+     2
+    ]
+   ],
+   "close": [
+    [
+     0,
+     2
+    ],
+    [
+     "closed",
+     1
+    ]
+   ],
+   "exit": "down"
+  }
+ ]
+}

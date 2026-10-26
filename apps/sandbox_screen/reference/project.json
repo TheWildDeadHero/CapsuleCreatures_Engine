@@ -1,0 +1,17 @@
+{
+  "schema": "capsule.project/1",
+  "name": "sandbox_screen",
+  "editor": {
+    "notes": "The screen framework's sandbox (UC, D-33): a map as the field (D-pad scrolls it), A opens a list screen over it (fade to black, setup, fade from black; tiled layers, a framed panel, a window, animated icons, a cursor), A there opens a detail screen (a two-frame picture, a scrolling layer), B closes back down the stack and to the field without entering the map again (simple shapes)."
+  },
+  "rom": {
+    "title": "SCREENS",
+    "code": "CSSC",
+    "maker": "00"
+  },
+  "sources": [
+    "src/sandbox_screen.cpp"
+  ],
+  "assets": "data/assets.json",
+  "maps": "data/world.json"
+}

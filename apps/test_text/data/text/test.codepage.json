@@ -1,0 +1,20 @@
+{
+  "schema": "capsule.codepage/1",
+  "id": "en",
+  "name": "English (ASCII) with a test glyph",
+  "editor": {
+    "notes": "Test page of the text test app: the ASCII page plus a diamond (U+25C6) at 0x80, a non-ASCII glyph past the ASCII range; the white diamond folds onto it."
+  },
+  "ranges": [
+    {
+      "first": "0x20",
+      "chars": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+    }
+  ],
+  "map": {
+    "0x80": "◆"
+  },
+  "aliases": {
+    "◇": "◆"
+  }
+}

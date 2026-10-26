@@ -1,0 +1,21 @@
+# Editor settings for the CapsuleCreatures engine (project code style).
+# Editors with EditorConfig support (VS Code with its extension, CLion, Qt
+# Creator, ...) pick these up; tools/ci/check_style.py checks them.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 3
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{cmd,bat}]
+end_of_line = crlf

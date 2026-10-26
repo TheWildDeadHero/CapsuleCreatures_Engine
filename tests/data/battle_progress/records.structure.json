@@ -1,0 +1,409 @@
+{
+ "schema": "capsule.structure/1",
+ "monster_layout": {
+  "party_size": 3,
+  "move_slots": 2,
+  "roles": [
+   "species_key",
+   "seed",
+   "owner_id",
+   "experience",
+   "level",
+   "moves",
+   {
+    "role": "pp",
+    "width": 8
+   },
+   {
+    "role": "pp_ups",
+    "width": 3
+   },
+   {
+    "role": "stat_genes",
+    "width": 4
+   },
+   "held_item",
+   "current_hp",
+   "primary_status",
+   {
+    "role": "nickname",
+    "count": 8
+   },
+   {
+    "custom": "secret",
+    "width": 16
+   },
+   {
+    "custom": "lean",
+    "width": 1
+   },
+   {
+    "custom": "glyph",
+    "width": 8
+   },
+   {
+    "custom": "marked",
+    "width": 1,
+    "stored": false
+   }
+  ],
+  "status_bits": "auto"
+ },
+ "stats": [
+  {
+   "name": "vigor",
+   "label": "Vigor",
+   "formula": "pool",
+   "pool": true
+  },
+  {
+   "name": "power",
+   "label": "Power",
+   "formula": "core"
+  },
+  {
+   "name": "pace",
+   "label": "Pace",
+   "formula": "core",
+   "order": true
+  }
+ ],
+ "resources": [
+  {
+   "name": "hp",
+   "label": "HP",
+   "scope": "battler",
+   "stat": "vigor",
+   "empty": "faint",
+   "persist": "current_hp"
+  },
+  {
+   "name": "pp",
+   "label": "PP",
+   "scope": "move",
+   "base": "pp",
+   "max": "pp_max",
+   "raises": "pp_ups",
+   "persist": "pp"
+  }
+ ],
+ "stages": [
+  {
+   "name": "accuracy",
+   "kind": "accuracy",
+   "label": "accuracy",
+   "range": [
+    -4,
+    4
+   ],
+   "table": [
+    [
+     60,
+     100
+    ],
+    [
+     70,
+     100
+    ],
+    [
+     80,
+     100
+    ],
+    [
+     90,
+     100
+    ],
+    [
+     100,
+     100
+    ],
+    [
+     110,
+     100
+    ],
+    [
+     120,
+     100
+    ],
+    [
+     130,
+     100
+    ],
+    [
+     140,
+     100
+    ]
+   ]
+  },
+  {
+   "name": "evasion",
+   "kind": "evasion",
+   "label": "evasion",
+   "range": [
+    -4,
+    4
+   ]
+  },
+  {
+   "name": "critical",
+   "kind": "crit",
+   "label": "focus",
+   "range": [
+    0,
+    3
+   ],
+   "table": [
+    "1/20",
+    "1/10",
+    "1/5",
+    "3/10"
+   ]
+  },
+  {
+   "stat": "power",
+   "range": [
+    -4,
+    4
+   ],
+   "table": [
+    [
+     40,
+     100
+    ],
+    [
+     55,
+     100
+    ],
+    [
+     70,
+     100
+    ],
+    [
+     85,
+     100
+    ],
+    [
+     100,
+     100
+    ],
+    [
+     125,
+     100
+    ],
+    [
+     150,
+     100
+    ],
+    [
+     175,
+     100
+    ],
+    [
+     200,
+     100
+    ]
+   ]
+  },
+  {
+   "stat": "pace",
+   "range": [
+    -4,
+    4
+   ],
+   "table": [
+    [
+     40,
+     100
+    ],
+    [
+     55,
+     100
+    ],
+    [
+     70,
+     100
+    ],
+    [
+     85,
+     100
+    ],
+    [
+     100,
+     100
+    ],
+    [
+     125,
+     100
+    ],
+    [
+     150,
+     100
+    ],
+    [
+     175,
+     100
+    ],
+    [
+     200,
+     100
+    ]
+   ]
+  }
+ ],
+ "rules": {
+  "stat_cap": 700,
+  "level_max": 50,
+  "rank_max": 1,
+  "self_hit": {
+   "power": 30,
+   "category": "strike"
+  },
+  "fallback_move": null
+ },
+ "chart": {
+  "tiers": [
+   {
+    "name": "normal",
+    "q8": 256
+   }
+  ],
+  "combine": "multiply",
+  "types_per_species": 1,
+  "added_types": 1
+ },
+ "categories": [
+  {
+   "name": "strike",
+   "offense": "power",
+   "defense": "power"
+  },
+  {
+   "name": "support"
+  }
+ ],
+ "move_flags": [
+  "contact",
+  "protect"
+ ],
+ "growth": {
+  "steady": "8*n*n + 32*n"
+ },
+ "formats": [
+  {
+   "name": "Single",
+   "sides": [
+    [
+     0
+    ],
+    [
+     1
+    ]
+   ],
+   "range": "all",
+   "layout": [
+    [
+     64,
+     92
+    ],
+    [
+     176,
+     52
+    ]
+   ],
+   "party_max": 3
+  }
+ ],
+ "learn": {
+  "on_full": "request",
+  "default_moves": "first_n"
+ },
+ "exp_policy": {
+  "share": "party",
+  "receivers": "opposing_sides",
+  "outsider": "owner_id"
+ },
+ "generation": [
+  {
+   "role": "seed",
+   "random_range": [
+    0,
+    "max"
+   ],
+   "order": "low_first"
+  },
+  {
+   "role": "owner_id",
+   "random_range": [
+    0,
+    65535
+   ]
+  },
+  {
+   "role": "secret",
+   "random_range": [
+    0,
+    65535
+   ]
+  },
+  {
+   "role": "stat_genes",
+   "constant": 7
+  },
+  {
+   "role": "pp_ups",
+   "constant": 2
+  },
+  {
+   "role": "lean",
+   "derived": "(seed_lo & 255) < species.balance"
+  },
+  {
+   "role": "marked",
+   "derived": "(owner_id ^ secret ^ seed_hi ^ seed_lo) < 8"
+  },
+  {
+   "role": "glyph",
+   "derived": "((seed_hi >> 8 & 3) << 6 | (seed_hi & 3) << 4 | (seed_lo >> 8 & 3) << 2 | seed_lo & 3) % 28",
+   "range": [
+    0,
+    27
+   ]
+  },
+  {
+   "role": "trait",
+   "derived": "~seed_lo & 1"
+  },
+  {
+   "role": "held_item",
+   "random_range": [
+    0,
+    0
+   ]
+  }
+ ],
+ "terms": {
+  "party": {
+   "one": "Rival",
+   "many": "Rivals"
+  },
+  "trait": {
+   "one": "Temperament",
+   "many": "Temperaments"
+  },
+  "passive": {
+   "one": "Talent",
+   "many": "Talents"
+  },
+  "reward": {
+   "one": "Coins",
+   "many": "Coins"
+  }
+ },
+ "species_fields": [
+  {
+   "name": "balance",
+   "width": 8,
+   "default": 0
+  }
+ ]
+}

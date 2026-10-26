@@ -1,0 +1,5 @@
+# Extra glyphs of tests/data/text/accents.codepage.json (simple shapes), added
+# to assets/fonts/default_8x8.txt with font_compiler.py --glyphs.
+
+U+00E9 ...#. ..#.. .###. #...# ##### #.... .###.
+U+0078+U+0301 ...#. ..#.. #...# .#.#. ..#.. .#.#. #...#

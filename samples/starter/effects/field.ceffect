@@ -1,0 +1,37 @@
+# The Starter's field rules (F1, D-27; README "Field rules"): the Ward charm keeps creatures below the lead's level
+# away for 120 steps (its timed field effect `ward`: started over when used again), and a lead with Quick Feet meets
+# creatures half as often again (x3/2) - the talent's battle point stays in passives.ceffect.
+
+# The game's own encounter rule: while the Ward runs, nothing below the lead's level is met.
+global "ward_rule" {
+   on encounter {
+      if field.effect_active(ward) {
+         encounter_skip_below holder.level;
+      }
+   }
+}
+
+item "Ward Charm" {
+   on use_field {
+      field_effect start ward 120;
+   }
+}
+
+# F3 (D-27 section 4, README "Step effects"): every 64 steps each member's bond grows by 1 (at most 255)
+global "bond_rule" {
+   on steps {
+      if field.step_effect == bond {
+         holder.role(bond) = min(holder.role(bond), 254) + 1;
+      }
+   }
+}
+
+# B1 (D-28 section 1): the Merge Altar's result takes three of its inputs' genes at random and the first input's bond
+global "merge_rule" {
+   on combine {
+      if field.combine_method == merge_altar {
+         inherit_pick stat_genes 3;
+         inherit bond from input.first;
+      }
+   }
+}

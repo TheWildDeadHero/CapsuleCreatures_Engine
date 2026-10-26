@@ -1,0 +1,76 @@
+{
+  "schema": "capsule.sequence/1",
+  "id": "test_cutscene",
+  "editor": {
+    "notes": "Test fixture: non-overworld cutscene with a rising, zooming sprite, a screen shake loop, a flash, three typed text-box lines advanced with A, and B to skip."
+  },
+  "exits": ["done", "skipped"],
+  "macros": {
+    "say": {
+      "params": ["line"],
+      "body": [
+        {"op": "text_clear", "target": "box"},
+        {"op": "text", "target": "box", "x": 1, "y": 0, "typed": true, "asset": "$line"},
+        {"op": "wait_for", "what": "text"},
+        {"op": "wait_for", "what": "input", "keys": ["A"]}
+      ]
+    }
+  },
+  "start": "scene",
+  "stages": [
+    {
+      "name": "scene",
+      "flags": ["reset_visuals"],
+      "skip": ["B"],
+      "on": {"done": "exit:done", "skip": "stage:skip_out"},
+      "tracks": [
+        [
+          {"op": "video_mode", "mode": 0},
+          {"op": "bg_load", "bg": 3, "asset": "image:CAVE DEPTHS"},
+          {"op": "bg_show", "bg": 3},
+          {"op": "song", "asset": "song:AWAKENING", "fade_in": 30},
+          {"op": "fade", "dir": "in", "color": "black", "frames": 30},
+          {"op": "spr_load", "slot": 0, "asset": "sprite:SILHOUETTE"},
+          {"op": "spr_pos", "slot": 0, "x": 88, "y": 120},
+          {"op": "spr_affine", "slot": 0, "scale": 0.5},
+          {"op": "spr_show", "slot": 0},
+          {"op": "spr_move", "slot": 0, "vy": -1, "frames": 64},
+          {"op": "spr_affine", "slot": 0, "scale": 1.0, "frames": 64},
+          {"op": "wait_for", "what": "sprite", "slot": 0},
+          {"op": "sfx", "asset": "sound:RUMBLE"},
+          {"op": "repeat", "count": 8},
+          {"op": "bg_pos", "bg": 3, "x": 2, "y": 0},
+          {"op": "wait", "frames": 2},
+          {"op": "bg_pos", "bg": 3, "x": -2, "y": 0},
+          {"op": "wait", "frames": 2},
+          {"op": "next"},
+          {"op": "bg_pos", "bg": 3, "x": 0, "y": 0},
+          {"op": "fade", "dir": "out", "color": "white", "frames": 4},
+          {"op": "wait_for", "what": "fade"},
+          {"op": "fade", "dir": "in", "color": "white", "frames": 20},
+          {"op": "wait_for", "what": "fade"},
+          {"op": "text_box", "x": 0, "y": 14, "w": 30, "h": 6},
+          {"op": "use", "macro": "say", "line": "text:AWAKENING LINE 1"},
+          {"op": "use", "macro": "say", "line": "text:AWAKENING LINE 2"},
+          {"op": "use", "macro": "say", "line": "text:AWAKENING LINE 3"},
+          {"op": "text_box", "open": false},
+          {"op": "song_fade", "frames": 30},
+          {"op": "fade", "dir": "out", "color": "black", "frames": 30},
+          {"op": "wait_for", "what": "fade"}
+        ]
+      ]
+    },
+    {
+      "name": "skip_out",
+      "on": {"done": "exit:skipped"},
+      "tracks": [
+        [
+          {"op": "text_box", "open": false},
+          {"op": "song_fade", "frames": 16},
+          {"op": "fade", "dir": "out", "color": "black", "frames": 16},
+          {"op": "wait_for", "what": "fade"}
+        ]
+      ]
+    }
+  ]
+}

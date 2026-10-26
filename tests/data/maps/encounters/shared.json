@@ -1,0 +1,22 @@
+{
+ "schema": "capsule.encounters/1",
+ "editor": {
+  "notes": "Shared tables of the test world (tests/map_tests.cpp)."
+ },
+ "tables": [
+  {
+   "name": "water",
+   "rate": "1/1",
+   "entries": [
+    {
+     "species": "Tidepup",
+     "levels": [
+      10,
+      12
+     ],
+     "weight": 1
+    }
+   ]
+  }
+ ]
+}

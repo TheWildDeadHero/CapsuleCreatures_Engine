@@ -1,0 +1,15 @@
+{
+ "schema": "capsule.transfer_fixture/1",
+ "stats": [{"name": "hp"}, {"name": "mp"}, {"name": "ep"}, {"name": "attack"}, {"name": "magic"}, {"name": "defence"},
+           {"name": "protection"}, {"name": "intelligence"}, {"name": "agility"}],
+ "monster_layout": {
+  "party_size": 6,
+  "move_slots": 8,
+  "roles": ["species_key", "seed", "owner_id", "experience", "level", "moves", {"role": "stat_genes", "width": 4},
+            "trait", "passive_selector", {"role": "held_item", "width": 8}, "current_hp", {"custom": "current_mp", "width": 10},
+            {"custom": "current_ep", "width": 10}, "primary_status", {"role": "nickname", "count": 10},
+            {"role": "stat_training", "width": 6}, {"custom": "hatch_counter", "width": 11},
+            {"custom": "form", "width": 1}, {"custom": "egg", "width": 1}, {"custom": "bond", "width": 8}],
+  "status_bits": 4
+ }
+}

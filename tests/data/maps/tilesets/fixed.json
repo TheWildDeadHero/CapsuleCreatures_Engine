@@ -1,0 +1,112 @@
+{
+ "schema": "capsule.tileset/2",
+ "id": "fixed",
+ "editor": {
+  "notes": "I2 fixed-placement fixture (tests/map_tests.cpp fixed_tiles(), tests/test_map_compiler.py): VRAM tiles 0-7 and palette banks 0-1 are its own; indexed sheets (tile k of fixed_tiles.png is flat palette index k, fixed_spark.png's frames are indices 4 and 5); raw tilemap entries; an animation on tile 3 with a fixed phase."
+ },
+ "place": {
+  "sheet": "tiles",
+  "tile": 0,
+  "tiles": 8,
+  "palette": 0,
+  "palettes": 2
+ },
+ "sheets": [
+  {
+   "name": "tiles",
+   "image": "fixed_tiles.png",
+   "indexed": true
+  },
+  {
+   "name": "spark",
+   "image": "fixed_spark.png",
+   "indexed": true
+  }
+ ],
+ "palettes": [
+  [
+   "#000000",
+   "#208020",
+   "#604020",
+   "#f86060",
+   "#2040c0",
+   "#ffff00",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000"
+  ],
+  [
+   "#000000",
+   "#ffffff",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000",
+   "#000000"
+  ]
+ ],
+ "metatiles": [
+  {
+   "name": "floor",
+   "entries": [
+    1,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "name": "wall",
+   "entries": [
+    2,
+    1026,
+    2050,
+    3074
+   ]
+  },
+  {
+   "name": "glow",
+   "entries": [
+    3,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "name": "white",
+   "entries": [
+    4097,
+    4097,
+    4097,
+    4097
+   ]
+  }
+ ],
+ "animations": [
+  {
+   "name": "spark",
+   "at": 3,
+   "count": 1,
+   "frames": "spark",
+   "period": 4,
+   "phase": 1
+  }
+ ]
+}

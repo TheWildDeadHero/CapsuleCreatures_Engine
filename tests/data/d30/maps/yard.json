@@ -1,0 +1,300 @@
+{
+ "schema": "capsule.map/2",
+ "id": "yard",
+ "tilesets": [
+  "yard"
+ ],
+ "layers": [
+  {
+   "bg": 2,
+   "priority": 2
+  },
+  {
+   "bg": 1,
+   "priority": 1
+  }
+ ],
+ "metatiles": [
+  "yard/ground",
+  "yard/wall",
+  "yard/door",
+  "yard/mark",
+  "yard/flower_a",
+  "yard/flower_b",
+  "yard/flower_c"
+ ],
+ "behaviors": [
+  "normal",
+  "wall"
+ ],
+ "chunks": [
+  {
+   "at": [
+    0,
+    0
+   ],
+   "cells": [
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     65537,
+     65537,
+     65537,
+     65537,
+     0,
+     65537,
+     0,
+     65537
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     786432,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   ],
+   "layers": [
+    [
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      1,
+      1,
+      1,
+      1,
+      2,
+      1,
+      2,
+      1
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      4,
+      5,
+      6,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ],
+    null
+   ]
+  }
+ ],
+ "border": {
+  "size": [
+   1,
+   1
+  ],
+  "layers": [
+   [
+    1
+   ],
+   [
+    null
+   ]
+  ]
+ },
+ "backdrop": "#000000",
+ "events": {
+  "warps": [
+   {
+    "at": [
+     4,
+     2
+    ],
+    "to": "hall",
+    "warp": 0,
+    "trigger": "door",
+    "direction": "up",
+    "door": "door:GATE"
+   }
+  ]
+ },
+ "objects": [
+  {
+   "name": "front",
+   "at": [
+    4,
+    5
+   ],
+   "sprite": "sprite:GRID3",
+   "facing": "right"
+  },
+  {
+   "name": "raised",
+   "at": [
+    5,
+    5
+   ],
+   "sprite": "sprite:GRID4",
+   "facing": "right",
+   "elevation": 3
+  }
+ ],
+ "override_sets": [
+  {
+   "name": "bridge",
+   "cells": [
+    {
+     "cell": [
+      1,
+      1
+     ],
+     "layer": 0,
+     "metatile": "yard/mark"
+    },
+    {
+     "cell": [
+      2,
+      1
+     ],
+     "layer": 1,
+     "entries": [
+      4101,
+      5125,
+      6149,
+      7173
+     ]
+    }
+   ]
+  },
+  {
+   "name": "gate_open",
+   "persist": {
+    "flag": "gate_open"
+   },
+   "cells": [
+    {
+     "cell": [
+      3,
+      2
+     ],
+     "layer": 0,
+     "metatile": "yard/ground"
+    }
+   ]
+  }
+ ]
+}

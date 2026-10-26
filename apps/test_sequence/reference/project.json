@@ -1,0 +1,25 @@
+{
+  "schema": "capsule.project/1",
+  "name": "test_sequence",
+  "editor": {
+    "notes": "Test app for the sequence player's logic: recording port, live player state."
+  },
+  "rom": {
+    "title": "SEQ TEST",
+    "code": "CTSQ",
+    "maker": "00"
+  },
+  "sources": [
+    "src/test_sequence.cpp"
+  ],
+  "libraries": [
+    "test_kit"
+  ],
+  "sequences": {
+    "kSeqTitleTimeout": "../../tests/data/sequences/title_timeout.json",
+    "kSeqTitleSongEnd": "../../tests/data/sequences/title_song_end.json",
+    "kSeqCutscene": "../../tests/data/sequences/cutscene.json",
+    "kSeqCreditsMap": "../../tests/data/sequences/credits_map.json",
+    "kSeqCreditsShowcase": "../../tests/data/sequences/credits_showcase.json"
+  }
+}

@@ -1,0 +1,33 @@
+{
+   "schema": "capsule.bench/1",
+   "name": "rival_novice",
+   "description": "A rival with a presenter and two creatures: replacements, reward. (E9 neutral golden transcripts/rival_novice.txt)",
+   "expect": "../../data/starter/golden/transcripts/rival_novice.txt",
+   "rng": "default",
+   "format": "Single",
+   "seed": 7,
+   "parties": [
+      {
+         "side": 0,
+         "controller": "human",
+         "members": [
+            {
+               "species": "Tidepup",
+               "level": 12
+            }
+         ]
+      },
+      {
+         "side": 1,
+         "data": "Novice Kit"
+      }
+   ],
+   "choices": [
+      {
+         "move": 2
+      },
+      {
+         "move": 0
+      }
+   ]
+}

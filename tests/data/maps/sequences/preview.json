@@ -1,0 +1,23 @@
+{
+  "schema": "capsule.sequence/1",
+  "id": "test_preview",
+  "editor": {"notes": "Test fixture: a location preview (D-17): fade in, hold, fade out; A or B skips."},
+  "exits": ["done"],
+  "start": "show",
+  "stages": [
+    {
+      "name": "show",
+      "flags": ["reset_visuals"],
+      "skip": ["A", "B"],
+      "on": {"done": "exit:done", "skip": "exit:done"},
+      "tracks": [
+        [
+          {"op": "video_mode", "mode": 0},
+          {"op": "fade", "dir": "in", "color": "black", "frames": 4},
+          {"op": "wait", "frames": 20},
+          {"op": "fade", "dir": "out", "color": "black", "frames": 4}
+        ]
+      ]
+    }
+  ]
+}
