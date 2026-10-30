@@ -59,6 +59,18 @@ CAPSULE_EWRAM_BSS capsule::storage::Buffer<battle_ids::STORAGE_BYTES, battle_ids
 /// Their view.
 capsule::storage::Storage g_boxes = capsule::storage::view(g_box_bytes);
 
+/// D-40: the About page (SELECT on the menu): the engine's licence and the credit libgba asks of every GBA program.
+constexpr const char* kAbout[] = {"The Starter sample of the",
+                                  "CapsuleCreatures engine",
+                                  "(MPL-2.0).",
+                                  "",
+                                  "Based in part on the work of",
+                                  "devkitPro",
+                                  "(https://devkitpro.org).",
+                                  "",
+                                  "Desktop builds use SDL2",
+                                  "(https://libsdl.org)."};
+
 /// The Starter's sandbox.
 constexpr GameConfig kGame = {"STARTER BATTLE",
                               kStart,
@@ -75,7 +87,10 @@ constexpr GameConfig kGame = {"STARTER BATTLE",
                               "Double: AI vs AI",
                               kBag,
                               sizeof(kBag) / sizeof(kBag[0]),
-                              &g_boxes};
+                              &g_boxes,
+                              kAbout,
+                              sizeof(kAbout) / sizeof(kAbout[0])};
+static_assert(sizeof(kAbout) / sizeof(kAbout[0]) <= capsule::battle_kit::kAboutMaxLines);
 
 } // namespace
 

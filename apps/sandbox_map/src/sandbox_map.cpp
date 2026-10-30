@@ -13,11 +13,12 @@
 /// Controls while walking:
 /// - D-pad: walk (a new direction turns first); hold B to run.
 /// - A: talk to the person or read the sign in front (B-21, B-3).
-/// - SELECT: HUD on / off. L: collision view. R: noclip (walk through anything).
+/// - SELECT: HUD on / off (hidden at start). L: collision view. R: noclip (walk through anything).
 /// - START: menu (Up/Down, A: go to the chosen map, night on / off (the
 ///   world's encounter condition "night", D-12), the next vehicle class (A2:
 ///   class 1, swim, crosses water at 2 pixels a frame and cannot run) or back
-///   to the start; B: close).
+///   to the start; B: close; SELECT: the About page, the sample's credits,
+///   which A, B, SELECT or START close).
 ///
 /// Map events (B-3), objects (B-21) and eventing (D-17) run in the engine's
 /// overworld runner (capsule/overworld/overworld.h), the way a game runs
@@ -240,6 +241,29 @@ constexpr int kMenuItemCol = 3;      ///< Column of the menu items, after the cu
 constexpr int kShownCol = 18;        ///< Column of "(shown)".
 constexpr int kMenuHintRow1 = 18;    ///< Row of the first controls hint (B2: two rows, the menu grew by two).
 constexpr int kMenuHintRow2 = 19;    ///< Row of the second controls hint.
+constexpr int kHintMargin = 1;       ///< D-40: columns kept free right of the "SELECT about" hint.
+///@}
+
+/// @name About page (D-40: the sample's credits, SELECT on the menu)
+///@{
+constexpr char kAboutHint[] = "SELECT about";   ///< The menu's hint, right-aligned on its title row.
+/// Column of the hint (kAboutHint without its NUL, kHintMargin from the right edge).
+constexpr int kAboutHintCol = kCols - static_cast<int>(sizeof(kAboutHint) - 1) - kHintMargin;
+constexpr int kAboutTop = 3;         ///< Row of the first About line.
+constexpr int kAboutCol = 1;         ///< Column of the About lines.
+/// The About lines: the engine's licence and the credit libgba asks of every GBA program (as the Starter's).
+constexpr const char* kAbout[] = {"The Map Sandbox sample of the",
+                                  "CapsuleCreatures engine",
+                                  "(MPL-2.0).",
+                                  "",
+                                  "Based in part on the work of",
+                                  "devkitPro",
+                                  "(https://devkitpro.org).",
+                                  "",
+                                  "Desktop builds use SDL2",
+                                  "(https://libsdl.org)."};
+constexpr int kAboutLines = static_cast<int>(sizeof(kAbout) / sizeof(kAbout[0]));   ///< Its lines.
+static_assert(kAboutTop + kAboutLines < kMenuHintRow2, "the About lines must end above the controls hint");
 ///@}
 
 /// @name The party and bag (F1: the Starter's creatures leading the encounter rolls)
@@ -285,11 +309,15 @@ enum Overlay : uint8_t
 enum class Mode : uint8_t
 {
    Walking,
-   Menu
+   Menu,
+   About   ///< D-40: the About page (the sample's credits), opened from the menu.
 };
 
+/// Whether the HUD shows at start (hidden, so the sample opens on the plain map; SELECT shows it).
+constexpr bool kHudAtStart = false;
+
 Mode g_mode = Mode::Walking;   ///< Current mode.
-bool g_hud = true;             ///< HUD shown.
+bool g_hud = kHudAtStart;      ///< HUD shown.
 bool g_collision = false;      ///< Collision view shown.
 int g_map = 0;                 ///< Index of the shown map in map::kWorld.
 int g_cursor = 0;              ///< Menu row.
@@ -887,6 +915,7 @@ void draw_menu()
 {
    clear_console();
    put_ascii(INK_TITLE, 1, kMenuTitleRow, "MAP SANDBOX");
+   put_ascii(INK_OFF, kAboutHintCol, kMenuTitleRow, kAboutHint);   // D-40: the About page
    for (int i = 0; i < map::kWorld.map_count; ++i)
    {
       put_ascii(i == g_cursor ? INK_ON : INK_DIM, kMenuItemCol, kMenuTop + i, map_name(i));
@@ -939,6 +968,18 @@ void draw_menu()
 
    put_ascii(INK_OFF, 1, kMenuHintRow1, "D-pad walk  B run  A read");
    put_ascii(INK_OFF, 1, kMenuHintRow2, "SELECT hud L coll R noclip");
+}
+
+/// D-40: draws the About page (the sample's credits), one line per row, on the menu's layer.
+void draw_about()
+{
+   clear_console();
+   put_ascii(INK_TITLE, 1, kMenuTitleRow, "MAP SANDBOX");
+   for (int i = 0; i < kAboutLines; ++i)
+   {
+      put_ascii(INK_ON, kAboutCol, kAboutTop + i, kAbout[i]);
+   }
+   put_ascii(INK_OFF, 1, kMenuHintRow2, "B back");
 }
 
 /// First painted, unblocked cell of a map (where to put the walker).
@@ -1241,6 +1282,22 @@ void menu(const Pad& pad)
       setup_bg0();
       g_hud_up = true;
    }
+   else if (pad.hit(KEY_SELECT))
+   {   // D-40: the About page (BG0 stays the menu's: shown, no blend)
+      g_mode = Mode::About;
+      draw_about();
+   }
+}
+
+/// D-40: one frame of the About page: A, B, SELECT or START go back to the menu.
+/// @param pad  input
+void about_frame(const Pad& pad)
+{
+   if (pad.hit(KEY_A) || pad.hit(KEY_B) || pad.hit(KEY_SELECT) || pad.hit(KEY_START))
+   {
+      g_mode = Mode::Menu;
+      draw_menu();
+   }
 }
 
 } // namespace
@@ -1322,9 +1379,13 @@ int main()
       {
          walk(pad);
       }
-      else
+      else if (g_mode == Mode::Menu)
       {
          menu(pad);
+      }
+      else
+      {
+         about_frame(pad);
       }
       count_fast_steps();
       gfx::sprites::update();

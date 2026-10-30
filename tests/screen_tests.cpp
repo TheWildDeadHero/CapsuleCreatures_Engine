@@ -703,7 +703,7 @@ void arena_stack()
    CHECK(!g_child.taken() && g_parent.taken() && arena::used() == parent_end && screen::depth() == 1);
    g_parent->map[1] = 9;
 
-   // the same parent giving its block back for the child (pret's free-and-rebuild)
+   // the same parent giving its block back for the child (free, then rebuild)
    g_parent_frees = true;
    CHECK(screen::push_now(kArenaChild));
    run_frame();

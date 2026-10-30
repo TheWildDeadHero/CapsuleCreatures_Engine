@@ -4,7 +4,7 @@
     {
       "label": "GBA: build ROM",
       "type": "shell",
-      "command": "make -C platform/gba -j$(nproc)",
+      "command": "cmake --preset gba-debug && cmake --build --preset gba-debug",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -16,7 +16,7 @@
     {
       "label": "GBA: build ROM (release)",
       "type": "shell",
-      "command": "make -C platform/gba -j$(nproc) RELEASE=1",
+      "command": "cmake --preset gba-release && cmake --build --preset gba-release",
       "group": "build",
       "problemMatcher": [
         "$gcc"
@@ -25,14 +25,14 @@
     {
       "label": "GBA: run in mGBA",
       "type": "shell",
-      "command": "mgba-qt platform/gba/capsule_hello.gba",
+      "command": "mgba-qt build/gba-debug/capsule_hello.gba",
       "dependsOn": "GBA: build ROM",
       "problemMatcher": []
     },
     {
       "label": "GBA: run input viewer in mGBA",
       "type": "shell",
-      "command": "make -C platform/gba -j$(nproc) APP=input_viewer && mgba-qt platform/gba/capsule_input_viewer.gba",
+      "command": "cmake --preset gba-debug && cmake --build --preset gba-debug --target capsule_input_viewer && mgba-qt build/gba-debug/capsule_input_viewer.gba",
       "problemMatcher": [
         "$gcc"
       ]
@@ -40,7 +40,7 @@
     {
       "label": "GBA: clean",
       "type": "shell",
-      "command": "make -C platform/gba clean",
+      "command": "cmake --build --preset gba-debug --target clean",
       "problemMatcher": []
     },
     {

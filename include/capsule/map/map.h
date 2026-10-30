@@ -290,12 +290,12 @@ inline constexpr VehicleClass kDefaultVehicle{kDefaultWalkSpeed, kDefaultRunSpee
 /// walker to class 0 and takes the step (leaving the water after crossing it; world manifest `"dismount": true`).
 inline constexpr uint8_t kVehicleDismount = 2;
 
-/// VehicleClass::flags (I3): a step into something that blocks walks in place for one step's time (a bump; Gen III)
-/// instead of standing.
+/// VehicleClass::flags (I3): a step into something that blocks walks in place for one step's time (a bump, as the
+/// classic handheld games do) instead of standing.
 inline constexpr uint8_t kVehicleBumps = 4;
 
 /// VehicleClass::flags (I3): a walker that arrives on a cell with another direction held steps on in it without
-/// turning in place first (Gen III: a turn happens only from standing).
+/// turning in place first (as the classic handheld games: a turn happens only from standing).
 inline constexpr uint8_t kVehicleKeepsMoving = 8;
 
 /// @name Map::flags bits
@@ -338,8 +338,8 @@ inline constexpr uint8_t kEventDirectionMask = 7;   ///< Event::direction: the d
 
 /// @name Warp trigger bits of Event::direction (I3), above the direction
 /// A step warp has kAnyDirection and no bit; a press warp a direction. kWarpNeedsFacing: the walker must already face
-/// the direction (a press while facing elsewhere turns it first, as Gen III arrow warps). kWarpFromAdjacent: a door in
-/// a wall: it fires when the walker stands on the neighbouring cell on the side opposite the direction, faces the
+/// the direction (a press while facing elsewhere turns it first, as the classic handheld games' arrow warps).
+/// kWarpFromAdjacent: a door in a wall: it fires when the walker stands on the neighbouring cell on the side opposite the direction, faces the
 /// direction and presses it (the walker does not step; the game opens the door); implies kWarpNeedsFacing.
 ///@{
 inline constexpr uint8_t kWarpNeedsFacing = 0x10;    ///< The walker must face the warp's direction.
@@ -366,8 +366,8 @@ struct Event
 };
 CAPSULE_POD(Event, 12);
 
-/// Warp::map of a warp whose destination the game decides when it fires (I3: Gen III's dynamic warps, e.g. the
-/// exit of a shared interior back to where the player came from); Warp::x then holds the warp number the map data
+/// Warp::map of a warp whose destination the game decides when it fires (I3: the classic handheld games' dynamic
+/// warps, e.g. the exit of a shared interior back to where the player came from); Warp::x then holds the warp number the map data
 /// gives, y is 0.
 inline constexpr uint16_t kDynamicWarp = 0xFFFF;
 
@@ -382,7 +382,7 @@ struct Warp
 };
 CAPSULE_POD(Warp, 8);
 
-/// How a map object moves on its own (B-21: Gen III's set; D-17: RPG Maker
+/// How a map object moves on its own (B-21: the classic handheld games' set; D-17: RPG Maker
 /// XP's Approach and Custom).
 enum class Movement : uint8_t
 {
@@ -406,7 +406,7 @@ enum class Movement : uint8_t
 };
 
 /// @name Movement arguments (I3; ObjectTemplate / ObjectPage movement_arg and movement_flags)
-/// The movements I3 adds behave as the reference games' (Gen III) object movement types, frame for frame: each is a
+/// The movements I3 adds behave as the classic handheld games' object movement types, frame for frame: each is a
 /// small machine that faces, waits, chooses and steps in the same frames and draws random numbers (rng::gameplay)
 /// at the same points (capsule/field/field.h). Range boxes: a range of 0 on an axis leaves that axis unbounded.
 /// - Turn / Roam: movement_arg is a table of four choices (2 bits each, choice k = (arg >> 2k) & 3); a turn draws
@@ -583,8 +583,8 @@ inline constexpr uint8_t kAnimRestartOnShift = 4;   ///< A seamless shift restar
                                                     ///< instead of keeping the clock.
 ///@}
 
-/// I3: the box around the walker that map objects spawn in (Gen III's view): an object spawns when its template
-/// cell enters the box and goes when both its cell and its template cell are outside it; all zero: every object
+/// I3: the box around the walker that map objects spawn in (the classic handheld games' view): an object spawns when
+/// its template cell enters the box and goes when both its cell and its template cell are outside it; all zero: every object
 /// spawns at enter() (at most kMaxObjects templates). Cells left of / right of / above / below the walker's cell (the
 /// cell a step goes to, from the step's first frame).
 struct ObjectView

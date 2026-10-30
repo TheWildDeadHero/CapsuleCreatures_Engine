@@ -723,7 +723,7 @@ def build(manifest: str | Path, cache: str | Path, rng: str = DEFAULT_RNG, engin
    @param progress  callable(line): each configure / build output line as it comes (a studio's log), or None
    @param cancel    callable() -> true to stop the build (a studio's Cancel button), or None
    @param rng_source  the generator's source file (defines capsule::rng::next16()) for a name other than "default"
-                      (the reference repo's compat/gen3/src/random_method1.cpp for "method1")
+                      (the reference repo's compat/classic/src/random_method1.cpp for "method1")
    @return the bench executable
    @throws BenchCancelled when cancel stopped it
    @throws BenchError when configuring or building fails

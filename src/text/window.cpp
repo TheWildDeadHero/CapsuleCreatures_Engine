@@ -53,8 +53,9 @@ constexpr int kMaxCodesPerFrame = 4096;
 
 Window* g_cur = nullptr;   ///< The window the public call works on.
 
-/// C13a: a glyph byte's four pixels at 4bpp in the window's colours and the nibbles they write (pret's
-/// sFontHalfRowLookupTable, plus the mask of the entries that are not 0, which CopyGlyphToWindow skips).
+/// C13a: a glyph byte's four pixels at 4bpp in the window's colours and the nibbles they write (a half-row lookup
+/// table, as the handheld games' printer keeps one, plus the mask of the entries that are not 0, which copying a
+/// glyph into the window skips).
 struct GlyphLut
 {
    uint16_t value[kLutEntries];   ///< The pixels.
@@ -276,7 +277,7 @@ int advance(Code c)
    return advance_in(*cur().glyphs, c);
 }
 
-/// C13a: a glyph's rows a window draws (pret's gCurGlyph.height).
+/// C13a: a glyph's rows a window draws (the height of the glyph being drawn).
 /// @param font  the font
 /// @return PropFont::glyph_height, or the cell's height when it is 0 (or larger)
 int glyph_rows(const PropFont& font)
@@ -299,7 +300,7 @@ int glyph_width(Code c)
    return font.widths[c - f.first_code];
 }
 
-/// C13a: the entry a glyph pixel takes (1 ink, 2 shadow, 0 and 3 the background; pret's half-row table).
+/// C13a: the entry a glyph pixel takes (1 ink, 2 shadow, 0 and 3 the background; the half-row table's mapping).
 /// @param k  the colours
 /// @param v  the 2bpp value
 /// @return the entry (0: not written)
@@ -339,8 +340,8 @@ void ensure_lut(const GlyphColors& k)
    l.built = true;
 }
 
-/// C13a: draws a glyph into a canvas as CopyGlyphToWindow: its width's columns and its rows, clipped to the canvas;
-/// entries 0 are not written.
+/// C13a: draws a glyph into a canvas as the handheld games copy one: its width's columns and its rows, clipped to
+/// the canvas; entries 0 are not written.
 /// @param cv    the canvas
 /// @param font  the font
 /// @param c     the code
@@ -462,7 +463,7 @@ void clear_span(int width)
 }
 
 /// C13a: the pen after a glyph: its advance, or with Control::MinSpacing at least that many pixels (the rest
-/// cleared, as RenderText's minLetterSpacing).
+/// cleared, as the handheld games' minimum letter spacing does).
 /// @param c  the glyph's code
 void pen_after_glyph(Code c)
 {
@@ -496,7 +497,7 @@ void clear_all()
       touch(0);
       touch(count - 1);
    }
-   cur().pen_x = cur().start_x;   // C13a: the text's start (pret's page break: currentX = x, currentY = y)
+   cur().pen_x = cur().start_x;   // C13a: a page break: the pen back at the text's start
    cur().line_y = cur().start_y;
    cur().line = 0;
    cur().arrow_shown = false;
@@ -584,7 +585,7 @@ void scroll_step()
 
 /// Acts on a control escape.
 /// @param p  the escape (FC)
-/// @return C13a: true when it drew as a glyph does (Clear / ClearTo of a positive width: pret's RENDER_PRINT)
+/// @return C13a: true when it drew as a glyph does (Clear / ClearTo of a positive width count as drawn)
 bool control(const Code* p)
 {
    const auto k = static_cast<Control>(p[1]);
@@ -948,7 +949,7 @@ void counter_frame(bool pressed, bool held)
          }
          if (drew && !rush)
          {
-            return;   // C13a: a Clear of a positive width types as a glyph (RENDER_PRINT)
+            return;   // C13a: a Clear of a positive width types as a glyph (it counts as drawn)
          }
          continue;
       }
@@ -973,9 +974,10 @@ void counter_frame(bool pressed, bool held)
    }
 }
 
-/// Copies the changed tiles to VRAM: C10, queued to land at the next VBlank with the frame's other changes (pret's
-/// CopyWindowToVram is a DMA request served in VBlank), so a glyph shows in the same picture on every target (an
-/// immediate write showed on the GBA one frame before the sprites and the map, and before the desktop's picture).
+/// Copies the changed tiles to VRAM: C10, queued to land at the next VBlank with the frame's other changes (the
+/// handheld games copy a window to VRAM with a DMA request served in VBlank), so a glyph shows in the same picture on
+/// every target (an immediate write showed on the GBA one frame before the sprites and the map, and before the
+/// desktop's picture).
 /// The window's tiles stay valid until then (they live in the Window); a copy too large for one must-land request is
 /// split. open() copies at once instead: it writes the window's map cells at once, and its tiles must show with them
 /// (a queued clear showed the last text for a frame).
@@ -1398,7 +1400,7 @@ void set_colors(Window& w, uint8_t ink, uint8_t background, uint8_t shadow)
 namespace
 {
 
-/// line_width()'s walk (C13a: as pret's GetStringWidth for Clear, SkipTo, ClearTo and MinSpacing).
+/// line_width()'s walk (C13a: as the handheld games measure a string: Clear, SkipTo, ClearTo and MinSpacing).
 /// @param font         the font
 /// @param codes        encoded text
 /// @param min_spacing  the least glyph advance so far (0: off); MinSpacing in the text changes it

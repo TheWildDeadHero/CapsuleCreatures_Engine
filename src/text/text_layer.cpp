@@ -632,7 +632,7 @@ void open_box(uint8_t x, uint8_t y, uint8_t w, uint8_t h)
    if (g_banner.open)
    {
       close_banner();
-   }   // a message ends the banner (Emerald closes its popup too)
+   }   // a message ends the banner (the original games close their popup too)
    g_box = Box{1, x, y, w, h};
    prepare(0);   // also switches BG0's font to the opaque variant
    draw_frame(x, y, w, h, kFrameTile, bank_of(0));

@@ -49,6 +49,12 @@ option(CAPSULE_GBA_SAVE_SRAM "GBA: save to the cartridge's 32 KB SRAM instead of
 set(CAPSULE_GBA_STACK_RESERVE 2048 CACHE STRING "GBA: bytes of IWRAM the link keeps free for the user stack")
 # OFF only to measure a program that does not fit (the report then says by how much); never for a ROM that runs.
 option(CAPSULE_GBA_MEMORY_CHECKS "GBA: fail the link past EWRAM's end or below the stack reserve" ON)
+# D-5: every ROM is checked against its game's cartridge target, "rom": {"cart_mb": 8 | 16 | 32} in project.json
+# (cmake/gba_rom_size.cmake); a game that names none gets the GBA's whole ROM window.
+set(CAPSULE_GBA_ROM_WINDOW_MB 32)
+# D-40: on Windows a desktop game is a GUI program (no console window) in every build type but Debug; it still writes
+# its log lines to the console it was started from (src/hal/sdl2/hal_sdl2.cpp). ON keeps a console window always.
+option(CAPSULE_WINDOWS_CONSOLE "Windows: desktop games open a console window in every build type" OFF)
 
 # API reference: `cmake --build --preset <any> --target docs` writes
 # build/docs/html/index.html. Doxyfile fails on any undocumented item, which
@@ -62,10 +68,17 @@ if(DOXYGEN_FOUND)
       VERBATIM)
 endif()
 
-find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter)   # the tools use 3.10 type syntax at import
+# The engine's generators and checks are Python 3.10 or later (3.10 type syntax at import). GLOBAL: the imported
+# Python3::Interpreter target the engine's functions run is visible in a parent repository's directories too (the
+# engine as a subproject); Python3_EXECUTABLE goes to the parent with the other variables (end of this file).
+find_package(Python3 3.10 COMPONENTS Interpreter GLOBAL)
+if(NOT Python3_Interpreter_FOUND)
+   message(FATAL_ERROR "CapsuleCreatures needs Python 3.10 or later for its build tools, and CMake found none. "
+                       "Install it (the toolkit's ./setup does), or name it with -DPython3_EXECUTABLE=<path>.")
+endif()
 if(CAPSULE_PLATFORM STREQUAL "desktop")
    if(WIN32 AND NOT MINGW)
-      message(FATAL_ERROR "Windows builds use MinGW-w64 (GCC). Use the windows-* presets from an MSYS2 MINGW64 shell.")
+      message(FATAL_ERROR "Windows builds use MinGW-w64 (GCC). Use the windows-* presets from an MSYS2 UCRT64 shell.")
    endif()
    include(cmake/sdl2.cmake)   # pinned SDL2, built static with the project
 endif()
@@ -75,6 +88,9 @@ endif()
 # function-local statics need no guard: -fno-threadsafe-statics drops the
 # __cxa_guard calls (the GBA toolchain file sets it too).
 add_library(capsule_options INTERFACE)
+# C++20 for everything built with the engine's options, in a parent repository's directories too (the battle data
+# libraries and modules of cmake/capsule_battle.cmake link these options, not capsule_engine).
+target_compile_features(capsule_options INTERFACE cxx_std_20)
 target_compile_options(capsule_options INTERFACE
    -Wall -Wextra -Wpedantic -Wshadow
    -fno-rtti -fno-exceptions
@@ -251,6 +267,9 @@ add_library(capsule_engine STATIC
    ${CAPSULE_GENERATED_DIR}/input_map.cpp)
 target_include_directories(capsule_engine PUBLIC include)
 target_link_libraries(capsule_engine PUBLIC capsule_options)
+# The engine's headers are C++20 (consteval, ...): every target that links the engine, a parent repository's
+# games included, compiles as C++20 or later.
+target_compile_features(capsule_engine PUBLIC cxx_std_20)
 
 if(CAPSULE_PLATFORM STREQUAL "gba")
    add_library(libgba STATIC IMPORTED GLOBAL)   # global: games of a parent repository link it too
@@ -366,6 +385,11 @@ function(capsule_game dir)
    capsule_project_get(rom_title "${json}" rom title)
    capsule_project_get(rom_code "${json}" rom code)
    capsule_project_get(rom_maker "${json}" rom maker)
+   # D-5: the cartridge the ROM must fit (MB); without one, the GBA's whole 32 MB ROM window
+   capsule_project_get(rom_cart_mb "${json}" rom cart_mb)
+   if(NOT rom_cart_mb)
+      set(rom_cart_mb ${CAPSULE_GBA_ROM_WINDOW_MB})
+   endif()
    set(target capsule_${name})
    # Generated files of the game, in the binary folder of the directory that builds it.
    set(gen ${CMAKE_CURRENT_BINARY_DIR}/generated/${name})
@@ -380,6 +404,10 @@ function(capsule_game dir)
    add_executable(${target} ${sources})
    target_link_libraries(${target} PRIVATE capsule_engine)
    target_include_directories(${target} PRIVATE ${gen})
+   if(CAPSULE_PLATFORM STREQUAL "desktop" AND WIN32 AND NOT CAPSULE_WINDOWS_CONSOLE)
+      # the GUI subsystem; MinGW's start-up code still calls the game's plain main()
+      target_link_options(${target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:-mwindows>)
+   endif()
 
    # Build settings (A-2, A-5): the game's "build" object, checked by
    # tools/build_settings.py; cache variables override it.
@@ -609,6 +637,8 @@ function(capsule_game dir)
       add_custom_command(TARGET ${target} POST_BUILD
          COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${target}> ${rom}
          COMMAND ${CAPSULE_GBAFIX} ${rom} "-t${rom_title}" -c${rom_code} -m${rom_maker}
+         # D-5: the build fails when the ROM outgrows its cartridge target (cmake/gba_rom_size.cmake)
+         COMMAND ${CMAKE_COMMAND} -DROM=${rom} -DCART_MB=${rom_cart_mb} -P ${CAPSULE_ROOT}/cmake/gba_rom_size.cmake
          COMMENT "Building ROM ${target}.gba"
          VERBATIM)
    elseif(CAPSULE_PLATFORM STREQUAL "dreamcast" AND CAPSULE_MKDCDISC)
@@ -644,7 +674,7 @@ if(NOT CAPSULE_PLATFORM STREQUAL "headless")
    endif()
    # Test apps (one per engine system) and module sandboxes (one per gameplay
    # module); see README "Test apps" and "Conventions". The battle module's
-   # sandbox is apps/starter_battle (the Starter sample played); the Gen-3
+   # sandbox is apps/starter_battle (the Starter sample played); the classic
    # sample's sandbox_battle lives in the reference-ruleset repo (E11).
    if(CAPSULE_ENGINE_TESTS AND CAPSULE_TEST_APPS)
       foreach(app test_video test_vram test_script test_text test_sequence sandbox_sequence sandbox_map test_battle)
@@ -909,6 +939,9 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
       src/asset/asset.cpp
       src/asset/asset_table_empty.cpp
       src/battle/battle_empty.cpp
+      # the roll battle_empty.cpp draws with and the streams it reads (lld and ld64 need them even when unused)
+      src/battle/pipeline_roll.cpp
+      ${CAPSULE_TEST_RNG_SOURCES}
       src/gfx/background.cpp
       src/gfx/palette.cpp
       src/gfx/sprites.cpp
@@ -952,6 +985,10 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_i4_text.py)
    add_test(NAME generated_snapshot_tests
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_generated_snapshot.py)
+   # D-40 RP: the sample projects (apps/*/sample.json) stay copyable: paths out of an app lead only to the files
+   # its shared templates list, and its libraries are ones every game may link (docs/APPS.md, Sample projects).
+   add_test(NAME sample_project_tests
+            COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_sample_projects.py)
 
    # Code style (project rules: 3-space indents, braces on their own line, names, annotations, no magic numbers).
    add_test(NAME style_check
@@ -984,6 +1021,22 @@ include(cmake/parts/audio.cmake)       # M4 B1a: the audio core, its compiler an
 include(cmake/parts/audio_hal.cmake)   # M4 B1b: audio backends, output model, audio_render, test/sandbox apps (after audio.cmake)
 capsule_transfer_tests()            # record transfer v2 tests (cmake/parts/transfer.cmake)
 
+# D-40 RG: games outside the engine, built with the engine's own presets (the umbrella's `./build PRESET --game
+# <folder>` passes the folder and turns CAPSULE_ENGINE_TESTS off, so only the engine library and the game build).
+# Each entry is a game folder laid out like the apps (reference/project.json, data/, src/), e.g. one the Studio's
+# New game made; a relative folder is taken from the engine's folder. Not built headless, like every game.
+set(CAPSULE_GAMES "" CACHE STRING "Game folders (each with reference/project.json) to build beside the engine")
+if(NOT CAPSULE_PLATFORM STREQUAL "headless")
+   foreach(game_folder ${CAPSULE_GAMES})
+      file(TO_CMAKE_PATH "${game_folder}" game_folder)   # Windows folders come with backslashes (build.cmd)
+      get_filename_component(game_folder ${game_folder} ABSOLUTE BASE_DIR ${CAPSULE_ROOT})
+      if(NOT EXISTS ${game_folder}/reference/project.json)
+         message(FATAL_ERROR "CAPSULE_GAMES: ${game_folder} has no reference/project.json")
+      endif()
+      capsule_game(${game_folder})
+   endforeach()
+endif()
+
 # A parent repository (the engine as a subproject) calls the engine's functions (capsule_game(),
 # capsule_battle_test(), capsule_battle_bench(), capsule_rng(), ...) in its own directory: hand it the variables
 # they read.
@@ -996,7 +1049,8 @@ if(NOT PROJECT_IS_TOP_LEVEL)
                CAPSULE_BENCH_SOURCES CAPSULE_BENCH_TOOL CAPSULE_BENCH_HOST_FUNCTIONS
                CAPSULE_INVENTORY_SOURCES CAPSULE_SCRIPT_ITEMS_SOURCES CAPSULE_GROWTH_SOURCES
                CAPSULE_GROWTH_DEFAULT_SOURCES
-               CAPSULE_AUDIO_HOOK_SOURCES CAPSULE_AUDIO_MODEL_SOURCES CAPSULE_AUDIO_HEADLESS_SOURCES)
+               CAPSULE_AUDIO_HOOK_SOURCES CAPSULE_AUDIO_MODEL_SOURCES CAPSULE_AUDIO_HEADLESS_SOURCES
+               CAPSULE_GBA_ROM_WINDOW_MB Python3_EXECUTABLE)
       set(${var} "${${var}}" PARENT_SCOPE)
    endforeach()
    # P-10: the parent's games are LTO builds on the GBA too.

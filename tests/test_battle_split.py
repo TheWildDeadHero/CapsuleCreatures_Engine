@@ -23,7 +23,7 @@ import battle_split as split  # noqa: E402
 ## A parsed JSON object.
 JsonDict = dict[str, Any]
 
-## A data set the split tool wrote (the three-stat set; before E11 the Gen-3 sample, now in the reference repo).
+## A data set the split tool wrote (the three-stat set; before E11 the classic sample, now in the reference repo).
 FIXTURE = ROOT / "tests/data/battle_stats3/battle.json"
 ## Every engine battle manifest (samples and tests), all split.
 MANIFESTS = [ROOT / "samples/starter/battle.json", ROOT / "tests/data/battle_stats3/battle.json",

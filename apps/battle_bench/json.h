@@ -38,6 +38,28 @@ struct Value
    int line = 0;                                          ///< Where it starts (1 = first line).
    int column = 0;                                        ///< Where it starts (1 = first column).
 
+   // `members` holds Value inside a std::pair, so the vector's destructor needs Value complete. C++20 makes that
+   // destructor constexpr and Clang instantiates it with the class, where Value is still incomplete; declaring the
+   // destructor here and defining it in json.cpp moves that to a point where Value is complete.
+   /// An empty null value.
+   Value() = default;
+   /// A copy.
+   /// @param other  the value copied
+   Value(const Value& other) = default;
+   /// Takes another value's contents.
+   /// @param other  the value moved from
+   Value(Value&& other) = default;
+   /// Copies another value.
+   /// @param other  the value copied
+   /// @return this value
+   Value& operator=(const Value& other) = default;
+   /// Takes another value's contents.
+   /// @param other  the value moved from
+   /// @return this value
+   Value& operator=(Value&& other) = default;
+   /// Frees the strings and child values (defined in json.cpp, see above).
+   ~Value();
+
    /// A member of an object.
    /// @param key  its name
    /// @return the value, or nullptr (also when this is not an object)

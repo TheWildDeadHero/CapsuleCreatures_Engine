@@ -32,4 +32,4 @@ end Victory
 battler #0 Duskowl lv 30 hp 30/97 status none item none exp 8358 MP 43/63 EP 60/60
 battler #1 Clodbun lv 30 hp 0/112 status none item none exp 8160 MP 41/45 EP 71/76
 record 0.0 Duskowl lv 30 exp 8358 hp 30 status none/0 item none moves Shadow Bite Dread Gaze Night Pulse Gale Kick Cyclone Stardust Lull Fireball MP 43 EP 60
-record 1.0 Clodbun lv 30 exp 8160 hp 112 status none/0 item none moves Boulder Bash Harden Quake Tide Slam Flare Claw Dread Gaze Comet Punch MP 45 EP 76
+record 1.0 Clodbun lv 30 exp 8160 hp 112 status none/0 item none moves Boulder Bash Harden Quake Tide Slam Flare Claw Dread Gaze Orbit Knock MP 45 EP 76

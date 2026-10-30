@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""!Tests for manifest resources (D-25, E8): tools/battlec/resources.py through the battle compiler (the Gen-3
+"""!Tests for manifest resources (D-25, E8): tools/battlec/resources.py through the battle compiler (the classic
 sample's hit points and PP, the neutral fixture tests/data/battle_resources, refusals and the retired PP keys),
 the bench scenario's resource keys (tools/bench_scenario.py) and the migration helper tools/battle_resources.py
 (run by CTest, or directly)."""
@@ -30,7 +30,7 @@ from battlec import resources as bc_resources  # noqa: E402
 ## A parsed JSON object.
 JsonDict = dict[str, Any]
 
-## A PP-shaped neutral data set (hit points and a move resource pp with raises and a max formula; the Gen-3 sample
+## A PP-shaped neutral data set (hit points and a move resource pp with raises and a max formula; the classic sample
 ## played this part before E11 and lives in the reference repo now).
 SAMPLE = ROOT / "tests/data/battle_stats3/battle.json"
 ## The neutral resources fixture.

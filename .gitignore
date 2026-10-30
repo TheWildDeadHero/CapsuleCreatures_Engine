@@ -14,7 +14,7 @@
 # Editor state
 /.cache/
 
-# Imported third-party content (capsule-pret-import output; never committed here, D-3 / D-29)
+# Imported third-party content (importer output; never committed here, D-3 / D-29)
 assets-imported/
 
 # Other build folders, environments and caches (D-37: never committed)
@@ -26,3 +26,6 @@ __pycache__/
 *.pyc
 .local/
 *.sqlite
+
+# Local scratch work that must never be committed (developer rule): any name containing DO_NOT_ADD.
+*DO_NOT_ADD*

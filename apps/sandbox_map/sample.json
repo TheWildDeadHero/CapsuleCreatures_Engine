@@ -1,0 +1,16 @@
+{
+  "schema": "capsule.sample/1",
+  "id": "sandbox_map",
+  "name": "Map Sandbox",
+  "description": "The overworld: walk a small world of maps with scripts, signs, people, warps, encounters and field actions, with a debug overlay and a collision view.",
+  "version": 1,
+  "shared": [
+    {
+      "from": "../../samples/starter",
+      "to": "data/starter"
+    }
+  ],
+  "editor": {
+    "notes": "D-40 RP: this app as a sample project. The Studio's Open a sample... (capsule-studio sample copy) copies the app folder (less this file) into a new folder and the Starter sample's files (its template.json) into data/starter, and points the copy's manifests at them, so the copy builds as a game of its own (docs/APPS.md, Sample projects)."
+  }
+}

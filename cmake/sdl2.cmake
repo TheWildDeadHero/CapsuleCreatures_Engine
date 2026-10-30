@@ -8,8 +8,10 @@
 
 include(FetchContent)
 
-set(CAPSULE_SDL2_VERSION 2.30.9)
-set(CAPSULE_SDL2_SHA256  24b574f71c87a763f50704bbb630cbe38298d544a1f890f099a4696b1d6beba4)
+# 2.32.10 (2025-09-01): builds against PipeWire 1.4+ headers with GCC 14+, where 2.30.x stops at an
+# incompatible-pointer error in its PipeWire audio backend.
+set(CAPSULE_SDL2_VERSION 2.32.10)
+set(CAPSULE_SDL2_SHA256  5f5993c530f084535c65a6879e9b26ad441169b3e25d789d83287040a9ca5165)
 
 # Static library only; no tests, no install rules, no SDL2main (the HAL
 # defines SDL_MAIN_HANDLED so apps keep a plain main() on every OS).

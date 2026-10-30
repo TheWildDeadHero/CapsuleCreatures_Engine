@@ -21,6 +21,12 @@
 #include <cstdio>
 #include <cstdlib>
 
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN   // only the console functions
+#define NOMINMAX
+#include <windows.h>
+#endif
+
 namespace
 {
 
@@ -108,12 +114,57 @@ constexpr KeyBinding kBindings[] = {
    {SDL_SCANCODE_Q, input::KEY_L},
 };
 
+/// The window title, and the title of a fatal error's message box.
+constexpr const char* kTitle = "CapsuleCreatures Engine";
+
+/// A fatal error's message (the box shows at most this many characters).
+constexpr int kMessageChars = 512;
+
+/// True in a Windows GUI build started without a console or a redirected stream (CMake CAPSULE_WINDOWS_CONSOLE,
+/// D-40): its log lines go nowhere, so a fatal error also shows in a message box.
+bool g_no_console = false;
+
+#if defined(_WIN32)
+/// A Windows GUI build (no console window) starts without standard streams. Started from a console (cmd,
+/// PowerShell), it writes its log lines there; a redirected stream (2> log.txt) is kept as it is; started from
+/// Explorer, it has none (g_no_console).
+void attach_parent_console()
+{
+   const HANDLE err = GetStdHandle(STD_ERROR_HANDLE);
+   if (err != nullptr && err != INVALID_HANDLE_VALUE)
+   {
+      return;   // a console program, or the stream is redirected
+   }
+   if (AttachConsole(ATTACH_PARENT_PROCESS) == 0)
+   {
+      g_no_console = true;
+      return;
+   }
+   // "CONOUT$" is the attached console's screen buffer.
+   static_cast<void>(std::freopen("CONOUT$", "w", stderr));
+   static_cast<void>(std::freopen("CONOUT$", "w", stdout));
+}
+#endif
+
+/// Writes a fatal error to stderr (and, without a console, to a message box), then aborts.
+/// @param text  the message, without a newline
+[[noreturn]] void fatal(const char* text)
+{
+   std::fprintf(stderr, "%s\n", text);
+   if (g_no_console)
+   {
+      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, kTitle, text, g_sdl.window);
+   }
+   std::abort();
+}
+
 /// Reports an SDL failure and aborts.
 /// @param what  what was being done
 [[noreturn]] void fail(const char* what)
 {
-   std::fprintf(stderr, "capsule: %s: %s\n", what, SDL_GetError());
-   std::abort();
+   char text[kMessageChars];
+   std::snprintf(text, sizeof(text), "capsule: %s: %s", what, SDL_GetError());
+   fatal(text);
 }
 
 /// Sleeps until the next frame is due at the GBA frame rate (integer math only).
@@ -148,6 +199,9 @@ namespace capsule::hal::system
 
 void init()
 {
+#if defined(_WIN32)
+   attach_parent_console();
+#endif
    SDL_SetMainReady();
    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
    {
@@ -155,7 +209,7 @@ void init()
    }
    g_sdl.started = true;
    g_sdl.window =
-      SDL_CreateWindow("CapsuleCreatures Engine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+      SDL_CreateWindow(kTitle, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                        video::kScreenWidth * kWindowScale, video::kScreenHeight * kWindowScale, SDL_WINDOW_RESIZABLE);
    if (g_sdl.window == nullptr)
    {
@@ -246,8 +300,9 @@ uint32_t vblanks()
 
 void assert_failed(const char* expr, const char* file, int line)
 {
-   std::fprintf(stderr, "ENGINE_ASSERT failed: %s\n  at %s:%d\n", expr, file, line);
-   std::abort();
+   char text[kMessageChars];
+   std::snprintf(text, sizeof(text), "ENGINE_ASSERT failed: %s\n  at %s:%d", expr, file, line);
+   fatal(text);
 }
 
 } // namespace capsule::hal::system

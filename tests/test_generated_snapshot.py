@@ -215,7 +215,7 @@ RECORDED_CHANGES = {
    "sandbox_map/scripts.cpp": E9_SCRIPTS + "; " + E9_SANDBOX,
    "sandbox_map/script_ids.h": E9_SANDBOX,
    "test_effects_vm.cpp": E4B_EFFECTS + "; then " + E5_EFFECTS,
-   "test_effects_gen3.cpp": E4B_EFFECTS + "; then " + E5_EFFECTS,
+   "test_effects_classic.cpp": E4B_EFFECTS + "; then " + E5_EFFECTS,
 }
 
 ## Why every E8 battle output changed (D-25: resources are manifest records; PP is one of them).
@@ -250,7 +250,7 @@ E8_CHANGES = {
                                 "battle_conditions/battle_ids.h", "battle_tiers/battle_ids.h",
                                 "battle_turn/battle_ids.h", "battle_progress/battle_ids.h")},
    "test_effects_vm.cpp": E8_EFFECTS + "; the VM fixture's Everything move restores and raises resources",
-   "test_effects_gen3.cpp": E8_EFFECTS,
+   "test_effects_classic.cpp": E8_EFFECTS,
 }
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in E8_CHANGES.items()})
@@ -271,7 +271,7 @@ E9_CHANGES = {
    "battle_progress/test_battle.cpp": E9_BATTLE + "; the fixture's terms and escape_blocked text are neutral "
                                       "(Rival, Temperament, Talent, Coins; \"No running from this battle!\")",
    "test_effects_vm.cpp": E9_EFFECTS + "; the VM fixture's global \"odds\" owner uses it",
-   "test_effects_gen3.cpp": E9_EFFECTS,
+   "test_effects_classic.cpp": E9_EFFECTS,
    **{name: "E9: new, the Starter sample's battle data (samples/starter; the starter_golden_tests data set)"
       for name in ("starter/test_battle.cpp", "starter/battle_ids.h")},
    **{name: "E9: new, the Starter sample's game apps/starter_battle (samples/starter's battle data and shape art)"
@@ -300,9 +300,9 @@ R4_CHANGES = {
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in R4_CHANGES.items()})
 
-## E11: the Gen-3 sample and its outputs left for the reference-ruleset repo (tests/data/battle, the sandbox_battle
-## app, the Gen-3 effect examples): their earlier reasons go with them.
-E11_GONE = ("battle_ids.h", "test_battle.cpp", "test_effects_gen3.cpp")
+## E11: the classic sample and its outputs left for the reference-ruleset repo (tests/data/battle, the sandbox_battle
+## app, the classic effect examples): their earlier reasons go with them.
+E11_GONE = ("battle_ids.h", "test_battle.cpp", "test_effects_classic.cpp")
 for _name in [n for n in RECORDED_CHANGES if n in E11_GONE or n.startswith("sandbox_battle/")]:
    del RECORDED_CHANGES[_name]
 ## E11 reasons of the outputs that changed.
@@ -370,9 +370,9 @@ C2_CHANGES = {name: C2_STARTER for name in ("starter/test_battle.cpp", "starter_
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in C2_CHANGES.items()})
 
-## Why the neutral fixtures' outputs changed in C3 (no Gen-3 shapes left in the engine's neutral battle data; no
+## Why the neutral fixtures' outputs changed in C3 (no classic shapes left in the engine's neutral battle data; no
 ## table layout changes).
-C3_FIXTURES = ("C3: the neutral fixture takes the Starter's numbers instead of Gen-3-shaped ones: stages -4..+4 "
+C3_FIXTURES = ("C3: the neutral fixture takes the Starter's numbers instead of classic-shaped ones: stages -4..+4 "
                "(+25 % / -15 % a stage, accuracy 10 %), crit odds 1/20..3/10, level 50, stat cap 700, self-hit 30, "
                "the Starter's stat, damage, reward and escape formulas and damage pipeline, temperaments 115 / 88, "
                "growth 40n, and the neutral texts \"{user} blocks the way!\" and dazed")
@@ -567,7 +567,7 @@ TRANSFER_FIXTURES = ["six", "four", "shuffled", "twin"]
 ## Test sequences (CAPSULE_TEST_SEQUENCES).
 TEST_SEQUENCES = ["title_timeout", "title_song_end", "credits_map", "credits_showcase", "cutscene"]
 
-## Battle data sets of the battle tests (in the snapshot since E4c; the Gen-3 sample tests/data/battle moved to the
+## Battle data sets of the battle tests (in the snapshot since E4c; the classic sample tests/data/battle moved to the
 ## reference-ruleset repo in E11): (output folder, manifest under tests/data).
 BATTLE_TEST_SETS = [
    ("battle_stats3", "battle_stats3/battle.json"),
@@ -983,6 +983,18 @@ C13A_FONT = "C13a: PropFont::glyph_height (0) and a reserved byte replace reserv
 C13A_CHANGES = {name: C13A_FONT for name in ("sandbox_menu/assets.cpp", "sandbox_screen/assets.cpp")}
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in C13A_CHANGES.items()})
+
+## Why the Starter's outputs changed in D-40 (the release): the Starter's Cosmic contact move (id 22) has an invented
+## name, Orbit Knock (same length and numbers; the name it had was borrowed): its name text, its comments and its id
+## MOVE_ORBIT_KNOCK. Nothing else changed.
+D40_RENAME = "D-40: the Starter's move 22 is named Orbit Knock (its name text, comments and MOVE_ORBIT_KNOCK)"
+D40_CHANGES = {name: D40_RENAME for name in ("sandbox_map/battle.cpp", "sandbox_map/battle_ids.h",
+                                             "sandbox_party/battle.cpp", "sandbox_party/battle_ids.h",
+                                             "starter/battle_ids.h", "starter/test_battle.cpp",
+                                             "starter_battle/battle.cpp", "starter_battle/battle_ids.h",
+                                             "test_battle/battle.cpp", "test_battle/battle_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in D40_CHANGES.items()})
 
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).

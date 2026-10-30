@@ -62,4 +62,4 @@ battler #2 Clodbun lv 14 hp 0/56 status none item Vigor Bar exp 2016 MP 20/20 EP
 battler #3 Tidepup lv 14 hp 0/51 status none item none exp 2016 MP 28/28 EP 28/28
 battler #4 Emberkit lv 15 hp 0/45 status none item none exp 2280 MP 26/26 EP 24/31
 record 0.0 Clodbun lv 18 exp 3313 hp 79 status none/0 item none moves Boulder Bash Harden Quake Tide Slam Flare Claw MP 11 EP 49
-record 0.1 Starmote lv 18 exp 2521 hp 10 status none/0 item none moves Comet Punch Stardust Lull Starfall Prism Beam Night Pulse MP 21 EP 39
+record 0.1 Starmote lv 18 exp 2521 hp 10 status none/0 item none moves Orbit Knock Stardust Lull Starfall Prism Beam Night Pulse MP 21 EP 39

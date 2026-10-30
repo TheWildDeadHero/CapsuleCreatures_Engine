@@ -400,7 +400,7 @@ def compile_hit_category_by_type(spec: Json, type_entries: Sequence[Json], categ
                                  categories: Sequence[Mapping[str, int]], by_type: list[int] | None,
                                  where: str) -> list[int] | None:
    """!The categories hit types give (C5, BattleData::hit_categories): a damaging move whose hit type is not its own
-   (the ruleset's move_type point changed it: Hidden Power, Weather Ball) hits with the category this table names for
+   (the ruleset's move_type point changed it: a move typed in use) hits with the category this table names for
    the hit type: `"hit_category_by_type": {type: damaging category}`, every type listed, for a structure whose moves
    state their categories. A structure with category_by_type needs none: its table is used (a damaging move's
    category is its type's, the hit type's too), and giving both is refused.

@@ -287,8 +287,9 @@ constexpr text::Code ctl(text::Control k)
    return static_cast<text::Code>(k);
 }
 
-/// C13a (R9 M2 / M3, V2): glyphs clipped to their width, their rows and the window as CopyGlyphToWindow; a glyph's 0
-/// pixels take the background; Fill, Clear, SkipTo, ClearTo, MinSpacing as RenderText; ShiftDown from the start.
+/// C13a (R9 M2 / M3, V2): glyphs clipped to their width, their rows and the window as the handheld games clip them;
+/// a glyph's 0 pixels take the background; Fill, Clear, SkipTo, ClearTo, MinSpacing as the handheld games render
+/// them; ShiftDown from the start.
 void handheld_rules()
 {
    constexpr text::Code F = text::kCodeControl;

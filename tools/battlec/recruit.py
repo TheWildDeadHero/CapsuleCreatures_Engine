@@ -13,7 +13,7 @@ The section is {"checks", "rate", "status_bonus", "owned", "refusal_consumes", "
   - owned: "refuse" (a battler of an owned party cannot be recruited: the logic fails, the item stays) or "allow";
   - refusal_consumes (C6): the refusals that still use the item up (REFUSALS: refused, blocked, no_room; default
     none): the logic goes on (as after a failed check) instead of failing, so the Item action consumes the item
-    (Gen-3: a ball thrown at an owned creature is lost);
+    (classic: a ball thrown at an owned creature is lost);
   - keep: the battle changes the record keeps (KEEPS: hp, status, resources; what it does not keep is reset: pools
     full, no status); default every one;
   - item_role: a record role that stores the item used (optional);

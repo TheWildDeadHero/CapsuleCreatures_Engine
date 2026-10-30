@@ -497,7 +497,7 @@ class BattleTests(unittest.TestCase):
       self.assertEqual(t["species"], {"one": "Species", "many": "Species"})
       self.assertEqual(t["item"]["one"], "Held item")
       with self.assertRaisesRegex(bc.ManifestError, "unknown concept"):
-         bc.compile_terms({"pokemon": "x"}, "t")
+         bc.compile_terms({"not_a_concept": "x"}, "t")
       with self.assertRaisesRegex(bc.ManifestError, "1-24 characters"):
          bc.compile_terms({"party": ""}, "t")
 

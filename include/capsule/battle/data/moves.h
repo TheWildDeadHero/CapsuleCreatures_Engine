@@ -87,7 +87,7 @@ enum DelayedAtUse : uint8_t
    DELAYED_LEVEL,    ///< Its level.
    DELAYED_TYPES,    ///< Its types (the same-type check).
    DELAYED_TARGET_DEFENSE,   ///< The target's stat that resists the move's category, and its stage (the battler
-                             ///< at the position when the move was used; Gen-3-style damage worked out on use).
+                             ///< at the position when the move was used; classic-style damage worked out on use).
    NUM_DELAYED_AT_USE
 };
 

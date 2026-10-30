@@ -63,7 +63,7 @@ move "Pump" {
    }
 }
 
-# Mirror-move-like: the last move that reached the user, unless it cannot be mirrored (move flag unmirrorable).
+# A copying move: the last move that reached the user, unless it cannot be mirrored (move flag unmirrorable).
 move "Echo" {
    use {
       if user.targeted_by == none {

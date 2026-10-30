@@ -3,7 +3,7 @@
 /// (tests/support/effect_mock_host.h): every program of tests/data/effects/vm_ops.ceffect (every opcode the compiler
 /// emits), hand-assembled programs for the opcodes it does not emit and for every fault, yield / ask / resume,
 /// nesting and the depth limit, determinism of the draws and the generated point handlers. The D-23 section 1.7
-/// Gen-3 examples run against the same mock host in the reference-ruleset repo (E11).
+/// Classic examples run against the same mock host in the reference-ruleset repo (E11).
 #include "capsule/battle/effect.h"
 
 #include <cstdio>

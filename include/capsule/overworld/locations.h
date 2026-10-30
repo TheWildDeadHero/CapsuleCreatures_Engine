@@ -1,8 +1,8 @@
 /// @file
-/// Locations (D-17): named places maps belong to (like Emerald's map
-/// sections). A location has a name, a banner style (the name banner that
-/// slides in when the player enters it, Emerald / Platinum) and optional
-/// previews (a short sequence shown full screen between maps, FRLG / HGSS).
+/// Locations (D-17): named places maps belong to (like the map sections of
+/// the original handheld games). A location has a name, a banner style (the
+/// name banner that slides in when the player enters it) and optional
+/// previews (a short sequence shown full screen between maps).
 /// Generated with the world by tools/map_compiler.py
 /// (tools/location_compiler.py); the engine carries an empty default.
 #pragma once

@@ -101,3 +101,15 @@ formulas.
   (`test_rules()` checks the main numbers directly). A changed rule changes the golden transcripts: re-record them once
   (`CAPSULE_GOLDEN_RECORD=1 ctest -R starter_golden_tests`) and say why. The snapshot needs its reason too
   (`tests/test_generated_snapshot.py`).
+
+## Release downloads and credits
+
+Each CapsuleCreatures release carries this sample, played by `apps/starter_battle`, next to the overworld's map
+sandbox (`apps/sandbox_map`), for every platform: the GBA ROMs and the Linux x86_64, Windows x64 and macOS
+universal programs (the umbrella's `.github/workflows/release.yml`; each download's README.txt gives the controls
+and how to open it). Both ROMs target the smallest D-5 cartridge, 8 MB (`reference/project.json` `rom.cart_mb`;
+the build fails past it, `cmake/gba_rom_size.cmake`); the sample's ROM is about 166 KB.
+
+Credits: the Starter's creatures, moves, numbers and shape art are the engine's own, made for this sample. The GBA
+build is based in part on the work of devkitPro (https://devkitpro.org): it links devkitPro's libgba and
+devkitARM's start-up code. The desktop builds use SDL2 (https://libsdl.org, zlib licence).

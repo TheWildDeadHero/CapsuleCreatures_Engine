@@ -50,7 +50,7 @@
     {
       "name": "windows-debug",
       "inherits": "windows-base",
-      "displayName": "Windows (debug) - MinGW-w64, MSYS2 MINGW64 shell",
+      "displayName": "Windows (debug) - MinGW-w64, MSYS2 UCRT64 shell",
       "binaryDir": "${sourceDir}/build/windows-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -59,7 +59,7 @@
     {
       "name": "windows-release",
       "inherits": "windows-base",
-      "displayName": "Windows (release, asserts off) - MinGW-w64, MSYS2 MINGW64 shell",
+      "displayName": "Windows (release, asserts off) - MinGW-w64, MSYS2 UCRT64 shell",
       "binaryDir": "${sourceDir}/build/windows-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",

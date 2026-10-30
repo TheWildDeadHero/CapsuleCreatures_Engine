@@ -2,8 +2,9 @@
 # repository that adds the engine as a subproject (the reference-ruleset repo,
 # D-23 section 4; a game's test tree). Included from CMakeLists.txt after
 # cmake/parts/rng.cmake and cmake/parts/battle.cmake; the functions run in the
-# caller's directory and need Python3::Interpreter there (the caller's own
-# find_package(Python3 ...)).
+# caller's directory and use Python3::Interpreter, which the engine's
+# CMakeLists.txt finds as a global imported target (the caller needs no
+# find_package(Python3 ...) of its own).
 #
 # - capsule_battle_data(<dir> <manifest> [DEPENDS ...] [COMMENT ...]): compiles
 #   a battle manifest (capsule.battle/1 with its structure manifest and ruleset)

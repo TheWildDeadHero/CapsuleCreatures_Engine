@@ -127,7 +127,7 @@ endif()
 
 if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
    # The engine's bench: the Starter sample (E9) with the engine's default generator, so its scenarios replay the
-   # neutral goldens. The Gen-3 sample's bench and its WP-2 scenarios live in the reference-ruleset repo (E11).
+   # neutral goldens. The classic sample's bench and its WP-2 scenarios live in the reference-ruleset repo (E11).
    capsule_battle_bench(capsule_starter_bench ${CAPSULE_ROOT}/samples/starter/battle.json RNG default)
 
    # The Starter sample's scenarios: each tests/bench/starter/*.json reproduces its neutral golden transcript.

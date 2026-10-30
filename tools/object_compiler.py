@@ -29,14 +29,14 @@ Map (`capsule.map/2`), optional key:
 - **name**: an identifier, unique in the map. world_ids.h names the object's
   local ID OBJ_<MAP>_<NAME> for game code; scripts address objects by local
   ID (the list index, as a number or a script constant), `self` or `player`.
-- **movement** (Gen III's set and RPG Maker XP's): `static` (stands facing
+- **movement** (the classic handheld games' set and RPG Maker XP's): `static` (stands facing
   its direction), `look_around` (turns to a random direction now and then),
   `wander` (random steps inside its range box around its cell),
   `pace_vertical` / `pace_horizontal` (walks to and fro within its range),
   `approach` (steps towards the player), `custom` (follows its "route";
   tools/route_compiler.py lists the steps). `schedule` needs the world clock
   (C-05) and is refused until it exists.
-- I3: the reference games' (Gen III) object movement types, frame for frame (capsule/map/map.h "Movement
+- I3: the classic handheld games' object movement types, frame for frame (capsule/map/map.h "Movement
   arguments"; their settings go in "movement_args"): `turn` (turns after a random delay to a random entry of
   "choices": 2 or 4 directions, 4 may repeat one; "delays": medium or short; "watch_runner": true turns a spotter to
   a running player in its sight box), `roam` (likewise, and steps there when it can), `rotate` ("clockwise",

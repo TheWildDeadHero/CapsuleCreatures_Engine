@@ -1,7 +1,7 @@
 {
  "schema": "capsule.ruleset/2",
  "editor": {
-  "notes": "Ruleset of the three-stat test data (no points): the Starter's stat, damage, exp, reward and escape formulas and its damage pipeline (C3: no Gen-3 shapes), pp_max adding a quarter of the base PP per raise."
+  "notes": "Ruleset of the three-stat test data (no points): the Starter's stat, damage, exp, reward and escape formulas and its damage pipeline (C3: no classic shapes), pp_max adding a quarter of the base PP per raise."
  },
  "constants": {
   "HP_FLAT": 10,

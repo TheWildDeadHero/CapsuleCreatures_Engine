@@ -25,6 +25,7 @@ set(CAPSULE_BATTLE_SOURCES
    src/battle/move.cpp
    src/battle/parties.cpp
    src/battle/pipeline.cpp
+   src/battle/pipeline_roll.cpp
    src/battle/progress.cpp
    src/battle/recruit.cpp
    src/battle/resources.cpp

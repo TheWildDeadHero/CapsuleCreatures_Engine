@@ -6,7 +6,7 @@ forms, the legacy lowering, point_runner()), on the Starter sample.
 
 The proof that the Python evaluator reproduces the engine line by line over the
 WP-2 damage and preview grids moved with those goldens to the reference-ruleset
-repo (gen3/tests/test_gen3_pipelines.py, E11)."""
+repo (classic/tests/test_classic_pipelines.py, E11)."""
 from __future__ import annotations
 
 import json

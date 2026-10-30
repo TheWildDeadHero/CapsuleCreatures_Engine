@@ -460,6 +460,9 @@ struct Reader
 
 } // namespace
 
+// Defined here, where Value is complete (json.h says why).
+Value::~Value() = default;
+
 const Value* Value::find(const char* key) const
 {
    if (kind != Kind::Object)

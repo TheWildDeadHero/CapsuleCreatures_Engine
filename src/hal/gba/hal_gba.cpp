@@ -321,6 +321,28 @@ uint32_t map_cell_index(video::BgIndex bg, int x, int y)
           (static_cast<uint32_t>(x) & kScreenBlockTileMask);
 }
 
+/// N2: window 0's per-scanline edges of the frame last committed (video::set_window_lines()), or nullptr: a lag
+/// frame's VBlank arms their transfer again.
+const uint16_t* g_line_winlines = nullptr;
+
+/// N2: (re)starts DMA channel 0 for the committed window lines: line 0's edges written now, then one entry after
+/// each line's HBlank (the hardware runs no HBlank DMA during VBlank). Stops the last frame's transfer first, so
+/// the repeating transfer never runs past the table's end, a lag frame's included (its source address keeps
+/// counting up otherwise).
+CAPSULE_IWRAM_CODE void arm_line_dma()
+{
+   io32(kRegDma0Cnt) = 0;
+   const uint16_t* lines = g_line_winlines;
+   if (lines == nullptr)
+   {
+      return;
+   }
+   io16(kRegWin0h) = lines[0];
+   io32(kRegDma0Sad) = reinterpret_cast<uint32_t>(lines + 1);
+   io32(kRegDma0Dad) = kIoBase + kRegWin0h;
+   io32(kRegDma0Cnt) = kDma0WindowLines;
+}
+
 /// Copies the register and OAM shadows to the hardware (called at the start
 /// of VBlank). Runs from IWRAM: it is the first thing every VBlank does.
 CAPSULE_IWRAM_CODE void commit_registers()
@@ -353,14 +375,8 @@ CAPSULE_IWRAM_CODE void commit_registers()
    io16(kRegWinin) = g_shadow.winin;
    io16(kRegWinout) = g_shadow.winout;
    // N2: per-scanline window 0 edges: line 0's now, then an HBlank DMA writes line y + 1's after line y
-   io32(kRegDma0Cnt) = 0;   // the last frame's transfer stops before it is set up again
-   if (g_shadow.winlines != nullptr)
-   {
-      io16(kRegWin0h) = g_shadow.winlines[0];
-      io32(kRegDma0Sad) = reinterpret_cast<uint32_t>(g_shadow.winlines + 1);
-      io32(kRegDma0Dad) = kIoBase + kRegWin0h;
-      io32(kRegDma0Cnt) = kDma0WindowLines;
-   }
+   g_line_winlines = g_shadow.winlines;
+   arm_line_dma();
    io16(kRegBldcnt) = g_shadow.bldcnt;
    io16(kRegBldalpha) = g_shadow.bldalpha;
    io16(kRegBldy) = g_shadow.bldy;
@@ -403,6 +419,10 @@ void on_vblank()
          vram::flush();
       }
       g_frame_ready = 0;
+   }
+   else
+   {
+      arm_line_dma();   // N2: a lag frame shows the committed window lines again (never past the table's end)
    }
    // M4 (D-34): the sound driver steps after the frame's commit (nothing when audio was never started: no audio
    // code is linked then). C14a (the audio clock): once per game frame, as on every other target; this build's own

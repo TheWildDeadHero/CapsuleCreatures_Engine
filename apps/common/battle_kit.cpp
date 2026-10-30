@@ -102,6 +102,7 @@ constexpr int kRefusalTextCodes = 64;        ///< Buffer for the "no running" me
 /// @name Scenario menu layout
 ///@{
 constexpr int kMenuTop = 2;               ///< Row of the first scenario.
+constexpr int kAboutTop = 2;              ///< D-40: row of the first About line.
 constexpr int kMenuNameCol = 3;           ///< Column of the scenario names, after the cursor.
 constexpr int kPartyNameBuffer = 20;    ///< Buffer for a party name.
 constexpr int kPartyNameChars = 18;     ///< Letters of a party name shown.
@@ -245,6 +246,7 @@ enum class Mode : uint8_t
    Menu,
    Battle,
    Boxes,     ///< The storage boxes page (G3).
+   About,     ///< D-40: the game's About page (its credits).
 };
 
 /// What the battle presentation is doing.
@@ -605,7 +607,29 @@ void draw_menu()
          }
       }
    }
-   controls(text::encode("Up/Down choose  A start").codes, text::encode("").codes);
+   if (g_game->about_count > 0)
+   {   // D-40: the game has an About page
+      controls(text::encode("Up/Down choose  A start").codes, text::encode("SELECT about").codes);
+   }
+   else
+   {
+      controls(text::encode("Up/Down choose  A start").codes, text::encode("").codes);
+   }
+}
+
+/// D-40: draws the game's About page (its credits), one line per row.
+void draw_about()
+{
+   clear_console();
+   clear_panels();
+   put_ascii(INK_TITLE, 1, 0, g_game->title);
+   constexpr int kMaxLines = battle_kit::kAboutMaxLines;
+   const int lines = g_game->about_count < kMaxLines ? g_game->about_count : kMaxLines;
+   for (int i = 0; i < lines; ++i)
+   {
+      put_ascii(INK_ON, 1, kAboutTop + i, g_game->about[i]);
+   }
+   controls(text::encode("B back").codes, text::encode("").codes);
 }
 
 // -- battle HUD -------------------------------------------------------------------------------------
@@ -1911,6 +1935,22 @@ void menu_frame(const Pad& pad)
    {
       start_scenario(g_cursor);
    }
+   else if (pad.hit(KEY_SELECT) && g_game->about_count > 0)
+   {   // D-40: the About page
+      g_mode = Mode::About;
+      draw_about();
+   }
+}
+
+/// D-40: one frame of the About page: B, A or SELECT go back to the menu.
+/// @param pad  input
+void about_frame(const Pad& pad)
+{
+   if (pad.hit(KEY_B) || pad.hit(KEY_A) || pad.hit(KEY_SELECT))
+   {
+      g_mode = Mode::Menu;
+      draw_menu();
+   }
 }
 
 } // namespace
@@ -1940,6 +1980,10 @@ int capsule::battle_kit::run(const GameConfig& game)
       else if (g_mode == Mode::Boxes)
       {
          boxes_frame(pad);
+      }
+      else if (g_mode == Mode::About)
+      {
+         about_frame(pad);
       }
       else
       {

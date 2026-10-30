@@ -2,7 +2,7 @@
 # against the engine's neutral battle data sets (each built into its own test
 # program: kData is per program; cmake/capsule_battle.cmake), the Starter
 # sample and its goldens, and the battle compiler's Python tests. Included from
-# CMakeLists.txt inside its test section (enable_testing() has run). The Gen-3
+# CMakeLists.txt inside its test section (enable_testing() has run). The classic
 # reference sample, its goldens and its tests live in the reference-ruleset
 # repository (D-23 section 4, E11).
 

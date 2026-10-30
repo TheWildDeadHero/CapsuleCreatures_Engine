@@ -500,7 +500,7 @@ enum class Ref : uint8_t
    Human,           ///< 1 when the battler's party is human-controlled (E13b).
    Unowned,         ///< 1 when the battler's party is unowned (PARTY_UNOWNED; E13b).
    Gene,            ///< A stat's gene (arg = stat; the stat_genes role's value the battler was built with; E13b).
-   PlayerSide,      ///< 1 when the battler is on the human player's side (player_side(); C5: Pay Day's coins).
+   PlayerSide,      ///< 1 when the battler is on the human player's side (player_side(); C5: coin-scatter coins).
    Absorbed,        ///< 1 when a decoy took the latest hit of the move in progress (Op::Absorb; G1).
    FieldEffectActive,     ///< 1 while timed field effect arg runs (capsule/script/field_effects.h; F1).
    FieldEffectRemaining,  ///< What timed field effect arg has left (steps or minutes; F1).

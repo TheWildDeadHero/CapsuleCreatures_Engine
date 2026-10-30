@@ -388,7 +388,7 @@ static void TitleTests()
       Frame(p, B | SELECT | UP, UP);
       CHECK(p.status == Status::Exited && p.exit_code == kSeqTitleTimeoutExit_CLEAR_SAVE);
    }
-   {   // Emerald-style: song end loops back; skip snaps; guarded RTC combo
+   {   // title screen: song end loops back; skip snaps; guarded RTC combo
       mock::reset();
       Player p;
       start(p, kSeqTitleSongEnd);
@@ -486,7 +486,7 @@ static void CreditsTests()
       Frame(p);
       CHECK(mock::sprite_loads - loads == 2);           // next scene's riders
    }
-   {   // FRLG-style: window slit, map camera pan, showcase cry, THE END on A
+   {   // credits: window slit, map camera pan, showcase cry, THE END on A
       enum
       {
          OPEN,

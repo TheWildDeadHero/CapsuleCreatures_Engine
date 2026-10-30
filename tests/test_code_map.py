@@ -213,7 +213,7 @@ class CodeMapTests(unittest.TestCase):
       """!Builds, environments, generated, reference and third-party code and nested repositories are left out."""
       with tempfile.TemporaryDirectory(prefix="capsule_code_map_") as folder:
          root = make_repo(Path(folder))
-         for skipped in ("build", "build-gba", ".venv/lib", "generated", "ref_submodules/pret", "submodules/lib",
+         for skipped in ("build", "build-gba", ".venv/lib", "generated", "ref_submodules/example", "submodules/lib",
                          "third_party", "nested"):
             (root / skipped).mkdir(parents=True)
             (root / skipped / "ghost.py").write_text('"""!Ghost."""\n', encoding="utf-8")

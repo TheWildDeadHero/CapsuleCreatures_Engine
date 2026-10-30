@@ -852,7 +852,7 @@ void update_transition()
 /// @param self  its object, or field::kNoObject
 void run_main(uint16_t s, uint8_t self)
 {
-   hide_banner();   // Emerald closes the name popup when a script starts
+   hide_banner();   // the original games close the name popup when a script starts
    script::start(g.main, script::ScriptId{s}, self);
 }
 

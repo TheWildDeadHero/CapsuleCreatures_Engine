@@ -12,7 +12,7 @@ import text_encoder
 from .common import PAIR, Json, ManifestError, Texts
 
 ## Engine message keys at their message ids (capsule::battle::Msg names the ones the engine says itself, with these
-## values; the optional ones keep their ids, C4: the Gen-3-shaped keys stay for the manifests that give them).
+## values; the optional ones keep their ids, C4: the classic-shaped keys stay for the manifests that give them).
 MESSAGES = [
    "appeared", "party_challenge", "send_out", "party_sends", "come_back", "used_move", "missed", "no_effect",
    "super_effective", "not_very_effective", "critical", "hit_count", "fainted", "stat_up", "stat_up2",

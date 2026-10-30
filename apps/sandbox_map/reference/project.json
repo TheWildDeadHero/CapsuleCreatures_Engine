@@ -7,7 +7,8 @@
   "rom": {
     "title": "MAP SANDBOX",
     "code": "CSQM",
-    "maker": "00"
+    "maker": "00",
+    "cart_mb": 8
   },
   "sources": [
     "src/sandbox_map.cpp"

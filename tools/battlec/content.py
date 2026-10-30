@@ -27,7 +27,7 @@ OWNER_KIND = {"passives": "passive", "items": "item"}
 ## tools/battle_ai.py migrates a flag list).
 AI_FLAGS = list(FLAG_RULES)
 ## The passive slots of a structure without "passive_slots" (D-25 decision 6: the manifest's count): one rolled
-## slot. A game with more (a Gen-3-style hidden one, say) declares them.
+## slot. A game with more (a classic-style hidden one, say) declares them.
 DEFAULT_PASSIVE_SLOTS = [{"name": "passive", "rolled": True}]
 ## A passive slot's name: a lower-case identifier (editors and member data name it).
 PASSIVE_SLOT_NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
@@ -69,7 +69,7 @@ def compile_passive_slots(src: Json, limit: int, where: str) -> list[dict[str, A
    [{"name", "rolled"}]. A species names up to one passive per slot (the rest are empty: the passive of the first
    rolled slot it fills applies, never a slot only given; capsule::battle passive_for()); a party member names its
    slot ("passive": index or name); the generation entry {"role": "passive_selector", "random_range": [0, "last"]}
-   rolls one of the rolled slots ("rolled": false: a slot only data or logic gives, such as a Gen-3-style hidden
+   rolls one of the rolled slots ("rolled": false: a slot only data or logic gives, such as a classic-style hidden
    one). Default: DEFAULT_PASSIVE_SLOTS.
    @param src    the manifest's passive_slots, or None
    @param limit  this platform's most slots (build_settings PLATFORM_LIMITS max_passive_slots)

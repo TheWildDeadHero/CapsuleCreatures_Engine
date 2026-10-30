@@ -20,7 +20,7 @@
 /// - Control::Color / Highlight / Shadow / Colors: the ink, background and shadow palette entries;
 /// - Control::ShiftRight n: the pen to pixel n of the line; Control::ShiftDown n: C13a: the line to pixel n below
 ///   the text's start (print(): Config::top; print_at(): its y), as the handheld games' printer sets it;
-/// - C13a, as the handheld games' printer (pret RenderText): Control::Fill: the window filled with the background
+/// - C13a, as the handheld games' printer: Control::Fill: the window filled with the background
 ///   entry, the pen back to the text's start; Control::Clear n: n pixels at the pen cleared (a glyph's height, the
 ///   background entry; nothing when it is 0) and the pen moved past them; Control::SkipTo n: the pen to pixel n from
 ///   the text's start; Control::ClearTo n: Clear up to that pixel (nothing when the pen is there or past it);
@@ -32,7 +32,7 @@
 /// - field placeholders (FD 80-FE): the field resolver's text (capsule/text/placeholder.h);
 /// - every other control is skipped with its arguments (escape_length()).
 ///
-/// Glyphs (C13a, as the handheld games' CopyGlyphToWindow): a glyph draws its advance width's columns (widths[],
+/// Glyphs (C13a, as the handheld games copy a glyph): a glyph draws its advance width's columns (widths[],
 /// at most its cell) and PropFont::glyph_height rows (its cell's when 0), both clipped to the window's edges; its 1
 /// pixels take the ink entry, 2 the shadow, 0 and 3 the background; an entry 0 is never written (transparent: a
 /// background 0 leaves what is under the glyph).
@@ -51,7 +51,7 @@
 ///   lead_frames frames pass after print() before the first code is read (a box that draws its frame first).
 ///
 /// Tile storage (C13c): a Window holds no pixels of its own. Its owner gives it storage for width x height tiles
-/// (attach()), as the handheld games' AddWindow allocates exactly that buffer: a static TileBuffer<W, H> of the
+/// (attach()), as the handheld games allocate exactly that buffer for a window: a static TileBuffer<W, H> of the
 /// window's size, a slice of a pool the owner keeps, a piece of a TilePool (any order of taking and giving back), or
 /// memory of a screen arena block (capsule/screen/arena.h), given back when the screen leaves as the games free their
 /// window buffers (FreeAllWindowBuffers). update(), print() and clear() queue their copies to land at the next
@@ -207,11 +207,11 @@ struct TileBuffer
    }
 };
 
-/// C13c: most pieces a TilePool hands out at once (the handheld games' WINDOWS_MAX).
+/// C13c: most pieces a TilePool hands out at once (the handheld games' window limit).
 inline constexpr int kMaxPoolPieces = 32;
 
 /// C13c: tiles handed out from one buffer of its owner's (a static, or a screen arena block) in any order, the way
-/// the handheld games' AddWindow / RemoveWindow take window buffers from their heap: pool_take() gives the lowest
+/// the handheld games' window add / remove take window buffers from their heap: pool_take() gives the lowest
 /// free stretch that fits (first fit), pool_give_back() returns a piece. Plain data (zero is an empty pool; it fits
 /// in a screen arena block); its fields are the functions' business.
 struct TilePool
@@ -398,7 +398,7 @@ void fill_tiles(uint32_t* tiles, int width_cells, int height_cells, int x, int y
 void set_colors(Window& w, uint8_t ink, uint8_t background, uint8_t shadow);
 
 /// Width of a text's first line in pixels (placeholders expanded; C13a: Clear, SkipTo, ClearTo and MinSpacing as
-/// the handheld games' GetStringWidth counts them; other controls take none).
+/// the handheld games count them when they measure a string; other controls take none).
 /// @param font   the font
 /// @param codes  encoded text
 /// @return pixels

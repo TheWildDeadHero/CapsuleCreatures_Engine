@@ -29,6 +29,8 @@ set(CAPSULE_SCRIPT_ITEMS_SOURCES
    src/storage/storage.cpp
    src/storage/storage_empty.cpp
    src/battle/battle_empty.cpp
+   # the roll battle_empty.cpp's default encounter level draws with (lld and ld64 need it even when unused)
+   src/battle/pipeline_roll.cpp
    src/core/clock_default.cpp
    # G4: the transform statement's port of a program without battle data (nothing transforms)
    src/script/script_growth_none.cpp

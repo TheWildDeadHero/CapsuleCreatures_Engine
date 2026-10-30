@@ -2,7 +2,7 @@
  "schema": "capsule.assets/1",
  "id": "ui_assets",
  "editor": {
-  "notes": "N3 fixture (simple shapes): a font, a sprite of two arrows (pret-style four animations: two flipped), text box styles with menus (a column, a grid, a list with scroll arrows) and a message box with an arrow image."
+  "notes": "N3 fixture (simple shapes): a font, a sprite of two arrows (four facing animations, two of them flipped), text box styles with menus (a column, a grid, a list with scroll arrows) and a message box with an arrow image."
  },
  "assets": [
   {

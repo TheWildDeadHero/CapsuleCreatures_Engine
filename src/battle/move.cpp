@@ -231,7 +231,7 @@ effect::Status move_phase(State& s, effect::Hook phase, uint8_t target)
 }
 
 /// Whether a target kind is a chosen single target (a move that redirect hooks may retarget; C5: a random foe is
-/// not chosen, as Gen-3 Follow Me takes only a selected target).
+/// not chosen, as the classic ruleset's redirecting move takes only a selected target).
 /// @param t  the target kind
 /// @return true for Selected and SelectedFoe
 constexpr bool single_target(Target t)
@@ -239,7 +239,7 @@ constexpr bool single_target(Target t)
    return t == Target::Selected || t == Target::SelectedFoe;
 }
 
-/// The target of a single-target move after the active battlers' redirect hooks (E13b; Follow Me style). C5: the
+/// The target of a single-target move after the active battlers' redirect hooks (E13b; a redirecting move). C5: the
 /// hooks see the target the move picked as `target` and value kNoClaim in; the battlers run in position order (the
 /// picked target among them, never the user) and the first one whose handlers leave a valid battler (active, not
 /// the user) as the value takes the move: the first claim wins, even one that keeps the picked target.
@@ -322,8 +322,8 @@ void move_targets(State& s, uint8_t chosen)
    {
       n = resolve_targets(s, i, move, chosen, targets);
    }
-   // a chosen single target, picked by the target kind or by the target phase (C5: set_target moves too, as Gen-3
-   // Counter goes to a Follow Me user), may be drawn away
+   // a chosen single target, picked by the target kind or by the target phase (C5: set_target moves too, as the classic
+   // ruleset's counter-attack goes to the redirecting move's user), may be drawn away
    if (n == 1 && single_target(m.target) && targets[0] != i && targets[0] < s.battler_count)
    {
       targets[0] = redirected(s, i, move, targets[0]);

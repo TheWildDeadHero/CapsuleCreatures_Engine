@@ -1,6 +1,6 @@
 /// @file
 /// A mock effect VM host for tests (the engine's tests/effect_vm_tests.cpp and a ruleset repository's effect tests,
-/// e.g. the reference repo's Gen-3 examples): the host functions the VM calls (include/capsule/battle/effect.h)
+/// e.g. the reference repo's classic examples): the host functions the VM calls (include/capsule/battle/effect.h)
 /// over a plain HostState (counters, words, status counter / scratch, role 128, volatile bits, HP), a logged list
 /// of primitives, its own draw generator, and the helpers reset(), find() and context(). Include it in exactly one
 /// source file of a test program, after `using namespace capsule::battle::effect;`, below the bank declarations.

@@ -28,7 +28,7 @@ list(APPEND CMAKE_TRY_COMPILE_PLATFORM_VARIABLES DEVKITPRO DEVKITARM LIBGBA)
 set(_prefix ${DEVKITARM}/bin/arm-none-eabi-)
 if(NOT EXISTS ${_prefix}g++)
    message(FATAL_ERROR "devkitARM not found at ${DEVKITARM}. Install devkitPro's gba-dev group "
-                  "(tools/setup/setup_devkitarm.sh) or set DEVKITPRO.")
+                  "(the umbrella's ./setup: toolkit/install/) or set DEVKITPRO.")
 endif()
 if(NOT EXISTS ${LIBGBA}/lib/libgba.a)
    message(FATAL_ERROR "libgba not found at ${LIBGBA}. Install devkitPro's gba-dev group or set LIBGBA.")

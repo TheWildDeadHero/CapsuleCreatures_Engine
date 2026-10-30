@@ -35,7 +35,7 @@ endfunction()
 
 if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
    # The VM against a mock host (tests/support/effect_mock_host.h): the neutral fixture (every opcode). The D-23
-   # section 1.7 Gen-3 examples run in the reference-ruleset repo against the same mock host.
+   # section 1.7 classic examples run in the reference-ruleset repo against the same mock host.
    capsule_effect_bank(${CAPSULE_ROOT}/tests/data/effects/vm.json vm_effects
                        ${CAPSULE_GENERATED_DIR}/test_effects_vm.cpp)
    add_executable(capsule_effect_vm_tests

@@ -2,7 +2,7 @@
   "schema": "capsule.sequence/1",
   "id": "cave_preview",
   "editor": {
-    "notes": "Location preview of Echo Cave (D-17, FRLG / HGSS style): the cave fades in with its name, then out; A or B skips."
+    "notes": "Location preview of Echo Cave (D-17, a location preview): the cave fades in with its name, then out; A or B skips."
   },
   "exits": [
     "done"

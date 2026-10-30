@@ -7,7 +7,8 @@
   "rom": {
     "title": "STARTER",
     "code": "CSQR",
-    "maker": "00"
+    "maker": "00",
+    "cart_mb": 8
   },
   "sources": [
     "src/starter_battle.cpp"
