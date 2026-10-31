@@ -62,7 +62,7 @@ jobs:
            run: |
               cmake --preset headless -G Ninja
               cmake --build --preset headless
-              ctest --preset headless -j 4
+              bash .github/scripts/ctest_annotated.sh headless -j 4
 
    linux:
       name: linux (${{ matrix.compiler }})
@@ -102,7 +102,7 @@ jobs:
               cmake --preset desktop-debug -G Ninja \
                  -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
               cmake --build --preset desktop-debug
-              ctest --preset desktop-debug -j 4
+              bash .github/scripts/ctest_annotated.sh desktop-debug -j 4
          - name: Release build
            run: |
               cmake --preset desktop-release -G Ninja \
@@ -128,7 +128,7 @@ jobs:
            run: |
               cmake --preset desktop-debug -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
               cmake --build --preset desktop-debug -j 4
-              ctest --preset desktop-debug -j 4
+              bash .github/scripts/ctest_annotated.sh desktop-debug -j 4
          - name: Release build
            run: |
               cmake --preset desktop-release -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
@@ -172,7 +172,7 @@ jobs:
            run: |
               cmake --preset windows-debug -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
               cmake --build --preset windows-debug
-              ctest --preset windows-debug -j 4
+              bash .github/scripts/ctest_annotated.sh windows-debug -j 4
          - name: Release build
            run: |
               cmake --preset windows-release -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
@@ -190,7 +190,7 @@ jobs:
            run: |
               cmake --preset big-endian-check -G Ninja
               cmake --build --preset big-endian-check
-              ctest --preset big-endian-check -j 4
+              bash .github/scripts/ctest_annotated.sh big-endian-check -j 4
 
    gba:
       runs-on: ubuntu-24.04

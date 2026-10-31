@@ -253,7 +253,9 @@ def main() -> int:
    parser.add_argument("--exclude", action = "append", default = [], help = "file name left out (repeatable)")
    parser.add_argument("--exclude-dir", action = "append", default = [], help = "folder name left out (repeatable)")
    parser.add_argument("paths", nargs = "*")
-   args = parser.parse_args()
+   # Intermixed: paths may come before, between or after the options. Plain parse_args() on Python 3.10 and 3.11
+   # ends "paths" at the first option and rejects the paths after it.
+   args = parser.parse_intermixed_args()
    if args.command == "hash":
       return hash_words(args)
    return check(args)
