@@ -188,8 +188,13 @@ jobs:
          - name: Install s390x cross compiler and QEMU
            run: |
               sudo apt-get update
-              sudo apt-get install -y --no-install-recommends ninja-build g++-s390x-linux-gnu qemu-user
+              sudo apt-get install -y --no-install-recommends ninja-build g++-s390x-linux-gnu qemu-user \
+                 qemu-user-binfmt
+         # binfmt lets the Python tests start the s390x programs they test directly; QEMU_LD_PREFIX gives those
+         # programs the s390x system libraries (ctest runs the programs through the preset's emulator itself).
          - name: Build + tests under QEMU
+           env:
+              QEMU_LD_PREFIX: /usr/s390x-linux-gnu
            run: |
               cmake --preset big-endian-check -G Ninja
               cmake --build --preset big-endian-check

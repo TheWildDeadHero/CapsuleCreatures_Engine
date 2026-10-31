@@ -351,7 +351,8 @@ void assert_failed(const char* expr, const char* file, int line)
 {
    std::printf("ENGINE_ASSERT failed: %s\n  at %s:%d\n", expr, file, line);
    char where[kAssertChars];
-   std::snprintf(where, sizeof where, "%s:%d", file, line);
+   // Global snprintf: KallistiOS' newlib C++ library does not declare std::snprintf.
+   snprintf(where, sizeof where, "%s:%d", file, line);
    pvr_shutdown();
    vid_set_mode(DM_640x480, PM_RGB565);
    vid_clear(0, 0, 0);
