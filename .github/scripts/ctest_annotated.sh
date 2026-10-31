@@ -18,6 +18,8 @@ if [ ! -f "$failed" ]; then
    exit 1
 fi
 while IFS=: read -r _number name; do
+   # Windows ctest writes the list with CRLF; a carriage return left in the name would break the annotation line.
+   name=${name%$'\r'}
    [ -n "$name" ] || continue
    # Re-run the one test to capture its own output; annotations take %0A for new lines.
    out=$(ctest --preset "$preset" --output-on-failure -R "^${name}\$" 2>&1 | tail -n "$tail_lines" || true)
