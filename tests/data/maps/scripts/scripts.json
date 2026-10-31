@@ -1,0 +1,7 @@
+{
+  "schema": "capsule.scripts/1",
+  "editor": {"notes": "Scripts of the map test world's events (tests/map_tests.cpp)."},
+  "sources": ["field.cscript"],
+  "world": "../world.json",
+  "placeholders": {"hero": {"name": 6}}
+}

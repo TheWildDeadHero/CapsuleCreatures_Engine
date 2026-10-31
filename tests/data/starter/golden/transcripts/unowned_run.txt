@@ -1,0 +1,20 @@
+-- unowned_run
+> Emberkit blocks the way!
+switch_in #1 Emberkit at 1
+> Go, Breezle!
+switch_in #0 Breezle at 0
+turn 1
+> Can't escape!
+resource #1 Emberkit EP 21 (was 26)
+> Emberkit used Flare Claw!
+hp #0 Breezle 18 (was 44)
+> It's very effective!
+resource #1 Emberkit EP 22 (was 21)
+turn 2
+> Got away safely!
+end Escaped
+-- outcome Escaped, turns 2, reward 0, rng 1B55AE10
+battler #0 Breezle lv 14 hp 18/44 status none item none exp 1512 MP 28/28 EP 32/32
+battler #1 Emberkit lv 10 hp 40/40 status none item none exp 1120 MP 24/24 EP 22/26
+record 0.0 Breezle lv 14 exp 1512 hp 18 status none/0 item none moves Gale Kick Updraft Cyclone Vine Lash MP 28 EP 32
+record 1.0 Emberkit lv 10 exp 1120 hp 40 status none/0 item none moves Flare Claw Smolder Fireball Gale Kick MP 24 EP 26

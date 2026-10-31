@@ -1,0 +1,28 @@
+{
+ "schema": "capsule.world/1",
+ "id": "sandbox_screen",
+ "editor": {
+  "notes": "The screen sandbox's world: one map (the field a screen opens over)."
+ },
+ "tilesets": {
+  "field": "tilesets/field.json"
+ },
+ "maps": {
+  "field": "maps/field.json"
+ },
+ "start": {
+  "map": "field",
+  "x": 4,
+  "y": 4,
+  "facing": "down"
+ },
+ "behaviors": [
+  {
+   "name": "normal"
+  },
+  {
+   "name": "water",
+   "solid": true
+  }
+ ]
+}

@@ -1,0 +1,34 @@
+{
+   "schema": "capsule.bench/1",
+   "name": "double_duo",
+   "description": "A double battle (a spread move, Vigor Bar). (E9 neutral golden transcripts/double_duo.txt)",
+   "expect": "../../data/starter/golden/transcripts/double_duo.txt",
+   "rng": "default",
+   "format": "Double",
+   "seed": 5,
+   "parties": [
+      {
+         "side": 0,
+         "controller": "human",
+         "members": [
+            {
+               "species": "Clodbun",
+               "level": 18
+            },
+            {
+               "species": "Starmote",
+               "level": 18
+            }
+         ]
+      },
+      {
+         "side": 1,
+         "data": "Duo Ash & Bly"
+      }
+   ],
+   "choices": [
+      {
+         "move": 2
+      }
+   ]
+}

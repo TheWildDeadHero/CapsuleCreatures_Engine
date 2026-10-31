@@ -1,0 +1,1295 @@
+{
+ "schema": "capsule.tileset/2",
+ "id": "outdoor",
+ "editor": {
+  "notes": "Sandbox tileset: simple shapes only (no third-party art). DS1 (D-30): the flowers animation has four frames shown on four targets (tiles 64-67, metatiles flowers .. flowers_d) at frame offsets 0-3, its frames stored once; tiles 68-71 are the hut's wall, door and roof (door:HUT animates the door)."
+ },
+ "sheets": [
+  {
+   "name": "terrain",
+   "palette": [
+    "#58a838",
+    "#387828",
+    "#d0b070",
+    "#a08048",
+    "#704828",
+    "#2c6820",
+    "#48a038",
+    "#3060c8",
+    "#78a8f0",
+    "#c8e8f8",
+    "#888888",
+    "#505050",
+    "#e04848",
+    "#f0d040",
+    "#f8f8f8"
+   ],
+   "size": [
+    128,
+    48
+   ],
+   "shapes": [
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 1
+    },
+    {
+     "shape": "dots",
+     "x": 0,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 2,
+     "count": 10,
+     "seed": 7,
+     "size": 1
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 1
+    },
+    {
+     "shape": "dots",
+     "x": 16,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 2,
+     "count": 14,
+     "seed": 99,
+     "size": 1
+    },
+    {
+     "shape": "dots",
+     "x": 16,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 7,
+     "count": 6,
+     "seed": 5,
+     "size": 1
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 2
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       32,
+       15
+      ],
+      [
+       34,
+       4
+      ],
+      [
+       36,
+       15
+      ]
+     ],
+     "color": 7
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       36,
+       15
+      ],
+      [
+       38,
+       4
+      ],
+      [
+       40,
+       15
+      ]
+     ],
+     "color": 7
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       40,
+       15
+      ],
+      [
+       42,
+       4
+      ],
+      [
+       44,
+       15
+      ]
+     ],
+     "color": 7
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       44,
+       15
+      ],
+      [
+       46,
+       4
+      ],
+      [
+       48,
+       15
+      ]
+     ],
+     "color": 7
+    },
+    {
+     "shape": "rect",
+     "x": 48,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 3
+    },
+    {
+     "shape": "dots",
+     "x": 48,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 4,
+     "count": 8,
+     "seed": 3,
+     "size": 1
+    },
+    {
+     "shape": "rect",
+     "x": 64,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 1
+    },
+    {
+     "shape": "dots",
+     "x": 64,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 2,
+     "count": 10,
+     "seed": 7,
+     "size": 1
+    },
+    {
+     "shape": "rect",
+     "x": 64,
+     "y": 10,
+     "w": 16,
+     "h": 6,
+     "color": 4
+    },
+    {
+     "shape": "rect",
+     "x": 64,
+     "y": 10,
+     "w": 16,
+     "h": 2,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 80,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 10
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       82,
+       12
+      ],
+      [
+       92,
+       2
+      ],
+      [
+       94,
+       4
+      ],
+      [
+       84,
+       14
+      ]
+     ],
+     "color": 15
+    },
+    {
+     "shape": "rect",
+     "x": 96,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 3
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       99,
+       5
+      ],
+      [
+       105,
+       5
+      ],
+      [
+       105,
+       2
+      ],
+      [
+       110,
+       8
+      ],
+      [
+       105,
+       14
+      ],
+      [
+       105,
+       11
+      ],
+      [
+       99,
+       11
+      ]
+     ],
+     "color": 14
+    },
+    {
+     "shape": "rect",
+     "x": 112,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 1
+    },
+    {
+     "shape": "dots",
+     "x": 112,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 2,
+     "count": 10,
+     "seed": 7,
+     "size": 1
+    },
+    {
+     "shape": "ellipse",
+     "cx": 120,
+     "cy": 9,
+     "rx": 7,
+     "ry": 6,
+     "color": 12
+    },
+    {
+     "shape": "ellipse",
+     "cx": 119,
+     "cy": 8,
+     "rx": 6,
+     "ry": 5,
+     "color": 11
+    },
+    {
+     "shape": "circle",
+     "cx": 8,
+     "cy": 25,
+     "r": 8,
+     "color": 6
+    },
+    {
+     "shape": "circle",
+     "cx": 6,
+     "cy": 23,
+     "r": 4,
+     "color": 7
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 16,
+     "w": 16,
+     "h": 16,
+     "color": 1
+    },
+    {
+     "shape": "dots",
+     "x": 16,
+     "y": 16,
+     "w": 16,
+     "h": 16,
+     "color": 2,
+     "count": 10,
+     "seed": 7,
+     "size": 1
+    },
+    {
+     "shape": "ellipse",
+     "cx": 24,
+     "cy": 19,
+     "rx": 8,
+     "ry": 4,
+     "color": 6
+    },
+    {
+     "shape": "rect",
+     "x": 22,
+     "y": 20,
+     "w": 4,
+     "h": 9,
+     "color": 5
+    },
+    {
+     "shape": "ellipse",
+     "cx": 24,
+     "cy": 29,
+     "rx": 5,
+     "ry": 2,
+     "color": 2
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 16,
+     "w": 16,
+     "h": 16,
+     "color": 4
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 19,
+     "w": 16,
+     "h": 1,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 23,
+     "w": 16,
+     "h": 1,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 27,
+     "w": 16,
+     "h": 1,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 31,
+     "w": 16,
+     "h": 1,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 48,
+     "y": 16,
+     "w": 16,
+     "h": 16,
+     "color": 7
+    },
+    {
+     "shape": "dots",
+     "x": 48,
+     "y": 16,
+     "w": 16,
+     "h": 16,
+     "color": 1,
+     "count": 10,
+     "seed": 11,
+     "size": 1
+    },
+    {
+     "shape": "rect",
+     "x": 64,
+     "y": 16,
+     "w": 16,
+     "h": 16,
+     "color": 12
+    },
+    {
+     "shape": "rect",
+     "x": 64,
+     "y": 16,
+     "w": 16,
+     "h": 4,
+     "color": 7
+    },
+    {
+     "shape": "dots",
+     "x": 64,
+     "y": 21,
+     "w": 16,
+     "h": 11,
+     "color": 11,
+     "count": 10,
+     "seed": 13,
+     "size": 2
+    },
+    {
+     "shape": "rect",
+     "x": 80,
+     "y": 16,
+     "w": 16,
+     "h": 16,
+     "color": 11
+    },
+    {
+     "shape": "rect",
+     "x": 80,
+     "y": 19,
+     "w": 16,
+     "h": 2,
+     "color": 12
+    },
+    {
+     "shape": "rect",
+     "x": 80,
+     "y": 24,
+     "w": 16,
+     "h": 2,
+     "color": 12
+    },
+    {
+     "shape": "rect",
+     "x": 80,
+     "y": 29,
+     "w": 16,
+     "h": 2,
+     "color": 12
+    },
+    {
+     "shape": "rect",
+     "x": 96,
+     "y": 16,
+     "w": 16,
+     "h": 16,
+     "color": 1
+    },
+    {
+     "shape": "dots",
+     "x": 96,
+     "y": 16,
+     "w": 16,
+     "h": 16,
+     "color": 2,
+     "count": 10,
+     "seed": 7,
+     "size": 1
+    },
+    {
+     "shape": "rect",
+     "x": 103,
+     "y": 25,
+     "w": 2,
+     "h": 6,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 98,
+     "y": 18,
+     "w": 12,
+     "h": 8,
+     "color": 3
+    },
+    {
+     "shape": "rect",
+     "x": 98,
+     "y": 18,
+     "w": 12,
+     "h": 1,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 100,
+     "y": 20,
+     "w": 8,
+     "h": 1,
+     "color": 4
+    },
+    {
+     "shape": "rect",
+     "x": 100,
+     "y": 22,
+     "w": 8,
+     "h": 1,
+     "color": 4
+    },
+    {
+     "shape": "rect",
+     "x": 112,
+     "y": 16,
+     "w": 8,
+     "h": 8,
+     "color": 8
+    },
+    {
+     "shape": "rect",
+     "x": 112,
+     "y": 18,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 116,
+     "y": 22,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 120,
+     "y": 16,
+     "w": 8,
+     "h": 8,
+     "color": 8
+    },
+    {
+     "shape": "rect",
+     "x": 120,
+     "y": 18,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 124,
+     "y": 22,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 112,
+     "y": 24,
+     "w": 8,
+     "h": 8,
+     "color": 8
+    },
+    {
+     "shape": "rect",
+     "x": 112,
+     "y": 26,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 116,
+     "y": 30,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 120,
+     "y": 24,
+     "w": 8,
+     "h": 8,
+     "color": 8
+    },
+    {
+     "shape": "rect",
+     "x": 120,
+     "y": 26,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 124,
+     "y": 30,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 32,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "circle",
+     "cx": 3,
+     "cy": 35,
+     "r": 2,
+     "color": 13
+    },
+    {
+     "shape": "circle",
+     "cx": 3,
+     "cy": 35,
+     "r": 0,
+     "color": 14
+    },
+    {
+     "shape": "rect",
+     "x": 8,
+     "y": 32,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "circle",
+     "cx": 11,
+     "cy": 35,
+     "r": 2,
+     "color": 13
+    },
+    {
+     "shape": "circle",
+     "cx": 11,
+     "cy": 35,
+     "r": 0,
+     "color": 14
+    },
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 40,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "circle",
+     "cx": 3,
+     "cy": 43,
+     "r": 2,
+     "color": 13
+    },
+    {
+     "shape": "circle",
+     "cx": 3,
+     "cy": 43,
+     "r": 0,
+     "color": 14
+    },
+    {
+     "shape": "rect",
+     "x": 8,
+     "y": 40,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "circle",
+     "cx": 11,
+     "cy": 43,
+     "r": 2,
+     "color": 13
+    },
+    {
+     "shape": "circle",
+     "cx": 11,
+     "cy": 43,
+     "r": 0,
+     "color": 14
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 32,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "rect",
+     "x": 24,
+     "y": 32,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 32,
+     "w": 8,
+     "h": 8,
+     "color": 4
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 35,
+     "w": 8,
+     "h": 1,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 39,
+     "w": 8,
+     "h": 1,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 40,
+     "y": 32,
+     "w": 8,
+     "h": 8,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 46,
+     "y": 35,
+     "w": 1,
+     "h": 2,
+     "color": 14
+    },
+    {
+     "shape": "rect",
+     "x": 48,
+     "y": 32,
+     "w": 8,
+     "h": 8,
+     "color": 13
+    },
+    {
+     "shape": "rect",
+     "x": 48,
+     "y": 38,
+     "w": 8,
+     "h": 2,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 56,
+     "y": 32,
+     "w": 8,
+     "h": 8,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 56,
+     "y": 32,
+     "w": 8,
+     "h": 2,
+     "color": 13
+    }
+   ]
+  },
+  {
+   "name": "water_frames",
+   "palette": "@terrain",
+   "size": [
+    32,
+    8
+   ],
+   "shapes": [
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 8
+    },
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 2,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 4,
+     "y": 6,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 8,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 8
+    },
+    {
+     "shape": "rect",
+     "x": 10,
+     "y": 2,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 14,
+     "y": 6,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 8
+    },
+    {
+     "shape": "rect",
+     "x": 20,
+     "y": 2,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 6,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 24,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 8
+    },
+    {
+     "shape": "rect",
+     "x": 30,
+     "y": 2,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 26,
+     "y": 6,
+     "w": 3,
+     "h": 1,
+     "color": 9
+    }
+   ]
+  },
+  {
+   "name": "flower_frames",
+   "palette": "@terrain",
+   "size": [
+    32,
+    8
+   ],
+   "shapes": [
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "circle",
+     "cx": 3,
+     "cy": 3,
+     "r": 2,
+     "color": 13
+    },
+    {
+     "shape": "circle",
+     "cx": 3,
+     "cy": 3,
+     "r": 0,
+     "color": 14
+    },
+    {
+     "shape": "rect",
+     "x": 8,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "circle",
+     "cx": 11,
+     "cy": 4,
+     "r": 2,
+     "color": 13
+    },
+    {
+     "shape": "circle",
+     "cx": 11,
+     "cy": 4,
+     "r": 0,
+     "color": 14
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "circle",
+     "cx": 20,
+     "cy": 3,
+     "r": 2,
+     "color": 13
+    },
+    {
+     "shape": "circle",
+     "cx": 20,
+     "cy": 3,
+     "r": 0,
+     "color": 14
+    },
+    {
+     "shape": "rect",
+     "x": 24,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "circle",
+     "cx": 28,
+     "cy": 4,
+     "r": 2,
+     "color": 14
+    },
+    {
+     "shape": "circle",
+     "cx": 28,
+     "cy": 4,
+     "r": 0,
+     "color": 13
+    }
+   ]
+  }
+ ],
+ "metatiles": [
+  {
+   "name": "grass",
+   "tiles": [
+    "terrain:0",
+    "terrain:1",
+    "terrain:16",
+    "terrain:17"
+   ]
+  },
+  {
+   "name": "grass_dense",
+   "tiles": [
+    "terrain:2",
+    "terrain:3",
+    "terrain:18",
+    "terrain:19"
+   ]
+  },
+  {
+   "name": "tall_grass",
+   "tiles": [
+    "terrain:4",
+    "terrain:5",
+    "terrain:20",
+    "terrain:21"
+   ]
+  },
+  {
+   "name": "flowers",
+   "tiles": [
+    "terrain:64",
+    "terrain:64",
+    "terrain:64",
+    "terrain:64"
+   ]
+  },
+  {
+   "name": "path",
+   "tiles": [
+    "terrain:6",
+    "terrain:7",
+    "terrain:22",
+    "terrain:23"
+   ]
+  },
+  {
+   "name": "ledge",
+   "tiles": [
+    "terrain:8",
+    "terrain:9",
+    "terrain:24",
+    "terrain:25"
+   ]
+  },
+  {
+   "name": "ice",
+   "tiles": [
+    "terrain:10",
+    "terrain:11",
+    "terrain:26",
+    "terrain:27"
+   ]
+  },
+  {
+   "name": "arrow_right",
+   "tiles": [
+    "terrain:12",
+    "terrain:13",
+    "terrain:28",
+    "terrain:29"
+   ]
+  },
+  {
+   "name": "rock",
+   "tiles": [
+    "terrain:14",
+    "terrain:15",
+    "terrain:30",
+    "terrain:31"
+   ]
+  },
+  {
+   "name": "tree_top",
+   "tiles": [
+    "terrain:0",
+    "terrain:1",
+    "terrain:16",
+    "terrain:17"
+   ]
+  },
+  {
+   "name": "tree_top_top",
+   "tiles": [
+    "terrain:32",
+    "terrain:33",
+    "terrain:48",
+    "terrain:49"
+   ]
+  },
+  {
+   "name": "tree_trunk",
+   "tiles": [
+    "terrain:34",
+    "terrain:35",
+    "terrain:50",
+    "terrain:51"
+   ]
+  },
+  {
+   "name": "water",
+   "tiles": [
+    "terrain:46",
+    "terrain:46",
+    "terrain:46",
+    "terrain:46"
+   ]
+  },
+  {
+   "name": "bridge",
+   "tiles": [
+    "terrain:36",
+    "terrain:37",
+    "terrain:52",
+    "terrain:53"
+   ]
+  },
+  {
+   "name": "plateau",
+   "tiles": [
+    "terrain:38",
+    "terrain:39",
+    "terrain:54",
+    "terrain:55"
+   ]
+  },
+  {
+   "name": "cliff",
+   "tiles": [
+    "terrain:40",
+    "terrain:41",
+    "terrain:56",
+    "terrain:57"
+   ]
+  },
+  {
+   "name": "stairs",
+   "tiles": [
+    "terrain:42",
+    "terrain:43",
+    "terrain:58",
+    "terrain:59"
+   ]
+  },
+  {
+   "name": "sign",
+   "tiles": [
+    "terrain:44",
+    "terrain:45",
+    "terrain:60",
+    "terrain:61"
+   ]
+  },
+  {
+   "name": "flowers_b",
+   "tiles": [
+    "terrain:65",
+    "terrain:65",
+    "terrain:65",
+    "terrain:65"
+   ]
+  },
+  {
+   "name": "flowers_c",
+   "tiles": [
+    "terrain:66",
+    "terrain:66",
+    "terrain:66",
+    "terrain:66"
+   ]
+  },
+  {
+   "name": "flowers_d",
+   "tiles": [
+    "terrain:67",
+    "terrain:67",
+    "terrain:67",
+    "terrain:67"
+   ]
+  },
+  {
+   "name": "hut_wall",
+   "tiles": [
+    "terrain:68",
+    "terrain:68",
+    "terrain:68",
+    "terrain:68"
+   ]
+  },
+  {
+   "name": "hut_roof",
+   "tiles": [
+    "terrain:70",
+    "terrain:70",
+    "terrain:70",
+    "terrain:70"
+   ]
+  },
+  {
+   "name": "hut_door",
+   "tiles": [
+    "terrain:69",
+    "terrain:69",
+    "terrain:69",
+    "terrain:69"
+   ]
+  },
+  {
+   "name": "hut_door_top",
+   "tiles": [
+    "terrain:71",
+    "terrain:71",
+    "terrain:69",
+    "terrain:69"
+   ]
+  }
+ ],
+ "animations": [
+  {
+   "name": "water",
+   "tiles": "terrain:46",
+   "count": 1,
+   "frames": "water_frames",
+   "period": 12
+  },
+  {
+   "name": "flowers",
+   "count": 1,
+   "frames": "flower_frames",
+   "period": 24,
+   "targets": [
+    {
+     "tiles": "terrain:64",
+     "offset": 0
+    },
+    {
+     "tiles": "terrain:65",
+     "offset": 1
+    },
+    {
+     "tiles": "terrain:66",
+     "offset": 2
+    },
+    {
+     "tiles": "terrain:67",
+     "offset": 3
+    }
+   ]
+  }
+ ]
+}

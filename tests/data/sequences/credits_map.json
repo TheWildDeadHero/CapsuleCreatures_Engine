@@ -1,0 +1,142 @@
+{
+  "schema": "capsule.sequence/1",
+  "id": "test_credits_map",
+  "editor": {
+    "notes": "Test fixture: credits with a widening window slit, a view-only map with a panning camera behind text pages, a windowed reveal with a sound, a copyright page and an end screen (A or timeout) that exits."
+  },
+  "exits": ["soft_reset"],
+  "conditions": ["player_female"],
+  "macros": {
+    "page": {
+      "params": ["heading", "names", "hold"],
+      "body": [
+        {"op": "text_style", "style": 1},
+        {"op": "text", "target": "bg0", "x": 2, "y": 2, "asset": "$heading"},
+        {"op": "text_style", "style": 0},
+        {"op": "text", "target": "bg0", "x": 4, "y": 5, "asset": "$names"},
+        {"op": "pal_fade", "palettes": ["bg:15"], "color": "#000000", "amount": 0, "frames": 12},
+        {"op": "wait", "frames": "$hold"},
+        {"op": "pal_fade", "palettes": ["bg:15"], "color": "#000000", "amount": 16, "frames": 12},
+        {"op": "wait_for", "what": "pal_fade"},
+        {"op": "text_clear", "target": "bg0"}
+      ]
+    },
+    "walk_scene": {
+      "params": ["map", "x", "y", "vx", "vy", "frames"],
+      "body": [
+        {"op": "fade", "dir": "out", "color": "black", "frames": 16},
+        {"op": "wait_for", "what": "fade"},
+        {"op": "map_show", "asset": "$map"},
+        {"op": "map_camera", "x": "$x", "y": "$y"},
+        {"op": "map_scroll", "vx": "$vx", "vy": "$vy"},
+        {"op": "fade", "dir": "in", "color": "black", "frames": 16},
+        {"op": "wait", "frames": "$frames"},
+        {"op": "map_scroll", "vx": 0, "vy": 0}
+      ]
+    }
+  },
+  "start": "opening",
+  "stages": [
+    {
+      "name": "opening",
+      "flags": ["reset_visuals"],
+      "on": {"done": "stage:towns"},
+      "tracks": [
+        [
+          {"op": "song", "asset": "song:CREDITS"},
+          {"op": "window", "win": 0, "flags": 63, "x0": 0, "y0": 80, "x1": 240, "y1": 80},
+          {"op": "map_show", "asset": "map:CREDITS TOWN 1"},
+          {"op": "window_move", "win": 0, "x0": 0, "y0": 0, "x1": 240, "y1": 160, "frames": 40},
+          {"op": "wait_for", "what": "window"},
+          {"op": "use", "macro": "page", "heading": "text:STAFF TITLE", "names": "text:STAFF SUBTITLE", "hold": 210}
+        ]
+      ]
+    },
+    {
+      "name": "towns",
+      "on": {"done": "stage:showcase"},
+      "tracks": [
+        [
+          {"op": "if", "cond": "player_female", "to": "f"},
+          {"op": "spr_load", "slot": 0, "asset": "sprite:PLAYER MALE WALK"},
+          {"op": "jump", "to": "go"},
+          {"op": "label", "name": "f"},
+          {"op": "spr_load", "slot": 0, "asset": "sprite:PLAYER FEMALE WALK"},
+          {"op": "label", "name": "go"},
+          {"op": "spr_pos", "slot": 0, "x": 112, "y": 72},
+          {"op": "spr_anim", "slot": 0, "anim": 3},
+          {"op": "spr_show", "slot": 0},
+          {"op": "use", "macro": "walk_scene", "map": "map:CREDITS TOWN 1", "x": 0, "y": 64, "vx": 1, "vy": 0, "frames": 300},
+          {"op": "use", "macro": "walk_scene", "map": "map:CREDITS ROUTE 1", "x": 64, "y": 320, "vx": 0, "vy": -1, "frames": 300}
+        ],
+        [
+          {"op": "wait", "frames": 30},
+          {"op": "use", "macro": "page", "heading": "text:CREDITS HEAD 01", "names": "text:CREDITS NAMES 01", "hold": 240},
+          {"op": "use", "macro": "page", "heading": "text:CREDITS HEAD 02", "names": "text:CREDITS NAMES 02", "hold": 240}
+        ]
+      ]
+    },
+    {
+      "name": "showcase",
+      "flags": ["reset_visuals"],
+      "on": {"done": "stage:copyright"},
+      "tracks": [
+        [
+          {"op": "bg_load", "bg": 3, "asset": "image:CREDITS BALL BACKDROP"},
+          {"op": "bg_show", "bg": 3},
+          {"op": "spr_load", "slot": 0, "asset": "sprite:CREDITS SHOWCASE 1"},
+          {"op": "spr_pos", "slot": 0, "x": 88, "y": 48},
+          {"op": "spr_show", "slot": 0},
+          {"op": "window", "win": 0, "flags": 63, "x0": 118, "y0": 78, "x1": 122, "y1": 82},
+          {"op": "fade", "dir": "in", "color": "black", "frames": 16},
+          {"op": "window_move", "win": 0, "x0": 72, "y0": 32, "x1": 168, "y1": 128, "frames": 30},
+          {"op": "wait_for", "what": "window"},
+          {"op": "sfx", "asset": "sound:CREDITS SHOWCASE 1 CRY"},
+          {"op": "wait", "frames": 150},
+          {"op": "fade", "dir": "out", "color": "black", "frames": 16},
+          {"op": "wait_for", "what": "fade"}
+        ]
+      ]
+    },
+    {
+      "name": "copyright",
+      "flags": ["reset_visuals"],
+      "on": {"done": "stage:the_end"},
+      "tracks": [
+        [
+          {"op": "bg_load", "bg": 0, "asset": "image:COPYRIGHT SCREEN"},
+          {"op": "bg_show", "bg": 0},
+          {"op": "fade", "dir": "in", "color": "black", "frames": 16},
+          {"op": "wait", "frames": 240},
+          {"op": "fade", "dir": "out", "color": "black", "frames": 16},
+          {"op": "wait_for", "what": "fade"}
+        ]
+      ]
+    },
+    {
+      "name": "the_end",
+      "flags": ["reset_visuals"],
+      "skip": ["A"],
+      "timeout": 600,
+      "on": {"skip": "stage:leave", "timeout": "stage:leave"},
+      "tracks": [
+        [
+          {"op": "bg_load", "bg": 0, "asset": "image:THE END"},
+          {"op": "bg_show", "bg": 0},
+          {"op": "fade", "dir": "in", "color": "black", "frames": 16}
+        ]
+      ]
+    },
+    {
+      "name": "leave",
+      "on": {"done": "exit:soft_reset"},
+      "tracks": [
+        [
+          {"op": "song_fade", "frames": 16},
+          {"op": "fade", "dir": "out", "color": "white", "frames": 16},
+          {"op": "wait_for", "what": "fade"}
+        ]
+      ]
+    }
+  ]
+}

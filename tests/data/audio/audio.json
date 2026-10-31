@@ -1,0 +1,1052 @@
+{
+ "schema": "capsule.audio/1",
+ "mixer": {
+  "rate": 13379,
+  "channels": 5,
+  "master_volume": 12,
+  "dac_bits": 8,
+  "output": "stereo"
+ },
+ "players": [
+  {
+   "name": "music",
+   "tracks": 10,
+   "start_check": false
+  },
+  {
+   "name": "sfx1",
+   "tracks": 3,
+   "start_check": true
+  },
+  {
+   "name": "sfx2",
+   "tracks": 9,
+   "start_check": true
+  },
+  {
+   "name": "sfx3",
+   "tracks": 1,
+   "start_check": false
+  }
+ ],
+ "song_table": [
+  {
+   "song": "song:basic",
+   "player": "music"
+  },
+  {
+   "song": "song:flow",
+   "player": "music"
+  },
+  {
+   "song": "song:tempo",
+   "player": "music"
+  },
+  {
+   "song": "song:lfo",
+   "player": "music"
+  },
+  {
+   "song": "song:envelope",
+   "player": "music"
+  },
+  {
+   "song": "song:voices",
+   "player": "music"
+  },
+  {
+   "song": "song:tone",
+   "player": "music"
+  },
+  {
+   "song": "song:chord",
+   "player": "music"
+  },
+  {
+   "song": "song:se_low",
+   "player": "sfx1"
+  },
+  {
+   "song": "song:se_high",
+   "player": "sfx1"
+  },
+  {
+   "song": "song:fade",
+   "player": "music"
+  },
+  {
+   "song": "song:loud",
+   "player": "music"
+  },
+  {
+   "song": "song:tail",
+   "player": "music"
+  },
+  {
+   "song": "song:reverb_a",
+   "player": "music"
+  },
+  {
+   "song": "song:basic",
+   "player": "music"
+  },
+  {
+   "song": "song:reverb_off",
+   "player": "music"
+  },
+  {
+   "song": null,
+   "player": "music"
+  },
+  {
+   "song": "song:se2",
+   "player": "sfx2"
+  },
+  {
+   "song": "song:se3",
+   "player": "sfx3"
+  },
+  {
+   "song": "song:se_low",
+   "player": "sfx1",
+   "name": "sound:BEEP"
+  },
+  {
+   "song": "song:fade",
+   "player": "sfx2"
+  }
+ ],
+ "samples": [
+  {
+   "key": "sample:sine_loop",
+   "format": "pcm8",
+   "pitch": 13700096,
+   "loop": true,
+   "loop_start": 0,
+   "length": 128,
+   "data": "samples/sine_loop.bin"
+  },
+  {
+   "key": "sample:square_once",
+   "format": "pcm8",
+   "pitch": 13700096,
+   "loop": false,
+   "loop_start": 0,
+   "length": 1003,
+   "data": "samples/square_once.bin"
+  },
+  {
+   "key": "sample:saw_loop",
+   "format": "pcm8",
+   "pitch": 8192000,
+   "loop": true,
+   "loop_start": 100,
+   "length": 1101,
+   "data": "samples/saw_loop.bin"
+  },
+  {
+   "key": "sample:noise_once",
+   "format": "pcm8",
+   "pitch": 10764288,
+   "loop": false,
+   "loop_start": 0,
+   "length": 1002,
+   "data": "samples/noise_once.bin"
+  },
+  {
+   "key": "sample:short",
+   "format": "pcm8",
+   "pitch": 13700096,
+   "loop": false,
+   "loop_start": 0,
+   "length": 7,
+   "data": "samples/short.bin"
+  },
+  {
+   "key": "sample:fixed",
+   "format": "pcm8",
+   "pitch": 13700096,
+   "loop": false,
+   "loop_start": 0,
+   "length": 300,
+   "data": "samples/fixed.bin"
+  },
+  {
+   "key": "sample:dpcm_sine_loop",
+   "format": "dpcm4",
+   "pitch": 10764288,
+   "loop": true,
+   "loop_start": 64,
+   "length": 640,
+   "data": "samples/dpcm_sine_loop.bin"
+  },
+  {
+   "key": "sample:dpcm_walk_once",
+   "format": "dpcm4",
+   "pitch": 10764288,
+   "loop": false,
+   "loop_start": 0,
+   "length": 1027,
+   "data": "samples/dpcm_walk_once.bin"
+  }
+ ],
+ "waves": [
+  {
+   "key": "wave:tri",
+   "data": "0123456789ABCDEFFEDCBA9876543210"
+  },
+  {
+   "key": "wave:square",
+   "data": "FFFFFFFF00000000FFFFFFFF00000000"
+  }
+ ],
+ "keymaps": [
+  {
+   "key": "keymap:two",
+   "entries": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200
+   ]
+  }
+ ],
+ "voice_banks": [
+  {
+   "key": "bank:main",
+   "voices": [
+    {
+     "kind": "sample",
+     "sample": "sample:sine_loop",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 0
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:square_once",
+     "key": 60,
+     "attack": 20,
+     "decay": 200,
+     "sustain": 128,
+     "release": 180
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:saw_loop",
+     "key": 60,
+     "attack": 255,
+     "decay": 230,
+     "sustain": 100,
+     "release": 200
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:noise_once",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 0
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:dpcm_sine_loop",
+     "key": 60,
+     "attack": 255,
+     "decay": 250,
+     "sustain": 200,
+     "release": 220
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:fixed",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 0,
+     "fixed_rate": true
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:square_once",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 0,
+     "reverse": true
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:sine_loop",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 0,
+     "release": 0
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:sine_loop",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 128
+    },
+    {
+     "kind": "square_sweep",
+     "duty": 2,
+     "sweep": 35,
+     "length": 0,
+     "key": 60,
+     "attack": 1,
+     "decay": 2,
+     "sustain": 10,
+     "release": 3
+    },
+    {
+     "kind": "square_sweep",
+     "duty": 1,
+     "sweep": 128,
+     "length": 0,
+     "key": 60,
+     "attack": 0,
+     "decay": 1,
+     "sustain": 12,
+     "release": 1
+    },
+    {
+     "kind": "square",
+     "duty": 0,
+     "length": 20,
+     "key": 60,
+     "attack": 0,
+     "decay": 1,
+     "sustain": 8,
+     "release": 2
+    },
+    {
+     "kind": "square",
+     "duty": 3,
+     "length": 0,
+     "key": 60,
+     "even_pitch": true,
+     "attack": 2,
+     "decay": 0,
+     "sustain": 15,
+     "release": 0
+    },
+    {
+     "kind": "wave",
+     "wave": "wave:tri",
+     "length": 0,
+     "key": 60,
+     "attack": 0,
+     "decay": 0,
+     "sustain": 15,
+     "release": 1
+    },
+    {
+     "kind": "wave",
+     "wave": "wave:square",
+     "length": 0,
+     "key": 60,
+     "even_pitch": true,
+     "attack": 1,
+     "decay": 3,
+     "sustain": 6,
+     "release": 4
+    },
+    {
+     "kind": "noise",
+     "period": 0,
+     "length": 0,
+     "key": 60,
+     "attack": 0,
+     "decay": 2,
+     "sustain": 0,
+     "release": 0
+    },
+    {
+     "kind": "noise",
+     "period": 1,
+     "length": 10,
+     "key": 60,
+     "attack": 3,
+     "decay": 1,
+     "sustain": 12,
+     "release": 7
+    },
+    {
+     "kind": "split",
+     "instruments": "instruments:split",
+     "keymap": "keymap:two"
+    },
+    {
+     "kind": "drums",
+     "instruments": "instruments:drums"
+    },
+    {
+     "kind": "split",
+     "instruments": "instruments:nested",
+     "keymap": "keymap:two"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:short",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 0
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:short",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 0,
+     "reverse": true
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:dpcm_walk_once",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 40
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:dpcm_sine_loop",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 0,
+     "reverse": true
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:saw_loop",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 0,
+     "fixed_rate": true
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:sine_loop",
+     "key": 60,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 60
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:saw_loop",
+     "key": 72,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 60
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "split",
+     "instruments": "instruments:split",
+     "keymap": "keymap:two"
+    },
+    {
+     "kind": "drums",
+     "instruments": "instruments:drums"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:noise_once",
+     "key": 50,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 100,
+     "pan_sweep": 160
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "square",
+     "duty": 2,
+     "length": 0,
+     "key": 70,
+     "pan_sweep": 224,
+     "attack": 0,
+     "decay": 0,
+     "sustain": 15,
+     "release": 0
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "sample",
+     "sample": "sample:square_once",
+     "key": 64,
+     "attack": 255,
+     "decay": 0,
+     "sustain": 255,
+     "release": 0
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "split",
+     "instruments": "instruments:split",
+     "keymap": "keymap:two"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    },
+    {
+     "kind": "none"
+    }
+   ]
+  }
+ ],
+ "instrument_sets": [
+  {
+   "key": "instruments:main",
+   "bank": "bank:main",
+   "offset": 0
+  },
+  {
+   "key": "instruments:split",
+   "bank": "bank:main",
+   "offset": 32
+  },
+  {
+   "key": "instruments:nested",
+   "bank": "bank:main",
+   "offset": 48
+  },
+  {
+   "key": "instruments:drums",
+   "bank": "bank:main",
+   "offset": 64
+  }
+ ],
+ "songs": [
+  {
+   "key": "song:basic",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": null,
+   "asm": "songs/basic.cseq"
+  },
+  {
+   "key": "song:flow",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": null,
+   "asm": "songs/flow.cseq"
+  },
+  {
+   "key": "song:tempo",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": null,
+   "asm": "songs/tempo.cseq"
+  },
+  {
+   "key": "song:lfo",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": null,
+   "asm": "songs/lfo.cseq"
+  },
+  {
+   "key": "song:envelope",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": null,
+   "asm": "songs/envelope.cseq"
+  },
+  {
+   "key": "song:voices",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": null,
+   "asm": "songs/voices.cseq"
+  },
+  {
+   "key": "song:tone",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": null,
+   "asm": "songs/tone.cseq"
+  },
+  {
+   "key": "song:chord",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": null,
+   "asm": "songs/chord.cseq"
+  },
+  {
+   "key": "song:se_low",
+   "instruments": "instruments:main",
+   "priority": 1,
+   "reverb": null,
+   "asm": "songs/se_low.cseq"
+  },
+  {
+   "key": "song:se_high",
+   "instruments": "instruments:main",
+   "priority": 5,
+   "reverb": null,
+   "asm": "songs/se_high.cseq"
+  },
+  {
+   "key": "song:fade",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": null,
+   "asm": "songs/fade.cseq"
+  },
+  {
+   "key": "song:loud",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": null,
+   "asm": "songs/loud.cseq"
+  },
+  {
+   "key": "song:tail",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": null,
+   "asm": "songs/tail.cseq"
+  },
+  {
+   "key": "song:se2",
+   "instruments": "instruments:main",
+   "priority": 3,
+   "reverb": null,
+   "asm": "songs/se2.cseq"
+  },
+  {
+   "key": "song:se3",
+   "instruments": "instruments:main",
+   "priority": 2,
+   "reverb": null,
+   "asm": "songs/se3.cseq"
+  },
+  {
+   "key": "song:reverb_a",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": 50,
+   "asm": "songs/fade.cseq"
+  },
+  {
+   "key": "song:reverb_off",
+   "instruments": "instruments:main",
+   "priority": 0,
+   "reverb": 0,
+   "asm": "songs/basic.cseq"
+  }
+ ],
+ "clips": [
+  {
+   "key": "clip:a",
+   "voice": {
+    "kind": "sample",
+    "sample": "sample:square_once",
+    "key": 60,
+    "attack": 255,
+    "decay": 0,
+    "sustain": 255,
+    "release": 0
+   }
+  },
+  {
+   "key": "clip:b",
+   "voice": {
+    "kind": "sample",
+    "sample": "sample:dpcm_walk_once",
+    "key": 60,
+    "attack": 255,
+    "decay": 0,
+    "sustain": 255,
+    "release": 0
+   }
+  },
+  {
+   "key": "clip:b_reverse",
+   "reverse_of": "clip:b"
+  },
+  {
+   "key": "clip:c",
+   "voice": {
+    "kind": "sample",
+    "sample": "sample:dpcm_sine_loop",
+    "key": 60,
+    "attack": 255,
+    "decay": 0,
+    "sustain": 255,
+    "release": 0
+   }
+  }
+ ]
+}

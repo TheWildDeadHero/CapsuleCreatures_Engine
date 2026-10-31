@@ -1,0 +1,7 @@
+{
+  "schema": "capsule.scripts/1",
+  "editor": {"notes": "Scripts of the field rules fixture (F1): the battle manifest's timed field effects become implicit variables and expiry scripts (tests/field_save_tests.cpp). F2: the field actions (paddle, shove, lamp, rope) on world.json's targets, their scripts and the flags / variables they read (tests/field_actions_tests.cpp)."},
+  "sources": ["field.cscript"],
+  "world": "world.json",
+  "battle": "battle.json"
+}

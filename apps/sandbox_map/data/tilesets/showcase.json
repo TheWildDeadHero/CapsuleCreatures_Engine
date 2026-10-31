@@ -1,0 +1,20 @@
+{
+  "schema": "capsule.tileset/2",
+  "id": "showcase",
+  "sheets": [{"name": "keyed", "palette": "auto", "image": "sheets/keyed.png", "transparent": "#ff00ff"}],
+  "metatiles": [
+    {"name": "arch_l", "tiles": ["keyed:0", "keyed:1", "keyed:8", "keyed:9"]},
+    {"name": "arch_r", "tiles": ["keyed:1h", "keyed:0h", "keyed:9h", "keyed:8h"]},
+    {"name": "pillar_l", "tiles": ["keyed:20", "keyed:21", "keyed:28", "keyed:29"]},
+    {"name": "pillar_r", "tiles": ["keyed:21h", "keyed:20h", "keyed:29h", "keyed:28h"]},
+    {"name": "fence", "tiles": ["keyed:2", "keyed:3", "keyed:10", "keyed:11"]},
+    {"name": "fence_end", "tiles": ["keyed:3h", "keyed:2h", "keyed:11h", "keyed:10h"]},
+    {"name": "lamp_head", "tiles": ["keyed:4", "keyed:5", "keyed:12", "keyed:13"]},
+    {"name": "lamp_post", "tiles": ["keyed:6", "keyed:7", "keyed:14", "keyed:15"]},
+    {"name": "deck", "tiles": ["keyed:16", "keyed:17", "keyed:16v", "keyed:17v"]},
+    {"name": "pot", "tiles": ["keyed:18", "keyed:19", "keyed:26", "keyed:27"]}
+  ],
+  "editor": {
+    "notes": "Showcase pieces: one image sheet drawn as shapes with a transparent key color (#ff00ff); mirrored halves use tile flips."
+  }
+}

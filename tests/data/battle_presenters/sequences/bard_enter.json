@@ -1,0 +1,24 @@
+{
+  "schema": "capsule.sequence/1",
+  "id": "bard_enter",
+  "editor": {
+    "notes": "Test fixture: the Bard's entrance (tests/data/battle_presenters). The presenter sprite (presenter sequence slot 14) runs in from the right edge to the single format's foe stand and hides; the presenter view then shows the Bard at the stand."
+  },
+  "exits": ["done"],
+  "stages": [
+    {
+      "name": "enter",
+      "on": {"done": "exit:done"},
+      "tracks": [
+        [
+          {"op": "spr_load", "slot": 14, "asset": "sprite:PRESENTER"},
+          {"op": "spr_pos", "slot": 14, "x": 240, "y": 20},
+          {"op": "spr_show", "slot": 14},
+          {"op": "spr_move", "slot": 14, "vx": -2, "frames": 40},
+          {"op": "wait_for", "what": "sprite", "slot": 14},
+          {"op": "spr_hide", "slot": 14}
+        ]
+      ]
+    }
+  ]
+}

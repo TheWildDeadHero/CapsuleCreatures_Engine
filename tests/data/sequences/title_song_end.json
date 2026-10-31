@@ -1,0 +1,156 @@
+{
+  "schema": "capsule.sequence/1",
+  "id": "test_title_song_end",
+  "editor": {
+    "notes": "Test fixture: Mode 1 title in two timed phases (skips snap to the final state), idle ends when the title song ends; combos include one gated by a condition."
+  },
+  "exits": ["main_menu", "clear_save", "reset_rtc"],
+  "conditions": ["rtc_resettable"],
+  "start": "copyright",
+  "stages": [
+    {
+      "name": "copyright",
+      "flags": ["reset_visuals"],
+      "on": {"done": "stage:intro"},
+      "tracks": [
+        [
+          {"op": "video_mode", "mode": 0},
+          {"op": "bg_load", "bg": 0, "asset": "image:COPYRIGHT SCREEN"},
+          {"op": "bg_show", "bg": 0},
+          {"op": "fade", "dir": "in", "color": "black", "frames": 16},
+          {"op": "wait", "frames": 140},
+          {"op": "fade", "dir": "out", "color": "black", "frames": 16},
+          {"op": "wait", "frames": 16}
+        ]
+      ]
+    },
+    {
+      "name": "intro",
+      "flags": ["reset_visuals"],
+      "skip": ["A", "START"],
+      "on": {"done": "stage:title_logo", "skip": "stage:title_logo"},
+      "editor": {
+        "notes": "Placeholder intro timeline; the cutscene itself is separate content."
+      },
+      "tracks": [
+        [
+          {"op": "song", "asset": "song:INTRO"},
+          {"op": "bg_load", "bg": 3, "asset": "image:INTRO SKY"},
+          {"op": "bg_show", "bg": 3},
+          {"op": "fade", "dir": "in", "color": "white", "frames": 16},
+          {"op": "wait", "frames": 600},
+          {"op": "fade", "dir": "out", "color": "white", "frames": 16},
+          {"op": "wait", "frames": 16}
+        ]
+      ]
+    },
+    {
+      "name": "title_logo",
+      "flags": ["reset_visuals"],
+      "skip": ["A", "B", "START", "SELECT"],
+      "on": {"done": "stage:title_banners", "skip": "stage:title_snap"},
+      "tracks": [
+        [
+          {"op": "video_mode", "mode": 1},
+          {"op": "song", "asset": "song:TITLE"},
+          {"op": "bg_load", "bg": 1, "asset": "image:TITLE CLOUDS"},
+          {"op": "bg_load", "bg": 2, "asset": "image:TITLE LOGO"},
+          {"op": "bg_show", "bg": 1},
+          {"op": "bg_show", "bg": 2},
+          {"op": "bg_scroll", "bg": 1, "vy": -0.5},
+          {"op": "scanline", "bg": 1, "asset": "scanline:CLOUD WAVE"},
+          {"op": "fade", "dir": "in", "color": "white", "frames": 16},
+          {"op": "wait", "frames": 256}
+        ],
+        [
+          {"op": "spr_load", "slot": 0, "asset": "sprite:LOGO SHINE"},
+          {"op": "spr_obj_window", "slot": 0},
+          {"op": "spr_pos", "slot": 0, "x": -32, "y": 40},
+          {"op": "spr_show", "slot": 0},
+          {"op": "spr_move", "slot": 0, "vx": 4, "frames": 68},
+          {"op": "wait", "frames": 68},
+          {"op": "spr_hide", "slot": 0}
+        ]
+      ]
+    },
+    {
+      "name": "title_banners",
+      "skip": ["A", "B", "START", "SELECT"],
+      "on": {"done": "stage:title_idle", "skip": "stage:title_snap"},
+      "tracks": [
+        [
+          {"op": "bg_load", "bg": 0, "asset": "image:TITLE SILHOUETTE"},
+          {"op": "bg_show", "bg": 0},
+          {"op": "bg_scroll", "bg": 2, "vy": 0.25},
+          {"op": "spr_load", "slot": 1, "asset": "sprite:VERSION BANNER"},
+          {"op": "spr_pos", "slot": 1, "x": 64, "y": -16},
+          {"op": "spr_show", "slot": 1},
+          {"op": "spr_move", "slot": 1, "vy": 0.5, "frames": 112},
+          {"op": "blend", "mode": "alpha", "src": 8, "tgt": 8, "src_layers": ["obj"], "tgt_layers": ["bg0", "bg1"]},
+          {"op": "wait", "frames": 144},
+          {"op": "bg_scroll", "bg": 2, "vy": 0},
+          {"op": "blend", "mode": "off"}
+        ]
+      ]
+    },
+    {
+      "name": "title_snap",
+      "editor": {
+        "notes": "Skip target: puts every title element in its final state in one frame."
+      },
+      "on": {"done": "stage:title_idle"},
+      "tracks": [
+        [
+          {"op": "spr_move", "slot": 0, "vx": 0},
+          {"op": "spr_hide", "slot": 0},
+          {"op": "bg_load", "bg": 0, "asset": "image:TITLE SILHOUETTE"},
+          {"op": "bg_show", "bg": 0},
+          {"op": "bg_scroll", "bg": 2, "vy": 0},
+          {"op": "bg_pos", "bg": 2, "x": 0, "y": 36},
+          {"op": "spr_load", "slot": 1, "asset": "sprite:VERSION BANNER"},
+          {"op": "spr_move", "slot": 1, "vy": 0},
+          {"op": "spr_pos", "slot": 1, "x": 64, "y": 40},
+          {"op": "spr_show", "slot": 1},
+          {"op": "blend", "mode": "off"},
+          {"op": "fade", "dir": "in", "color": "white", "frames": 0}
+        ]
+      ]
+    },
+    {
+      "name": "title_idle",
+      "flags": ["seed_on_press", "exit_on_song_end"],
+      "on": {"song_end": "stage:copyright"},
+      "combos": [
+        {"held": ["B", "SELECT", "UP"], "to": "exit:clear_save"},
+        {"held": ["B", "SELECT", "LEFT"], "cond": "rtc_resettable", "to": "exit:reset_rtc"},
+        {"pressed": ["A", "START"], "to": "stage:confirm"}
+      ],
+      "tracks": [
+        [
+          {"op": "spr_load", "slot": 2, "asset": "sprite:PRESS START"},
+          {"op": "spr_pos", "slot": 2, "x": 88, "y": 128},
+          {"op": "label", "name": "blink"},
+          {"op": "spr_show", "slot": 2},
+          {"op": "wait", "frames": 16},
+          {"op": "spr_hide", "slot": 2},
+          {"op": "wait", "frames": 16},
+          {"op": "jump", "to": "blink"}
+        ],
+        [
+          {"op": "pal_anim", "slot": 0, "asset": "palanim:SILHOUETTE MARKINGS"}
+        ]
+      ]
+    },
+    {
+      "name": "confirm",
+      "on": {"done": "exit:main_menu"},
+      "tracks": [
+        [
+          {"op": "song_fade", "frames": 16},
+          {"op": "fade", "dir": "out", "color": "white", "frames": 16},
+          {"op": "wait", "frames": 16}
+        ]
+      ]
+    }
+  ]
+}

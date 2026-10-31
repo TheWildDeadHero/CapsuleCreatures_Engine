@@ -1,0 +1,15 @@
+{
+  "schema": "capsule.project/1",
+  "name": "input_viewer",
+  "editor": {
+    "notes": "Input viewer: buttons, mapped actions and shoulder events for this target."
+  },
+  "rom": {
+    "title": "INPUT VIEW",
+    "code": "CINP",
+    "maker": "00"
+  },
+  "sources": [
+    "src/input_viewer.cpp"
+  ]
+}

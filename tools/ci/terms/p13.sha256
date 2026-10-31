@@ -1,0 +1,6 @@
+# Hashed word list (tools/ci/term_check.py, D-40): the franchise's own name (P-13, C1, C6, D-22 (b) and B1 checks).
+# Add a word: echo 'word' | tools/ci/term_check.py hash --list <this file> >> <this file>
+salt 5ee93eb41a57d684b16178a43f064755
+case insensitive
+6b42366d5ed344e55101d009376b0106d728700840fa2762e274f75d5b32cf1b
+51929a33f691d0c90296403a548753288de3097bcab9b96eb66896d614701e11

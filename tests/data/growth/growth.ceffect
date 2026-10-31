@@ -1,0 +1,43 @@
+# Neutral growth fixture logic (G4): an evolution item, a training item, a form item and a passive that changes
+# its holder's form in battle.
+
+item "Ember Stone" {
+   on use_field {
+      # the item_use transformation rules with this item (none holds: the run fails, the stone stays)
+      transform holder;
+   }
+}
+
+item "Vigor Pill" {
+   on use_field {
+      # a pill raises vigor's training value by 10, never past 20 from pills (the structure's caps apply too)
+      if holder.role(stat_training, 0) >= 20 {
+         fail;
+      }
+      train holder vigor 10;
+   }
+}
+
+item "Bright Mirror" {
+   on use_field {
+      if holder.role(form) == 1 {
+         fail;
+      }
+      form holder Bright;
+   }
+}
+
+passive "Stormcall" {
+   on switch_in {
+      # battle only: the record keeps its form
+      form holder Storm;
+   }
+}
+
+# C6 (review4 finding 19): held, it doubles every training gain its holder makes in battle (the structure's training
+# point)
+item "Heavy Band" {
+   point training {
+      modify by 2;
+   }
+}

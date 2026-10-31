@@ -1,0 +1,12 @@
+{
+  "schema": "capsule.scripts/1",
+  "editor": {"notes": "Scripts the map sandbox's events run (signs, triggers, a step hook). Invented content. Field placeholders (D-22 decision 6): {player} is a name slot the sandbox sets at start, {berries} the berry count. F1: the Starter's battle manifest gives the Ward charm's timed field effect (its implicit variable and expiry message). F2: the Starter's field actions (their scripts field_wade / field_clear / field_light, the implicit member variable and asking wrappers), the world's flight points (implicit flags) and escape points (implicit variables)."},
+  "sources": ["sandbox.cscript"],
+  "world": "../world.json",
+  "battle": "../../../../samples/starter/battle.json",
+  "stack_depth": 4,
+  "placeholders": {
+    "player": {"name": 7},
+    "berries": {"var": "berries"}
+  }
+}

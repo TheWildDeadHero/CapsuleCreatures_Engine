@@ -1,0 +1,61 @@
+# Neutral fixture logic (E8, D-25): resources through effect logic; the items' use_field logic below (G2).
+
+move "Refresh" {
+   use {
+      restore user mp 6;
+   }
+}
+
+move "Drain" {
+   hit {
+      target.resource(mp) -= 5;
+   }
+}
+
+# G2: items used out of battle (use_field; Salve's use_battle compiles, the battle's Item action runs it from G3)
+
+item "Salve" {
+   on use_field {
+      if holder.hp == 0 or holder.hp >= holder.max_hp {
+         fail;
+      }
+      restore holder hp 10;
+      text salve_used;
+   }
+   on use_battle {
+      restore holder hp 10;
+   }
+}
+
+item "Ether" {
+   on use_field {
+      # the chosen move slot's pool (the context move)
+      if holder.resource(pp) >= holder.resource_max(pp) {
+         fail;
+      }
+      restore holder pp 5;
+   }
+}
+
+item "Point Up" {
+   on use_field {
+      # PP-Up style: one more raise of the slot (its maximum follows); none left: no effect
+      let before = holder.resource_max(pp);
+      raise holder pp 1;
+      if holder.resource_max(pp) == before {
+         fail;
+      }
+   }
+}
+
+item "Disc Burst" {
+   on use_field {
+      teach holder Burst;
+   }
+}
+
+item "Disc Tap" {
+   on use_field {
+      teach holder Tap;
+   }
+}

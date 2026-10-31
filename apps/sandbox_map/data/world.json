@@ -1,0 +1,295 @@
+{
+  "schema": "capsule.world/1",
+  "id": "sandbox_map",
+  "editor": {
+    "notes": "Map sandbox world (see apps/sandbox_map). meadow and cave: ground is elevation 3, the plateau 4, the stairs 0 (any level). showcase (built with capsule-studio's core; see README, Test apps): every map feature at once; its plateaus are elevation 5 (sprite priority 1, over the bridge deck). Encounters (D-12): species from the battle sandbox's invented data; showcase grass west of x 24 is slot 0, east is slot 1 (night-only creatures); the meadow uses the shared table meadow_grass. A toggles night in the sandbox. Events (B-3): the showcase has a sign north of the start (read facing up), a welcome trigger one step south, a hidden berry at 12,10, a step warp at its west edge (0,9) to the cave and a press warp at its east edge (39,9, press right) to the meadow, which warps back from 0,0 (press left). The cave is in the showcase's area. Step hook pedometer: every 16 steps. Objects (B-21): a guide in the plaza (talk: opens the gate), a stroller wandering east of it, a sentry pacing between the hedges, a rival on the path facing west (sight 4; after the 'battle' it has another line) and a gatekeeper on the meadow exit until the guide is talked to. Eventing (D-17): locations park, meadow and cave with name banners (a box, a wooden sign) and the cave's first-visit preview; the cave warp uses a mosaic, the meadow warps wipe. Field rules (A1/A2): the levels are written out (the default rule, level 5 at priority 1); vehicle class swim (the sandbox menu's vehicle row) crosses water at 2 pixels a frame and cannot run. F2 (D-27 section 3): swim enters only water and dismounts onto land (the Starter's wade action starts it); object kind bush (the showcase's bush at 12,9: the clear action), map tag dark (the cave: darkness 3, the light action), escape points on the showcase and the meadow (going into the cave records one), flight points park, meadow and cave_mouth (recorded on entering their maps; the sandbox menu's flight menu). C8: the darkness levels are the world's (darkness_levels: the Starter's / sandbox's lit box half sizes 72 / 56 / 40 / 24 pixels with brightness 6 / 10 / 13 / 16, the map compiler's defaults); a script-set level (the light action's `darkness 0;`) is kept across a save until the next map. DS1 (D-30): the hut in the showcase's south-east corner: door:HUT bound by the metatile hut_door (the warp sequence opens it, the walker walks in, it closes; leaving the hut it shows open, the walker walks out, it closes); map hut its inside; the default draw-order rule (lower on screen in front)."
+  },
+  "vehicle_classes": [
+    {
+      "name": "foot",
+      "speeds": {
+        "walk": 1,
+        "run": 2
+      },
+      "can_run": true,
+      "first_animation": 0
+    },
+    {
+      "name": "swim",
+      "speeds": {
+        "walk": 2,
+        "run": 2
+      },
+      "can_run": false,
+      "first_animation": 0,
+      "passable": [
+        "water"
+      ],
+      "dismount": true
+    }
+  ],
+  "behaviors": [
+    {
+      "name": "normal"
+    },
+    {
+      "name": "water",
+      "passable": [
+        "swim"
+      ]
+    },
+    {
+      "name": "ice",
+      "slide": true
+    },
+    {
+      "name": "ledge_down",
+      "ledge": "down"
+    },
+    {
+      "name": "push_right",
+      "push": "right"
+    }
+  ],
+  "elevations": [
+    {
+      "name": "any",
+      "meets": "all",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 1",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 2",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 3",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 4",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 5",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 1
+    },
+    {
+      "name": "level 6",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 7",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 8",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 9",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 10",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 11",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 12",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 13",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "level 14",
+      "meets": "same",
+      "on_arrive": "take",
+      "priority": 2
+    },
+    {
+      "name": "bridge",
+      "meets": "all",
+      "on_arrive": "keep",
+      "priority": 2
+    }
+  ],
+  "tilesets": {
+    "outdoor": "tilesets/outdoor.json",
+    "cave": "tilesets/cave.json",
+    "showcase": "tilesets/showcase.json"
+  },
+  "maps": {
+    "meadow": "maps/meadow.json",
+    "cave": "maps/cave.json",
+    "showcase": "maps/showcase.json",
+    "hut": "maps/hut.json"
+  },
+  "start": {
+    "map": "showcase",
+    "x": 5,
+    "y": 7,
+    "facing": "up"
+  },
+  "battle": "../../../samples/starter/battle.json",
+  "encounter_methods": [
+    {
+      "name": "walk",
+      "trigger": "step",
+      "vehicles": [
+        "foot"
+      ]
+    },
+    {
+      "name": "swim",
+      "trigger": "step",
+      "vehicles": [
+        "swim"
+      ]
+    }
+  ],
+  "encounter_conditions": [
+    "night"
+  ],
+  "encounter_tables": "encounters/shared.json",
+  "scripts": "scripts/scripts.json",
+  "step_hooks": [
+    {
+      "name": "pedometer",
+      "period": 16
+    }
+  ],
+  "transition": "fade",
+  "banner_styles": {
+    "box": {
+      "ink": "#f8f8f8",
+      "shadow": "#303030",
+      "fill": "#284878",
+      "border": "#f8f8f8",
+      "frames": 120,
+      "slide": 8
+    },
+    "sign": {
+      "frame": "banners/sign.png",
+      "ink": "#302010",
+      "shadow": "#c8a070",
+      "fill": "#e8c890",
+      "frames": 120,
+      "slide": 8
+    }
+  },
+  "locations": {
+    "park": {
+      "name": "Showcase Park",
+      "banner": "box"
+    },
+    "meadow": {
+      "name": "Sunny Meadow",
+      "banner": "sign"
+    },
+    "cave": {
+      "name": "Echo Cave",
+      "banner": "box",
+      "preview": {
+        "show": "first",
+        "sequences": [
+          {
+            "sequence": "sequences/cave_preview.json"
+          }
+        ]
+      }
+    }
+  },
+  "object_kinds": [
+    "bush"
+  ],
+  "map_tags": [
+    "dark"
+  ],
+  "flight_points": [
+    {
+      "name": "park",
+      "label": "Showcase Park",
+      "map": "showcase",
+      "x": 5,
+      "y": 8,
+      "facing": "down"
+    },
+    {
+      "name": "meadow",
+      "label": "Sunny Meadow",
+      "map": "meadow",
+      "x": 1,
+      "y": 1,
+      "facing": "right"
+    },
+    {
+      "name": "cave_mouth",
+      "label": "Echo Cave",
+      "map": "showcase",
+      "x": 1,
+      "y": 9,
+      "facing": "right"
+    }
+  ],
+  "darkness_levels": [
+    {
+      "lit": 72,
+      "brightness": 6
+    },
+    {
+      "lit": 56,
+      "brightness": 10
+    },
+    {
+      "lit": 40,
+      "brightness": 13
+    },
+    {
+      "lit": 24,
+      "brightness": 16
+    }
+  ],
+  "doors": [
+    {
+      "tileset": "outdoor",
+      "metatile": "hut_door",
+      "door": "door:HUT"
+    }
+  ]
+}

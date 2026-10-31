@@ -1,0 +1,85 @@
+# Neutral fixture logic of the step effects (F3, D-27 section 4): what each step effect's steps handlers do
+# (tests/step_effects_tests.cpp). Invented content. Out of battle the member is on no position: hit points are taken
+# through its hit point resource (`holder.resource(hp) -= N`; damage_hp needs a battler on the field).
+
+# the sting hurts 1 every 4 steps; the structure's survive rule keeps the member at 1 (then the sting is cured)
+status "Sting" {
+   on steps {
+      if field.step_effect == sting and holder.hp > 0 {
+         holder.resource(hp) -= 1;
+         if holder.hp == 0 {
+            cure holder quiet;
+         }
+      }
+   }
+}
+
+# the rot hurts 3 every 2 steps down to 0 (the faint rule); the rot stays
+status "Rot" {
+   on steps {
+      if field.step_effect == rot and holder.hp > 0 {
+         holder.resource(hp) -= 3;
+      }
+   }
+}
+
+# every member's bond grows by 1 every 8 steps; an egg-like counter runs down every 3 steps
+global "bond_rule" {
+   on steps {
+      if field.step_effect == bond {
+         holder.role(bond) = min(holder.role(bond), 254) + 1;
+      }
+      if field.step_effect == hatch and holder.role(hatch) > 0 {
+         holder.role(hatch) = holder.role(hatch) - 1;
+         if holder.role(hatch) == 0 {
+            text hatched;
+         }
+      }
+   }
+}
+
+# a warm member's bond grows by 1 more
+passive "Warm" {
+   on steps {
+      if field.step_effect == bond {
+         holder.role(bond) = min(holder.role(bond), 254) + 1;
+      }
+   }
+}
+
+# a lantern starts the glow (a timed field effect) when the bond effect runs
+passive "Lantern" {
+   on steps {
+      if field.step_effect == bond {
+         field_effect start glow 5;
+      }
+   }
+}
+
+# a held bell adds 2 more
+item "Bell" {
+   on steps {
+      if field.step_effect == bond {
+         holder.role(bond) = min(holder.role(bond), 253) + 2;
+      }
+   }
+}
+
+item "Salve" {
+   on use_field {
+      if holder.hp == 0 or holder.hp >= holder.max_hp {
+         fail;
+      }
+      restore holder hp 10;
+      text salve_used;
+   }
+   on use_battle {
+      restore holder hp 10;
+   }
+}
+
+item "Ward Charm" {
+   on use_field {
+      field_effect start ward 5;
+   }
+}

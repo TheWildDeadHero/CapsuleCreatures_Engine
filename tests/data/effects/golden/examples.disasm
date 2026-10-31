@@ -1,0 +1,439 @@
+program 0: status "Chill" on before_move (bytes 32, stack 2, locals 0, events 1, rng)
+   0000  Has  4 4 2
+   0004  Jz  13
+   0007  Cure  0 0
+   0010  Jmp  31
+   0013  Push8  1
+   0015  Push8  4
+   0017  Chance
+   0018  Jz  27
+   0021  Cure  0 0
+   0024  Jmp  31
+   0027  Text  0
+   0030  Stop
+   0031  End
+program 1: status "Chill" on damaging_hit (bytes 14, stack 2, locals 0, events 1)
+   0000  Get  26 4 0
+   0004  Push8  1
+   0006  Eq
+   0007  Jz  13
+   0010  Cure  0 0
+   0013  End
+program 2: move "Ember Roll" hit (bytes 16, stack 2, locals 0, events 12, rng)
+   0000  Damage
+   0001  Drop
+   0002  Push8  1
+   0004  Push8  8
+   0006  Chance
+   0007  Jz  15
+   0010  Inflict  3 0 1
+   0014  Drop
+   0015  End
+program 3: volatile "guard_chain" on before_move (bytes 14, stack 1, locals 0, events 0)
+   0000  Has  4 4 3
+   0004  Jnz  13
+   0007  Push8  0
+   0009  Set  8 0 0
+   0013  End
+program 4: volatile "guarded" on before_accuracy (bytes 22, stack 2, locals 0, events 2)
+   0000  Has  4 4 1
+   0004  Jz  21
+   0007  Subj  1
+   0009  Subj  0
+   0011  Ne
+   0012  Jz  21
+   0015  Text  1
+   0018  Block  65535
+   0021  End
+program 5: move "Guard" use (bytes 59, stack 5, locals 1, events 2, rng)
+   0000  Get  8 2 0
+   0004  Store  0
+   0006  Load  0
+   0008  Push8  0
+   0010  Gt
+   0011  Jz  38
+   0014  Push8  3
+   0016  Push8  3
+   0018  Push8  2
+   0020  Load  0
+   0022  Push8  3
+   0024  Min
+   0025  Mul
+   0026  Add
+   0027  Chance
+   0028  Jnz  38
+   0031  Push8  0
+   0033  Set  8 2 0
+   0037  Fail
+   0038  Push8  0
+   0040  VolOn  2 1
+   0043  Load  0
+   0045  Push8  1
+   0047  Add
+   0048  Push8  8
+   0050  Min
+   0051  Set  8 2 0
+   0055  Text  2
+   0058  End
+program 6: volatile "daze" on start (bytes 13, stack 2, locals 0, events 1, rng)
+   0000  Push8  1
+   0002  Push8  3
+   0004  Between
+   0005  Set  8 0 1
+   0009  Text  3
+   0012  End
+program 7: volatile "daze" on already (bytes 4, stack 0, locals 0, events 1)
+   0000  Text  4
+   0003  End
+program 8: volatile "daze" on before_move (bytes 50, stack 2, locals 0, events 5, rng)
+   0000  Get  8 0 1
+   0004  Push8  1
+   0006  Sub
+   0007  Set  8 0 1
+   0011  Get  8 0 1
+   0015  Push8  0
+   0017  Eq
+   0018  Jz  30
+   0021  VolOff  0 2
+   0024  Text  5
+   0027  Jmp  49
+   0030  Text  6
+   0033  Push8  1
+   0035  Push8  4
+   0037  Chance
+   0038  Jz  49
+   0041  Push8  30
+   0043  SelfHit  0
+   0045  Text  7
+   0048  Stop
+   0049  End
+program 9: volatile "decoy" on try_hit (bytes 32, stack 2, locals 0, events 2)
+   0000  Get  27 4 0
+   0004  Push8  2
+   0006  Eq
+   0007  Jz  31
+   0010  Subj  1
+   0012  Subj  0
+   0014  Ne
+   0015  Jz  31
+   0018  Has  4 4 4
+   0022  Jnz  31
+   0025  Text  8
+   0028  Block  65535
+   0031  End
+program 10: volatile "decoy" on before_damage (bytes 57, stack 2, locals 1, events 3)
+   0000  Subj  1
+   0002  Subj  0
+   0004  Ne
+   0005  Jz  56
+   0008  Get  43 6 0
+   0012  Get  9 0 0
+   0016  Min
+   0017  Store  0
+   0019  Get  9 0 0
+   0023  Load  0
+   0025  Sub
+   0026  Set  9 0 0
+   0030  Load  0
+   0032  Credit
+   0033  Text  9
+   0036  Get  9 0 0
+   0040  Push8  0
+   0042  Eq
+   0043  Jz  52
+   0046  VolOff  0 3
+   0049  Text  10
+   0052  Push8  0
+   0054  Modify  2
+   0056  End
+program 11: move "Decoy" use (bytes 55, stack 2, locals 1, events 6)
+   0000  Get  1 2 0
+   0004  Push8  5
+   0006  Div
+   0007  Store  0
+   0009  Has  1 2 3
+   0013  Jz  20
+   0016  Text  11
+   0019  Fail
+   0020  Get  0 2 0
+   0024  Load  0
+   0026  Le
+   0027  Jz  34
+   0030  Text  12
+   0033  Fail
+   0034  Load  0
+   0036  DamageHp  2 2
+   0039  Drop
+   0040  Push8  0
+   0042  VolOn  2 3
+   0045  Load  0
+   0047  Set  9 2 0
+   0051  Text  13
+   0054  End
+program 12: volatile "aloft" on before_accuracy (bytes 22, stack 2, locals 0, events 2)
+   0000  Subj  1
+   0002  Subj  0
+   0004  Ne
+   0005  Jz  21
+   0008  Has  4 4 5
+   0012  Jnz  21
+   0015  Text  15
+   0018  Block  65535
+   0021  End
+program 13: move "Soar" use (bytes 23, stack 1, locals 0, events 3)
+   0000  Has  1 2 4
+   0004  Jnz  19
+   0007  Text  14
+   0010  Push8  0
+   0012  VolOn  2 4
+   0015  Lock  2 1
+   0018  Stop
+   0019  VolOff  2 4
+   0022  End
+program 14: move "Relay" use (bytes 15, stack 1, locals 0, events 13, yields, asks)
+   0000  Get  25 2 0
+   0004  Jnz  8
+   0007  Fail
+   0008  Ask  0 2
+   0011  Switch  2 0
+   0014  End
+program 15: move "Payback" target (bytes 57, stack 2, locals 1, events 0)
+   0000  Get  19 2 0
+   0004  Get  39 6 0
+   0008  Ne
+   0009  Jnz  50
+   0012  Get  18 2 0
+   0016  Push8  0
+   0018  Ne
+   0019  Jnz  50
+   0022  Get  15 2 0
+   0026  Push8  0
+   0028  Eq
+   0029  Jnz  50
+   0032  Get  16 2 0
+   0036  Store  0
+   0038  Get  21 2 0
+   0042  Get  21 16 0
+   0046  Ne
+   0047  Jnz  51
+   0050  Fail
+   0051  Get  16 2 0
+   0055  SetTarget
+   0056  End
+program 16: move "Payback" hit (bytes 21, stack 2, locals 0, events 5)
+   0000  Get  15 2 0
+   0004  Push8  3
+   0006  Mul
+   0007  Push8  2
+   0009  Div
+   0010  Push32  65535
+   0015  Min
+   0016  DamageHp  3 1
+   0019  Drop
+   0020  End
+program 17: item "Berrypack" on residual (bytes 28, stack 3, locals 0, events 2)
+   0000  Get  0 0 0
+   0004  Get  1 0 0
+   0008  Lt
+   0009  Jz  27
+   0012  Push8  1
+   0014  Get  1 0 0
+   0018  Push8  12
+   0020  Div
+   0021  Max
+   0022  Heal  0
+   0024  Text  16
+   0027  End
+program 18: passive "Glower" on switch_in (bytes 17, stack 1, locals 2, events 6)
+   0000  ForEach  1 0 0 16
+   0006  Push8  -1
+   0008  Stage  16 0
+   0011  Drop
+   0012  Next  0 6
+   0016  End
+program 19: passive "Hover" on try_hit (bytes 22, stack 2, locals 0, events 1)
+   0000  Get  26 4 0
+   0004  Push8  5
+   0006  Eq
+   0007  Jz  21
+   0010  Subj  1
+   0012  Subj  0
+   0014  Ne
+   0015  Jz  21
+   0018  Push8  0
+   0020  Immune
+   0021  End
+program 20: passive "Drizzle Bowl" on residual (bytes 35, stack 3, locals 0, events 1)
+   0000  Get  33 5 0
+   0004  Push8  0
+   0006  Eq
+   0007  Jz  34
+   0010  Get  0 0 0
+   0014  Get  1 0 0
+   0018  Lt
+   0019  Jz  34
+   0022  Push8  1
+   0024  Get  1 0 0
+   0028  Push8  12
+   0030  Div
+   0031  Max
+   0032  Heal  0
+   0034  End
+program 21: passive "Crackle" on damaging_hit (bytes 28, stack 2, locals 0, events 2, rng)
+   0000  Has  4 4 0
+   0004  Jz  27
+   0007  Get  24 1 0
+   0011  Jz  27
+   0014  Push8  1
+   0016  Push8  5
+   0018  Chance
+   0019  Jz  27
+   0022  Inflict  1 2 1
+   0026  Drop
+   0027  End
+program 22: passive "Kindle" on try_hit (bytes 47, stack 2, locals 0, events 3)
+   0000  Get  26 4 0
+   0004  Push8  1
+   0006  Eq
+   0007  Jz  46
+   0010  Subj  1
+   0012  Subj  0
+   0014  Ne
+   0015  Jz  46
+   0018  Get  5 0 0
+   0022  Push8  1
+   0024  Ne
+   0025  Jz  46
+   0028  Has  1 0 5
+   0032  Jnz  43
+   0035  Push8  0
+   0037  VolOn  0 5
+   0040  Text  17
+   0043  Push8  0
+   0045  Immune
+   0046  End
+program 23: move "Flail" hit (bytes 20, stack 3, locals 0, events 13)
+   0000  Damage
+   0001  Drop
+   0002  Push8  1
+   0004  Get  44 6 0
+   0008  Push8  5
+   0010  Div
+   0011  Max
+   0012  DamageHp  2 2
+   0015  Drop
+   0016  Text  18
+   0019  End
+program 24: status "Deep Blight" on start (bytes 7, stack 1, locals 0, events 0)
+   0000  Push8  0
+   0002  Set  7 0 0
+   0006  End
+program 25: status "Deep Blight" on residual (bytes 37, stack 3, locals 0, events 3)
+   0000  Get  7 0 0
+   0004  Push8  1
+   0006  Add
+   0007  Push8  15
+   0009  Min
+   0010  Set  7 0 0
+   0014  Text  19
+   0017  Push8  1
+   0019  Get  1 0 0
+   0023  Get  7 0 0
+   0027  Mul
+   0028  Push8  20
+   0030  Div
+   0031  Max
+   0032  DamageHp  0 0
+   0035  Drop
+   0036  End
+program 26: status "Deep Blight" on switch_out (bytes 7, stack 1, locals 0, events 0)
+   0000  Push8  0
+   0002  Set  7 0 0
+   0006  End
+program 27: status "Doze" on start (bytes 10, stack 2, locals 0, events 0, rng)
+   0000  Push8  1
+   0002  Push8  3
+   0004  Between
+   0005  Set  6 0 0
+   0009  End
+program 28: status "Doze" on before_move (bytes 39, stack 2, locals 0, events 1)
+   0000  Get  6 0 0
+   0004  Push8  1
+   0006  Sub
+   0007  Set  6 0 0
+   0011  Get  6 0 0
+   0015  Push8  0
+   0017  Eq
+   0018  Jz  27
+   0021  Cure  0 0
+   0024  Jmp  38
+   0027  Has  4 4 6
+   0031  Jnz  38
+   0034  Text  0
+   0037  Stop
+   0038  End
+program 29: side_condition "Caltrops" on switch_in (bytes 44, stack 7, locals 0, events 3)
+   0000  Has  3 0 6
+   0004  Jnz  43
+   0007  Has  2 0 0
+   0011  Jnz  43
+   0014  Push8  1
+   0016  Get  1 0 0
+   0020  Get  37 128 0
+   0024  Push8  10
+   0026  Push8  10
+   0028  Push8  8
+   0030  Push8  6
+   0032  Pick  4
+   0034  Div
+   0035  Max
+   0036  DamageHp  0 0
+   0039  Drop
+   0040  Text  20
+   0043  End
+program 30: move "Caltrops" use (bytes 21, stack 2, locals 0, events 2)
+   0000  Get  37 131 0
+   0004  Push8  3
+   0006  Ge
+   0007  Jz  11
+   0010  Fail
+   0011  Push8  0
+   0013  SideOn  131 0 1
+   0017  Text  21
+   0020  End
+program 31: move "Barrier" use (bytes 18, stack 1, locals 0, events 2)
+   0000  Has  5 130 1
+   0004  Jz  8
+   0007  Fail
+   0008  Push8  5
+   0010  SideOn  130 1 0
+   0014  Text  22
+   0017  End
+owner status Chill (id 1, tags 0x0000, flags 0): before_move -> program 0; damaging_hit -> program 1
+owner move Ember Roll (id 0, tags 0x0000, flags 0): hit -> program 2
+owner volatile guard_chain (id 0, tags 0x0000, flags 0): before_move -> program 3
+owner volatile guarded (id 1, tags 0x0000, flags 0): before_accuracy -> program 4
+owner move Guard (id 1, tags 0x0000, flags 0): use -> program 5
+owner volatile daze (id 2, tags 0x0000, flags 0): start -> program 6; already -> program 7; before_move -> program 8
+owner volatile decoy (id 3, tags 0x0000, flags 0): try_hit -> program 9; before_damage -> program 10
+owner move Decoy (id 2, tags 0x0000, flags 0): use -> program 11
+owner volatile aloft (id 4, tags 0x0000, flags 0): before_accuracy -> program 12
+owner move Soar (id 3, tags 0x0000, flags 0): use -> program 13
+owner move Breeze (id 4, tags 0x0000, flags 0): point power -> fn 0
+owner move Relay (id 5, tags 0x0000, flags 0): use -> program 14
+owner move Payback (id 6, tags 0x0000, flags 0): target -> program 15; hit -> program 16
+owner item Berrypack (id 0, tags 0x0000, flags 0): residual -> program 17
+owner passive Glower (id 0, tags 0x0000, flags 0): switch_in -> program 18
+owner passive Hover (id 1, tags 0x0001, flags 0): try_hit -> program 19
+owner passive Drizzle Bowl (id 2, tags 0x0000, flags 0): residual -> program 20
+owner passive Crackle (id 3, tags 0x0000, flags 0): damaging_hit -> program 21
+owner passive Quick Paddle (id 4, tags 0x0000, flags 0): point speed -> fn 1
+owner volatile kindled (id 5, tags 0x0000, flags 0): 
+owner passive Kindle (id 5, tags 0x0000, flags 0): try_hit -> program 22; point power -> fn 2
+owner move Flail (id 7, tags 0x0000, flags 0): hit -> program 23
+owner status Deep Blight (id 4, tags 0x0000, flags 0): start -> program 24; residual -> program 25; switch_out -> program 26
+owner status Doze (id 5, tags 0x0000, flags 0): start -> program 27; before_move -> program 28
+owner side_condition Caltrops (id 0, tags 0x0000, flags 0): switch_in -> program 29
+owner move Caltrops (id 8, tags 0x0000, flags 0): use -> program 30
+owner side_condition Barrier (id 1, tags 0x0000, flags 0): point damage -> fn 3
+owner move Barrier (id 9, tags 0x0000, flags 0): use -> program 31

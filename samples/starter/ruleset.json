@@ -1,0 +1,571 @@
+{
+ "schema": "capsule.ruleset/2",
+ "editor": {
+  "notes": "The Starter sample's ruleset (E9; own numbers and formulas since C2, README \"Starter rules\"): stats grow linearly from a head start of base / 8 (HP) or base / 16 (core), reserve pools (MP, EP) without temperament; damage from Attack x power x (level + 5) against (Defence + 10); a crit pierces the target's defence stages; ep_regen returns 1 plus a sixteenth of the missing EP; the effect_odds pipeline scales odds by (2 x user Int + 60) / (user Int + target Int + 60), so equal Intelligence keeps the odds asked for. Staged stats (the attack, defense and speed lets, the offense point and the inputs damage_base and escape_odds take) run up to STAGED_CAP 1400 = the stat cap 700 x the top stage's x2, not the stat cap, so +3 / +4 stages still count at the top end (C4)."
+ },
+ "constants": {
+  "HP_FLAT": 10,
+  "HP_START": 8,
+  "HP_DIV": 22,
+  "CORE_FLAT": 3,
+  "CORE_START": 16,
+  "CORE_DIV": 36,
+  "RESERVE_FLAT": 6,
+  "RESERVE_DIV": 30,
+  "PCT": 100,
+  "DAMAGE_LEVEL_BIAS": 5,
+  "DEFENCE_PAD": 10,
+  "DAMAGE_DIV": 50,
+  "DAMAGE_FLAT": 1,
+  "CRIT": 416,
+  "SAME_TYPE": 307,
+  "SPREAD": 180,
+  "ROLL_LOW": 92,
+  "ROLL_SPAN": 17,
+  "ROLL_DEN": 100,
+  "EXP_DIV": 10,
+  "EXP_LEVEL_BIAS": 10,
+  "EXP_RANK_BASE": 4,
+  "REWARD_FLAT": 8,
+  "REWARD_DIV": 2,
+  "ESCAPE_BASE": 96,
+  "ESCAPE_SHARE": 128,
+  "ESCAPE_TRY": 48,
+  "REGEN_FLAT": 1,
+  "REGEN_SHARE": 16,
+  "ODDS_SOFTEN": 60,
+  "STAGED_CAP": 1400,
+  "RECRUIT_RATE_DIV": 400,
+  "RECRUIT_SURE": 100,
+  "TRAIN_SHARE": 8,
+  "TRAIN_PER_YIELD": 2
+ },
+ "inputs": {
+  "base": [
+   1,
+   255
+  ],
+  "gene": [
+   0,
+   15
+  ],
+  "training": [
+   0,
+   255
+  ],
+  "awaken": [
+   0,
+   255
+  ],
+  "level": [
+   1,
+   50
+  ],
+  "trait_pct": [
+   88,
+   115
+  ],
+  "power": [
+   1,
+   1023
+  ],
+  "attack": [
+   1,
+   1400
+  ],
+  "defense": [
+   1,
+   1400
+  ],
+  "yield": [
+   0,
+   65535
+  ],
+  "victor_level": [
+   1,
+   50
+  ],
+  "participants": [
+   1,
+   24
+  ],
+  "foe_rank": [
+   0,
+   1
+  ],
+  "outsider": [
+   0,
+   1
+  ],
+  "speed": [
+   1,
+   1400
+  ],
+  "foe_speed": [
+   1,
+   1400
+  ],
+  "attempts": [
+   0,
+   255
+  ],
+  "reward_base": [
+   0,
+   65535
+  ],
+  "pool_value": [
+   0,
+   700
+  ],
+  "pool_max": [
+   0,
+   700
+  ],
+  "train_yield": [
+   0,
+   3
+  ],
+  "train_value": [
+   0,
+   32
+  ],
+  "train_total": [
+   0,
+   96
+  ],
+  "train_level": [
+   1,
+   50
+  ]
+ },
+ "formulas": {
+  "damage_base": {
+   "args": [
+    "level",
+    "power",
+    "attack",
+    "defense"
+   ],
+   "expr": "attack * power * (level + DAMAGE_LEVEL_BIAS) / ((defense + DEFENCE_PAD) * DAMAGE_DIV) + DAMAGE_FLAT",
+   "range": [
+    1,
+    65535
+   ]
+  },
+  "exp_gain": {
+   "expr": "max(1, yield * level / EXP_DIV * (level + EXP_LEVEL_BIAS) / (victor_level + EXP_LEVEL_BIAS) * (EXP_RANK_BASE + foe_rank) / EXP_RANK_BASE / participants)",
+   "range": [
+    1,
+    16777215
+   ]
+  },
+  "reward": {
+   "expr": "reward_base * (level + REWARD_FLAT) / REWARD_DIV",
+   "range": [
+    0,
+    1900515
+   ]
+  },
+  "escape_odds": {
+   "expr": "ESCAPE_BASE + ESCAPE_SHARE * speed / (speed + foe_speed) + ESCAPE_TRY * attempts",
+   "range": [
+    0,
+    65535
+   ]
+  },
+  "ep_regen": {
+   "args": [
+    "pool_value",
+    "pool_max"
+   ],
+   "expr": "REGEN_FLAT + max(0, pool_max - pool_value) / REGEN_SHARE",
+   "range": [
+    0,
+    700
+   ]
+  },
+  "train_gain": {
+   "args": [
+    "train_yield",
+    "train_value",
+    "train_total",
+    "train_level"
+   ],
+   "expr": "train_yield * TRAIN_PER_YIELD",
+   "range": [
+    0,
+    6
+   ]
+  }
+ },
+ "stat_formulas": {
+  "vital": {
+   "expr": "HP_FLAT + base / HP_START + level * (base + gene) / HP_DIV + training / TRAIN_SHARE",
+   "range": [
+    1,
+    700
+   ]
+  },
+  "reserve": {
+   "expr": "RESERVE_FLAT + level * (base + gene) / RESERVE_DIV + training / TRAIN_SHARE",
+   "range": [
+    1,
+    700
+   ]
+  },
+  "core": {
+   "expr": "(CORE_FLAT + base / CORE_START + level * (base + gene) / CORE_DIV) * trait_pct / PCT + training / TRAIN_SHARE",
+   "range": [
+    1,
+    700
+   ]
+  }
+ },
+ "points": {
+  "offense": {
+   "holder": "user",
+   "sources": [
+    "passive",
+    "item"
+   ],
+   "range": [
+    1,
+    "STAGED_CAP"
+   ]
+  },
+  "power": {
+   "holder": "user",
+   "sources": [
+    "passive",
+    "item"
+   ],
+   "range": [
+    1,
+    1023
+   ]
+  },
+  "weather": {
+   "holder": "user",
+   "sources": [
+    "weather"
+   ],
+   "range": [
+    0,
+    65535
+   ]
+  },
+  "damage": {
+   "holder": "user",
+   "sources": [
+    "status",
+    "passive",
+    "item"
+   ],
+   "range": [
+    0,
+    65535
+   ]
+  },
+  "guard": {
+   "holder": "target",
+   "sources": [
+    "passive",
+    "item"
+   ],
+   "range": [
+    0,
+    65535
+   ]
+  },
+  "speed": {
+   "holder": "self",
+   "sources": [
+    "status",
+    "passive",
+    "item"
+   ],
+   "range": [
+    0,
+    65535
+   ]
+  },
+  "odds": {
+   "holder": "user",
+   "sources": [
+    "passive",
+    "item"
+   ],
+   "range": [
+    0,
+    65535
+   ]
+  },
+  "resist": {
+   "holder": "target",
+   "sources": [
+    "passive",
+    "item"
+   ],
+   "range": [
+    0,
+    65535
+   ]
+  }
+ },
+ "pipelines": {
+  "damage": [
+   {
+    "let": "attack",
+    "expr": "stage_scale(offense_stage_id, offense_raw, offense_stage)",
+    "range": [
+     1,
+     "STAGED_CAP"
+    ]
+   },
+   {
+    "let": "defense",
+    "expr": "if(crit, defense_raw, stage_scale(defense_stage_id, defense_raw, defense_stage))",
+    "range": [
+     1,
+     "STAGED_CAP"
+    ]
+   },
+   {
+    "point": "offense",
+    "on": "attack"
+   },
+   {
+    "let": "power",
+    "expr": "move_power"
+   },
+   {
+    "point": "power",
+    "on": "power"
+   },
+   {
+    "let": "d",
+    "expr": "damage_base(level, power, attack, defense)",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "let": "d",
+    "expr": "if(crit, mulq8(d, CRIT), d)",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "let": "d",
+    "expr": "if(same_type, mulq8(d, SAME_TYPE), d)",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "let": "d",
+    "expr": "type_scale(d)",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "let": "d",
+    "expr": "if(spread, mulq8(d, SPREAD), d)",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "point": "weather",
+    "on": "d"
+   },
+   {
+    "roll": "r",
+    "span": "ROLL_SPAN"
+   },
+   {
+    "let": "d",
+    "expr": "d * (ROLL_LOW + r) / ROLL_DEN",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "point": "damage",
+    "on": "d"
+   },
+   {
+    "point": "guard",
+    "on": "d"
+   },
+   {
+    "let": "damage",
+    "expr": "max(d, 1)",
+    "range": [
+     1,
+     65535
+    ]
+   }
+  ],
+  "self_hit": [
+   {
+    "let": "attack",
+    "expr": "stage_scale(offense_stage_id, offense_raw, offense_stage)",
+    "range": [
+     1,
+     "STAGED_CAP"
+    ]
+   },
+   {
+    "let": "defense",
+    "expr": "stage_scale(defense_stage_id, defense_raw, defense_stage)",
+    "range": [
+     1,
+     "STAGED_CAP"
+    ]
+   },
+   {
+    "let": "d",
+    "expr": "damage_base(level, move_power, attack, defense)"
+   },
+   {
+    "roll": "r",
+    "span": "ROLL_SPAN"
+   },
+   {
+    "let": "d",
+    "expr": "d * (ROLL_LOW + r) / ROLL_DEN"
+   },
+   {
+    "let": "damage",
+    "expr": "max(d, 1)",
+    "range": [
+     1,
+     65535
+    ]
+   }
+  ],
+  "speed": [
+   {
+    "let": "speed",
+    "expr": "stage_scale(speed_stage_id, speed_raw, speed_stage)",
+    "range": [
+     1,
+     "STAGED_CAP"
+    ]
+   },
+   {
+    "point": "speed",
+    "on": "speed"
+   },
+   {
+    "let": "speed",
+    "expr": "max(speed, 1)",
+    "range": [
+     1,
+     "STAGED_CAP"
+    ]
+   }
+  ],
+  "accuracy": [
+   {
+    "let": "chance",
+    "expr": "accuracy_staged(move_accuracy, accuracy_stage - evasion_stage)"
+   },
+   {
+    "let": "out_of",
+    "expr": "100"
+   },
+   {
+    "roll": "r",
+    "span": "if(chance > 0 && chance < out_of, out_of, 0)"
+   },
+   {
+    "let": "hit",
+    "expr": "chance >= out_of || r < chance"
+   }
+  ],
+  "crit": [
+   {
+    "let": "stage",
+    "expr": "crit_stage + move_crit_stage"
+   },
+   {
+    "let": "chance",
+    "expr": "crit_chance(stage)"
+   },
+   {
+    "let": "out_of",
+    "expr": "crit_out_of(stage)"
+   },
+   {
+    "roll": "r",
+    "span": "if(chance > 0 && chance < out_of, out_of, 0)"
+   },
+   {
+    "let": "crit",
+    "expr": "out_of != 0 && (chance >= out_of || r < chance)"
+   }
+  ],
+  "effect_odds": [
+   {
+    "let": "chance",
+    "expr": "effect_chance * (2 * user_stat + ODDS_SOFTEN) / (user_stat + target_stat + ODDS_SOFTEN)",
+    "range": [
+     0,
+     65535
+    ]
+   },
+   {
+    "point": "odds",
+    "on": "chance"
+   },
+   {
+    "point": "resist",
+    "on": "chance"
+   },
+   {
+    "let": "out_of",
+    "expr": "effect_out_of"
+   },
+   {
+    "roll": "r",
+    "span": "if(chance > 0 && chance < out_of, out_of, 0)"
+   },
+   {
+    "let": "hit",
+    "expr": "chance >= out_of || r < chance"
+   }
+  ],
+  "recruit_odds": [
+   {
+    "let": "missing",
+    "expr": "(target_max_hp - target_hp) * PCT / target_max_hp",
+    "range": [
+     0,
+     "PCT"
+    ]
+   },
+   {
+    "let": "chance",
+    "expr": "clamp(recruit_rate * (PCT + missing) / RECRUIT_RATE_DIV + bonus + status_bonus, 0, PCT)"
+   },
+   {
+    "let": "out_of",
+    "expr": "PCT"
+   },
+   {
+    "let": "sure",
+    "expr": "bonus >= RECRUIT_SURE"
+   }
+  ]
+ }
+}

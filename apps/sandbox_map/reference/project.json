@@ -1,0 +1,24 @@
+{
+  "schema": "capsule.project/1",
+  "name": "sandbox_map",
+  "editor": {
+    "notes": "Sandbox for the overworld modules (capsule::map + capsule::field): walk the sandbox world (with its events: signs, triggers, warps, a step hook) with a HUD, a collision view and noclip. F1: the Starter's party leads the encounter rolls (its lead's talent, a Ward charm's timed field effect, a debug line of each roll). F2: the Starter's field actions (wade across the pond, clear the bush, light the dark cave), the flight menu and the escape point. Laid out like a game: engine (linked), this reference manifest, data/ (world, tilesets, maps, walker sprite; shapes only), src/ (scene code)."
+  },
+  "rom": {
+    "title": "MAP SANDBOX",
+    "code": "CSQM",
+    "maker": "00",
+    "cart_mb": 8
+  },
+  "sources": [
+    "src/sandbox_map.cpp"
+  ],
+  "libraries": [
+    "test_kit"
+  ],
+  "assets": "data/assets.json",
+  "maps": "data/world.json",
+  "debug_names": true,
+  "scripts": "data/scripts/scripts.json",
+  "battle": "../../samples/starter/battle.json"
+}

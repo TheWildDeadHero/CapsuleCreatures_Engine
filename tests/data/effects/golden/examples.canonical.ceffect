@@ -1,0 +1,291 @@
+# Effect language examples (E11): conditions, moves, items and passives with invented names exercising the
+# language's mechanisms (chained guard odds, a decoy's HP word, lock-in charge turns, a relay switch, a script
+# target from the taken record, residual healing, a switch-in loop, immunity, pure point handlers, layered side
+# conditions, an escalating status counter), as test input for tests/test_effect_compiler.py. Written in the compact
+# style of the design document (it round-trips; it is not stored canonical).
+
+status "Chill" {
+   on before_move {
+      # moves with the move flag "thaw" cure it
+      if move.has(thaw) {
+         cure holder;
+      } else if chance(1, 4) {
+         cure holder;
+      } else {
+         text skip;
+         stop;
+      }
+   }
+   on damaging_hit when move.type == Ember {
+      cure holder;
+   }
+}
+
+move "Ember Roll" {
+   hit {
+      damage;
+      chance 1/8 {
+         inflict target Scorch quiet;
+      }
+   }
+}   # flags: contact, guard, thaw
+
+volatile "guard_chain" {   # counter; cleared on switch_out
+   on before_move when not move.has(guard_chain) {
+      holder.counter(guard_chain) = 0;
+   }
+}
+
+volatile "guarded" {   # duration: turn
+   on before_accuracy when move.has(guard) and other != holder {
+      text guarded;
+      block;
+   }
+}
+
+move "Guard" {
+   use {
+      let n = user.counter(guard_chain);
+      if n > 0 and not chance(3, 3 + 2 * min(n, 3)) {
+         user.counter(guard_chain) = 0;
+         fail;
+      }
+      vol_on user guarded;
+      user.counter(guard_chain) = min(n + 1, 8);
+      text guard_start;
+   }
+}
+
+volatile "daze" {   # counter; passes; clears_on switch_out
+   on start {
+      holder.counter(daze) = between(1, 3);
+      text became_dazed;
+   }
+   on already {
+      text already_dazed;
+   }
+   on before_move {
+      holder.counter(daze) -= 1;
+      if holder.counter(daze) == 0 {
+         vol_off holder daze;
+         text daze_end;
+      } else {
+         text dazed;
+         chance 1/4 {
+            self_hit 30;
+            text daze_hit;
+            stop;
+         }
+      }   # self_hit pipeline
+   }
+}
+
+volatile "decoy" {   # word; passes
+   on try_hit when move.category == status and other != holder and not move.has(bypass_decoy) {
+      text failed;
+      block;
+   }
+   on before_damage when other != holder {
+      let d = min(value, holder.word(decoy));
+      holder.word(decoy) -= d;
+      credit d;
+      text decoy_hit;
+      if holder.word(decoy) == 0 {
+         vol_off holder decoy;
+         text decoy_faded;
+      }
+      modify set 0;
+   }
+}
+
+move "Decoy" {
+   use {
+      let cost = user.max_hp / 5;
+      if user.has(decoy) {
+         text decoy_already;
+         fail;
+      }
+      if user.hp <= cost {
+         text decoy_weak;
+         fail;
+      }
+      damage_hp user cost quiet;
+      vol_on user decoy;
+      user.word(decoy) = cost;
+      text decoy_made;
+   }
+}
+
+volatile "aloft" {   # clears_on switch_out, faint
+   on before_accuracy when other != holder and not move.has(hits_aloft) {
+      text missed;
+      block;
+   }
+}
+
+move "Soar" {
+   use {
+      if not user.has(aloft) {
+         text soar_up;
+         vol_on user aloft;
+         lock user free;
+         stop;
+      }
+      vol_off user aloft;   # second turn: go on to the target
+   }
+}
+
+move "Breeze" {
+   point power when target.has(aloft) {
+      modify by 1.75;
+   }
+}
+
+move "Relay" {
+   use {
+      if not user.can_switch {
+         fail;
+      }
+      switch user pass;
+   }
+}   # stages + volatiles with passes: true
+
+move "Payback" {   # priority -5; target: script
+   target {
+      if user.taken.turn != turn or user.taken.category != physical or user.taken.amount == 0 or not is_foe(user, user.taken.from) {
+         fail;
+      }
+      set_target user.taken.from;
+   }
+   hit {
+      damage_hp target min(user.taken.amount * 3 / 2, 65535) typed;
+   }
+}
+
+item "Berrypack" {
+   on residual when holder.hp < holder.max_hp {
+      heal holder max(1, holder.max_hp / 12);
+      text berrypack;
+   }
+}
+
+passive "Glower" {
+   on switch_in {
+      for f in adjacent_foes(holder) {
+         stage f atk -1;
+      }
+   }
+}   # stage_change hooks can block
+
+passive "Hover" {
+   tags [hovering];
+   on try_hit when move.type == Soil and other != holder {
+      immune;
+   }
+}
+
+passive "Drizzle Bowl" {
+   on residual when field.weather == Drizzle and holder.hp < holder.max_hp {
+      heal holder max(1, holder.max_hp / 12);
+   }
+}
+
+passive "Crackle" {
+   on damaging_hit when move.has(contact) and other.alive {
+      chance 1/5 {
+         inflict other Numb quiet;
+      }
+   }
+}
+
+passive "Quick Paddle" {
+   point speed when field.weather == Drizzle {
+      modify by 1.3;
+   }
+}
+
+volatile "kindled" {}   # clears_on switch_out
+
+passive "Kindle" {
+   on try_hit when move.type == Ember and other != holder and holder.status != Chill {
+      if not holder.has(kindled) {
+         vol_on holder kindled;
+         text kindled;
+      }
+      immune;
+   }
+   point power when user == holder and move.type == Ember and holder.has(kindled) {
+      modify by 1.4;
+   }
+}
+
+move "Flail" {
+   hit {
+      damage;
+      damage_hp user max(1, dealt / 5) quiet;
+      text recoil;
+   }
+}   # typeless type
+
+status "Deep Blight" {
+   on start {
+      holder.status_aux = 0;
+   }
+   on residual {
+      holder.status_aux = min(holder.status_aux + 1, 15);
+      text residual;
+      damage_hp holder max(1, holder.max_hp * holder.status_aux / 20);
+   }
+   on switch_out {
+      holder.status_aux = 0;
+   }
+}
+
+status "Doze" {
+   on start {
+      holder.status_counter = between(1, 3);
+   }
+   on before_move {
+      holder.status_counter -= 1;
+      if holder.status_counter == 0 {
+         cure holder;
+      } else if not move.has(usable_dozing) {
+         text skip;
+         stop;
+      }
+   }
+}
+
+side_condition "Caltrops" {   # layers 3, no turns
+   # pick() is 0-based (index clamped into the table): layers 1, 2, 3 -> 1/10, 1/8, 1/6
+   on switch_in when not holder.has_type(Wing) and not holder.has(hovering) {
+      damage_hp holder max(1, holder.max_hp / pick(side(holder).layers(Caltrops), 10, 10, 8, 6));
+      text caltrops_hurt;
+   }
+}
+
+move "Caltrops" {
+   use {
+      if side(target).layers(Caltrops) >= 3 {
+         fail;
+      }
+      side_on side(target) Caltrops add_layer;
+      text caltrops;
+   }
+}
+
+side_condition "Barrier" {   # turns 5; texts.ended; holder = a battler of this side
+   point damage when target == holder and move.category == physical and not crit and not move.has(ignores_barriers) {
+      modify by pick(side(holder).active_count, 0.6, 0.6, 0.75);
+   }
+}
+
+move "Barrier" {
+   use {
+      if side(user).has(Barrier) {
+         fail;
+      }
+      side_on side(user) Barrier 5;
+      text barrier;
+   }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "capsule.project/1",
+  "name": "sandbox_party",
+  "editor": {
+    "notes": "The inventory's sandbox (G2, D-26 section 2): the Starter sample's party and bag with a minimal presentation (the test kit's console, bars of plain cells): pools and status per member, the bag's pockets with item use out of battle (the use_field hook in a field context), the Starter's shops, and the engine save image on the platform's medium (GBA flash, a desktop file). Laid out like a game: engine (linked), this reference manifest, the sample's battle data by relative path, src/ (scene code)."
+  },
+  "rom": {
+    "title": "PARTY",
+    "code": "CSPY",
+    "maker": "00"
+  },
+  "sources": [
+    "src/sandbox_party.cpp"
+  ],
+  "libraries": [
+    "test_kit"
+  ],
+  "battle": "../../samples/starter/battle.json"
+}

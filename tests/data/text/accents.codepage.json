@@ -1,0 +1,22 @@
+{
+  "schema": "capsule.codepage/1",
+  "id": "xx",
+  "name": "Test page (ASCII + accents)",
+  "editor": {
+    "notes": "Test data for tests/test_text_encoder.py: a precomposed letter at 0x80, a letter with a combining mark that has no precomposed form at 0x81, and two aliases."
+  },
+  "ranges": [
+    {
+      "first": "0x20",
+      "chars": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+    }
+  ],
+  "map": {
+    "0x80": "é",
+    "0x81": "x́"
+  },
+  "aliases": {
+    "’": "'",
+    "…": "..."
+  }
+}

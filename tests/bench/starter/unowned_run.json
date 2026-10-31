@@ -1,0 +1,36 @@
+{
+   "schema": "capsule.bench/1",
+   "name": "unowned_run",
+   "description": "Running from an unowned creature (the escape odds). (E9 neutral golden transcripts/unowned_run.txt)",
+   "expect": "../../data/starter/golden/transcripts/unowned_run.txt",
+   "rng": "default",
+   "format": "Single",
+   "seed": 9,
+   "parties": [
+      {
+         "side": 0,
+         "controller": "human",
+         "members": [
+            {
+               "species": "Breezle",
+               "level": 14
+            }
+         ]
+      },
+      {
+         "side": 1,
+         "flags": [
+            "unowned"
+         ],
+         "members": [
+            {
+               "species": "Emberkit",
+               "level": 10
+            }
+         ]
+      }
+   ],
+   "choices": [
+      "run"
+   ]
+}

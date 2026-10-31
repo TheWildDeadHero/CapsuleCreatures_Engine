@@ -1,0 +1,30 @@
+{
+  "schema": "capsule.project/1",
+  "name": "test_text",
+  "editor": {
+    "notes": "Test app for capsule/text: glyphs, inks, layout and wrapping."
+  },
+  "rom": {
+    "title": "TEXT TEST",
+    "code": "CTTX",
+    "maker": "00"
+  },
+  "sources": [
+    "src/test_text.cpp"
+  ],
+  "libraries": [
+    "test_kit"
+  ],
+  "text": {
+    "language": "en",
+    "code_pages": {
+      "en": "data/text/test.codepage.json"
+    },
+    "fonts": {
+      "en": [
+        "../../assets/fonts/default_8x8.txt",
+        "data/text/test_glyphs_8x8.txt"
+      ]
+    }
+  }
+}

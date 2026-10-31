@@ -1,0 +1,35 @@
+-- odds_duel
+> Clodbun blocks the way!
+switch_in #1 Clodbun at 1
+> Go, Duskowl!
+switch_in #0 Duskowl at 0
+turn 1
+resource #0 Duskowl MP 57 (was 63)
+> Duskowl used Stardust Lull!
+> But it failed!
+resource #1 Clodbun EP 69 (was 76)
+> Clodbun used Boulder Bash!
+hp #0 Duskowl 30 (was 97)
+resource #1 Clodbun EP 70 (was 69)
+turn 2
+resource #0 Duskowl MP 50 (was 57)
+> Duskowl used Night Pulse!
+hp #1 Clodbun 54 (was 112)
+> Clodbun's Intelligence fell!
+resource #1 Clodbun MP 41 (was 45)
+> Clodbun used Harden!
+> Clodbun's Defence rose sharply!
+resource #1 Clodbun EP 71 (was 70)
+turn 3
+resource #0 Duskowl MP 43 (was 50)
+> Duskowl used Night Pulse!
+hp #1 Clodbun 0 (was 54)
+faint #1 Clodbun
+> Clodbun fainted!
+> Duskowl gained 198 EXP!
+end Victory
+-- outcome Victory, turns 3, reward 0, rng 1F9E7D93
+battler #0 Duskowl lv 30 hp 30/97 status none item none exp 8358 MP 43/63 EP 60/60
+battler #1 Clodbun lv 30 hp 0/112 status none item none exp 8160 MP 41/45 EP 71/76
+record 0.0 Duskowl lv 30 exp 8358 hp 30 status none/0 item none moves Shadow Bite Dread Gaze Night Pulse Gale Kick Cyclone Stardust Lull Fireball MP 43 EP 60
+record 1.0 Clodbun lv 30 exp 8160 hp 112 status none/0 item none moves Boulder Bash Harden Quake Tide Slam Flare Claw Dread Gaze Orbit Knock MP 45 EP 76

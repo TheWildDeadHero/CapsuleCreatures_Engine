@@ -1,0 +1,211 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "desktop-debug",
+      "displayName": "Desktop (debug) - Linux / macOS",
+      "binaryDir": "${sourceDir}/build/desktop-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "desktop-release",
+      "displayName": "Desktop (release, asserts off) - Linux / macOS",
+      "binaryDir": "${sourceDir}/build/desktop-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON"
+      },
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "windows-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "windows-debug",
+      "inherits": "windows-base",
+      "displayName": "Windows (debug) - MinGW-w64, MSYS2 UCRT64 shell",
+      "binaryDir": "${sourceDir}/build/windows-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "windows-release",
+      "inherits": "windows-base",
+      "displayName": "Windows (release, asserts off) - MinGW-w64, MSYS2 UCRT64 shell",
+      "binaryDir": "${sourceDir}/build/windows-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON"
+      }
+    },
+    {
+      "name": "headless",
+      "displayName": "Headless (engine core + tests, no SDL, no apps)",
+      "binaryDir": "${sourceDir}/build/headless",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CAPSULE_PLATFORM": "headless"
+      }
+    },
+    {
+      "name": "big-endian-check",
+      "displayName": "Big-endian check (s390x cross + QEMU, Linux host)",
+      "binaryDir": "${sourceDir}/build/big-endian-check",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/linux-s390x-qemu.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "gba-debug",
+      "displayName": "GBA (debug ROM, asserts on)",
+      "binaryDir": "${sourceDir}/build/gba-debug",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/gba-devkitarm.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "gba-release",
+      "displayName": "GBA (release ROM, asserts off)",
+      "binaryDir": "${sourceDir}/build/gba-release",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/gba-devkitarm.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "dc-debug",
+      "displayName": "Dreamcast (debug, asserts on) - KallistiOS",
+      "binaryDir": "${sourceDir}/build/dc-debug",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/dreamcast-kos.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "dc-release",
+      "displayName": "Dreamcast (release, asserts off) - KallistiOS",
+      "binaryDir": "${sourceDir}/build/dc-release",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/dreamcast-kos.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "desktop-debug",
+      "configurePreset": "desktop-debug"
+    },
+    {
+      "name": "desktop-release",
+      "configurePreset": "desktop-release"
+    },
+    {
+      "name": "windows-debug",
+      "configurePreset": "windows-debug"
+    },
+    {
+      "name": "windows-release",
+      "configurePreset": "windows-release"
+    },
+    {
+      "name": "gba-debug",
+      "configurePreset": "gba-debug"
+    },
+    {
+      "name": "gba-release",
+      "configurePreset": "gba-release"
+    },
+    {
+      "name": "headless",
+      "configurePreset": "headless"
+    },
+    {
+      "name": "big-endian-check",
+      "configurePreset": "big-endian-check"
+    },
+    {
+      "name": "dc-debug",
+      "configurePreset": "dc-debug"
+    },
+    {
+      "name": "dc-release",
+      "configurePreset": "dc-release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "desktop-debug",
+      "configurePreset": "desktop-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "windows-debug",
+      "configurePreset": "windows-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "headless",
+      "configurePreset": "headless",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "big-endian-check",
+      "configurePreset": "big-endian-check",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+# Move logic (converted from the legacy effect lists, E4c). A move's hit phase runs once per target (once for
+# a field move); each `yield` ends one unit of it (a unit without events joins the next one),
+# and a unit that starts after the user fainted does nothing (`if not user.alive { return; }`). A damaging
+# move without logic here hits once per target (the standard hit, tools/battlec/logic.py).
+
+move "Brace" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      stage user power 1;
+      yield;
+   }
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "capsule.encounters/1",
+  "editor": {"notes": "Tables shared by the sandbox maps."},
+  "tables": [
+    {
+      "name": "meadow_grass",
+      "rate": "1/10",
+      "entries": [
+        {"species": "Sproutle", "levels": [2, 4], "weight": 50},
+        {"species": "Breezle", "levels": [2, 4], "weight": 35},
+        {"species": "Voltmink", "levels": [3, 5], "weight": 15, "excludes": ["night"]},
+        {"species": "Duskowl", "levels": [3, 5], "weight": 15, "requires": ["night"]}
+      ]
+    }
+  ]
+}

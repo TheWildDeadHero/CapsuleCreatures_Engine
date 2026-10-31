@@ -1,0 +1,19 @@
+// Scripts of the field rules fixture (F1): the timed field effect statements on the battle manifest's
+// field_effects (ward, glow, lure). Invented content.
+
+var started : u8 0..1;
+var left : u16;
+
+script use_ward {
+    field_effect start ward 5 -> var(started);
+    field_effect remaining ward -> var(left);
+}
+
+// F2: what the field actions read (a badge, a story step) and the scripts they run.
+flag badge_one;
+var story : u8 0..9;
+
+script do_paddle { vehicle swim; }
+script do_shove { move self down 1; }
+script do_lamp { darkness 0; }
+script do_rope { var(story) += 1; }

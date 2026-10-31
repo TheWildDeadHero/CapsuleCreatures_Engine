@@ -1,0 +1,27 @@
+{
+ "schema": "capsule.template/1",
+ "id": "starter",
+ "name": "Starter",
+ "description": "A complete neutral battle game to copy: nine stats with HP, MP and EP pools, physical moves paying EP and elemental and status moves paying MP, Intelligence deciding effect odds, nine types, nine creatures, talents, charms, rivals and shape art.",
+ "version": 1,
+ "editor": {
+  "notes": "The engine's Starter sample (E9, D-25; README \"Starting a new game from the Starter sample\"). Applying it copies every part's files into the game with their relative paths (D-23 section 3.5)."
+ },
+ "parts": {
+  "structure": [
+   "structure.json"
+  ],
+  "logic": [
+   "ruleset.json",
+   "effects/moves.ceffect",
+   "effects/passives.ceffect",
+   "effects/items.ceffect",
+   "effects/conditions.ceffect",
+   "effects/field.ceffect"
+  ],
+  "content": [
+   "battle.json",
+   "assets.json"
+  ]
+ }
+}

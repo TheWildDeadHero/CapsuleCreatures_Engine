@@ -1,0 +1,257 @@
+{
+ "schema": "capsule.assets/1",
+ "id": "ui_assets",
+ "editor": {
+  "notes": "N3 fixture (simple shapes): a font, a sprite of two arrows (four facing animations, two of them flipped), text box styles with menus (a column, a grid, a list with scroll arrows) and a message box with an arrow image."
+ },
+ "assets": [
+  {
+   "key": "font:UI_TEST",
+   "kind": "font",
+   "font": "ui.font.json"
+  },
+  {
+   "key": "sprite:UI_ARROWS",
+   "kind": "sprite",
+   "width": 16,
+   "height": 16,
+   "palette": [
+    "#ff0000"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "rect",
+       "x": 2,
+       "y": 6,
+       "w": 12,
+       "h": 4,
+       "color": 1
+      }
+     ]
+    },
+    {
+     "shapes": [
+      {
+       "shape": "rect",
+       "x": 6,
+       "y": 2,
+       "w": 4,
+       "h": 12,
+       "color": 1
+      }
+     ]
+    }
+   ],
+   "animations": [
+    {
+     "frames": [
+      0
+     ],
+     "period": 30
+    },
+    {
+     "frames": [
+      0
+     ],
+     "period": 30,
+     "flips": [
+      1
+     ]
+    },
+    {
+     "frames": [
+      1
+     ],
+     "period": 30
+    },
+    {
+     "frames": [
+      1
+     ],
+     "period": 30,
+     "flips": [
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "key": "text_box:UI_COLUMN",
+   "kind": "text_box",
+   "font": "font:UI_TEST",
+   "window": {
+    "bg": 0,
+    "first_tile": 100,
+    "palette_bank": 15,
+    "x": 20,
+    "y": 2,
+    "width": 4,
+    "height": 4,
+    "top": 1,
+    "ink": 2,
+    "shadow": 3,
+    "background": 1,
+    "frames_per_char": 0,
+    "speedup": "none"
+   },
+   "frame": {
+    "first_tile": 90,
+    "palette_bank": 15,
+    "image": "frame.png",
+    "palette": [
+     "#ffffff",
+     "#202060",
+     "#80a0e0"
+    ]
+   },
+   "menu": {
+    "option_x": 4,
+    "cursor_x": 0,
+    "top": 1,
+    "row_height": 4,
+    "cursor_width": 2,
+    "cursor_height": 2,
+    "cursor": 62,
+    "wrap": "above",
+    "wrap_above": 3,
+    "input_delay": 2,
+    "move_keys": "pressed",
+    "move_sound": "when_moved",
+    "order": "one_action",
+    "cancel_keys": [
+     "B"
+    ],
+    "sound_move": 5,
+    "sound_choose": 5,
+    "sound_cancel": 5
+   }
+  },
+  {
+   "key": "text_box:UI_START",
+   "kind": "text_box",
+   "font": "font:UI_TEST",
+   "window": {
+    "bg": 0,
+    "first_tile": 140,
+    "palette_bank": 15,
+    "x": 22,
+    "y": 1,
+    "width": 4,
+    "height": 8,
+    "top": 1,
+    "ink": 2,
+    "shadow": 3,
+    "background": 1,
+    "frames_per_char": 0
+   },
+   "frame": {
+    "first_tile": 90,
+    "palette_bank": 15
+   },
+   "menu": {
+    "option_x": 4,
+    "top": 1,
+    "row_height": 4,
+    "cursor_width": 2,
+    "cursor_height": 2,
+    "cursor": 62,
+    "wrap": "always",
+    "order": "every_key",
+    "move_sound": "always",
+    "cancel_keys": [
+     "B",
+     "START"
+    ],
+    "sound_move": 5,
+    "sound_choose": 5
+   }
+  },
+  {
+   "key": "text_box:UI_LIST",
+   "kind": "text_box",
+   "font": "font:UI_TEST",
+   "window": {
+    "bg": 0,
+    "first_tile": 180,
+    "palette_bank": 15,
+    "x": 10,
+    "y": 4,
+    "width": 4,
+    "height": 4,
+    "top": 1,
+    "ink": 2,
+    "shadow": 3,
+    "background": 1,
+    "frames_per_char": 0
+   },
+   "frame": {
+    "first_tile": 90,
+    "palette_bank": 15
+   },
+   "menu": {
+    "option_x": 4,
+    "top": 1,
+    "row_height": 4,
+    "cursor_width": 2,
+    "cursor_height": 2,
+    "cursor": 62,
+    "move_keys": "repeated",
+    "sound_move": 5,
+    "sound_choose": 5,
+    "sound_cancel": 5,
+    "sound_open": 7,
+    "arrow_sprite": "sprite:UI_ARROWS",
+    "arrow_up": 2,
+    "arrow_down": 3,
+    "arrow_amplitude": 2,
+    "arrow_speed": 8
+   }
+  },
+  {
+   "key": "text_box:UI_MESSAGE",
+   "kind": "text_box",
+   "font": "font:UI_TEST",
+   "window": {
+    "bg": 0,
+    "first_tile": 220,
+    "palette_bank": 14,
+    "x": 2,
+    "y": 15,
+    "width": 6,
+    "height": 2,
+    "top": 1,
+    "lines": 2,
+    "ink": 2,
+    "shadow": 3,
+    "background": 1,
+    "frames_per_char": 1,
+    "typing": "counter",
+    "char_delay": 0,
+    "speedup": "none",
+    "arrow_image": {
+     "image": "arrow.png",
+     "height": 4,
+     "steps": [
+      0,
+      1,
+      2,
+      1
+     ],
+     "delay": 8
+    }
+   },
+   "frame": {
+    "first_tile": 90,
+    "palette_bank": 14
+   },
+   "palette": [
+    "#ffffff",
+    "#606060",
+    "#d0d0c8",
+    "#e00808"
+   ]
+  }
+ ]
+}

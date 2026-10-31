@@ -1,0 +1,239 @@
+{
+ "schema": "capsule.tileset/2",
+ "id": "field",
+ "editor": {
+  "notes": "The screen sandbox's field tiles (simple shapes, the engine tests' flat colours)."
+ },
+ "sheets": [
+  {
+   "name": "t",
+   "palette": [
+    "#208020",
+    "#604020",
+    "#f86060",
+    "#2040c0",
+    "#c0e0f8",
+    "#f8f800"
+   ],
+   "size": [
+    64,
+    8
+   ],
+   "shapes": [
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "rect",
+     "x": 8,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 2
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 3
+    },
+    {
+     "shape": "rect",
+     "x": 24,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 4
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 40,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 6
+    },
+    {
+     "shape": "checker",
+     "x": 48,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "colors": [
+      1,
+      2
+     ],
+     "cell": 4
+    },
+    {
+     "shape": "rect",
+     "x": 56,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 4
+    }
+   ]
+  },
+  {
+   "name": "frames",
+   "palette": "@t",
+   "size": [
+    16,
+    8
+   ],
+   "shapes": [
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 4
+    },
+    {
+     "shape": "rect",
+     "x": 8,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 6
+    }
+   ]
+  }
+ ],
+ "metatiles": [
+  {
+   "name": "ground",
+   "tiles": [
+    "t:0",
+    "t:0",
+    "t:0",
+    "t:0"
+   ]
+  },
+  {
+   "name": "wall",
+   "tiles": [
+    "t:1",
+    "t:1",
+    "t:1",
+    "t:1"
+   ]
+  },
+  {
+   "name": "tree",
+   "tiles": [
+    "t:0",
+    "t:0",
+    "t:0",
+    "t:0"
+   ]
+  },
+  {
+   "name": "tree_top",
+   "tiles": [
+    "t:2",
+    "t:2",
+    "t:2",
+    "t:2"
+   ]
+  },
+  {
+   "name": "water",
+   "tiles": [
+    "t:3",
+    "t:3",
+    "t:3",
+    "t:3"
+   ]
+  },
+  {
+   "name": "ice",
+   "tiles": [
+    "t:4",
+    "t:4",
+    "t:4",
+    "t:4"
+   ]
+  },
+  {
+   "name": "ledge",
+   "tiles": [
+    "t:2",
+    "t:2",
+    "t:1",
+    "t:1"
+   ]
+  },
+  {
+   "name": "arrow",
+   "tiles": [
+    "t:5",
+    "t:5",
+    "t:5",
+    "t:5"
+   ]
+  },
+  {
+   "name": "grass",
+   "tiles": [
+    "t:6",
+    "t:6",
+    "t:6",
+    "t:6"
+   ]
+  },
+  {
+   "name": "bridge",
+   "tiles": [
+    "t:1",
+    "t:1",
+    "t:1",
+    "t:1"
+   ]
+  },
+  {
+   "name": "bridge_top",
+   "tiles": [
+    "t:2",
+    null,
+    null,
+    "t:2h"
+   ]
+  },
+  {
+   "name": "anim",
+   "tiles": [
+    "t:7",
+    "t:7",
+    "t:7",
+    "t:7"
+   ]
+  }
+ ],
+ "animations": [
+  {
+   "name": "blink",
+   "tiles": "t:7",
+   "count": 1,
+   "frames": "frames",
+   "period": 4
+  }
+ ]
+}

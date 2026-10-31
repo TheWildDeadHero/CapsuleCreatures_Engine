@@ -1,0 +1,167 @@
+# Neutral fixture logic (tests/data/inventory's, E8, D-25, G2): resources through effect logic; the items' use_field logic below (G2).
+
+move "Refresh" {
+   use {
+      restore user mp 6;
+   }
+}
+
+move "Drain" {
+   hit {
+      target.resource(mp) -= 5;
+   }
+}
+
+# G2: items used out of battle (use_field; Salve's use_battle compiles, the battle's Item action runs it from G3)
+
+item "Salve" {
+   on use_field {
+      if holder.hp == 0 or holder.hp >= holder.max_hp {
+         fail;
+      }
+      restore holder hp 10;
+      text salve_used;
+   }
+   on use_battle {
+      restore holder hp 10;
+   }
+}
+
+item "Ether" {
+   on use_field {
+      # the chosen move slot's pool (the context move)
+      if holder.resource(pp) >= holder.resource_max(pp) {
+         fail;
+      }
+      restore holder pp 5;
+   }
+}
+
+item "Point Up" {
+   on use_field {
+      # PP-Up style: one more raise of the slot (its maximum follows); none left: no effect
+      let before = holder.resource_max(pp);
+      raise holder pp 1;
+      if holder.resource_max(pp) == before {
+         fail;
+      }
+   }
+}
+
+item "Disc Burst" {
+   on use_field {
+      teach holder Burst;
+   }
+}
+
+item "Disc Tap" {
+   on use_field {
+      teach holder Tap;
+   }
+}
+
+# C6 (review4 finding 10): logic that changes the member, then fails: the use puts everything back
+item "Mixed Brew" {
+   on use_field {
+      restore holder hp 10;
+      text salve_used;
+      fail;
+   }
+}
+
+# F1 (D-27): the encounter hooks on the lead's passive and held item, the items that start the timed field effects
+# and the game's global ward rule
+
+global "ward_rule" {
+   on encounter {
+      if field.effect_active(ward) {
+         encounter_skip_below holder.level;
+      }
+   }
+}
+
+passive "Lure" {
+   on encounter {
+      encounter_rate 2 1;
+   }
+}
+
+passive "Hush" {
+   on encounter {
+      encounter_rate 1 2;
+   }
+}
+
+passive "Keen" {
+   on encounter {
+      encounter_skip_below min(holder.level + 1, 255);
+   }
+}
+
+passive "Match" {
+   on encounter_made {
+      target.role(mark) = holder.role(mark);
+   }
+}
+
+passive "Magnet" {
+   on encounter {
+      encounter_type Volt 1 1;
+   }
+}
+
+passive "Big" {
+   on encounter {
+      encounter_field size 3 1 1;
+   }
+}
+
+passive "Hasty" {
+   on encounter {
+      encounter_level_bias 1;
+   }
+}
+
+passive "Shift" {
+   on encounter {
+      encounter_levels 2 2;
+   }
+}
+
+passive "Repick" {
+   on encounter_made {
+      if target.species != Zap {
+         encounter_reroll;
+      }
+   }
+}
+
+passive "Shy" {
+   on encounter_made {
+      block;
+   }
+}
+
+item "Quiet Bell" {
+   on encounter {
+      encounter_rate 1 2;
+   }
+}
+
+item "Ward Charm" {
+   on use_field {
+      field_effect start ward 5;
+   }
+}
+
+item "Glow Stick" {
+   on use_field {
+      field_effect start glow 30;
+   }
+}
+
+item "Lure Bait" {
+   on use_field {
+      field_effect start lure 10;
+   }
+}

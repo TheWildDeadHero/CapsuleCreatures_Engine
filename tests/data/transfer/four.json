@@ -1,0 +1,12 @@
+{
+ "schema": "capsule.transfer_fixture/1",
+ "stats": [{"name": "vigor", "transfer": "hp"}, {"name": "power", "transfer": "atk"}, {"name": "def"},
+           {"name": "pace", "transfer": "spe"}],
+ "monster_layout": {
+  "move_slots": 2,
+  "roles": ["species_key", "experience", {"role": "level", "width": 7}, {"role": "moves", "width": 10}, "pp",
+            {"role": "stat_genes", "width": 4}, "stat_training", "trait", {"role": "held_item", "width": 8},
+            "current_hp", "primary_status", {"custom": "met_level", "width": 7, "default": 5},
+            {"custom": "friendship", "width": 6}, {"custom": "gender", "width": 2}, {"role": "nickname", "count": 5}]
+ }
+}

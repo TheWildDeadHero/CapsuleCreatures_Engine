@@ -1,0 +1,88 @@
+# Neutral VM-integration fixture (tests/battle_vm_tests.cpp): battle moves and a passive as effect code.
+
+# Two turns: the first locks the next action into this move (no PP) and stops; the locked turn hits (the default
+# hit phase of a damaging move).
+move "Charge" {
+   use {
+      if not user.locked {
+         lock user free;
+         text charging;
+         cue glow;
+         stop;
+      }
+   }
+}
+
+# Raises power, then hands the stages to a replacement (the user's party answers which one).
+move "Relay" {
+   use {
+      if not user.can_switch {
+         fail;
+      }
+      stage user power 2 quiet;
+      switch user pass;
+   }
+}
+
+# Credit adds to what the move dealt.
+move "Count" {
+   use {
+      credit 9;
+      say hit_count at user value dealt;
+   }
+}
+
+# Script targeting: the move hits its own user.
+move "Aim" {
+   target {
+      set_target user;
+   }
+}
+
+# A request answered through choose().
+move "Pick" {
+   use {
+      ask choice user into k;
+      say hit_count at user value k * 10;
+   }
+}
+
+# Every hit of a multi-hit is its own step.
+move "Flurry" {
+   hit {
+      repeat 3 max 5 {
+         damage;
+      }
+      text done;
+   }
+}
+
+# Nested hooks: a hit leads to the attacker's stage_change, the target's set_status, then its update, one level
+# deeper each: the update runs past kMaxEffectDepth and is skipped (a counted fault).
+passive "Echo" {
+   tags [echoing];
+   on damaging_hit {
+      stage other power 1 quiet;
+   }
+   on stage_change {
+      inflict other Mark quiet;
+   }
+   on set_status {
+      damage_hp holder 1;
+   }
+   on update {
+      text echo;
+   }
+}
+
+# Raises its user's power stage (converted from the legacy effect list, E4c: one unit, nothing after the user
+# fainted).
+move "Brace" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      stage user power 1;
+      yield;
+   }
+}

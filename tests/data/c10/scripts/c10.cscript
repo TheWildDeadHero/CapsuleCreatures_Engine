@@ -1,0 +1,39 @@
+// Scripts of the C10 fixture (tests/c10_tests.cpp).
+
+flag resume_hides;            // set by plain's on_resume: the object it hides never spawns
+flag watcher_beaten;          // the spotter's flag (a won battle would set it)
+flag removable_gone;          // the removable object's hide flag
+flag passing : session;       // RAM only: never saved
+var hits : u16;               // the immediate trigger counts its runs
+var gate : u16;               // the plain trigger fires while it is 0
+var after : u16;              // set after a wait ends
+var roll : u16;               // a modulo draw
+var zero : u16;               // 0: random's bound when the draw is still taken
+var small : u8 0..9;          // a narrow range: saturates even with the vars wrap
+var visits : u16 session;     // RAM only
+var transitions : u16;        // C11: plain's on_transition runs
+var loads : u16;              // C11: plain's on_load runs
+var returns : u16;            // C11: plain's on_return runs
+
+script quick { var(hits) += 1; }
+script stop_here { var(gate) = 1; }
+script talk { }
+script spotted { }
+script resumed { set flag(resume_hides); }
+script pauses { delay 2; var(after) = 1; }
+script rolls { var(roll) = random(10); var(zero) = random(var(zero)); }
+script wraps { var(hits) = 65535; var(hits) += 1; var(gate) -= 1; var(small) = 9; var(small) += 5; }
+script turns { face selected opposite_player; }
+script turns_self { face self opposite_player; }
+script remove_it { remove 3; }
+script bring_back { clear flag(removable_gone); }
+script transitioned { var(transitions) += 1; }
+script loaded { var(loads) += 1; }
+script returned { var(returns) += 1; }
+
+map_scripts plain {
+    on_transition -> transitioned;
+    on_load -> loaded;
+    on_resume -> resumed;
+    on_return -> returned;
+}

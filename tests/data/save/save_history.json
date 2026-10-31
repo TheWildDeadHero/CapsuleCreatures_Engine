@@ -1,0 +1,150 @@
+{
+ "format": "capsule.save_history/1",
+ "shapes": [
+  {
+   "bank": "flags.permanent",
+   "bytes": 1,
+   "entries": [
+    "met",
+    "gone",
+    "lit"
+   ]
+  },
+  {
+   "bank": "vars.permanent",
+   "bytes": 6,
+   "entries": [
+    [
+     "coins",
+     0,
+     2,
+     0
+    ],
+    [
+     "walked",
+     2,
+     2,
+     0
+    ],
+    [
+     "mood",
+     4,
+     1,
+     0
+    ],
+    [
+     "retired",
+     5,
+     1,
+     0
+    ]
+   ]
+  },
+  {
+   "bank": "names",
+   "bytes": 7,
+   "entries": [
+    [
+     "hero",
+     0,
+     6
+    ]
+   ]
+  },
+  {
+   "bank": "vars.permanent",
+   "bytes": 7,
+   "entries": [
+    [
+     "coins",
+     0,
+     4,
+     0
+    ],
+    [
+     "walked",
+     4,
+     2,
+     0,
+     0,
+     900
+    ],
+    [
+     "mood",
+     6,
+     1,
+     0,
+     0,
+     9
+    ]
+   ]
+  },
+  {
+   "bank": "flags.permanent",
+   "bytes": 1,
+   "entries": [
+    "lit",
+    "met",
+    "fresh"
+   ]
+  },
+  {
+   "bank": "flags.daily",
+   "bytes": 1,
+   "entries": [
+    "seen"
+   ]
+  },
+  {
+   "bank": "vars.permanent",
+   "bytes": 7,
+   "entries": [
+    [
+     "coins",
+     0,
+     4,
+     0
+    ],
+    [
+     "walked",
+     4,
+     2,
+     0,
+     0,
+     500
+    ],
+    [
+     "mood",
+     6,
+     1,
+     0,
+     0,
+     9
+    ]
+   ]
+  },
+  {
+   "bank": "vars.map",
+   "bytes": 1,
+   "entries": [
+    [
+     "door",
+     0,
+     1,
+     0
+    ]
+   ]
+  },
+  {
+   "bank": "names",
+   "bytes": 5,
+   "entries": [
+    [
+     "hero",
+     0,
+     4
+    ]
+   ]
+  }
+ ]
+}

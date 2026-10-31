@@ -1,0 +1,41 @@
+{
+   "schema": "capsule.bench/1",
+   "name": "odds_duel",
+   "description": "A clever user against a dull target: Stardust Lull and Night Pulse through the effect_odds pipeline. (E9 neutral golden transcripts/odds_duel.txt)",
+   "expect": "../../data/starter/golden/transcripts/odds_duel.txt",
+   "rng": "default",
+   "format": "Single",
+   "seed": 21,
+   "parties": [
+      {
+         "side": 0,
+         "controller": "human",
+         "members": [
+            {
+               "species": "Duskowl",
+               "level": 30
+            }
+         ]
+      },
+      {
+         "side": 1,
+         "flags": [
+            "unowned"
+         ],
+         "members": [
+            {
+               "species": "Clodbun",
+               "level": 30
+            }
+         ]
+      }
+   ],
+   "choices": [
+      {
+         "move": 5
+      },
+      {
+         "move": 2
+      }
+   ]
+}
