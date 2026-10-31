@@ -29,6 +29,8 @@
 #include "capsule/core/memory.h"
 #include "capsule/hal/audio.h"
 
+#include <bit>
+
 namespace capsule::audio::detail
 {
 
@@ -126,6 +128,87 @@ inline constexpr uint32_t kLaneVolumeShift = 16;          ///< Volume << 16: the
 inline constexpr uint32_t kLaneMask = 0xFFu;              ///< One lane's bits.
 inline constexpr uint32_t kLeftWords = core::kRingBytes / kLanes;   ///< From a right-side word to its left one.
 static_assert(core::kRingBytes % kLanes == 0, "the left side starts on a ring word");
+///@}
+
+/// @name Ring words in memory (P-19)
+/// The lane arithmetic numbers the lanes from the low end of a word (lane k: bits 8k to 8k + 7), and lane k must be
+/// output byte k of the word in the ring (the byte at the word's address + k): the ring is read byte by byte (the
+/// DMA, the output model, last_block()). A little-endian host (the GBA, every desktop) loads a word that way; a
+/// big-endian host (PowerPC) loads byte 0 into the top bits, so there each ring word is byte-swapped on the way in
+/// and out. Every ring-word load and store of the mixer goes through load_ring() and store_ring(); on a little-endian
+/// host they are a plain load and store (the swap is a constant false branch), so the GBA code is unchanged.
+///
+/// Test switch: CAPSULE_TEST_RING_BIG_ENDIAN (a test build on a little-endian host, never shipped) reads and writes
+/// the ring words as a big-endian host does (byte 0 in the top bits, byte-wise) and takes the big-endian swap, so the
+/// golden tests check the big-endian path without a big-endian machine.
+///@{
+#if defined(CAPSULE_TEST_RING_BIG_ENDIAN)
+inline constexpr bool kRingBigEndian = true;   ///< Emulated big-endian ring access (test builds only).
+#else
+inline constexpr bool kRingBigEndian = std::endian::native == std::endian::big;   ///< The host loads byte 0 on top.
+#endif
+
+/// The host's own load of a ring word (on a CAPSULE_TEST_RING_BIG_ENDIAN build: a big-endian host's load).
+/// @param p  the word
+/// @return the word as the host's load gives it
+[[gnu::always_inline]] inline uint32_t host_load(const uint32_t* p)
+{
+#if defined(CAPSULE_TEST_RING_BIG_ENDIAN)
+   // byte 0 into the top lane, byte 3 into the bottom one
+   const auto* bytes = reinterpret_cast<const uint8_t*>(p);
+   uint32_t w = 0;
+   for (uint32_t i = 0; i < kLanes; ++i)
+   {
+      w = (w << kLaneBits) | bytes[i];
+   }
+   return w;
+#else
+   return *p;
+#endif
+}
+
+/// The host's own store of a ring word (on a CAPSULE_TEST_RING_BIG_ENDIAN build: a big-endian host's store).
+/// @param p  the word
+/// @param w  the value as the host's store takes it
+[[gnu::always_inline]] inline void host_store(uint32_t* p, uint32_t w)
+{
+#if defined(CAPSULE_TEST_RING_BIG_ENDIAN)
+   // the top lane into byte 0, the bottom one into byte 3
+   auto* bytes = reinterpret_cast<uint8_t*>(p);
+   for (uint32_t i = kLanes; i-- > 0;)
+   {
+      bytes[i] = static_cast<uint8_t>(w & kLaneMask);
+      w >>= kLaneBits;
+   }
+#else
+   *p = w;
+#endif
+}
+
+/// Loads a ring word in lane order (lane k = the word's byte k in memory).
+/// @param p  the word (4-byte aligned)
+/// @return the lanes, lane 0 in bits 0-7
+[[gnu::always_inline]] inline uint32_t load_ring(const uint32_t* p)
+{
+   const uint32_t w = host_load(p);
+   if constexpr (kRingBigEndian)
+   {
+      return __builtin_bswap32(w);   // byte 0 came in on top: lane 0 back to bits 0-7
+   }
+   return w;
+}
+
+/// Stores a ring word from lane order (lane k to the word's byte k in memory).
+/// @param p  the word (4-byte aligned)
+/// @param w  the lanes, lane 0 in bits 0-7
+[[gnu::always_inline]] inline void store_ring(uint32_t* p, uint32_t w)
+{
+   if constexpr (kRingBigEndian)
+   {
+      w = __builtin_bswap32(w);   // lane 0 to the top bits: a big-endian store writes them to byte 0
+   }
+   host_store(p, w);
+}
 ///@}
 
 /// A 32-bit product whose second factor is small (a signed byte, a sample delta). On the GBA the per-sample loops are
@@ -332,15 +415,15 @@ template <typename Source>
    uint32_t* const end = out + words;
    for (; out != end; ++out)
    {
-      uint32_t r = out[0];
-      uint32_t l = out[kLeftWords];
+      uint32_t r = load_ring(out);
+      uint32_t l = load_ring(out + kLeftWords);
       bool on = true;
       for (uint32_t k = 0; on && k < kLanes; ++k)
       {
          on = lane(k, c, r, l, vr, vl);
       }
-      out[0] = r;
-      out[kLeftWords] = l;
+      store_ring(out, r);
+      store_ring(out + kLeftWords, l);
       if (!on)
       {
          return false;
@@ -518,14 +601,14 @@ struct ForwardPcm
 {
    for (; out != end && c.at - base < limit; ++out)
    {
-      uint32_t r = out[0];
-      uint32_t l = out[kLeftWords];
+      uint32_t r = load_ring(out);
+      uint32_t l = load_ring(out + kLeftWords);
       pcm_lane(c, r, l, vr, vl);
       pcm_lane(c, r, l, vr, vl);
       pcm_lane(c, r, l, vr, vl);
       pcm_lane(c, r, l, vr, vl);
-      out[0] = r;
-      out[kLeftWords] = l;
+      store_ring(out, r);
+      store_ring(out + kLeftWords, l);
    }
 }
 
@@ -565,20 +648,20 @@ CAPSULE_IWRAM_CODE void mix_pcm(Channel& ch, uint32_t* out, uint32_t words)
          break;
       }
       // a word near the end
-      uint32_t r = out[0];
-      uint32_t l = out[kLeftWords];
+      uint32_t r = load_ring(out);
+      uint32_t l = load_ring(out + kLeftWords);
       for (uint32_t k = 0; k < kLanes; ++k)
       {
          if (!pcm_lane_end(c, r, l, vr, vl, stop, loop_len))
          {
-            out[0] = end_rotate(r, k);
-            out[kLeftWords] = end_rotate(l, k);
+            store_ring(out, end_rotate(r, k));
+            store_ring(out + kLeftWords, end_rotate(l, k));
             ch.status = 0;   // the end; the position stays as at the frame's start
             return;
          }
       }
-      out[0] = r;
-      out[kLeftWords] = l;
+      store_ring(out, r);
+      store_ring(out + kLeftWords, l);
       ++out;
    }
    ch.fraction = c.fw;
@@ -643,8 +726,8 @@ CAPSULE_IWRAM_CODE void mix_dpcm(Channel& ch, uint32_t* out, uint32_t words)
          break;
       }
       // a word that may leave the block or reach the end
-      uint32_t r = out[0];
-      uint32_t l = out[kLeftWords];
+      uint32_t r = load_ring(out);
+      uint32_t l = load_ring(out + kLeftWords);
       for (uint32_t k = 0; k < kLanes; ++k)
       {
          const int32_t v = s0 + (static_cast<int32_t>(mul_small(fw, static_cast<uint32_t>(delta))) >> kFractionBits);
@@ -662,8 +745,8 @@ CAPSULE_IWRAM_CODE void mix_dpcm(Channel& ch, uint32_t* out, uint32_t words)
          {
             if (loop_len == 0)
             {
-               out[0] = end_rotate(r, k);
-               out[kLeftWords] = end_rotate(l, k);
+               store_ring(out, end_rotate(r, k));
+               store_ring(out + kLeftWords, end_rotate(l, k));
                ch.status = 0;   // the end; the position stays as at the frame's start
                return;
             }
@@ -682,8 +765,8 @@ CAPSULE_IWRAM_CODE void mix_dpcm(Channel& ch, uint32_t* out, uint32_t words)
          s0 = adv == 1 ? s0 + delta : g_block[pos & kBlockLast];   // one step: the previous next sample
          delta = g_block[(pos & kBlockLast) + 1] - s0;
       }
-      out[0] = r;
-      out[kLeftWords] = l;
+      store_ring(out, r);
+      store_ring(out + kLeftWords, l);
       ++out;
    }
    ch.fraction = fw;
@@ -731,8 +814,8 @@ CAPSULE_IWRAM_CODE void mix_pcm_fixed(Channel& ch, uint32_t* out, uint32_t words
    uint32_t* const end = out + words;
    for (; out != end; ++out)
    {
-      uint32_t r = out[0];
-      uint32_t l = out[kLeftWords];
+      uint32_t r = load_ring(out);
+      uint32_t l = load_ring(out + kLeftWords);
       if (stop - at > static_cast<int32_t>(kLanes))
       {
          fixed_lane(at, r, l, vr, vl);
@@ -749,8 +832,8 @@ CAPSULE_IWRAM_CODE void mix_pcm_fixed(Channel& ch, uint32_t* out, uint32_t words
             {
                if (loop_len == 0)
                {
-                  out[0] = end_rotate(r, k);
-                  out[kLeftWords] = end_rotate(l, k);
+                  store_ring(out, end_rotate(r, k));
+                  store_ring(out + kLeftWords, end_rotate(l, k));
                   ch.status = 0;   // the end
                   return;
                }
@@ -758,8 +841,8 @@ CAPSULE_IWRAM_CODE void mix_pcm_fixed(Channel& ch, uint32_t* out, uint32_t words
             }
          }
       }
-      out[0] = r;
-      out[kLeftWords] = l;
+      store_ring(out, r);
+      store_ring(out + kLeftWords, l);
    }
    ch.position = static_cast<int32_t>(at - data);
    ch.count = static_cast<int32_t>(stop - at);
@@ -887,17 +970,17 @@ CAPSULE_IWRAM_CODE void begin_segment(uint32_t* out, const uint32_t* next, uint3
    {
       for (; out != end; ++out)
       {
-         out[0] = 0;
-         out[kLeftWords] = 0;
+         store_ring(out, 0);
+         store_ring(out + kLeftWords, 0);
       }
       return;
    }
    for (; out != end; ++out, ++next)
    {
-      const uint32_t a = out[0] ^ kByteBias;
-      const uint32_t b = out[kLeftWords] ^ kByteBias;
-      const uint32_t c = next[0] ^ kByteBias;
-      const uint32_t d = next[kLeftWords] ^ kByteBias;
+      const uint32_t a = load_ring(out) ^ kByteBias;
+      const uint32_t b = load_ring(out + kLeftWords) ^ kByteBias;
+      const uint32_t c = load_ring(next) ^ kByteBias;
+      const uint32_t d = load_ring(next + kLeftWords) ^ kByteBias;
       const uint32_t even = field_sums(a, b, c, d);
       const uint32_t odd = field_sums(a >> kLaneBits, b >> kLaneBits, c >> kLaneBits, d >> kLaneBits);
       const uint32_t w = reverb_lane(static_cast<int32_t>(even & kFieldMask) - kSumBias, reverb) |
@@ -905,8 +988,8 @@ CAPSULE_IWRAM_CODE void begin_segment(uint32_t* out, const uint32_t* next, uint3
                          reverb_lane(static_cast<int32_t>(even >> kFieldBits) - kSumBias, reverb) << kFieldBits |
                          reverb_lane(static_cast<int32_t>(odd >> kFieldBits) - kSumBias, reverb)
                             << (kFieldBits + kLaneBits);
-      out[0] = w;
-      out[kLeftWords] = w;
+      store_ring(out, w);
+      store_ring(out + kLeftWords, w);
    }
 }
 
