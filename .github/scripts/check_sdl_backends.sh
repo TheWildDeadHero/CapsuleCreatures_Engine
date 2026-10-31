@@ -4,6 +4,9 @@
 # fail the build, it silently leaves the backend out (D-40: a container build had X11 only, so no sound at all).
 # SDL loads the backends' libraries at run time, so the executable still starts where one is absent.
 # $1: the CMake build folder (build/desktop-release, ...)
+# SDL_BACKENDS_OPTIONAL: names from the list below that only warn when off (space-separated), for a build whose
+# system cannot provide one (the EL8 release container's PipeWire fails SDL's check; SDL then plays through
+# PulseAudio, which PipeWire desktops serve with pipewire-pulse).
 set -euo pipefail
 
 build=${1:?usage: check_sdl_backends.sh BUILD_DIR}
@@ -21,10 +24,13 @@ required=(
    SDL_VIDEO_DRIVER_WAYLAND
    SDL_VIDEO_DRIVER_X11
 )
+read -ra optional <<< "${SDL_BACKENDS_OPTIONAL:-}"
 status=0
 for name in "${required[@]}"; do
    if grep -Eq "^#define $name 1" "$config"; then
       echo "$name: on"
+   elif [[ " ${optional[*]} " == *" $name "* ]]; then
+      echo "::warning::$name is off in $config (allowed for this build)"
    else
       echo "::error::$name is off in $config (install its -dev package before configuring)"
       status=1
