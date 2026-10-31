@@ -4690,15 +4690,17 @@ def main(argv: list[str]) -> int:
    name = Path(manifest).name
    dst = Path(out)
    dst.parent.mkdir(parents=True, exist_ok=True)
-   dst.write_text(comp.emit_cpp(name, "--debug-names" in args), encoding="utf-8")
+   dst.write_text(comp.emit_cpp(name, "--debug-names" in args), encoding="utf-8", newline="\n")
    ids = option("--ids")
    if ids:
       Path(ids).parent.mkdir(parents=True, exist_ok=True)
-      Path(ids).write_text(comp.emit_ids(name), encoding="utf-8")
+      Path(ids).write_text(comp.emit_ids(name), encoding="utf-8", newline="\n")
    depfile = option("--depfile")
    if depfile:
-      Path(depfile).write_text(f"{out}: " + " ".join(str(p).replace(" ", "\\ ") for p in comp.deps) + "\n",
-                               encoding="utf-8")
+      # a Make depfile: "/" separators on every system (as the other compilers write theirs), spaces escaped
+      Path(depfile).write_text(f"{Path(out).as_posix()}: "
+                               + " ".join(Path(p).as_posix().replace(" ", "\\ ") for p in comp.deps) + "\n",
+                               encoding="utf-8", newline="\n")
    r = comp.result
    print(f"{manifest}: {r['script_count']} scripts, {len(r['flag_names'])} flags, {len(r['vars'])} variables, "
          f"{len(r['code'])} B code, {comp.save_bytes()} B save")

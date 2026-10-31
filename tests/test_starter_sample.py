@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import asset_compiler  # noqa: E402
 import battle_compiler as bc  # noqa: E402
 import effect_compiler as ec  # noqa: E402
+import manifest_paths  # noqa: E402
 
 ## The sample's folder.
 SAMPLE = ROOT / "samples" / "starter"
@@ -206,7 +207,7 @@ class BuildTests(unittest.TestCase):
       project = json.loads((APP / "reference" / "project.json").read_text(encoding="utf-8"))
       for key in ("battle", "assets"):
          with self.subTest(key=key):
-            self.assertFalse(Path(project[key]).is_absolute())
+            self.assertFalse(manifest_paths.is_absolute_text(project[key]))   # absolute on no system (D-40 RW3)
             self.assertEqual((APP / project[key]).resolve().parent, SAMPLE.resolve())
 
    def test_template(self) -> None:

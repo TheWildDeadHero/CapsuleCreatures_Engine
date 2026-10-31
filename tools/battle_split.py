@@ -62,7 +62,7 @@ def write_all(files: Sequence[tuple[Path, str]]) -> None:
       for path, text in files:
          tmp = path.with_name(f".{path.name}{TEMP_SUFFIX}")
          temps.append((tmp, path))
-         tmp.write_text(text, encoding="utf-8")
+         tmp.write_text(text, encoding="utf-8", newline="\n")
    except OSError as e:
       for tmp, _path in temps:
          tmp.unlink(missing_ok=True)

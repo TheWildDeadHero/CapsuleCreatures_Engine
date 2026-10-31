@@ -23,6 +23,8 @@ from os import PathLike
 from pathlib import Path
 from typing import Any
 
+import manifest_paths
+
 ## A manifest object.
 JsonDict = dict[str, Any]
 
@@ -100,7 +102,7 @@ def read_data(path: object, base: str | PathLike[str] | None, deps: list[Path] |
    @return the file's bytes
    @throws ScreenAssetError on a bad path or a missing file
    """
-   if not isinstance(path, str) or not path or Path(path).is_absolute() or "\\" in path:
+   if not isinstance(path, str) or not path or manifest_paths.is_absolute_text(path) or "\\" in path:
       raise ScreenAssetError(f"{where}: data paths are relative, with '/' separators: {path!r}")
    if base is None:
       raise ScreenAssetError(f"{where}: data files need the manifest's directory")

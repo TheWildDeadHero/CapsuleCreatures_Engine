@@ -221,8 +221,8 @@ def main(argv: list[str]) -> None:
       sys.exit(f"{src}: error: {e}")
    text = emit(src.name, target, symbol, bindings, wake, frames)
    dst.parent.mkdir(parents=True, exist_ok=True)
-   if not dst.exists() or dst.read_text(encoding="utf-8") != text:
-      dst.write_text(text, encoding="utf-8")
+   if not dst.exists() or dst.read_bytes() != text.encode("utf-8"):
+      dst.write_text(text, encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":

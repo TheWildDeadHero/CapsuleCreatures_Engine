@@ -430,12 +430,12 @@ class MigrationReviewTests(unittest.TestCase):
          real = Path.write_text
          calls = []
 
-         def failing(self: Path, text: str, encoding: str | None = None) -> int:
-            """!Fails the second temporary file."""
+         def failing(self: Path, text: str, encoding: str | None = None, newline: str | None = None) -> int:
+            """!Fails the second temporary file (the writes pass newline="\\n", D-40 RW3)."""
             calls.append(self)
             if len(calls) == 2:
                raise OSError(28, "No space left on device")
-            return real(self, text, encoding=encoding)
+            return real(self, text, encoding=encoding, newline=newline)
          Path.write_text = failing
          try:
             with self.assertRaisesRegex(bc.ManifestError, "nothing written"):

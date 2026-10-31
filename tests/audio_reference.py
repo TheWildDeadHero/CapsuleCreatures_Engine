@@ -1390,7 +1390,7 @@ def run_case(case: dict, table: Table | None = None) -> list[str]:
 
 def main(argv: list[str]) -> int:
    cases = {c["name"]: c for c in json.loads((DATA / "scripts.json").read_text())["cases"]}
-   Path(argv[1]).write_text("\n".join(run_case(cases[argv[0]])) + "\n")
+   Path(argv[1]).write_text("\n".join(run_case(cases[argv[0]])) + "\n", encoding="utf-8", newline="\n")
    return 0
 
 

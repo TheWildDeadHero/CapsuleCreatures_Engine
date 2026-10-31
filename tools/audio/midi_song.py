@@ -1545,7 +1545,7 @@ def main(argv: list[str] | None = None) -> int:
    out = Path(files[1])
    seq = out.with_suffix(".seq")
    seq.write_bytes(song.data)
-   out.write_text(json.dumps(song.entry(seq.name), indent=1) + "\n", encoding="utf-8")
+   out.write_text(json.dumps(song.entry(seq.name), indent=1) + "\n", encoding="utf-8", newline="\n")
    return 0
 
 

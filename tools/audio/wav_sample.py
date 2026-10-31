@@ -367,7 +367,7 @@ def main(argv: list[str] | None = None) -> int:
    entry = sample.entry(args.asset or f"sample:{args.wav.stem}", args.out.name)
    text = json.dumps(entry, indent=1) + "\n"
    if args.json:
-      args.json.write_text(text, encoding="utf-8")
+      args.json.write_text(text, encoding="utf-8", newline="\n")
    else:
       sys.stdout.write(text)
    return 0

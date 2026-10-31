@@ -97,7 +97,6 @@ against the loaders' VRAM plan (gfx::background, gfx::sprites).
 from __future__ import annotations
 
 import json
-import os
 import sys
 from collections.abc import Iterable, Mapping, Sequence
 from os import PathLike
@@ -106,6 +105,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bitmap  # noqa: E402
+import manifest_paths  # noqa: E402
 import screen_assets  # noqa: E402
 import text_encoder  # noqa: E402
 from sequence_compiler import BLUE_SHIFT, GREEN_SHIFT, U32_MASK  # noqa: E402
@@ -734,7 +734,7 @@ def load_image(path: object, base: str | PathLike[str] | None, w: int, h: int, d
    """
    if not isinstance(path, str) or not path:
       raise ManifestError(f"{where}: image must be a file path")
-   if Path(path).is_absolute() or "\\" in path:
+   if manifest_paths.is_absolute_text(path) or "\\" in path:
       raise ManifestError(f"{where}: image paths are relative, with '/' separators: {path!r}")
    if images is not None and path in images:
       img = images[path]
@@ -768,7 +768,7 @@ def load_indexed_frame(frame: JsonDict, base: str | PathLike[str] | None, w: int
    @return h rows of w indices
    """
    path = frame.get("image")
-   if not isinstance(path, str) or not path or Path(path).is_absolute() or "\\" in path:
+   if not isinstance(path, str) or not path or manifest_paths.is_absolute_text(path) or "\\" in path:
       raise ManifestError(f"{where}: image paths are relative, with '/' separators: {path!r}")
    if base is None:
       raise ManifestError(f"{where}: image frames need the manifest's directory")
@@ -932,6 +932,20 @@ def path_keys(node: Mapping[str, Any]) -> tuple[str, ...]:
    return ("image",) if node.get("kind") == "text_box" else ("image", "font")
 
 
+def relative_image(path: str, base: Path) -> str:
+   """!One merged absolute image path made relative to the including manifest's folder, with '/' separators (I4;
+   D-40 RW3: the absolute check and the separators are the same on every system).
+   @param path  the absolute path (absolute_images() resolved it on this system)
+   @param base  the including manifest's folder
+   @return the relative path
+   @throws ManifestError when the image is on another drive than the manifest (Windows)
+   """
+   try:
+      return manifest_paths.relative_to_folder(path, base)
+   except manifest_paths.PathError as e:
+      raise ManifestError(f"includes: {e}") from None
+
+
 def relative_images(node: Any, base: Path) -> Any:
    """!A copy of merged assets with their absolute image paths made relative to the including manifest's folder
    (image paths are relative, with '/' separators; I4).
@@ -941,8 +955,8 @@ def relative_images(node: Any, base: Path) -> Any:
    """
    if isinstance(node, dict):
       paths = path_keys(node)
-      return {k: (os.path.relpath(v, base.resolve()).replace(os.sep, "/")
-                  if k in paths and isinstance(v, str) and os.path.isabs(v) else relative_images(v, base))
+      return {k: (relative_image(v, base) if k in paths and isinstance(v, str) and manifest_paths.is_absolute_text(v)
+                  else relative_images(v, base))
               for k, v in node.items()}
    if isinstance(node, list):
       return [relative_images(v, base) for v in node]
@@ -1239,7 +1253,7 @@ def compile_arrow_image(arrow: Any, base: str | PathLike[str] | None, deps: list
       raise ManifestError(f"{where}: arrow_image is an object ({', '.join(sorted(TEXT_BOX_ARROW_KEYS))})")
    check_keys(arrow, TEXT_BOX_ARROW_KEYS, f"{where}: arrow_image")
    path = arrow.get("image")
-   if not isinstance(path, str) or not path or Path(path).is_absolute() or "\\" in path:
+   if not isinstance(path, str) or not path or manifest_paths.is_absolute_text(path) or "\\" in path:
       raise ManifestError(f"{where}: arrow_image image is a relative path with '/' separators")
    if base is None:
       raise ManifestError(f"{where}: arrow_image needs the manifest's directory")
@@ -1281,7 +1295,7 @@ def frame_image_tiles(path: Any, base: str | PathLike[str] | None, deps: list[Pa
    @return the nine tiles' 4bpp words (72)
    @throws ManifestError on a bad image
    """
-   if not isinstance(path, str) or not path or Path(path).is_absolute() or "\\" in path:
+   if not isinstance(path, str) or not path or manifest_paths.is_absolute_text(path) or "\\" in path:
       raise ManifestError(f"{where}: frame image is a relative path with '/' separators")
    if base is None:
       raise ManifestError(f"{where}: frame image needs the manifest's directory")
@@ -1519,7 +1533,7 @@ def door_sheet_tiles(sheet: Any, base: str | PathLike[str] | None, deps: list[Pa
       if sheet.get("indexed") is not True or "shapes" in sheet or "size" in sheet:
          raise ManifestError(f"{where}: an image sheet is indexed (\"indexed\": true) and has no size or shapes")
       path = sheet["image"]
-      if not isinstance(path, str) or Path(path).is_absolute() or "\\" in path or base is None:
+      if not isinstance(path, str) or manifest_paths.is_absolute_text(path) or "\\" in path or base is None:
          raise ManifestError(f"{where}: image paths are relative, with '/' separators: {path!r}")
       full = (Path(base) / path).resolve()
       if deps is not None:
@@ -2199,12 +2213,12 @@ def main(argv: list[str]) -> int:
             f"({fit['with_placeholders']} lines with placeholders measured without them)")
    if fit_report is not None:
       fit_report.parent.mkdir(parents=True, exist_ok=True)
-      fit_report.write_text(json.dumps(fit, indent=1) + "\n", encoding="utf-8")
+      fit_report.write_text(json.dumps(fit, indent=1) + "\n", encoding="utf-8", newline="\n")
    text = emit(src.name, entries, bgs, sprites, texts, lists, compile_manifest.fonts, compile_manifest.doors,
                compile_manifest.text_boxes, compile_manifest.screen)
    dst.parent.mkdir(parents=True, exist_ok=True)
-   if not dst.exists() or dst.read_text(encoding="utf-8") != text:
-      dst.write_text(text, encoding="utf-8")
+   if not dst.exists() or dst.read_bytes() != text.encode("utf-8"):
+      dst.write_text(text, encoding="utf-8", newline="\n")
    if depfile is not None:
       def esc(p: str | PathLike[str]) -> str:
          """!A path as make writes it: forward slashes, spaces escaped.
@@ -2213,7 +2227,8 @@ def main(argv: list[str]) -> int:
          """
          return str(p).replace("\\", "/").replace(" ", "\\ ")
       depfile.parent.mkdir(parents=True, exist_ok=True)
-      depfile.write_text(f"{esc(dst)}: " + " ".join(esc(p) for p in sorted(set(deps))) + "\n", encoding="utf-8")
+      depfile.write_text(f"{esc(dst)}: " + " ".join(esc(p) for p in sorted(set(deps))) + "\n",
+                         encoding="utf-8", newline="\n")
    scr = compile_manifest.screen
    rom = (sum(len(b["tiles"]) * WORD_BYTES + PALETTE_BYTES for b in bgs) +
           sum(len(s["tiles"]) * WORD_BYTES + PALETTE_BYTES for s in sprites) +

@@ -5025,7 +5025,8 @@ def main(argv: Sequence[str]) -> int:
       return 1
    if args.emit:
       Path(args.emit).parent.mkdir(parents=True, exist_ok=True)
-      Path(args.emit).write_text(emit_cpp(unit.bank(), args.namespace, Path(args.file).name), encoding="utf-8")
+      Path(args.emit).write_text(emit_cpp(unit.bank(), args.namespace, Path(args.file).name),
+                                 encoding="utf-8", newline="\n")
    elif args.disasm:
       sys.stdout.write(disassemble(unit.bank()))
    return 0

@@ -590,6 +590,6 @@ def write_if_changed(path: Path, text: str) -> None:
    @return None
    """
    path.parent.mkdir(parents=True, exist_ok=True)
-   if not path.exists() or path.read_text(encoding="utf-8") != text:
-      path.write_text(text, encoding="utf-8")
+   if not path.exists() or path.read_bytes() != text.encode("utf-8"):
+      path.write_text(text, encoding="utf-8", newline="\n")
 

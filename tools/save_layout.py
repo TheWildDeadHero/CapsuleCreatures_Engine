@@ -526,7 +526,7 @@ def main(argv: Sequence[str]) -> int:
    text = report(result, Path(args[0]).name)
    if "--out" in opts:
       Path(opts["--out"]).parent.mkdir(parents=True, exist_ok=True)
-      Path(opts["--out"]).write_text(text, encoding="utf-8")
+      Path(opts["--out"]).write_text(text, encoding="utf-8", newline="\n")
    print(text, end="")
    if result["image"] > result["budget"]:
       print(f"error: the save image is over the {result['platform']} medium", file=sys.stderr)

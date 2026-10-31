@@ -342,13 +342,13 @@ def compile_manifest(manifest: Path, out: Path, parts: int = 0, part_bytes: int 
          files[at].append(d)
          sizes[at] += n
       for i, defs in enumerate(files, 1):
-         part_path(out, i).write_text(head + "\n".join(defs) + DATA_END + EPILOGUE, encoding="utf-8")
+         part_path(out, i).write_text(head + "\n".join(defs) + DATA_END + EPILOGUE, encoding="utf-8", newline="\n")
       main.extend(decl + "\n" for _, decl, _ in blobs)
    main.append(c.main_body())
    main.append(DATA_END)
    main.append("\n" + c.table_def())
    main.append(EPILOGUE)
-   out.write_text("".join(main), encoding="utf-8")
+   out.write_text("".join(main), encoding="utf-8", newline="\n")
    read = [manifest]
    base = manifest.parent
    for e in aset.doc.get("samples", []):
@@ -378,8 +378,9 @@ def main(argv: list[str]) -> int:
       print(f"error: {e}", file=sys.stderr)
       return 1
    if args.depfile:
-      deps = " ".join(str(p.resolve()).replace(" ", "\\ ") for p in read)
-      args.depfile.write_text(f"{args.out}: {deps}\n", encoding="utf-8")
+      # a Make depfile: "/" separators on every system (as the other compilers write theirs), spaces escaped
+      deps = " ".join(p.resolve().as_posix().replace(" ", "\\ ") for p in read)
+      args.depfile.write_text(f"{args.out.as_posix()}: {deps}\n", encoding="utf-8", newline="\n")
    return 0
 
 

@@ -230,7 +230,8 @@ def record(comp: Any, path: str | Path) -> int:
       return 0
    kept = [{"bank": s["bank"], "bytes": s["bytes"], "entries": s["entries"]} for s in old]
    kept += [{"bank": s["bank"], "bytes": s["bytes"], "entries": s["entries"]} for s in new]
-   Path(path).write_text(json.dumps({"format": HISTORY_FORMAT, "shapes": kept}, indent=1) + "\n", encoding="utf-8")
+   Path(path).write_text(json.dumps({"format": HISTORY_FORMAT, "shapes": kept}, indent=1) + "\n",
+                         encoding="utf-8", newline="\n")
    return len(new)
 
 

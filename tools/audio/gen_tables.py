@@ -215,11 +215,11 @@ def main(argv: list[str]) -> int:
    text = render()
    out = Path(args.out)
    if args.check:
-      if not out.exists() or out.read_text(encoding="utf-8") != text:
+      if not out.exists() or out.read_bytes() != text.encode("utf-8"):
          print(f"{out}: out of date (run tools/audio/gen_tables.py)", file=sys.stderr)
          return 1
       return 0
-   out.write_text(text, encoding="utf-8")
+   out.write_text(text, encoding="utf-8", newline="\n")
    return 0
 
 

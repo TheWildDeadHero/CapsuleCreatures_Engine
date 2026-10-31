@@ -201,6 +201,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import asset_compiler as ac  # noqa: E402
 import bitmap  # noqa: E402
+import manifest_paths  # noqa: E402
 import encounter_compiler as ec  # noqa: E402
 import event_compiler as evc  # noqa: E402
 import object_compiler as obc  # noqa: E402
@@ -680,7 +681,7 @@ def compile_tileset(name: str, path: str | Path, behaviors: Mapping[str, int], d
          if "shapes" in s or "size" in s:
             raise ManifestError(f"{sw}: an image sheet has no size or shapes")
          p = s["image"]
-         if not isinstance(p, str) or Path(p).is_absolute():
+         if not isinstance(p, str) or manifest_paths.is_absolute_text(p):
             raise ManifestError(f"{sw}: image paths are relative to the tileset")
          full = (base / p).resolve()
          deps.append(full)
@@ -920,7 +921,8 @@ def compile_fixed_tileset(ts: Tileset, m: Mapping[str, Any], base: Path, where: 
       n = sh.get("name")
       if not isinstance(n, str) or not n or ":" in n or "/" in n or n in ts.sheets:
          raise ManifestError(f"{sw}: needs a unique name without ':' or '/'")
-      if sh.get("indexed") is not True or not isinstance(sh.get("image"), str) or Path(sh["image"]).is_absolute():
+      image = sh.get("image")
+      if sh.get("indexed") is not True or not isinstance(image, str) or manifest_paths.is_absolute_text(image):
          raise ManifestError(f"{sw}: a fixed tileset's sheets are indexed images (\"indexed\": true, \"image\": "
                              "a path relative to the tileset)")
       full = (base / sh["image"]).resolve()
@@ -1840,7 +1842,7 @@ def scripts_manifest(w: Mapping[str, Any], base: Path, scripts_path: str | Path 
    @return its resolved path, or None when there is none
    """
    scripts = w.get("scripts")
-   if scripts is not None and (not isinstance(scripts, str) or Path(scripts).is_absolute()):
+   if scripts is not None and (not isinstance(scripts, str) or manifest_paths.is_absolute_text(scripts)):
       raise ManifestError("world: scripts names the scripts manifest by a relative path")
    target = (base / scripts).resolve() if scripts else None
    if scripts_path is not None:
@@ -2510,14 +2512,15 @@ def main(argv: Sequence[str]) -> int:
       if out is None:
          continue
       out.parent.mkdir(parents=True, exist_ok=True)
-      if not out.exists() or out.read_text(encoding="utf-8") != content:
-         out.write_text(content, encoding="utf-8")
+      if not out.exists() or out.read_bytes() != content.encode("utf-8"):
+         out.write_text(content, encoding="utf-8", newline="\n")
    if depfile is not None:
       def esc(p: Path) -> str:
          """!A path as a Make depfile writes it (forward slashes, spaces escaped)."""
          return str(p).replace("\\", "/").replace(" ", "\\ ")
       depfile.parent.mkdir(parents=True, exist_ok=True)
-      depfile.write_text(f"{esc(dst)}: " + " ".join(esc(p) for p in sorted(set(deps))) + "\n", encoding="utf-8")
+      depfile.write_text(f"{esc(dst)}: " + " ".join(esc(p) for p in sorted(set(deps))) + "\n",
+                         encoding="utf-8", newline="\n")
    tiles = sum(len(mp["tiles"]) for mp in world["maps"])
    chunks = sum(len(mp["chunks"]) for mp in world["maps"])
    print(f"{src}: {len(world['maps'])} maps, {chunks} chunks, {tiles} tiles, "

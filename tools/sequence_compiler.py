@@ -1007,7 +1007,7 @@ def main(argv: list[str]) -> int:
       print(f"{argv[1]}: warning: {wmsg}", file=sys.stderr)
    dst = Path(argv[OUTPUT_ARGUMENT])
    dst.parent.mkdir(parents=True, exist_ok=True)
-   dst.write_text(out, encoding="utf-8")
+   dst.write_text(out, encoding="utf-8", newline="\n")
    print(f"{argv[1]}: {len(comp.stage_recs)} stages, {len(comp.cmds)} cmds, {comp.rom_bytes()} B ROM")
    return 0
 

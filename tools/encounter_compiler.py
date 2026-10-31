@@ -734,7 +734,7 @@ def main(argv: Sequence[str]) -> int:
       enc = compile_encounters(w, src, classes, maps)
       if ids is not None:
          ids.parent.mkdir(parents=True, exist_ok=True)
-         ids.write_text(emit_ids(src.name, enc), encoding="utf-8")
+         ids.write_text(emit_ids(src.name, enc), encoding="utf-8", newline="\n")
    except (ManifestError, mc.ManifestError) as e:
       print(f"{src}: error: {e}", file=sys.stderr)
       return 1

@@ -11,6 +11,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 import asset_compiler as ac  # noqa: E402
+import manifest_paths  # noqa: E402
 import sequence_compiler as sc  # noqa: E402
 
 ## A parsed JSON object (a manifest or an asset).
@@ -138,6 +139,19 @@ class AssetCompilerTests(unittest.TestCase):
       self.errors(spr([{"image": "/abs.png"}]), "relative")
       self.errors(spr([{"shapes": []}], ["#ffffff"], {"frames": [0], "durations": [0]}), "durations")
       self.errors(spr([{"shapes": []}], ["#ffffff"], {"frames": [0], "durations": [3], "period": 2}), "not both")
+
+   def test_absolute_on_every_system(self) -> None:
+      """!D-40 RW3: an image path absolute on any system is refused on every system (POSIX root, drive, UNC)."""
+      for text in ("/abs.png", "C:/abs.png", "c:abs.png", "C:\\abs.png", "//server/share/a.png",
+                   "\\\\server\\share\\a.png"):
+         with self.subTest(path=text):
+            self.assertTrue(manifest_paths.is_absolute_text(text))
+            frame = {"key": "sprite:I", "kind": "sprite", "width": 16, "height": 16, "palette": "auto",
+                     "frames": [{"image": text}]}
+            self.errors(manifest(frame), "relative")
+      for text in ("a.png", "images/a.png", "../shared/a.png", "./a.png"):
+         with self.subTest(path=text):
+            self.assertFalse(manifest_paths.is_absolute_text(text))
 
    def test_text_encoding(self) -> None:
       """!Text uses the engine code page with newline and end codes."""
