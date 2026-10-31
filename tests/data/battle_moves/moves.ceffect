@@ -1,0 +1,265 @@
+# E13b's battle primitives on neutral owners (tests/battle_moves_tests.cpp). Placeholder names.
+
+# A move's own point handlers: twice the power against an aloft target.
+move "Gust" {
+   point power when target.has(aloft) {
+      modify by 2;
+   }
+}
+
+move "Rise" {
+   use {
+      vol_on user aloft;
+   }
+}
+
+# A move whose type the weather decides (the move_type point the engine runs on a hit's type).
+move "Shift" {
+   point move_type when field.weather == Dust {
+      modify set Stone;
+   }
+}
+
+# The weather's damage point reads the type the hit has (Stone in the dust).
+weather "Dust" {
+   point damage when move.type == Stone {
+      modify by 2;
+   }
+}
+
+move "Screen" {
+   use {
+      side_on side(user) Screen;
+   }
+}
+
+# A side condition's damage point: hits on its side's battlers halved, except critical ones.
+side_condition "Screen" {
+   point damage when target == holder and not crit {
+      modify by 0.5;
+   }
+}
+
+move "Brace" {
+   use {
+      vol_on user guarded;
+   }
+}
+
+# A volatile's damage point: hits on its holder halved.
+volatile "guarded" {
+   point damage when target == holder {
+      modify by 0.5;
+   }
+}
+
+# Silent stages: a raise without a text, then an owner text.
+move "Pump" {
+   use {
+      stage user power 2 silent;
+      text pumped;
+   }
+}
+
+# Every battler's stages back to 0 without a text.
+move "Calm" {
+   hit {
+      for b in all(user) {
+         reset_stages b;
+      }
+   }
+}
+
+move "Shell" {
+   use {
+      vol_on user shell;
+      user.word(shell) = 30;
+   }
+}
+
+# A word that soaks up others' damage, typed fixed damage included (before_damage), and reads the crit flag.
+volatile "shell" {
+   on before_damage when other != holder {
+      if crit {
+         say crit_seen at holder;
+      }
+      let d = min(value, holder.word(shell));
+      holder.word(shell) -= d;
+      modify set value - d;
+   }
+}
+
+# Fixed damage: 20 HP, typed (the target's before_damage hooks see it).
+move "Fixed" {
+   hit {
+      damage_hp target 20 typed;
+   }
+}
+
+move "Snare" {
+   hit {
+      vol_on target snared;
+   }
+}
+
+# Trapped: no switching out, no running away.
+volatile "snared" {
+   on try_switch {
+      say trapped at holder;
+      block;
+   }
+}
+
+move "Spotlight" {
+   use {
+      vol_on user spotlight;
+   }
+}
+
+# Draws the foes' single-target moves this turn.
+volatile "spotlight" {
+   on redirect when is_foe(holder, other) {
+      say drawn at holder;
+      modify set holder;
+   }
+}
+
+# A pending attack on the target's position: 25 HP two ends of turn from now (fails while one is pending there).
+move "Foresee" {
+   hit {
+      if target.delayed_turns > 0 {
+         fail;
+      }
+      delay target 25 2;
+      say foreseen at user;
+   }
+   land {
+      say landed at target;
+      damage_hp target value typed;
+   }
+}
+
+# A hit that adds to the reward pool.
+move "Coins" {
+   hit {
+      damage;
+      reward user.level * 5;
+      say coins;
+   }
+}
+
+# Against an unowned foe the battle ends; else a random replacement comes in (fails without one).
+move "Shoo" {
+   hit {
+      if target.unowned {
+         say shooed at target;
+         end_battle;
+      }
+      if not target.can_switch {
+         fail;
+      }
+      switch target random;
+   }
+}
+
+# Uses the last move that reached the user (none: nothing did since it entered; C5: past protection).
+move "Echo" {
+   use {
+      if user.targeted_by == none {
+         fail;
+      }
+      use_move user user.targeted_by;
+   }
+}
+
+# Power from the target's species field (point handler); the user's shown as a hit count (effect logic).
+move "Heave" {
+   point power {
+      modify set target.species_field(mass);
+   }
+   hit {
+      damage;
+      say hit_count at user value user.species_field(mass);
+   }
+}
+
+# Power from the user's gene of its power stat and the battlers active on its side (point handler reads).
+move "Knack" {
+   point power {
+      modify set 10 + user.gene(power) * 4 + side(user).active_count * 10;
+   }
+}
+
+# -- C5: the hit type in hooks, foe traps, redirection, the record of the last move that reached a battler, the end
+# of a battle in the middle of a unit.
+
+# Stone hits are absorbed: the try_hit hook reads the type the hit has (Shift is a Stone move in the dust).
+volatile "sink" {
+   on try_hit when move.type == Stone and other != holder {
+      immune;
+   }
+}
+
+move "Sink" {
+   use {
+      vol_on user sink;
+   }
+}
+
+# Holds the foes: a foe of the holder cannot switch out or run away (per_foe: not the holder's own switch).
+volatile "hold" {
+   on try_switch per_foe {
+      say held at holder about other;
+      block;
+   }
+}
+
+move "Hold" {
+   use {
+      vol_on user hold;
+   }
+}
+
+# Hits back at the battler that hit the user this turn (a target phase: set_target; a redirect may still take it).
+move "Retort" {
+   target {
+      if user.taken.turn != turn or user.taken.amount == 0 {
+         fail;
+      }
+      set_target user.taken.from;
+   }
+   hit {
+      damage_hp target 10 typed;
+   }
+}
+
+# Blocks the moves aimed at the user this turn (they do not reach it: no targeted_by record).
+volatile "warded" {
+   on before_accuracy when other != holder {
+      say protected at other about holder;
+      block;
+   }
+}
+
+move "Ward" {
+   use {
+      vol_on user warded;
+   }
+}
+
+# The user's after_move hooks say so (an after_move phase that ends the battle stops them).
+volatile "cheer" {
+   on after_move {
+      say cheered at holder;
+   }
+}
+
+# Knocks the target out, then ends the battle in the same unit: the experience comes first.
+move "Finale" {
+   hit {
+      damage_hp target target.hp typed;
+   }
+   after_move {
+      end_battle;
+   }
+}

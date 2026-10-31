@@ -1,0 +1,54 @@
+// Scripts the map test world's events run (tests/map_tests.cpp).
+
+var gate : u8 map;            // the trigger at (5,9) fires while this is 0
+flag sign_gone;               // the sign at (2,11) is gone once set
+var loads : u8 area 0..99;    // field_load counts entries within the area
+
+script step_on { var(gate) = 1; }
+script read_sign { set flag(sign_gone); }
+script hook_script { }
+script field_load { var(loads) += 1; }
+
+map_scripts field { on_load -> field_load; }
+
+// Map objects (B-21): map town.
+flag guard_moved;             // the guard's override: faces left, talks with guard_after
+flag beat_rival;              // the rival's sight is off once set
+flag ghost_gone;              // the ghost is hidden while set
+script talk_guard { }
+script guard_after { }
+script rival_battle { set flag(beat_rival); }
+flag hide_ghost_on_entry;     // town_enter hides the ghost (on_transition runs before objects spawn)
+script town_enter { if flag(hide_ghost_on_entry) { set flag(ghost_gone); } }
+map_scripts town { on_transition -> town_enter; }
+script obj_moves { face self player; move self right 1; move player down 1; hide self; }
+
+// RPG Maker XP-style eventing (D-17): maps plaza and garden.
+var hits : u8 0..99;
+var bumps : u8 0..99;
+var ticks : u16;
+flag auto_done;
+script touched { var(hits) += 1; }
+script bumped { var(bumps) += 1; }
+script self_talk { set self(A); }
+script self_after { }
+script par_tick { var(ticks) += 1; delay 10; }
+script auto_once { set flag(auto_done); }
+script effects {
+    tint 31 0 0 8 10;
+    shake 2 10;
+    timer start 2;
+    scroll right 2;
+    scroll back;
+}
+
+// Field rules (A2, map rules): the walker's vehicle class from scripts.
+script ride_swim { vehicle swim; }
+script walk_on { vehicle 0; }
+
+// F2 (D-27 section 3): darkness, a flight point, the escape point (tests/map_tests.cpp field_actions()).
+var escaped : u8 0..1;
+script go_dark { darkness 3; }
+script go_lit { darkness 0; }
+script fly_home { flight record home; flight visit home; }
+script run_away { escape none -> var(escaped); }

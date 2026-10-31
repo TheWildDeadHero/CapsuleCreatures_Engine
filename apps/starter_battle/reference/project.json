@@ -1,0 +1,22 @@
+{
+  "schema": "capsule.project/1",
+  "name": "starter_battle",
+  "editor": {
+    "notes": "The Starter sample played (E9, D-25): rival and unowned battles in 1 vs 1 and 2 vs 2 with a minimal presentation, on the engine's neutral sample game samples/starter (battle data, ruleset, effect logic and shape art), which new games copy from. Laid out like a game: engine (linked), this reference manifest, the sample's data by relative path, src/ (scene code)."
+  },
+  "rom": {
+    "title": "STARTER",
+    "code": "CSQR",
+    "maker": "00",
+    "cart_mb": 8
+  },
+  "sources": [
+    "src/starter_battle.cpp"
+  ],
+  "libraries": [
+    "test_kit",
+    "battle_kit"
+  ],
+  "assets": "../../samples/starter/assets.json",
+  "battle": "../../samples/starter/battle.json"
+}

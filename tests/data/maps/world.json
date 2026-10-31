@@ -1,0 +1,331 @@
+{
+ "schema": "capsule.world/1",
+ "id": "test_world",
+ "editor": {
+  "notes": "Test fixture: every movement rule in a few cells (see tests/map_tests.cpp). Events (B-3): see the events of maps field, small and stack and tests/map_tests.cpp. Objects (B-21): see map town. Eventing (D-17): maps plaza and garden (locations, banners, a preview, pages, triggers, routes). Field rules (A1/A2): elevations 0 and 15 skip level 12 (sealed: meets only itself), 9 (overpass) meets ramp (5) and keeps the mover's level; swim walks 2 px a frame and cannot run; map small forbids running and paints the levels in its top rows (see tests/map_tests.cpp field_rules()). F2: vehicle class paddle (water only, dismounts onto land), object kind boulder (town's pacer), map tag dark and darkness 2 (map small), escape_point (map field), flight points home and town_gate (field_actions()). C8: three darkness levels of its own (darkness_levels: lit box half size 64 / 32 / 16, brightness 8 / 12 / 16). I2: the fixed-placement tileset fixed (VRAM tiles 0-7, palette banks 0-1, raw entries, an animation with a fixed phase) and its maps fixed_a / fixed_b (\"metatiles\": \"all\"; fixed_a has a fence on the east side of 2,4: behavior fence_east, walls right). I3: map crowd (object_view, 30 objects, the reference movement types, a counter: behavior counter_top, door / arrow / none / dynamic warps, stacked objects) and vehicle class trek (turn_frames 8, bumps, keeps_moving)."
+ },
+ "vehicle_classes": [
+  {
+   "name": "foot",
+   "speeds": {
+    "walk": 1,
+    "run": 2
+   },
+   "can_run": true,
+   "first_animation": 0
+  },
+  {
+   "name": "swim",
+   "speeds": {
+    "walk": 2,
+    "run": 2
+   },
+   "can_run": false,
+   "first_animation": 12
+  },
+  {
+   "name": "paddle",
+   "can_run": false,
+   "passable": [
+    "water"
+   ],
+   "dismount": true
+  },
+  {
+   "name": "trek",
+   "turn_frames": 8,
+   "bumps": true,
+   "keeps_moving": true
+  }
+ ],
+ "behaviors": [
+  {
+   "name": "normal"
+  },
+  {
+   "name": "water",
+   "passable": [
+    "swim",
+    "paddle"
+   ]
+  },
+  {
+   "name": "ice",
+   "slide": true
+  },
+  {
+   "name": "ledge_down",
+   "ledge": "down"
+  },
+  {
+   "name": "push_right",
+   "push": "right"
+  },
+  {
+   "name": "fence_east",
+   "walls": [
+    "right"
+   ]
+  },
+  {
+   "name": "counter_top",
+   "solid": true,
+   "counter": true
+  }
+ ],
+ "elevations": [
+  {
+   "name": "any",
+   "meets": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    13,
+    14,
+    15
+   ],
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "level 1",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "level 2",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "low",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "high",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 1
+  },
+  {
+   "name": "ramp",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "upper",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "level 7",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "level 8",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "overpass",
+   "meets": [
+    "ramp"
+   ],
+   "on_arrive": "keep",
+   "priority": 2
+  },
+  {
+   "name": "level 10",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "level 11",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "sealed",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "level 13",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "level 14",
+   "meets": "same",
+   "on_arrive": "take",
+   "priority": 2
+  },
+  {
+   "name": "bridge",
+   "meets": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    13,
+    14
+   ],
+   "on_arrive": "keep",
+   "priority": 2
+  }
+ ],
+ "tilesets": {
+  "test": "tilesets/test.json",
+  "fixed": "tilesets/fixed.json"
+ },
+ "maps": {
+  "field": "maps/field.json",
+  "small": "maps/small.json",
+  "stack": "maps/stack.json",
+  "town": "maps/town.json",
+  "plaza": "maps/plaza.json",
+  "garden": "maps/garden.json",
+  "fixed_a": "maps/fixed_a.json",
+  "fixed_b": "maps/fixed_b.json",
+  "crowd": "maps/crowd.json"
+ },
+ "start": {
+  "map": "field",
+  "x": 1,
+  "y": 1,
+  "facing": "down"
+ },
+ "battle": "../../../samples/starter/battle.json",
+ "encounter_methods": [
+  {
+   "name": "walk",
+   "trigger": "step",
+   "vehicles": [
+    "foot"
+   ]
+  },
+  {
+   "name": "swim",
+   "trigger": "step",
+   "vehicles": [
+    "swim"
+   ]
+  },
+  {
+   "name": "old lure",
+   "trigger": "script"
+  }
+ ],
+ "encounter_conditions": [
+  "night",
+  "rain"
+ ],
+ "encounter_tables": "encounters/shared.json",
+ "scripts": "scripts/scripts.json",
+ "step_hooks": [
+  {
+   "name": "every_step",
+   "period": 1
+  },
+  {
+   "name": "even",
+   "period": 2
+  },
+  {
+   "name": "four",
+   "period": 4,
+   "phase": 1
+  }
+ ],
+ "transition": "fade",
+ "banner_styles": {
+  "box": {
+   "frames": 30,
+   "slide": 4
+  }
+ },
+ "locations": {
+  "plaza": {
+   "name": "Test Plaza",
+   "banner": "box"
+  },
+  "garden": {
+   "name": "{hero} Garden",
+   "banner": "box",
+   "preview": {
+    "show": "first",
+    "sequences": [
+     {
+      "sequence": "sequences/preview.json"
+     }
+    ]
+   }
+  }
+ },
+ "object_kinds": [
+  "boulder"
+ ],
+ "map_tags": [
+  "dark"
+ ],
+ "flight_points": [
+  {
+   "name": "home",
+   "label": "Home",
+   "map": "field",
+   "x": 1,
+   "y": 1
+  },
+  {
+   "name": "town_gate",
+   "label": "Town",
+   "map": "town",
+   "x": 2,
+   "y": 0,
+   "facing": "down"
+  }
+ ],
+ "darkness_levels": [
+  {
+   "lit": 64,
+   "brightness": 8
+  },
+  {
+   "lit": 32,
+   "brightness": 12
+  },
+  {
+   "lit": 16,
+   "brightness": 16
+  }
+ ]
+}

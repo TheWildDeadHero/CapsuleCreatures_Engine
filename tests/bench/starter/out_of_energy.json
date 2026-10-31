@@ -1,0 +1,45 @@
+{
+   "schema": "capsule.bench/1",
+   "name": "out_of_energy",
+   "description": "No MP and 1 EP: Cyclone and Gale Kick are refused, Strike runs, EP regenerates until Gale Kick is usable, is spent and refused again (C2: the Starter regenerates 1 + 1/16 of the missing EP). (E9 neutral golden transcripts/out_of_energy.txt)",
+   "expect": "../../data/starter/golden/transcripts/out_of_energy.txt",
+   "rng": "default",
+   "format": "Single",
+   "seed": 3,
+   "parties": [
+      {
+         "side": 0,
+         "controller": "human",
+         "members": [
+            {
+               "species": "Breezle",
+               "level": 20,
+               "resources": {
+                  "mp": 0,
+                  "ep": 1
+               }
+            }
+         ]
+      },
+      {
+         "side": 1,
+         "flags": [
+            "unowned"
+         ],
+         "members": [
+            {
+               "species": "Clodbun",
+               "level": 16
+            }
+         ]
+      }
+   ],
+   "choices": [
+      {
+         "move": 2
+      },
+      {
+         "move": 0
+      }
+   ]
+}

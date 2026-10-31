@@ -1,0 +1,52 @@
+# The Starter sample's condition logic (E9): status and weather point handlers and the volatiles' own handlers. A
+# condition's record fields (residual damage, lost turns, durations, texts) add their handlers in front of these.
+
+status "Scorch" {
+   # a scorched battler's physical moves deal 7/10 (C2: the Starter's own factor)
+   point damage when move.category == physical {
+      modify by 0.7;
+   }
+}
+
+status "Shock" {
+   # a shocked battler moves at 7/10 of its speed
+   point speed {
+      modify by 0.7;
+   }
+}
+
+weather "Storm" {
+   # the storm feeds Lightning (x1.3) and damps Fire (x0.7)
+   point weather when move.type == Lightning {
+      modify by 1.3;
+   }
+   point weather when move.type == Fire {
+      modify by 0.7;
+   }
+}
+
+volatile "dazed" {
+   # the record counts it down before each move and ends it at 0 first
+   on before_move when holder.has(dazed) {
+      say dazed at holder;
+      # one move in four goes astray: the dazed battler hits itself (power 30, rules.self_hit)
+      chance 1/4 {
+         say daze_hit at holder;
+         self_hit 30;
+         stop;
+      }
+   }
+}
+
+# F3 (D-27 section 4, README "Step effects"): out of battle a blighted member loses 1 HP every 4 steps (the step
+# effect `blight`); the structure's survive rule keeps it at 1, and then the blight fades
+status "Blight" {
+   on steps {
+      if field.step_effect == blight and holder.hp > 0 {
+         holder.resource(hp) -= 1;
+         if holder.hp == 0 {
+            cure holder quiet;
+         }
+      }
+   }
+}

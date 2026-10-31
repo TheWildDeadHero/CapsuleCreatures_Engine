@@ -1,0 +1,31 @@
+# Neutral combination fixture logic (B1, D-28 section 1): the combine hook's inheritance primitives.
+
+global "combine_rules" {
+   on combine {
+      if field.combine_method == synthesis {
+         # a + counter from both inputs' counters, and the pedigree's genes
+         inherit_add plus min((input.pedigree.role(plus) + input.partner.role(plus)) / 4 + 1, 99);
+         inherit stat_genes from input.pedigree;
+      }
+      if field.combine_method == fusion {
+         inherit_pick stat_genes 2;
+         if field.combine_inputs == 3 {
+            inherit bond from input.c;
+         }
+      }
+      if field.combine_method == nest {
+         # C9: an input's held item is readable by name (a quiet item: its own hooks stay off)
+         if input.0.item == "Glow Moss" {
+            inherit bond from input.0;
+         }
+      }
+      if field.combine_method == echo {
+         # a quiet input refuses the echo (the combination is refused, nothing changes)
+         if input.a.role(bond) < 10 {
+            fail;
+         }
+         inherit_odds bond from input.b 1 1;
+         say echo_logic;
+      }
+   }
+}

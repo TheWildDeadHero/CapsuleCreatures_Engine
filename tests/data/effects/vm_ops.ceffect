@@ -1,0 +1,360 @@
+# Neutral VM fixture: tests/effect_vm_tests.cpp runs these programs against a mock host. Every opcode the compiler
+# emits appears here (tests/test_effect_compiler.py checks it). Placeholder names only.
+
+global "arith" {
+   on before_damage {
+      modify set (value + 5) * 3 - 20 / 4 % 3;
+   }
+}
+
+global "unary" {
+   on before_damage {
+      modify set abs(-value) + max(min(value, 3), 1) + clamp(value, 0, 2) + (value << 2) + (value >> 1) - -value;
+   }
+}
+
+global "saturate" {
+   on before_damage {
+      let big = 0;
+      big = 2000000000;   # assigned again: its range is unknown, so no saturation warning
+      let low = 0;
+      low = -2147483647 - 1;
+      modify set big + big;
+      modify add -low;
+      modify add low / -1;
+      modify add big * big;
+      modify add big << 3;
+   }
+}
+
+global "negative" {
+   on before_damage {
+      let low = 0;
+      low = -2147483647 - 1;
+      modify set low * 3;
+      modify add low - 65536;
+   }
+}
+
+global "div_zero" {
+   on before_damage {
+      let zero = 1;
+      zero = 0;
+      modify set value / zero + value % zero + 7;
+   }
+}
+
+global "compare" {
+   on before_damage {
+      modify set (value == 10) + (value != 10) * 2 + (value < 11) * 4 + (value <= 9) * 8 + (value > 9) * 16 + (value >= 11) * 32;
+   }
+}
+
+global "logic" {
+   on before_damage {
+      let a = value > 5 and value < 20;
+      let b = value < 5 or value > 8;
+      let c = not a;
+      modify set a + b * 2 + c * 4;
+   }
+}
+
+global "q8" {
+   on before_damage {
+      modify by 1.5;
+      modify add scale(100, 0.25);
+      modify add pick(2, 10, 20, 30, 40) + pick(9, 1, 2) + pick(-3, 7, 8);
+   }
+}
+
+global "loop" {
+   on before_damage {
+      let s = 0;
+      repeat value max 5 {
+         s += 2;
+      }
+      modify set s;
+   }
+}
+
+global "each" {
+   on before_damage {
+      let n = 0;
+      for b in foes(holder) {
+         n = n * 10 + b + 1;
+      }
+      let lv = 0;
+      for b in all(holder) {
+         lv += b.level;
+      }
+      modify set n * 1000 + lv;
+   }
+}
+
+global "subs" {
+   sub twice {
+      modify by 2;
+      call plus_one;
+   }
+   sub plus_one {
+      let t = 1;
+      modify add t;
+   }
+   on before_damage {
+      let keep = 7;
+      call twice;
+      modify add keep;
+   }
+}
+
+global "reads" {
+   on before_damage {
+      modify set holder.hp + other.level + user.stat(atk) + target.stage(def) + side(user).layers(Hazard) + move.power;
+      modify add move.field(reach) + field.weather_turns + field.turns(Gloom) + turn + hits + crit;
+      modify add holder.species_field(mass) + holder.type(1) + holder.taken.amount + move + owner;
+      modify add dealt;
+   }
+}
+
+global "has" {
+   on before_damage {
+      modify set holder.has(Shield) + other.has(floaty) * 2 + user.has(Marked) * 4 + target.has_type(Spark) * 8;
+      modify add move.has(loud) * 16 + side(holder).has(Hazard) * 32 + field.has(Gloom) * 64;
+      modify add (other != holder) * 128 + (user == holder) * 256 + is_foe(holder, other) * 512;
+   }
+}
+
+global "writes" {
+   on before_damage {
+      holder.counter(cnt_a) = 9;
+      holder.counter(cnt_a) += 1;
+      holder.word(wrd_a) = 300;
+      holder.status_counter = 2;
+      holder.status_aux -= 1;
+      holder.role(score, 2) = 77;
+      modify set holder.role(score, 2);
+      modify add holder.counter(cnt_a);
+   }
+}
+
+global "rng" {
+   on before_damage {
+      modify set rand(6) * 100 + between(2, 5) * 10 + chance(1, 2);
+      modify add rand(0) + between(5, 2) * 1000 + chance(0, 3) + chance(1, 0);
+   }
+}
+
+global "odds" {
+   # E9: effect odds (the mock host rolls them plainly); odds(0, 3) draws nothing
+   on before_damage {
+      modify set odds(1, 2) + odds(1, 2, holder, other) * 2 + odds(0, 3) * 4 + odds(5, 5, other, holder) * 8;
+   }
+}
+
+global "early" {
+   on before_damage {
+      modify set 1;
+      if value > 0 {
+         return;
+      }
+      modify set 2;
+   }
+}
+
+move "Everything" {
+   use {
+      heal user 7;
+      inflict target Marked quiet;
+      cure target;
+      stage target atk -2;
+      vol_on user Shield 3;
+      vol_off user Shield;
+      side_on side(target) Hazard add_layer;
+      side_off side(target) Hazard;
+      field_on Gloom 4;
+      field_off Gloom;
+      weather Haze 5;
+      lock user free;
+      unlock user;
+      use_move user Multi;
+      credit 11;
+      consume_item target;
+      set_item target Gem;
+      set_passive target Wall;
+      set_types target Spark, Stone;
+      text hello;
+      say generic;
+      say generic at user about target value 3;
+      announce;
+      cue flash;
+      restore user mana 5;
+      restore target charges every_slot;
+      raise user charges 2;
+      self_hit 30;
+      damage_hp target 12 typed quiet no_faint_check;
+      switch target random;
+      stage target def 1 silent;
+      reset_stages target;
+      delay target 40 3;
+      delay_hit target 3 foresight;
+      use_move user Multi unless touch;
+      reward 25;
+      end_battle;
+   }
+}
+
+move "Multi" {
+   hit {
+      repeat 3 max 5 {
+         damage;
+      }
+      text done;
+   }
+}
+
+move "Pause" {
+   use {
+      text a;
+      yield;
+      text b;
+   }
+}
+
+move "Asker" {
+   use {
+      ask learn_move user into k;
+      credit k;
+   }
+}
+
+move "Passer" {
+   use {
+      switch user pass;
+   }
+}
+
+move "Pusher" {
+   use {
+      switch user ask;
+   }
+}
+
+move "Failer" {
+   use {
+      fail;
+   }
+}
+
+move "Aimer" {
+   target {
+      set_target other;
+   }
+   hit {
+      damage;
+   }
+   point accuracy {
+      let x = 3;
+      if user == holder {
+         modify set x;
+      } else {
+         modify add 1;
+      }
+   }
+}
+
+status "Stopper" {
+   on before_move {
+      stop;
+   }
+}
+
+status "Marked" {
+   on start {
+      text marked;
+   }
+}
+
+passive "Wall" {
+   on try_hit {
+      immune heal 0.25;
+   }
+   point power when move.has(touch) {
+      modify by 1.5;
+      modify add holder.level;
+   }
+}
+
+volatile "Shield" {
+   on before_accuracy {
+      block bounce;
+   }
+}
+
+# G1: a decoy marks the hit it takes (ref absorbed)
+global "decoy" {
+   on before_damage when not absorbed {
+      absorb;
+      modify set 0;
+   }
+}
+
+# G2: an item teaching a move out of battle (the field context's use_field hook)
+item "Gem" {
+   on use_field {
+      teach holder Multi;
+   }
+}
+
+# G4: an item's transformation rules on a field context's member, a training change and a form by name
+item "Stone" {
+   on use_field {
+      transform holder;
+      train holder atk 4;
+      form holder Bright;
+   }
+}
+
+# G3: an item's battle use recruiting the battler it is used on (the battle's Item action)
+item "Net" {
+   on use_battle {
+      recruit holder 10;
+   }
+}
+
+# F1: an item's encounter hooks (every encounter primitive: the Encounter op) and its field use starting a timed field
+# effect (the FieldEffect op), reading it back (the field effect refs)
+item "Charm" {
+   on encounter {
+      encounter_rate 2 1;
+      encounter_levels 1 2;
+      encounter_level_bias 1;
+      encounter_skip_below holder.level;
+      encounter_type Spark 1 2;
+      encounter_field mass 3 1 2;
+   }
+   on encounter_made {
+      if target.level < 3 {
+         encounter_reroll;
+      }
+      target.role(score) = holder.role(score);
+   }
+   on use_field {
+      field_effect start ward 100;
+      if not field.effect_active(ward) or field.effect_remaining(ward) < 1 {
+         fail;
+      }
+   }
+}
+
+# B1: a combination's result built from its inputs (the Inherit op in its four modes, the input subjects by index and
+# by slot role, the combine hook's reads)
+global "mix" {
+   on combine {
+      if field.combine_method == fuse and field.combine_inputs >= 2 {
+         inherit score from input.0;
+         inherit_pick score 1;
+         inherit_odds score from input.second 1 2;
+         inherit_add score min(input.0.level, 9);
+      }
+   }
+}

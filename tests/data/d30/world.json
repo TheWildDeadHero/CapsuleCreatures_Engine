@@ -1,0 +1,63 @@
+{
+ "schema": "capsule.world/1",
+ "id": "d30_world",
+ "editor": {
+  "notes": "D-30 test fixture (tests/d30_tests.cpp, tests/test_d30_formats.py): a tile animation with three targets at frame offsets 0, 2 and 3 (one with its own phase), override sets (one until the map is left, one kept through a flag), doors (a tiles door bound to a warp and to a metatile, an override door on the landing warp of map hall), a draw-order rule whose elevation 3 is drawn in front, direction-grid sprites with three and four columns. Simple shapes only."
+ },
+ "behaviors": [
+  {
+   "name": "normal"
+  },
+  {
+   "name": "wall",
+   "solid": true
+  }
+ ],
+ "draw_order": {
+  "elevation_base": [
+   100,
+   100,
+   100,
+   60,
+   100,
+   100,
+   100,
+   100,
+   100,
+   100,
+   100,
+   100,
+   100,
+   100,
+   100,
+   100
+  ],
+  "bias": 8,
+  "row_pixels": 16,
+  "rows": 16,
+  "row_step": 2,
+  "add": 1,
+  "wrap": 256
+ },
+ "doors": [
+  {
+   "tileset": "yard",
+   "metatile": "door",
+   "door": "door:GATE"
+  }
+ ],
+ "tilesets": {
+  "yard": "tilesets/yard.json"
+ },
+ "maps": {
+  "yard": "maps/yard.json",
+  "hall": "maps/hall.json"
+ },
+ "start": {
+  "map": "yard",
+  "x": 4,
+  "y": 4,
+  "facing": "down"
+ },
+ "scripts": "scripts/scripts.json"
+}

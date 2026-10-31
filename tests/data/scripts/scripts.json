@@ -1,0 +1,19 @@
+{
+  "schema": "capsule.scripts/1",
+  "editor": {"notes": "Test fixture for tests/script_tests.cpp: every statement and check."},
+  "sources": ["test.cscript"],
+  "game": "base",
+  "games": ["base", "other"],
+  "stack_depth": 4,
+  "assets": "assets.json",
+  "world": "../maps/world.json",
+  "battle": "../battle_stats3/battle.json",
+  "placeholders": {
+    "hero": {"name": 5},
+    "count": {"var": "v16"},
+    "town": {"term": "town"},
+    "lead": {"record": "nickname", "slot": 2},
+    "met": {"record": "met_level", "slot": 1}
+  },
+  "terms": {"town": {"one": "Elm Hollow", "many": "Elm Hollows"}}
+}

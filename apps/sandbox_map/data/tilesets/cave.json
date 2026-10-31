@@ -1,0 +1,335 @@
+{
+ "schema": "capsule.tileset/2",
+ "id": "cave",
+ "sheets": [
+  {
+   "name": "cave",
+   "palette": [
+    "#302838",
+    "#483c50",
+    "#605070",
+    "#201820",
+    "#40c8d8",
+    "#a0f0f8",
+    "#806040"
+   ],
+   "size": [
+    128,
+    16
+   ],
+   "shapes": [
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 1
+    },
+    {
+     "shape": "dots",
+     "x": 0,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 2,
+     "count": 10,
+     "seed": 21,
+     "size": 1
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 3
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 12,
+     "w": 16,
+     "h": 4,
+     "color": 4
+    },
+    {
+     "shape": "dots",
+     "x": 16,
+     "y": 0,
+     "w": 16,
+     "h": 12,
+     "color": 2,
+     "count": 8,
+     "seed": 4,
+     "size": 2
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 7
+    },
+    {
+     "shape": "dots",
+     "x": 32,
+     "y": 0,
+     "w": 16,
+     "h": 16,
+     "color": 4,
+     "count": 12,
+     "seed": 9,
+     "size": 1
+    },
+    {
+     "shape": "rect",
+     "x": 48,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       52,
+       0
+      ],
+      [
+       55,
+       4
+      ],
+      [
+       52,
+       8
+      ],
+      [
+       49,
+       4
+      ]
+     ],
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 56,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       60,
+       0
+      ],
+      [
+       63,
+       4
+      ],
+      [
+       60,
+       8
+      ],
+      [
+       57,
+       4
+      ]
+     ],
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 48,
+     "y": 8,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       52,
+       8
+      ],
+      [
+       55,
+       12
+      ],
+      [
+       52,
+       16
+      ],
+      [
+       49,
+       12
+      ]
+     ],
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 56,
+     "y": 8,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       60,
+       8
+      ],
+      [
+       63,
+       12
+      ],
+      [
+       60,
+       16
+      ],
+      [
+       57,
+       12
+      ]
+     ],
+     "color": 5
+    }
+   ]
+  },
+  {
+   "name": "glow",
+   "palette": "@cave",
+   "size": [
+    16,
+    8
+   ],
+   "shapes": [
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       4,
+       0
+      ],
+      [
+       7,
+       4
+      ],
+      [
+       4,
+       8
+      ],
+      [
+       1,
+       4
+      ]
+     ],
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 8,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "polygon",
+     "points": [
+      [
+       12,
+       0
+      ],
+      [
+       15,
+       4
+      ],
+      [
+       12,
+       8
+      ],
+      [
+       9,
+       4
+      ]
+     ],
+     "color": 6
+    }
+   ]
+  }
+ ],
+ "metatiles": [
+  {
+   "name": "floor",
+   "tiles": [
+    "cave:0",
+    "cave:1",
+    "cave:16",
+    "cave:17"
+   ]
+  },
+  {
+   "name": "wall",
+   "tiles": [
+    "cave:2",
+    "cave:3",
+    "cave:18",
+    "cave:19"
+   ]
+  },
+  {
+   "name": "dirt",
+   "tiles": [
+    "cave:4",
+    "cave:5",
+    "cave:20",
+    "cave:21"
+   ]
+  },
+  {
+   "name": "crystal",
+   "tiles": [
+    "cave:6",
+    "cave:6",
+    "cave:6",
+    "cave:6"
+   ]
+  },
+  {
+   "name": "dark_ice",
+   "tiles": [
+    "cave:0",
+    "cave:1",
+    "cave:16",
+    "cave:17"
+   ]
+  }
+ ],
+ "animations": [
+  {
+   "name": "glow",
+   "tiles": "cave:6",
+   "count": 1,
+   "frames": "glow",
+   "period": 20
+  }
+ ]
+}

@@ -1,0 +1,83 @@
+// Demo scripts for apps/test_script (invented content).
+
+flag met_guide;
+flag lamp_on : map;
+flag asked_today : daily;
+var answer : u8 map;
+var visits : u16 0..999;
+var coins : u8 0..99;
+const PRICE = 5;
+native beep(times) waits;
+native add(a, b) -> value;
+
+// A conversation: message, yes / no, menu, flags and variables.
+script greeting {
+    var(visits) += 1;
+    if !flag(met_guide) {
+        msgbox "Hello! I am the guide.\nThis is the script VM.";
+        set flag(met_guide);
+    } else {
+        msgbox "Welcome back.";
+    }
+    msg "Do you want a coin?";
+    yesno -> var(answer);
+    if var(answer) == yes {
+        var(coins) += 1;
+        msgbox "Here you go.";
+    } else {
+        msgbox "Maybe later.";
+    }
+    msg "Pick a colour.";
+    choice ["Red", "Green", "Blue", "None"] cancel 3 -> var(answer);
+    switch var(answer) {
+        case 0 { msgbox "Red, like the lamp."; }
+        case 1, 2 { msgbox "A calm choice."; }
+        default { msgbox "No colour at all."; }
+    }
+    close_msg;
+}
+
+// A shop with a loop and a native that adds.
+script shop {
+    msg "Coins buy lamp oil.\nOil costs 5 coins.";
+    wait_button;
+    while var(coins) >= PRICE {
+        var(coins) -= PRICE;
+        native add(var(visits), 10) -> var(visits);
+        set flag(lamp_on);
+    }
+    if flag(lamp_on) { msgbox "The lamp is lit."; } else { msgbox "Not enough coins."; }
+    close_msg;
+}
+
+// A native that waits (three beeps, one per second) and a delay.
+script beeper {
+    native beep(3);
+    delay 30;
+    msgbox "Beeped three times.";
+    close_msg;
+}
+
+// Calls three deep through a call table.
+script dispatch { call var(coins) of [level0, level1, level2]; }
+script level0 { msgbox "Dispatch: no coins."; close_msg; }
+script level1 { call level2; }
+script level2 { msgbox "Dispatch: called deep."; close_msg; }
+
+// Map triggers: entering "room" lights nothing; 3 coins starts an event.
+script room_load { clear flag(lamp_on); }
+script coin_event {
+    msgbox "Three coins! A trigger fired.";
+    var(coins) = 4;
+    close_msg;
+}
+
+map_scripts room {
+    on_load -> room_load;
+    on_frame var(coins) == 3 -> coin_event;
+}
+
+script daily_hello {
+    if flag(asked_today) { msgbox "Already asked today."; } else { set flag(asked_today); msgbox "First today!"; }
+    close_msg;
+}

@@ -1,0 +1,10 @@
+// Scripts of the step effects fixture (F3): the rot's script (it reads the implicit member and outcome variables).
+// Invented content.
+
+var downs : u8 0..9;
+var last_member : u8;
+
+script rot_down {
+    var(downs) += 1;
+    var(last_member) = var(step_effect_member);
+}

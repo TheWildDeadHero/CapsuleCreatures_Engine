@@ -1,0 +1,14 @@
+# Hashed word list (tools/ci/term_check.py, D-40): a series' creature, item and ability names (C6: no engine mechanic is named after one).
+# Add a word: echo 'word' | tools/ci/term_check.py hash --list <this file> >> <this file>
+salt cc3181c05729e6c56f390c3c23550e8a
+case insensitive
+000ad44c3bcde5d330961620529d667d1559386cebd39bc65823c59c3de252f0
+5a1018891ef3017d49ce55c44c30c4985734db30c9b4b7a4510d1c686c560e38
+8538d3bf7729041975861b5032209dc7016ab1c3b79a2c8d40dd487693358bb2
+9ecabbf018cab115bede8d97b6dcd570707c71ec9ab1afced1f82fd089c230c5
+44a2c9c312befc3cfbd4c18392d82bb02c9102a02ee7cbbaeb381bc5d8a5e26f
+92510ab5fa9191395c230f1edc957cc216f3066481228a9df69fc9835c200fe4
+c257240b2a5c2ba8ad07e3512457ee9de45d4a189ead0eb61bfc2b09229c4500
+169daca70f4142ae3c6e7652228a183c14d4ff764dd0e89ef295efaf2bb8f6fb
+03f2527ba1adf74559266ec9f2e7bb46d1ad782f5d7b384fcd5b229bed9701dd
+44b79c0190e0e4204681f7aff59db8dcff39c07b318f045eaaa3a634bbae1bc0

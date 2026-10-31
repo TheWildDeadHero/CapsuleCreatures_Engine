@@ -1,0 +1,297 @@
+# The Starter sample's move logic (E9). A damaging move without logic here hits once per target (the standard
+# hit). A move's hit phase runs once per target; each `yield` ends one unit of it, and a unit that starts after the
+# user fainted does nothing (`if not user.alive { return; }`).
+#
+# Secondary effects and status moves roll `odds(chance, out_of)`: the ruleset's effect_odds pipeline scales the
+# odds by the user's Intelligence against the target's (and the odds / resist points of talents and charms), so a
+# clever user lands them more often and a clever target shrugs them off.
+
+move "Flare Claw" {
+   hit {
+      if target.alive and user.alive {
+         damage;
+         yield;
+      }
+      yield;
+      if not user.alive {
+         return;
+      }
+      if target.alive and odds(10, 100) {
+         inflict target Scorch quiet;
+      }
+      yield;
+   }
+}
+
+move "Fireball" {
+   hit {
+      if target.alive and user.alive {
+         damage;
+         yield;
+      }
+      yield;
+      if not user.alive {
+         return;
+      }
+      if target.alive and odds(10, 100) {
+         inflict target Scorch quiet;
+      }
+      yield;
+   }
+}
+
+move "Smolder" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      if odds(90, 100) {
+         inflict target Scorch;
+      } else {
+         say failed at user;
+      }
+      yield;
+   }
+}
+
+move "Cyclone" {
+   hit {
+      if target.alive and user.alive {
+         damage;
+         yield;
+      }
+      yield;
+      if not user.alive {
+         return;
+      }
+      if target.alive and odds(20, 100) {
+         # dazed for 1-3 of its moves (the volatile's record rolls the count)
+         vol_on target dazed;
+      }
+      yield;
+   }
+}
+
+move "Updraft" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      stage user agility 2;
+      yield;
+   }
+}
+
+move "Shock Fang" {
+   hit {
+      if target.alive and user.alive {
+         damage;
+         yield;
+      }
+      yield;
+      if not user.alive {
+         return;
+      }
+      if target.alive and odds(10, 100) {
+         inflict target Shock quiet;
+      }
+      yield;
+   }
+}
+
+move "Arc Bolt" {
+   hit {
+      if target.alive and user.alive {
+         damage;
+         yield;
+      }
+      yield;
+      if not user.alive {
+         return;
+      }
+      if target.alive and odds(10, 100) {
+         inflict target Shock quiet;
+      }
+      yield;
+   }
+}
+
+move "Static Field" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      if odds(90, 100) {
+         inflict target Shock;
+      } else {
+         say failed at user;
+      }
+      yield;
+   }
+}
+
+move "Mist Veil" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      stage user protection 1;
+      stage user evasion 1;
+      yield;
+   }
+}
+
+move "Harden" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      stage user defence 2;
+      yield;
+   }
+}
+
+move "Shadow Bite" {
+   hit {
+      if target.alive and user.alive {
+         damage;
+         yield;
+      }
+      yield;
+      if not user.alive {
+         return;
+      }
+      if target.alive and odds(20, 100) {
+         vol_on target flinch;
+      }
+      yield;
+   }
+}
+
+move "Night Pulse" {
+   hit {
+      if target.alive and user.alive {
+         damage;
+         yield;
+      }
+      yield;
+      if not user.alive {
+         return;
+      }
+      if target.alive and odds(30, 100) {
+         stage target intelligence -1;
+      }
+      yield;
+   }
+}
+
+move "Dread Gaze" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      if odds(100, 100) {
+         stage target attack -1;
+      } else {
+         say failed at user;
+      }
+      yield;
+   }
+}
+
+move "Prism Beam" {
+   hit {
+      if target.alive and user.alive {
+         damage;
+         yield;
+      }
+      yield;
+      if not user.alive {
+         return;
+      }
+      if target.alive and odds(20, 100) {
+         stage target accuracy -1;
+      }
+      yield;
+   }
+}
+
+move "Mend Light" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      if user.hp >= user.max_hp {
+         say hp_full at user;
+      } else {
+         # 1/2 of user.max_hp, at least 1
+         heal user max(1, user.max_hp * 128 >> 8);
+         say healed at user;
+      }
+      yield;
+   }
+}
+
+move "Stardust Lull" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      if odds(75, 100) {
+         inflict target Doze;
+      } else {
+         say failed at user;
+      }
+      yield;
+   }
+}
+
+move "Vine Lash" {
+   hit {
+      if target.alive and user.alive {
+         damage;
+         yield;
+      }
+      yield;
+      if not user.alive {
+         return;
+      }
+      if dealt > 0 and user.alive {
+         # 1/4 of dealt, at least 1 (a division: dealt * 64 could leave int32 and saturate)
+         heal user max(1, dealt / 4);
+         say drained at target about user;
+      }
+      yield;
+   }
+}
+
+move "Spore Burst" {
+   hit {
+      if target.alive and user.alive {
+         damage;
+         yield;
+      }
+      yield;
+      if not user.alive {
+         return;
+      }
+      if target.alive and odds(30, 100) {
+         inflict target Blight quiet;
+      }
+      yield;
+   }
+}
+
+move "Toxic Pollen" {
+   hit {
+      if not user.alive {
+         return;
+      }
+      if odds(85, 100) {
+         inflict target Blight;
+      } else {
+         say failed at user;
+      }
+      yield;
+   }
+}

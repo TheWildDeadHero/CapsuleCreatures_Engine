@@ -1,0 +1,20 @@
+{
+   "schema": "capsule.bench/1",
+   "name": "pokes_trace",
+   "description": "Battler pokes (HP, status, stages, a volatile with its counter, item), a field weather with turns, a VM and RNG trace, a turn stop (the Starter sample).",
+   "seed": 42,
+   "field": {"weather": "Storm", "weather_turns": 2},
+   "parties": [
+      {"side": 0, "controller": "human", "members": [
+         {"species": "Emberkit", "level": 20, "moves": ["Strike", "Flare Claw"], "item": "Focus Lens", "trait": "Fierce"}
+      ]},
+      {"side": 1, "flags": ["unowned"], "members": [{"species": "Sproutle", "level": 20, "moves": ["Harden"]}]}
+   ],
+   "pokes": [
+      {"party": 1, "member": 0, "hp": 30, "status": "Scorch", "stages": {"defence": -2, "evasion": 1}},
+      {"party": 0, "member": 0, "volatiles": ["dazed"], "counters": {"dazed": 2}, "stages": {"attack": 2}}
+   ],
+   "choices": [{"move": "Flare Claw"}, {"move": 0}],
+   "stop": {"turns": 1},
+   "trace": {"rng": true, "vm": true}
+}

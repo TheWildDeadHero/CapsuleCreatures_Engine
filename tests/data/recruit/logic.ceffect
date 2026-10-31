@@ -1,0 +1,66 @@
+# Neutral fixture logic of the battle's Item action and recruitment (G3): tests/recruit_tests.cpp.
+
+move "Refresh" {
+   use {
+      restore user mp 6;
+   }
+}
+
+move "Drain" {
+   hit {
+      target.resource(mp) -= 5;
+   }
+}
+
+item "Salve" {
+   on use_field {
+      if holder.hp == 0 or holder.hp >= holder.max_hp {
+         fail;
+      }
+      restore holder hp 10;
+      text salve_used;
+   }
+   on use_battle {
+      # in battle: holder = the member it is used on
+      if holder.hp >= holder.max_hp {
+         fail;
+      }
+      restore holder hp 10;
+      text salve_used;
+   }
+}
+
+item "Ether" {
+   on use_field {
+      if holder.resource(pp) >= holder.resource_max(pp) {
+         fail;
+      }
+      restore holder pp 5;
+   }
+}
+
+# the recruit items: holder = the battler aimed at, other = the user
+item "Lure" {
+   on use_battle {
+      text lure_thrown;
+      recruit holder 10;
+   }
+}
+
+item "Snare" {
+   on use_battle {
+      recruit holder 255;
+   }
+}
+
+# an item whose own ai_score says when the AI uses it (move none): worth 1000 while the battler is asleep
+item "Beacon" {
+   on use_battle {
+      cure holder;
+   }
+   on ai_score {
+      if holder.status != none {
+         modify set 1000;
+      }
+   }
+}

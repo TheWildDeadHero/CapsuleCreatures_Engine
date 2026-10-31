@@ -1,0 +1,10 @@
+{
+   "schema": "capsule.bench/1",
+   "seed": 1,
+   "format": "Quadruple",
+   "parties": [
+      {"side": 0, "controller": "human", "members": [{"species": "Nosuchmon", "level": 5, "moves": ["Bump", "Hyper Nothing"]}]},
+      {"side": 1, "data": "Nobody"}
+   ],
+   "pokes": [{"party": 0, "member": 0, "stages": {"luck": 1}, "volatiles": ["dizzy"]}]
+}

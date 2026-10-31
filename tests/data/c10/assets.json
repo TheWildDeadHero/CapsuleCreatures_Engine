@@ -1,0 +1,76 @@
+{
+ "schema": "capsule.assets/1",
+ "id": "c10_assets",
+ "editor": {
+  "notes": "C10 fixture: a text box style naming a font and a Font control's fonts; text tables in two languages (the build takes one)."
+ },
+ "language": "en",
+ "fallback_language": "en",
+ "assets": [
+  {
+   "key": "sprite:C10_DOT",
+   "kind": "sprite",
+   "width": 16,
+   "height": 16,
+   "palette": [
+    "#ff0000"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "rect",
+       "x": 4,
+       "y": 4,
+       "w": 8,
+       "h": 8,
+       "color": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "font:C10_BOX",
+   "kind": "font",
+   "font": "box.font.json"
+  },
+  {
+   "key": "text_box:C10_MESSAGE",
+   "kind": "text_box",
+   "font": "font:C10_BOX",
+   "fonts": {
+    "3": "font:C10_BOX"
+   },
+   "window": {
+    "bg": 1,
+    "first_tile": 200,
+    "palette_bank": 9,
+    "x": 2,
+    "y": 15,
+    "width": 6,
+    "height": 2,
+    "top": 1,
+    "lines": 2,
+    "ink": 2,
+    "shadow": 3,
+    "background": 1,
+    "frames_per_char": 4,
+    "scroll_speed": 2,
+    "typing": "counter",
+    "char_delay": 3,
+    "speedup": "per_frame",
+    "lead_frames": 2
+   },
+   "frame": {
+    "first_tile": 300,
+    "palette_bank": 9,
+    "pad_left": 1
+   }
+  }
+ ],
+ "text_tables": [
+  "text/en.json",
+  "text/fr.json"
+ ]
+}

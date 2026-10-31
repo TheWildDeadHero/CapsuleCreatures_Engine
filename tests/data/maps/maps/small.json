@@ -1,0 +1,226 @@
+{
+ "schema": "capsule.map/2",
+ "id": "small",
+ "editor": {
+  "notes": "Field rules fixture (A1/A2, tests/map_tests.cpp field_rules()): row y -8 levels 0 0 12 12 0 from x -8 (sealed 12 meets only itself), row -7 levels 5 9 5 6 (overpass 9 meets ramp 5 and keeps the level), row -6 open ground, row -5 water at x -6 (swim only). Running is not allowed here."
+ },
+ "layers": [
+  {
+   "bg": 2,
+   "priority": 2,
+   "content": "tilemap",
+   "purpose": "terrain"
+  }
+ ],
+ "metatiles": [
+  "test/ground",
+  "test/water"
+ ],
+ "behaviors": [
+  "normal",
+  "water"
+ ],
+ "chunks": [
+  {
+   "at": [
+    -1,
+    -1
+   ],
+   "cells": [
+    [
+     0,
+     0,
+     3145728,
+     3145728,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     1310720,
+     2359296,
+     1310720,
+     1572864,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   ],
+   "layers": [
+    [
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   ]
+  }
+ ],
+ "border": {
+  "size": [
+   1,
+   1
+  ],
+  "layers": [
+   [
+    1
+   ]
+  ]
+ },
+ "events": {
+  "warps": [
+   {
+    "at": [
+     -4,
+     -4
+    ],
+    "to": "field",
+    "warp": 0
+   }
+  ]
+ },
+ "area": "field",
+ "can_run": false,
+ "darkness": 2,
+ "tags": [
+  "dark"
+ ]
+}

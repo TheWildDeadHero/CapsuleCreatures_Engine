@@ -1,0 +1,17 @@
+{
+  "schema": "capsule.project/1",
+  "name": "test_script",
+  "editor": {
+    "notes": "Test app for capsule/script: runs scripts in the VM with the engine's text-box port; shows the VM state, flags and variables."
+  },
+  "rom": {
+    "title": "SCRIPT TEST",
+    "code": "CTSC",
+    "maker": "00"
+  },
+  "sources": [
+    "src/test_script.cpp"
+  ],
+  "scripts": "data/scripts.json",
+  "debug_names": true
+}

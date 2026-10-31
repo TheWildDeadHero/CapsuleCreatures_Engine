@@ -1,0 +1,16 @@
+{
+ "schema": "capsule.scripts/1",
+ "editor": {
+  "notes": "Scripts of the C10 fixture (tests/c10_tests.cpp): the VM options of a frame-counted game."
+ },
+ "sources": [
+  "c10.cscript"
+ ],
+ "world": "../world.json",
+ "warn_unused": false,
+ "vm": {
+  "resume": "next_frame",
+  "random": "modulo",
+  "vars": "wrap"
+ }
+}

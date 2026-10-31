@@ -1,0 +1,7 @@
+{
+  "schema": "capsule.scripts/1",
+  "editor": {"notes": "Test fixture for tests/save_tests.cpp (C6): the script banks a save image migrates."},
+  "sources": ["save.cscript"],
+  "placeholders": {"hero": {"name": 4}},
+  "save_history": "save_history.json"
+}

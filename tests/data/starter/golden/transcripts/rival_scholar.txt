@@ -1,0 +1,87 @@
+-- rival_scholar
+> Scholar Wen wants to battle!
+> Scholar Wen sent out Duskowl!
+switch_in #2 Duskowl at 1
+> Go, Voltmink!
+switch_in #0 Voltmink at 0
+turn 1
+resource #0 Voltmink MP 35 (was 40)
+> Voltmink used Static Field!
+> Duskowl is shocked!
+resource #2 Duskowl MP 19 (was 26)
+> Duskowl used Night Pulse!
+hp #0 Voltmink 29 (was 47)
+> Voltmink's Intelligence fell!
+turn 2
+resource #0 Voltmink MP 27 (was 35)
+> Voltmink used Arc Bolt!
+hp #2 Duskowl 0 (was 42)
+faint #2 Duskowl
+> Duskowl fainted!
+> Voltmink gained 80 EXP!
+> Scholar Wen sent out Glimmet!
+switch_in #3 Glimmet at 1
+turn 3
+resource #0 Voltmink MP 19 (was 27)
+> Voltmink used Arc Bolt!
+hp #3 Glimmet 4 (was 43)
+resource #3 Glimmet MP 22 (was 30)
+> Glimmet used Prism Beam!
+hp #0 Voltmink 0 (was 29)
+> A critical hit!
+faint #0 Voltmink
+> Voltmink fainted!
+> [Glimmet's Recharge]
+resource #3 Glimmet MP 24 (was 22)
+> Go, Glimmet!
+switch_in #1 Glimmet at 0
+turn 4
+use_item #3 Glimmet Tonic on #3 Glimmet
+hp #3 Glimmet 24 (was 4)
+resource #1 Glimmet MP 30 (was 38)
+> Glimmet used Prism Beam!
+hp #3 Glimmet 4 (was 24)
+> It's not very effective...
+> [Glimmet's Recharge]
+resource #3 Glimmet MP 26 (was 24)
+turn 5
+resource #1 Glimmet MP 22 (was 30)
+> Glimmet used Prism Beam!
+hp #3 Glimmet 0 (was 4)
+> A critical hit!
+> It's not very effective...
+faint #3 Glimmet
+> Glimmet fainted!
+> Glimmet gained 80 EXP!
+> Scholar Wen sent out Voltmink!
+switch_in #4 Voltmink at 1
+turn 6
+resource #4 Voltmink MP 19 (was 27)
+> Voltmink used Arc Bolt!
+hp #1 Glimmet 31 (was 53)
+resource #1 Glimmet MP 14 (was 22)
+> Glimmet used Prism Beam!
+hp #4 Voltmink 3 (was 41)
+> Voltmink's accuracy fell!
+turn 7
+resource #4 Voltmink MP 11 (was 19)
+> Voltmink used Arc Bolt!
+hp #1 Glimmet 9 (was 31)
+resource #1 Glimmet MP 6 (was 14)
+> Glimmet used Prism Beam!
+hp #4 Voltmink 0 (was 3)
+> A critical hit!
+faint #4 Voltmink
+> Voltmink fainted!
+> Glimmet gained 88 EXP!
+> Scholar Wen was defeated!
+> You got 315 Coins for winning!
+end Victory
+-- outcome Victory, turns 7, reward 315, rng D26AE104
+battler #0 Voltmink lv 16 hp 0/47 status none item none exp 2000 MP 19/40 EP 32/32
+battler #1 Glimmet lv 15 hp 9/53 status none item none exp 2448 MP 6/38 EP 29/29
+battler #2 Duskowl lv 12 hp 0/42 status Shock item Focus Lens exp 1536 MP 19/26 EP 24/24
+battler #3 Glimmet lv 12 hp 0/43 status none item Mana Drop exp 1536 MP 26/30 EP 22/22
+battler #4 Voltmink lv 13 hp 0/41 status none item none exp 1326 MP 11/27 EP 25/25
+record 0.0 Voltmink lv 16 exp 2000 hp 0 status none/0 item none moves Shock Fang Static Field Arc Bolt Gale Kick Night Pulse MP 19 EP 32
+record 0.1 Glimmet lv 15 exp 2448 hp 9 status none/0 item none moves Radiant Strike Mend Light Prism Beam Torrent MP 6 EP 29

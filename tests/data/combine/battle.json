@@ -1,0 +1,655 @@
+{
+ "schema": "capsule.battle/1",
+ "id": "combine",
+ "editor": {
+  "notes": "Neutral fixture of combination (B1): invented species of five races and four families (see structure.json); Pixlet -> Glimmerwing -> Faelord transform by level."
+ },
+ "ruleset": "ruleset.json",
+ "structure": "structure.json",
+ "types": [
+  {
+   "name": "Plain",
+   "color": 0
+  },
+  {
+   "name": "Glow",
+   "color": 1
+  }
+ ],
+ "moves": [
+  {
+   "name": "Spark",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 60,
+   "cost": {
+    "mp": 4
+   },
+   "pp": 10
+  },
+  {
+   "name": "Rush",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 50,
+   "cost": {
+    "ep": "rush_cost"
+   },
+   "pp": 10
+  },
+  {
+   "name": "Burst",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 200,
+   "cost": {
+    "mp": 66
+   },
+   "pp": 10
+  },
+  {
+   "name": "Refresh",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "target": "self",
+   "cost": {
+    "ep": 1
+   },
+   "pp": 10
+  },
+  {
+   "name": "Drain",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "target": "selected",
+   "cost": {
+    "mp": 1
+   },
+   "pp": 10
+  },
+  {
+   "name": "Tap",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 10,
+   "cost": {},
+   "pp": 10
+  },
+  {
+   "name": "Sacrifice",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 30,
+   "cost": {
+    "hp": 5
+   },
+   "pp": 10
+  },
+  {
+   "name": "Smite",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 250,
+   "cost": {},
+   "pp": 10
+  }
+ ],
+ "traits": [
+  {
+   "name": "Even"
+  }
+ ],
+ "species": [
+  {
+   "name": "Pixlet",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Spark"
+    ],
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "race": "sprite",
+    "family": "slime",
+    "base_level": 3,
+    "egg_look": 1
+   },
+   "transforms": [
+    {
+     "into": "Glimmerwing",
+     "when": "level >= 12",
+     "on": [
+      "level_up"
+     ]
+    }
+   ],
+   "combine_moves": [
+    "Burst"
+   ]
+  },
+  {
+   "name": "Glimmerwing",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Spark"
+    ],
+    [
+     1,
+     "Refresh"
+    ]
+   ],
+   "fields": {
+    "race": "sprite",
+    "family": "bird",
+    "base_level": 12
+   },
+   "transforms": [
+    {
+     "into": "Faelord",
+     "when": "level >= 30",
+     "on": [
+      "level_up"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Faelord",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Spark"
+    ],
+    [
+     1,
+     "Burst"
+    ]
+   ],
+   "fields": {
+    "race": "sprite",
+    "family": "bird",
+    "base_level": 30
+   },
+   "teachable": [
+    "Tap",
+    "Smite"
+   ]
+  },
+  {
+   "name": "Pupkin",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Rush"
+    ],
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "race": "beast",
+    "family": "beast",
+    "base_level": 2,
+    "egg_look": 2,
+    "hatch_cycles": 3
+   },
+   "transforms": [
+    {
+     "into": "Tuskhorn",
+     "when": "level >= 14",
+     "on": [
+      "level_up"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Tuskhorn",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Rush"
+    ],
+    [
+     1,
+     "Smite"
+    ]
+   ],
+   "fields": {
+    "race": "beast",
+    "family": "beast",
+    "base_level": 14
+   },
+   "combine_moves": [
+    "Smite",
+    "Refresh"
+   ]
+  },
+  {
+   "name": "Grimmaw",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Rush"
+    ],
+    [
+     1,
+     "Drain"
+    ]
+   ],
+   "fields": {
+    "race": "beast",
+    "family": "beast",
+    "base_level": 28
+   }
+  },
+  {
+   "name": "Implet",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Drain"
+    ],
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "race": "fiend",
+    "family": "slime",
+    "base_level": 5
+   }
+  },
+  {
+   "name": "Gloomclaw",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Drain"
+    ],
+    [
+     1,
+     "Sacrifice"
+    ]
+   ],
+   "fields": {
+    "race": "fiend",
+    "family": "plant",
+    "base_level": 16
+   }
+  },
+  {
+   "name": "Wyrmling",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ],
+    [
+     1,
+     "Rush"
+    ]
+   ],
+   "fields": {
+    "race": "wyrm",
+    "family": "plant",
+    "base_level": 8
+   }
+  },
+  {
+   "name": "Scaledrake",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Smite"
+    ],
+    [
+     1,
+     "Rush"
+    ]
+   ],
+   "fields": {
+    "race": "wyrm",
+    "family": "plant",
+    "base_level": 24
+   }
+  },
+  {
+   "name": "Owlseer",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Refresh"
+    ],
+    [
+     1,
+     "Spark"
+    ]
+   ],
+   "fields": {
+    "race": "sage",
+    "family": "bird",
+    "base_level": 10
+   }
+  },
+  {
+   "name": "Cube",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ],
+    [
+     4,
+     "Rush"
+    ]
+   ],
+   "fields": {
+    "race": "beast",
+    "family": "slime",
+    "base_level": 1
+   }
+  }
+ ],
+ "parties": [
+  {
+   "name": "Dummy",
+   "members": [
+    {
+     "species": "Cube",
+     "level": 30,
+     "moves": [
+      "Tap"
+     ]
+    }
+   ]
+  }
+ ],
+ "messages": {
+  "appeared": "{user} blocks the way!",
+  "party_challenge": "{party} wants to battle!",
+  "send_out": "Go, {user}!",
+  "party_sends": "{party} sent out {user}!",
+  "come_back": "{user}, come back!",
+  "used_move": "{user} used {move}!",
+  "missed": "{user}'s attack missed!",
+  "no_effect": "It doesn't affect {target}...",
+  "super_effective": "It's very effective!",
+  "not_very_effective": "It's not very effective...",
+  "critical": "A critical hit!",
+  "hit_count": "Hit {value} time(s)!",
+  "fainted": "{user} fainted!",
+  "stat_up": "{user}'s {stat} rose!",
+  "stat_up2": "{user}'s {stat} rose sharply!",
+  "stat_down": "{user}'s {stat} fell!",
+  "stat_down2": "{user}'s {stat} harshly fell!",
+  "stat_max": "{user}'s {stat} won't go any higher!",
+  "stat_min": "{user}'s {stat} won't go any lower!",
+  "confused": "{user} is dazed!",
+  "confusion_hit": "It hurt itself in its daze!",
+  "confusion_end": "{user} is no longer dazed!",
+  "became_confused": "{user} became dazed!",
+  "already_confused": "{user} is already dazed!",
+  "flinched": "{user} flinched!",
+  "protected": "{target} protected itself!",
+  "protect_start": "{user} is guarding itself!",
+  "recoil": "{user} is hit with recoil!",
+  "drained": "{user} had its energy drained!",
+  "healed": "{user} regained health!",
+  "hp_full": "{user}'s HP is full!",
+  "failed": "But it failed!",
+  "no_target": "But there was no target...",
+  "passive": "[{user}'s {passive}]",
+  "item_used": "{user}'s {item} activated!",
+  "absorbed": "{user} soaked it up!",
+  "exp_gained": "{user} gained {value} EXP!",
+  "level_up": "{user} grew to Lv. {value}!",
+  "learned": "{user} learned {move}!",
+  "not_learned": "{user} couldn't learn {move}.",
+  "got_away": "Got away safely!",
+  "cant_escape": "Can't escape!",
+  "escape_blocked": "No running from this battle!",
+  "party_defeated": "{party} was defeated!",
+  "reward": "You got ${value} for winning!",
+  "out_of_creatures": "You have no creatures left!",
+  "no_usable_move": "{user} has no moves left!",
+  "blocked": "It didn't work on {user}!",
+  "fuse_done": "{user} came out of the fusion!",
+  "fuse_refused": "Nothing answers...",
+  "fuse_no_room": "There is no room for {user}.",
+  "synth_unfit": "{user} is not ready.",
+  "synth_done": "{user} came out of the synthesis!",
+  "echo_apart": "{user} finds no echo.",
+  "echo_done": "{user} echoes back!",
+  "echo_logic": "{user} hums.",
+  "nest_apart": "{user} keeps to itself."
+ },
+ "effects": [
+  "logic.ceffect",
+  "combine.ceffect"
+ ],
+ "items": [
+  {
+   "name": "Salve",
+   "pocket": "goods",
+   "price": 10,
+   "use": "both",
+   "target": "member"
+  },
+  {
+   "name": "Ether",
+   "pocket": "goods",
+   "price": 30,
+   "use": "field",
+   "target": "move_slot"
+  },
+  {
+   "name": "Point Up",
+   "pocket": "goods",
+   "price": 90,
+   "use": "field",
+   "target": "move_slot"
+  },
+  {
+   "name": "Disc Burst",
+   "pocket": "discs",
+   "price": 70,
+   "use": "field",
+   "target": "member"
+  },
+  {
+   "name": "Disc Tap",
+   "pocket": "discs",
+   "price": 70,
+   "use": "field",
+   "target": "member",
+   "consumed": false
+  },
+  {
+   "name": "Warm Stone",
+   "pocket": "goods",
+   "price": 50
+  },
+  {
+   "name": "Incubator",
+   "pocket": "goods",
+   "price": 50,
+   "use": "field",
+   "target": "member",
+   "allow_eggs": true
+  },
+  {
+   "name": "Glow Moss",
+   "pocket": "goods",
+   "price": 50
+  }
+ ],
+ "texts": {
+  "salve_used": "{user} feels better!"
+ }
+}

@@ -1,0 +1,88 @@
+# Neutral fixture logic (E8, D-25): resources through effect logic; the items' use_field logic below (G2).
+
+move "Refresh" {
+   use {
+      restore user mp 6;
+   }
+}
+
+move "Drain" {
+   hit {
+      target.resource(mp) -= 5;
+   }
+}
+
+# G2: items used out of battle (use_field; Salve's use_battle compiles, the battle's Item action runs it from G3)
+
+item "Salve" {
+   on use_field {
+      if holder.hp == 0 or holder.hp >= holder.max_hp {
+         fail;
+      }
+      restore holder hp 10;
+      text salve_used;
+   }
+   on use_battle {
+      restore holder hp 10;
+   }
+}
+
+item "Ether" {
+   on use_field {
+      # the chosen move slot's pool (the context move)
+      if holder.resource(pp) >= holder.resource_max(pp) {
+         fail;
+      }
+      restore holder pp 5;
+   }
+}
+
+item "Point Up" {
+   on use_field {
+      # PP-Up style: one more raise of the slot (its maximum follows); none left: no effect
+      let before = holder.resource_max(pp);
+      raise holder pp 1;
+      if holder.resource_max(pp) == before {
+         fail;
+      }
+   }
+}
+
+item "Disc Burst" {
+   on use_field {
+      teach holder Burst;
+   }
+}
+
+item "Disc Tap" {
+   on use_field {
+      teach holder Tap;
+   }
+}
+
+# B2 (D-28 section 3): a held Warm Stone takes twice the steps off the eggs each cycle; the Incubator may be used on
+# an egg (battle.json allow_eggs) and takes 4 steps off its counter
+item "Warm Stone" {
+   on hatch {
+      modify by 2;
+   }
+}
+
+item "Incubator" {
+   on use_field {
+      if holder.role(egg) == 0 {
+         fail;
+      }
+      holder.role(hatch_counter) = max(holder.role(hatch_counter) - 4, 1);
+   }
+}
+
+# C9: a held Glow Moss raises its holder's bond on each nest check run; an egg is skipped (the step effect does not
+# allow eggs: its handlers never run on one)
+item "Glow Moss" {
+   on steps {
+      if field.step_effect == nest_check {
+         holder.role(bond) = min(holder.role(bond) + 1, 99);
+      }
+   }
+}

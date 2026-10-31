@@ -1,0 +1,124 @@
+# Neutral turn structure fixture (tests/battle_turn_tests.cpp): owners whose texts show the order the
+# manifest's `turn` gives (end-of-turn phases, dispatch order, start switch-in order).
+
+# Every battler's passive speaks at switch-in, at the end of each turn and before each move.
+passive "Mend" {
+   on switch_in {
+      text hello;
+   }
+   on residual {
+      text mend;
+   }
+   on before_move {
+      text ready;
+   }
+}
+
+# A volatile with a residual handler: its source is not in the fixture's battlers phase, so it never speaks.
+move "Hum" {
+   use {
+      vol_on user hum;
+   }
+}
+
+volatile "hum" {
+   on residual {
+      text hums;
+   }
+}
+
+# The user's side glows each end of turn while the screen lasts (the fixture's sides phase: once per side).
+move "Screen" {
+   use {
+      if side(user).has(Screen) {
+         fail;
+      }
+      side_on side(user) Screen;
+   }
+}
+
+side_condition "Screen" {
+   on side_residual {
+      text glow;
+   }
+}
+
+# Two turns of haze: every battler loses 1 HP at the end of each (the fixture's first phase).
+move "Haze" {
+   hit {
+      if field.has(Haze) {
+         fail;
+      }
+      field_on Haze;
+   }
+}
+
+field_condition "Haze" {
+   on field_residual {
+      damage_hp holder 1;
+      text hazed;
+   }
+}
+
+move "Spore" {
+   hit {
+      inflict target Blight;
+   }
+}
+
+move "Lullaby" {
+   hit {
+      inflict target Doze;
+   }
+}
+
+# The gale's own hooks (C1): the weather starts, is set again and ends as a field condition does (weather_on() /
+# weather_off()). Its start hook starts the breeze on the same holder: another owner's start hook inside it runs
+# (the dispatch guard is keyed on battler, hook and owner).
+weather "Gale" {
+   on try_start {
+      text gale_try;
+   }
+   on start {
+      text gale_on;
+      vol_on holder breeze;
+   }
+   on already {
+      text gale_again;
+   }
+   # the end hook reads the weather that ends (C4: it is still the weather while the hook runs)
+   on end when field.weather == Gale {
+      text gale_off;
+   }
+}
+
+# Dust replaced by the gale (C4): its end hook runs before the gale is the weather, so it still reads Dust.
+weather "Dust" {
+   on end when field.weather == Dust {
+      text dust_off;
+   }
+}
+
+volatile "breeze" {
+   on start {
+      text breeze_on;
+   }
+}
+
+move "Gale" {
+   use {
+      weather Gale;
+   }
+}
+
+# C6 (review4 finding 19): Vane turns as soon as the acting weather changes (a weather started, ended or suppressed);
+# Calm's tag is the structure's weather_suppress_tag: while its holder is out the weather does not act.
+passive "Vane" {
+   on weather_changed {
+      text vane;
+   }
+}
+
+passive "Calm" {
+   tags [calm];
+}

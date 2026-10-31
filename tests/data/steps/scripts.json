@@ -1,0 +1,6 @@
+{
+  "schema": "capsule.scripts/1",
+  "editor": {"notes": "Scripts of the step effects fixture (F3): the battle manifest's step effects become implicit counter variables (and, as the rot names a script, the member and outcome variables); the rot's script (tests/step_effects_tests.cpp)."},
+  "sources": ["steps.cscript"],
+  "battle": "battle.json"
+}

@@ -1,0 +1,277 @@
+# Builds and tests the engine on every push and pull request (D-40 RC; restores the Oct 15 build.yml lost in the
+# D-37 restructure, updated to the current tree):
+#   checks:     principles, style, code map, shell scripts, Doxygen (fails on anything undocumented)
+#   headless:   engine core + tests on the software video model (no SDL)
+#   linux:      desktop debug (+ tests) and release, GCC and Clang; checks SDL2 found every Linux backend
+#   macos:      desktop debug (+ tests) and release, universal arm64 + x86_64, checked with lipo
+#   windows:    desktop debug (+ tests) and release, MinGW-w64 GCC in MSYS2's UCRT64 environment
+#   big-endian: headless engine + tests cross-built for s390x, run under QEMU (P-19)
+#   gba:        debug + release ROMs in devkitPro's devkitARM container
+#   dreamcast:  KallistiOS from tools/setup/setup_kallistios.sh (cached by its pinned commits), debug + release;
+#               not a shipping target in D-40, so it never fails the run (continue-on-error)
+# Only submodules/libgba is checked out (D-2: no outside reference code is ever fetched). SDL2's pinned archive
+# (cmake/sdl2.cmake) is cached by .github/scripts/sdl2_source.py, so FetchContent never downloads it.
+# Actions are pinned to full commit SHAs; the comment names the release tag.
+name: build
+
+on:
+   push:
+   pull_request:
+   workflow_dispatch:
+
+concurrency:
+   group: ${{ github.workflow }}-${{ github.ref }}
+   cancel-in-progress: true
+
+permissions:
+   contents: read
+
+env:
+   # Shared by every SDL2 cache step: bump it to drop every cached archive at once.
+   SDL2_CACHE_VERSION: v1
+
+jobs:
+   checks:
+      runs-on: ubuntu-24.04
+      steps:
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+         - name: Install Doxygen and ShellCheck
+           run: |
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends doxygen shellcheck
+         - name: Principles
+           run: bash tools/ci/check_principles.sh
+         - name: Style
+           run: python3 tools/ci/check_style.py src include apps tests tools cmake CMakeLists.txt .github/scripts
+         - name: Code map
+           run: python3 tools/ci/code_map.py check --root .
+         - name: Shell scripts
+           run: shellcheck -S warning tools/ci/*.sh tools/setup/*.sh tools/dreamcast/*.sh
+         - name: Documentation (Doxygen; fails on anything undocumented)
+           # Doxygen 1.9 makes only the last folder of OUTPUT_DIRECTORY (build/docs); a fresh checkout has no build/.
+           run: |
+              mkdir -p build/docs
+              doxygen Doxyfile
+
+   headless:
+      runs-on: ubuntu-24.04
+      steps:
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+         - name: Install Ninja
+           run: |
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends ninja-build
+         - name: Build + tests
+           run: |
+              cmake --preset headless -G Ninja
+              cmake --build --preset headless
+              bash .github/scripts/ctest_annotated.sh headless -j 4
+
+   linux:
+      name: linux (${{ matrix.compiler }})
+      runs-on: ubuntu-24.04
+      strategy:
+         fail-fast: false
+         matrix:
+            include:
+               - compiler: gcc
+                 cc: gcc
+                 cxx: g++
+               - compiler: clang
+                 cc: clang
+                 cxx: clang++
+      env:
+         CC: ${{ matrix.cc }}
+         CXX: ${{ matrix.cxx }}
+      steps:
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+         - name: Install Ninja and SDL2's video and audio backend headers
+           run: |
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends ninja-build \
+                 libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev \
+                 libwayland-dev libxkbcommon-dev libegl1-mesa-dev libdecor-0-dev \
+                 libasound2-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev libudev-dev
+         - name: Restore SDL2 archive
+           uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9   # v6.1.0
+           with:
+              path: ${{ runner.temp }}/sdl2
+              key: sdl2-${{ runner.os }}-${{ env.SDL2_CACHE_VERSION }}-${{ hashFiles('cmake/sdl2.cmake') }}
+         - name: Prepare SDL2 source
+           id: sdl2
+           run: python3 .github/scripts/sdl2_source.py "${{ runner.temp }}/sdl2"
+         - name: Debug build + tests
+           run: |
+              cmake --preset desktop-debug -G Ninja \
+                 -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
+              cmake --build --preset desktop-debug
+              bash .github/scripts/ctest_annotated.sh desktop-debug -j 4
+         - name: Release build
+           run: |
+              cmake --preset desktop-release -G Ninja \
+                 -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
+              cmake --build --preset desktop-release
+         # SDL leaves out any backend whose headers were missing at configure time, without failing the build.
+         - name: Check SDL2's Linux backends (Wayland, X11, PipeWire, PulseAudio, ALSA)
+           run: bash .github/scripts/check_sdl_backends.sh build/desktop-release
+
+   macos:
+      runs-on: macos-15
+      steps:
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+         - name: Restore SDL2 archive
+           uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9   # v6.1.0
+           with:
+              path: ${{ runner.temp }}/sdl2
+              key: sdl2-${{ runner.os }}-${{ env.SDL2_CACHE_VERSION }}-${{ hashFiles('cmake/sdl2.cmake') }}
+         - name: Prepare SDL2 source
+           id: sdl2
+           run: python3 .github/scripts/sdl2_source.py "${{ runner.temp }}/sdl2"
+         - name: Debug build + tests
+           run: |
+              cmake --preset desktop-debug -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
+              cmake --build --preset desktop-debug -j 4
+              bash .github/scripts/ctest_annotated.sh desktop-debug -j 4
+         - name: Release build
+           run: |
+              cmake --preset desktop-release -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
+              cmake --build --preset desktop-release -j 4
+         - name: Check universal binaries
+           run: |
+              for exe in build/desktop-debug/capsule_hello build/desktop-release/capsule_hello \
+                         build/desktop-release/capsule_input_viewer build/desktop-release/capsule_starter_battle; do
+                 archs=$(lipo -archs "$exe")
+                 echo "$exe: $archs"
+                 case " $archs " in *" arm64 "*) ;; *) echo "missing arm64"; exit 1 ;; esac
+                 case " $archs " in *" x86_64 "*) ;; *) echo "missing x86_64"; exit 1 ;; esac
+              done
+              vtool -show-build build/desktop-release/capsule_hello | grep -E "minos|platform"
+
+   windows:
+      runs-on: windows-2025
+      defaults:
+         run:
+            shell: msys2 {0}
+      steps:
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+         - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e   # v2.33.0
+           with:
+              msystem: UCRT64
+              update: true
+              install: >-
+                 mingw-w64-ucrt-x86_64-gcc
+                 mingw-w64-ucrt-x86_64-cmake
+                 mingw-w64-ucrt-x86_64-ninja
+                 mingw-w64-ucrt-x86_64-python
+         - name: Restore SDL2 archive
+           uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9   # v6.1.0
+           with:
+              path: ${{ runner.temp }}/sdl2
+              key: sdl2-${{ runner.os }}-${{ env.SDL2_CACHE_VERSION }}-${{ hashFiles('cmake/sdl2.cmake') }}
+         - name: Prepare SDL2 source
+           id: sdl2
+           run: python .github/scripts/sdl2_source.py "$(cygpath -m '${{ runner.temp }}')/sdl2"
+         - name: Debug build + tests
+           run: |
+              bash .github/scripts/run_annotated.sh "windows-debug configure" cmake --preset windows-debug -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
+              bash .github/scripts/run_annotated.sh "windows-debug build" cmake --build --preset windows-debug
+              bash .github/scripts/ctest_annotated.sh windows-debug -j 4
+         - name: Release build
+           run: |
+              bash .github/scripts/run_annotated.sh "windows-release configure" cmake --preset windows-release -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
+              bash .github/scripts/run_annotated.sh "windows-release build" cmake --build --preset windows-release
+
+   big-endian:
+      runs-on: ubuntu-24.04
+      steps:
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+         - name: Install s390x cross compiler and QEMU
+           run: |
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends ninja-build g++-s390x-linux-gnu qemu-user \
+                 qemu-user-binfmt
+         # binfmt lets the Python tests start the s390x programs they test directly; QEMU_LD_PREFIX gives those
+         # programs the s390x system libraries (ctest runs the programs through the preset's emulator itself).
+         - name: Build + tests under QEMU
+           env:
+              QEMU_LD_PREFIX: /usr/s390x-linux-gnu
+           run: |
+              cmake --preset big-endian-check -G Ninja
+              cmake --build --preset big-endian-check
+              bash .github/scripts/ctest_annotated.sh big-endian-check -j 4
+
+   gba:
+      runs-on: ubuntu-24.04
+      # devkitPro's own image (devkitARM, libgba, gbafix under /opt/devkitpro; DEVKITPRO is set in it).
+      container: devkitpro/devkitarm:latest
+      strategy:
+         fail-fast: false
+         matrix:
+            preset: [gba-debug, gba-release]
+      steps:
+         # git before checkout, so actions/checkout clones (with the submodule) instead of downloading an archive.
+         - name: Install git and Python
+           run: |
+              apt-get update
+              apt-get install -y --no-install-recommends git ca-certificates python3
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+           with:
+              submodules: true
+         # The image's CMake follows its Debian release; the presets need 3.24 or later.
+         - uses: lukka/get-cmake@a89e43e22a96abafcd7a62db652a65ecd33052c9   # v4.4.4
+         - name: Toolchain versions
+           run: |
+              "$DEVKITPRO/devkitARM/bin/arm-none-eabi-gcc" --version | head -n 1
+              git -C submodules/libgba log -1 --format='submodules/libgba at %h (%cs)'
+         - name: ROMs
+           run: |
+              cmake --preset ${{ matrix.preset }}
+              cmake --build --preset ${{ matrix.preset }}
+         - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   # v7.0.1
+           with:
+              name: ${{ matrix.preset }}-roms
+              path: build/${{ matrix.preset }}/*.gba
+              if-no-files-found: error
+
+   dreamcast:
+      runs-on: ubuntu-24.04
+      timeout-minutes: 240
+      # D-40 ships no Dreamcast build: a failure here is reported but does not fail the run.
+      continue-on-error: true
+      steps:
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+         - name: Prepare /opt/toolchains/dc
+           run: sudo mkdir -p /opt/toolchains/dc && sudo chown "$(id -u):$(id -g)" /opt/toolchains/dc
+         - name: Restore KallistiOS (pinned commit)
+           id: kos-cache
+           uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9   # v6.1.0
+           with:
+              path: /opt/toolchains/dc
+              key: kallistios-${{ runner.os }}-${{ hashFiles('tools/setup/setup_kallistios.sh') }}
+         - name: Install KallistiOS
+           run: bash tools/setup/setup_kallistios.sh --yes
+         # Saved right after installing, so a failing engine build below doesn't throw away an hour of toolchain
+         # compilation.
+         - name: Save KallistiOS
+           if: steps.kos-cache.outputs.cache-hit != 'true'
+           uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9   # v6.1.0
+           with:
+              path: /opt/toolchains/dc
+              key: ${{ steps.kos-cache.outputs.cache-primary-key }}
+         - name: Debug build
+           run: |
+              bash .github/scripts/run_annotated.sh "dc-debug configure" cmake --preset dc-debug
+              bash .github/scripts/run_annotated.sh "dc-debug build" cmake --build --preset dc-debug
+         - name: Release build
+           run: |
+              cmake --preset dc-release
+              cmake --build --preset dc-release
+         - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   # v7.0.1
+           with:
+              name: dreamcast
+              path: |
+                 build/dc-debug/*.elf
+                 build/dc-debug/*.cdi
+                 build/dc-release/*.elf
+                 build/dc-release/*.cdi
+              if-no-files-found: warn

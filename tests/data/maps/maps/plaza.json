@@ -1,0 +1,309 @@
+{
+ "schema": "capsule.map/2",
+ "id": "plaza",
+ "layers": [
+  {
+   "bg": 2,
+   "priority": 2,
+   "content": "tilemap",
+   "purpose": "terrain"
+  }
+ ],
+ "metatiles": [
+  "test/ground"
+ ],
+ "behaviors": [
+  "normal"
+ ],
+ "chunks": [
+  {
+   "at": [
+    0,
+    0
+   ],
+   "cells": [
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   ],
+   "layers": [
+    [
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   ]
+  }
+ ],
+ "border": {
+  "size": [
+   1,
+   1
+  ],
+  "layers": [
+   [
+    0
+   ]
+  ]
+ },
+ "location": "plaza",
+ "objects": [
+  {
+   "name": "toucher",
+   "at": [
+    3,
+    1
+   ],
+   "sprite": "sprite:NOPE",
+   "trigger": "player_touch",
+   "script": "touched"
+  },
+  {
+   "name": "bumper",
+   "at": [
+    6,
+    6
+   ],
+   "sprite": "sprite:NOPE",
+   "trigger": "event_touch",
+   "script": "bumped"
+  },
+  {
+   "name": "runner",
+   "at": [
+    1,
+    6
+   ],
+   "sprite": "sprite:NOPE",
+   "movement": "custom",
+   "route": {
+    "steps": [
+     "right 2",
+     "left 2"
+    ]
+   },
+   "frequency": 5
+  },
+  {
+   "name": "sw",
+   "at": [
+    5,
+    1
+   ],
+   "sprite": "sprite:NOPE",
+   "script": "self_talk",
+   "pages": [
+    {
+     "when": {
+      "self": "A"
+     },
+     "facing": "up",
+     "script": "self_after"
+    }
+   ]
+  },
+  {
+   "name": "par",
+   "at": [
+    7,
+    7
+   ],
+   "sprite": "sprite:NOPE",
+   "trigger": "parallel",
+   "script": "par_tick"
+  },
+  {
+   "name": "auto",
+   "at": [
+    0,
+    0
+   ],
+   "sprite": "sprite:NOPE",
+   "trigger": "autorun",
+   "script": "auto_once",
+   "pages": [
+    {
+     "when": {
+      "flag": "auto_done"
+     },
+     "hidden": true
+    }
+   ]
+  }
+ ],
+ "events": {
+  "warps": [
+   {
+    "at": [
+     7,
+     0
+    ],
+    "to": "garden",
+    "warp": 0
+   }
+  ],
+  "signs": [
+   {
+    "at": [
+     2,
+     7
+    ],
+    "script": "effects"
+   }
+  ]
+ }
+}

@@ -1,0 +1,10 @@
+{
+ "schema": "capsule.transfer_fixture/1",
+ "stats": [{"name": "hp"}, {"name": "atk"}, {"name": "def"}, {"name": "spa"}, {"name": "spd"}, {"name": "spe"}],
+ "monster_layout": {
+  "roles": ["species_key", "seed", "owner_id", {"custom": "owner_secret", "width": 16}, "experience", "level", "moves",
+            "pp", "pp_ups", "stat_genes", "stat_training", "trait", "passive_selector", "held_item", "current_hp",
+            "primary_status", {"custom": "friendship", "width": 8}, {"custom": "nicknamed", "width": 1}, "nickname"],
+  "transfer_defaults": {"spa": {"stat_genes": 7}, "spd": 3}
+ }
+}

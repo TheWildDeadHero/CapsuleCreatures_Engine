@@ -1,0 +1,38 @@
+{
+  "schema": "capsule.encounters/1",
+  "editor": {"notes": "Showcase encounters: slot 0 west grass, slot 1 east grass."},
+  "tables": [
+    {
+      "slot": 0,
+      "method": "walk",
+      "editor": {"label": "West grass"},
+      "rate": "1/8",
+      "entries": [
+        {"species": "Sproutle", "levels": [3, 5], "weight": 45},
+        {"species": "Clodbun", "levels": [3, 6], "weight": 30},
+        {
+          "species": "Voltmink",
+          "levels": [4, 6],
+          "weight": 25,
+          "modifiers": [{"when": "night", "multiply": "1/2"}]
+        }
+      ]
+    },
+    {
+      "slot": 1,
+      "method": "walk",
+      "editor": {"label": "East grass (night)"},
+      "rate": "1/6",
+      "entries": [
+        {"species": "Duskowl", "levels": [5, 7], "weight": 60, "requires": ["night"]},
+        {
+          "species": "Glimmet",
+          "levels": [5, 7],
+          "weight": 40,
+          "requires": ["night"],
+          "modifiers": [{"when": "night", "multiply": 2}]
+        }
+      ]
+    }
+  ]
+}

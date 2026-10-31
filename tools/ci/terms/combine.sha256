@@ -1,0 +1,10 @@
+# Hashed word list (tools/ci/term_check.py, D-40): series' combination terms that are names (B1; the generic words are plain in check_principles.sh).
+# Add a word: echo 'word' | tools/ci/term_check.py hash --list <this file> >> <this file>
+salt 53dd5349bdf195f9e2703f4a5cb972b5
+case insensitive
+700f3f7ab3266471cdd3274934ef2bc14782f447d1249e4ec82f3a1c09bd5cc8
+42cdbd9a8eca5f3ec779c377c427684652c07fe0caf60c65fa1c055cbf994566
+b8bd9cb75b77780cf7a6555e95879ef0a49e3450c9e310dfe6a688c09ddaa2e5
+05509edf78638505f60f77f440c047a56b6301e037aa0c9e3196ca173f2ae19b
+e925c37e4fb5e2b438942f72f19fc9e32206476e5b2e0e6e63b7d451a51fdb42
+34656f3b1b58c05010dc4696bc2e0ab69635e158210b5975ced5ee06db75f115

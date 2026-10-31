@@ -1,0 +1,8 @@
+// Scripts of the D-30 fixture (tests/d30_tests.cpp).
+
+flag gate_open;               // the gate_open override set is applied while it is set
+
+script bridge_on { override apply bridge; }
+script bridge_off { override clear bridge; }
+script gate_on { override apply gate_open; }
+script gate_off { override clear gate_open; }

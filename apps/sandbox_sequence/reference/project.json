@@ -1,0 +1,26 @@
+{
+  "schema": "capsule.project/1",
+  "name": "sandbox_sequence",
+  "editor": {
+    "notes": "Sandbox for the sequence player module: plays the engine's test sequences with real graphics. Laid out like a game: engine (linked), this reference manifest, data/ (assets), src/ (scene code)."
+  },
+  "rom": {
+    "title": "SEQ SANDBOX",
+    "code": "CSQS",
+    "maker": "00"
+  },
+  "sources": [
+    "src/sandbox_sequence.cpp"
+  ],
+  "libraries": [
+    "test_kit"
+  ],
+  "assets": "data/assets.json",
+  "sequences": {
+    "kSeqTitleTimeout": "../../tests/data/sequences/title_timeout.json",
+    "kSeqTitleSongEnd": "../../tests/data/sequences/title_song_end.json",
+    "kSeqCutscene": "../../tests/data/sequences/cutscene.json",
+    "kSeqCreditsMap": "../../tests/data/sequences/credits_map.json",
+    "kSeqCreditsShowcase": "../../tests/data/sequences/credits_showcase.json"
+  }
+}

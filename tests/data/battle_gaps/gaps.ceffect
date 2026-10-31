@@ -1,0 +1,145 @@
+# G1 (D-26 section 1): the battle gaps on placeholder data (tests/battle_gaps_tests.cpp).
+
+# A hold bound to its source (structure: volatile held, bound_to source): the holder cannot leave while the battler
+# that held it stays; its end text shows when that one leaves, faints or passes it on.
+volatile "held" {
+   on try_switch {
+      text stuck;
+      block;
+   }
+}
+
+move "Hold" {
+   hit {
+      if target.alive {
+         vol_on target held;
+      }
+   }
+}
+
+# Delayed hits (structure delayed_hits): the user's snapshot now, the hit worked out when it lands.
+move "Sight" {
+   hit {
+      if target.alive {
+         if target.delayed_turns > 0 {
+            fail;
+         }
+         delay_hit target 2 sight;
+         text foresaw;
+      }
+   }
+   land {
+      text landed;
+      damage;
+   }
+}
+
+move "Late" {
+   hit {
+      if target.alive {
+         delay_hit target 2 late;
+      }
+   }
+   land {
+      damage;
+   }
+}
+
+move "Shaky" {
+   hit {
+      if target.alive {
+         delay_hit target 1 shaky;
+      }
+   }
+   land {
+      text landed;
+      damage;
+   }
+}
+
+move "Pump" {
+   use {
+      stage user power 2;
+   }
+}
+
+# A copying move: the last move that reached the user, unless it cannot be mirrored (move flag unmirrorable).
+move "Echo" {
+   use {
+      if user.targeted_by == none {
+         fail;
+      }
+      use_move user user.targeted_by unless unmirrorable;
+   }
+}
+
+# A decoy takes hits (absorb): its holder's secondary effects and contact hooks do not happen.
+volatile "decoy" {
+   on before_damage when other != holder {
+      let d = min(value, holder.word(decoy));
+      holder.word(decoy) -= d;
+      credit d;
+      absorb;
+      if holder.word(decoy) == 0 {
+         vol_off holder decoy;
+         text decoy_gone;
+      }
+      modify set 0;
+   }
+}
+
+move "Decoy" {
+   use {
+      if user.has(decoy) {
+         fail;
+      }
+      vol_on user decoy;
+      user.word(decoy) = 10;
+      text decoy_up;
+   }
+}
+
+# A hit with a secondary effect that a decoy keeps off (even the hit that breaks it).
+move "Sting" {
+   hit {
+      damage;
+      if target.alive and not absorbed {
+         stage target pace -1;
+      }
+   }
+}
+
+move "Relay" {
+   use {
+      if not user.can_switch {
+         fail;
+      }
+      switch user pass;
+   }
+}
+
+# A contact hook that a decoy keeps off.
+passive "Prickle" {
+   on damaging_hit when move.has(contact) and not absorbed and other.alive {
+      stage other power -1;
+   }
+}
+
+# AI: a move's own ai_score handler, a passive's veto, a switching rule's hook (move none).
+move "Wait" {
+   ai_score {
+      modify add 500;
+   }
+}
+
+passive "Picky" {
+   on ai_score when move == Sting {
+      block;
+   }
+}
+
+passive "Nervous" {
+   on ai_score when move == none and holder.hp < holder.max_hp {
+      modify set 30000;
+   }
+}

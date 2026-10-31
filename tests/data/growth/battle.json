@@ -1,0 +1,1071 @@
+{
+ "schema": "capsule.battle/1",
+ "id": "growth",
+ "editor": {
+  "notes": "Neutral fixture of growth (G4): tests/growth_tests.cpp and tests/test_battle_growth.py. Transformations by level, item, trade (with an item used up), a bond with the time of day, a branch on the seed, a stat comparison, a second creature, a form by rule, by item and in battle; training values."
+ },
+ "ruleset": "ruleset.json",
+ "structure": "structure.json",
+ "types": [
+  {
+   "name": "Plain",
+   "color": 0
+  },
+  {
+   "name": "Glow",
+   "color": 1
+  }
+ ],
+ "moves": [
+  {
+   "name": "Spark",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 60,
+   "cost": {
+    "mp": 4
+   },
+   "pp": 10
+  },
+  {
+   "name": "Rush",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 50,
+   "cost": {
+    "ep": "rush_cost"
+   },
+   "pp": 10
+  },
+  {
+   "name": "Burst",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 200,
+   "cost": {
+    "mp": 66
+   },
+   "pp": 10
+  },
+  {
+   "name": "Refresh",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "target": "self",
+   "cost": {
+    "ep": 1
+   },
+   "pp": 10
+  },
+  {
+   "name": "Drain",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "target": "selected",
+   "cost": {
+    "mp": 1
+   },
+   "pp": 10
+  },
+  {
+   "name": "Tap",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 10,
+   "cost": {},
+   "pp": 10
+  },
+  {
+   "name": "Sacrifice",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 30,
+   "cost": {
+    "hp": 5
+   },
+   "pp": 10
+  },
+  {
+   "name": "Smite",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "target": "selected",
+   "power": 250,
+   "cost": {},
+   "pp": 10
+  }
+ ],
+ "traits": [
+  {
+   "name": "Even"
+  }
+ ],
+ "species": [
+  {
+   "name": "Blob",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Spark"
+    ],
+    [
+     1,
+     "Rush"
+    ],
+    [
+     1,
+     "Refresh"
+    ],
+    [
+     1,
+     "Drain"
+    ]
+   ],
+   "fields": {
+    "weight": 90,
+    "y_vigor": 3,
+    "y_power": 1
+   }
+  },
+  {
+   "name": "Cube",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    200,
+    20,
+    20,
+    20,
+    20
+   ],
+   "growth": "steady",
+   "exp_yield": 0,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 90,
+    "y_vigor": 3,
+    "y_power": 1
+   }
+  },
+  {
+   "name": "Pip",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ],
+    [
+     1,
+     "Smite"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 2
+   },
+   "transforms": [
+    {
+     "into": "Pipflare",
+     "when": "item == ember_stone",
+     "on": [
+      "item_use"
+     ]
+    },
+    {
+     "into": "Pipster",
+     "when": "level >= 5",
+     "on": [
+      "level_up"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Pipster",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ],
+    [
+     5,
+     "Spark"
+    ],
+    [
+     5,
+     "Rush"
+    ]
+   ],
+   "fields": {
+    "weight": 60,
+    "y_vigor": 0,
+    "y_power": 3
+   }
+  },
+  {
+   "name": "Pipflare",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 30,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Seedle",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   },
+   "transforms": [
+    {
+     "into": "Seedlord",
+     "when": "item == link_cord",
+     "on": [
+      "trade"
+     ],
+     "takes_item": true
+    },
+    {
+     "into": "Seedwood",
+     "when": "1",
+     "on": [
+      "trade"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Seedlord",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Seedwood",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Moss",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   },
+   "transforms": [
+    {
+     "into": "Mossnight",
+     "when": "bond >= 200 && time_of_day == night",
+     "on": [
+      "level_up"
+     ]
+    },
+    {
+     "into": "Mossday",
+     "when": "bond >= 200",
+     "on": [
+      "level_up"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Mossnight",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Mossday",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Wiggle",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   },
+   "transforms": [
+    {
+     "into": "Wigglea",
+     "when": "level >= 7 && seed_lo % 2 == 0",
+     "on": [
+      "level_up"
+     ]
+    },
+    {
+     "into": "Wiggleb",
+     "when": "level >= 7",
+     "on": [
+      "level_up"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Wigglea",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Wiggleb",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Scrap",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   },
+   "transforms": [
+    {
+     "into": "Scrapper",
+     "when": "level >= 8 && stat.power > stat.stamina",
+     "on": [
+      "level_up"
+     ]
+    },
+    {
+     "into": "Scrapguard",
+     "when": "level >= 8 && stat.power < stat.stamina",
+     "on": [
+      "level_up"
+     ]
+    },
+    {
+     "into": "Scrapmid",
+     "when": "level >= 8",
+     "on": [
+      "level_up"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Scrapper",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Scrapguard",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Scrapmid",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Husk",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   },
+   "transforms": [
+    {
+     "into": "Huskfly",
+     "when": "level >= 6",
+     "on": [
+      "level_up"
+     ],
+     "also": "Huskshell"
+    }
+   ]
+  },
+  {
+   "name": "Huskfly",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Huskshell",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 20,
+    "y_vigor": 0,
+    "y_power": 0
+   }
+  },
+  {
+   "name": "Shifter",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    60,
+    30,
+    40,
+    40,
+    30
+   ],
+   "growth": "steady",
+   "exp_yield": 20,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "weight": 40,
+    "y_vigor": 0,
+    "y_power": 0
+   },
+   "passives": [
+    "Stormcall"
+   ],
+   "forms": [
+    {
+     "name": "Bright",
+     "types": [
+      "Glow"
+     ],
+     "base": [
+      60,
+      30,
+      40,
+      80,
+      30
+     ],
+     "front": "sprite:SHIFTER BRIGHT",
+     "when": "time_of_day == day && region != 0",
+     "on": [
+      "after_battle",
+      "script"
+     ]
+    },
+    {
+     "name": "Storm",
+     "types": [
+      "Glow"
+     ],
+     "base": [
+      60,
+      30,
+      40,
+      40,
+      90
+     ]
+    },
+    {
+     "name": "base",
+     "when": "time_of_day == night",
+     "on": [
+      "after_battle",
+      "script"
+     ]
+    }
+   ]
+  }
+ ],
+ "parties": [
+  {
+   "name": "Dummy",
+   "members": [
+    {
+     "species": "Cube",
+     "level": 30,
+     "moves": [
+      "Tap"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Caster",
+   "members": [
+    {
+     "species": "Blob",
+     "level": 20,
+     "moves": [
+      "Burst",
+      "Spark"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Fodder",
+   "members": [
+    {
+     "species": "Blob",
+     "level": 1,
+     "moves": [
+      "Tap"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Shifty",
+   "members": [
+    {
+     "species": "Shifter",
+     "level": 5,
+     "moves": [
+      "Tap"
+     ]
+    }
+   ]
+  }
+ ],
+ "messages": {
+  "appeared": "{user} blocks the way!",
+  "party_challenge": "{party} wants to battle!",
+  "send_out": "Go, {user}!",
+  "party_sends": "{party} sent out {user}!",
+  "come_back": "{user}, come back!",
+  "used_move": "{user} used {move}!",
+  "missed": "{user}'s attack missed!",
+  "no_effect": "It doesn't affect {target}...",
+  "super_effective": "It's very effective!",
+  "not_very_effective": "It's not very effective...",
+  "critical": "A critical hit!",
+  "hit_count": "Hit {value} time(s)!",
+  "fainted": "{user} fainted!",
+  "stat_up": "{user}'s {stat} rose!",
+  "stat_up2": "{user}'s {stat} rose sharply!",
+  "stat_down": "{user}'s {stat} fell!",
+  "stat_down2": "{user}'s {stat} harshly fell!",
+  "stat_max": "{user}'s {stat} won't go any higher!",
+  "stat_min": "{user}'s {stat} won't go any lower!",
+  "confused": "{user} is dazed!",
+  "confusion_hit": "It hurt itself in its daze!",
+  "confusion_end": "{user} is no longer dazed!",
+  "became_confused": "{user} became dazed!",
+  "already_confused": "{user} is already dazed!",
+  "flinched": "{user} flinched!",
+  "protected": "{target} protected itself!",
+  "protect_start": "{user} is guarding itself!",
+  "recoil": "{user} is hit with recoil!",
+  "drained": "{user} had its energy drained!",
+  "healed": "{user} regained health!",
+  "hp_full": "{user}'s HP is full!",
+  "failed": "But it failed!",
+  "no_target": "But there was no target...",
+  "passive": "[{user}'s {passive}]",
+  "item_used": "{user}'s {item} activated!",
+  "absorbed": "{user} soaked it up!",
+  "exp_gained": "{user} gained {value} EXP!",
+  "level_up": "{user} grew to Lv. {value}!",
+  "learned": "{user} learned {move}!",
+  "not_learned": "{user} couldn't learn {move}.",
+  "got_away": "Got away safely!",
+  "cant_escape": "Can't escape!",
+  "escape_blocked": "No running from this battle!",
+  "party_defeated": "{party} was defeated!",
+  "reward": "You got ${value} for winning!",
+  "out_of_creatures": "You have no creatures left!",
+  "no_usable_move": "{user} has no moves left!",
+  "blocked": "It didn't work on {user}!"
+ },
+ "effects": [
+  "logic.ceffect",
+  "growth.ceffect"
+ ],
+ "items": [
+  {
+   "name": "Salve",
+   "pocket": "goods",
+   "price": 10,
+   "use": "both",
+   "target": "member"
+  },
+  {
+   "name": "Ether",
+   "pocket": "goods",
+   "price": 30,
+   "use": "field",
+   "target": "move_slot"
+  },
+  {
+   "name": "Point Up",
+   "pocket": "goods",
+   "price": 90,
+   "use": "field",
+   "target": "move_slot"
+  },
+  {
+   "name": "Charm",
+   "pocket": "goods",
+   "price": 50
+  },
+  {
+   "name": "Disc Burst",
+   "pocket": "discs",
+   "price": 70,
+   "use": "field",
+   "target": "member"
+  },
+  {
+   "name": "Disc Tap",
+   "pocket": "discs",
+   "price": 70,
+   "use": "field",
+   "target": "member",
+   "consumed": false
+  },
+  {
+   "name": "Badge",
+   "pocket": "key",
+   "key": true
+  },
+  {
+   "name": "Loose Stone"
+  },
+  {
+   "name": "Ember Stone",
+   "pocket": "goods",
+   "price": 200,
+   "use": "field",
+   "target": "member"
+  },
+  {
+   "name": "Still Stone",
+   "pocket": "goods",
+   "price": 100,
+   "holdable": true
+  },
+  {
+   "name": "Link Cord",
+   "pocket": "goods",
+   "price": 100,
+   "holdable": true
+  },
+  {
+   "name": "Vigor Pill",
+   "pocket": "goods",
+   "price": 300,
+   "use": "field",
+   "target": "member"
+  },
+  {
+   "name": "Bright Mirror",
+   "pocket": "key",
+   "key": true,
+   "use": "field",
+   "target": "member"
+  },
+  {
+   "name": "Heavy Band",
+   "pocket": "goods",
+   "price": 150,
+   "holdable": true
+  }
+ ],
+ "shops": [
+  {
+   "name": "Stall",
+   "items": [
+    "Salve",
+    "Ether",
+    "Disc Burst"
+   ]
+  }
+ ],
+ "texts": {
+  "salve_used": "{user} feels better!"
+ },
+ "passives": [
+  {
+   "name": "Stormcall",
+   "announce": false
+  }
+ ]
+}

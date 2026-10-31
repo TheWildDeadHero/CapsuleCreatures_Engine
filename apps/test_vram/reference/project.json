@@ -1,0 +1,24 @@
+{
+  "schema": "capsule.project/1",
+  "name": "test_vram",
+  "editor": {
+    "notes": "Test app for the VRAM upload queue (A-5) and random seeding (A-4)."
+  },
+  "rom": {
+    "title": "VRAM TEST",
+    "code": "CTVQ",
+    "maker": "00"
+  },
+  "sources": [
+    "src/test_vram.cpp"
+  ],
+  "libraries": [
+    "test_kit"
+  ],
+  "build": {
+    "vram_must_land_slots": 32,
+    "vram_streaming_slots": 64,
+    "vram_budget_cycles": 67392,
+    "gba_waitcnt": "0x4014"
+  }
+}

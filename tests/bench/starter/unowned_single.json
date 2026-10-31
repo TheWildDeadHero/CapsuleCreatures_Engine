@@ -1,0 +1,38 @@
+{
+   "schema": "capsule.bench/1",
+   "name": "unowned_single",
+   "description": "Single battle against an unowned creature: Fireball (8 MP a cast) while the MP lasts, then the first usable move. (E9 neutral golden transcripts/unowned_single.txt)",
+   "expect": "../../data/starter/golden/transcripts/unowned_single.txt",
+   "rng": "default",
+   "format": "Single",
+   "seed": 42,
+   "parties": [
+      {
+         "side": 0,
+         "controller": "human",
+         "members": [
+            {
+               "species": "Emberkit",
+               "level": 10
+            }
+         ]
+      },
+      {
+         "side": 1,
+         "flags": [
+            "unowned"
+         ],
+         "members": [
+            {
+               "species": "Sproutle",
+               "level": 7
+            }
+         ]
+      }
+   ],
+   "choices": [
+      {
+         "move": 2
+      }
+   ]
+}

@@ -1,0 +1,1222 @@
+{
+ "schema": "capsule.structure/1",
+ "editor": {
+  "notes": "The Starter sample's structure (E9, D-25): nine stats (HP, MP and EP are pools with their own bases and growth), three battler resources (HP faints; MP and EP persist like HP; EP regenerates a little each turn), nine types with a tiered multiply chart, physical / elemental / status categories, 8 move slots and 2 passive slots per species. C2: own numbers (README \"Starter rules\"): stages -4..+4 (stats +25% / -15% a stage, accuracy 10% a stage), crit odds 1/20..3/10, chart x1.75 / x0.6 / x0, level 50, stat cap 700, quadratic growth brisk / steady."
+ },
+ "monster_layout": {
+  "party_size": 6,
+  "move_slots": 8,
+  "roles": [
+   "species_key",
+   "seed",
+   "owner_id",
+   "experience",
+   "level",
+   "moves",
+   {
+    "role": "stat_genes",
+    "width": 4
+   },
+   "trait",
+   "passive_selector",
+   {
+    "role": "held_item",
+    "width": 8
+   },
+   "current_hp",
+   {
+    "custom": "current_mp",
+    "width": 10
+   },
+   {
+    "custom": "current_ep",
+    "width": 10
+   },
+   "primary_status",
+   {
+    "role": "nickname",
+    "count": 10
+   },
+   {
+    "role": "stat_training",
+    "width": 6
+   },
+   {
+    "custom": "hatch_counter",
+    "width": 11
+   },
+   {
+    "custom": "form",
+    "width": 1
+   },
+   {
+    "custom": "egg",
+    "width": 1
+   },
+   {
+    "custom": "bond",
+    "width": 8
+   }
+  ],
+  "status_bits": "auto"
+ },
+ "stats": [
+  {
+   "name": "hp",
+   "label": "HP",
+   "formula": "vital",
+   "pool": true
+  },
+  {
+   "name": "mp",
+   "label": "MP",
+   "formula": "reserve",
+   "trait": false
+  },
+  {
+   "name": "ep",
+   "label": "EP",
+   "formula": "reserve",
+   "trait": false
+  },
+  {
+   "name": "attack",
+   "label": "Attack",
+   "formula": "core"
+  },
+  {
+   "name": "magic",
+   "label": "Magic",
+   "formula": "core"
+  },
+  {
+   "name": "defence",
+   "label": "Defence",
+   "formula": "core"
+  },
+  {
+   "name": "protection",
+   "label": "Protection",
+   "formula": "core"
+  },
+  {
+   "name": "intelligence",
+   "label": "Intelligence",
+   "formula": "core",
+   "odds": true
+  },
+  {
+   "name": "agility",
+   "label": "Agility",
+   "formula": "core",
+   "order": true
+  }
+ ],
+ "resources": [
+  {
+   "name": "hp",
+   "label": "HP",
+   "scope": "battler",
+   "stat": "hp",
+   "empty": "faint",
+   "persist": "current_hp"
+  },
+  {
+   "name": "mp",
+   "label": "MP",
+   "scope": "battler",
+   "stat": "mp",
+   "persist": "current_mp"
+  },
+  {
+   "name": "ep",
+   "label": "EP",
+   "scope": "battler",
+   "stat": "ep",
+   "persist": "current_ep",
+   "regen": "ep_regen"
+  }
+ ],
+ "passive_slots": [
+  {
+   "name": "first"
+  },
+  {
+   "name": "second"
+  },
+  {
+   "name": "hidden",
+   "rolled": false
+  }
+ ],
+ "stages": [
+  {
+   "name": "accuracy",
+   "kind": "accuracy",
+   "label": "accuracy",
+   "range": [
+    -4,
+    4
+   ],
+   "table": [
+    [
+     60,
+     100
+    ],
+    [
+     70,
+     100
+    ],
+    [
+     80,
+     100
+    ],
+    [
+     90,
+     100
+    ],
+    [
+     100,
+     100
+    ],
+    [
+     110,
+     100
+    ],
+    [
+     120,
+     100
+    ],
+    [
+     130,
+     100
+    ],
+    [
+     140,
+     100
+    ]
+   ]
+  },
+  {
+   "name": "evasion",
+   "kind": "evasion",
+   "label": "evasion",
+   "range": [
+    -4,
+    4
+   ]
+  },
+  {
+   "name": "critical",
+   "kind": "crit",
+   "label": "focus",
+   "range": [
+    0,
+    3
+   ],
+   "table": [
+    "1/20",
+    "1/10",
+    "1/5",
+    "3/10"
+   ]
+  },
+  {
+   "stat": "attack",
+   "range": [
+    -4,
+    4
+   ],
+   "table": [
+    [
+     40,
+     100
+    ],
+    [
+     55,
+     100
+    ],
+    [
+     70,
+     100
+    ],
+    [
+     85,
+     100
+    ],
+    [
+     100,
+     100
+    ],
+    [
+     125,
+     100
+    ],
+    [
+     150,
+     100
+    ],
+    [
+     175,
+     100
+    ],
+    [
+     200,
+     100
+    ]
+   ]
+  },
+  {
+   "stat": "magic",
+   "range": [
+    -4,
+    4
+   ],
+   "table": [
+    [
+     40,
+     100
+    ],
+    [
+     55,
+     100
+    ],
+    [
+     70,
+     100
+    ],
+    [
+     85,
+     100
+    ],
+    [
+     100,
+     100
+    ],
+    [
+     125,
+     100
+    ],
+    [
+     150,
+     100
+    ],
+    [
+     175,
+     100
+    ],
+    [
+     200,
+     100
+    ]
+   ]
+  },
+  {
+   "stat": "defence",
+   "range": [
+    -4,
+    4
+   ],
+   "table": [
+    [
+     40,
+     100
+    ],
+    [
+     55,
+     100
+    ],
+    [
+     70,
+     100
+    ],
+    [
+     85,
+     100
+    ],
+    [
+     100,
+     100
+    ],
+    [
+     125,
+     100
+    ],
+    [
+     150,
+     100
+    ],
+    [
+     175,
+     100
+    ],
+    [
+     200,
+     100
+    ]
+   ]
+  },
+  {
+   "stat": "protection",
+   "range": [
+    -4,
+    4
+   ],
+   "table": [
+    [
+     40,
+     100
+    ],
+    [
+     55,
+     100
+    ],
+    [
+     70,
+     100
+    ],
+    [
+     85,
+     100
+    ],
+    [
+     100,
+     100
+    ],
+    [
+     125,
+     100
+    ],
+    [
+     150,
+     100
+    ],
+    [
+     175,
+     100
+    ],
+    [
+     200,
+     100
+    ]
+   ]
+  },
+  {
+   "stat": "intelligence",
+   "range": [
+    -4,
+    4
+   ],
+   "table": [
+    [
+     40,
+     100
+    ],
+    [
+     55,
+     100
+    ],
+    [
+     70,
+     100
+    ],
+    [
+     85,
+     100
+    ],
+    [
+     100,
+     100
+    ],
+    [
+     125,
+     100
+    ],
+    [
+     150,
+     100
+    ],
+    [
+     175,
+     100
+    ],
+    [
+     200,
+     100
+    ]
+   ]
+  },
+  {
+   "stat": "agility",
+   "range": [
+    -4,
+    4
+   ],
+   "table": [
+    [
+     40,
+     100
+    ],
+    [
+     55,
+     100
+    ],
+    [
+     70,
+     100
+    ],
+    [
+     85,
+     100
+    ],
+    [
+     100,
+     100
+    ],
+    [
+     125,
+     100
+    ],
+    [
+     150,
+     100
+    ],
+    [
+     175,
+     100
+    ],
+    [
+     200,
+     100
+    ]
+   ]
+  }
+ ],
+ "rules": {
+  "stat_cap": 700,
+  "level_max": 50,
+  "rank_max": 1,
+  "self_hit": {
+   "power": 30,
+   "category": "physical"
+  },
+  "fallback_move": "Strike"
+ },
+ "chart": {
+  "tiers": [
+   {
+    "name": "none",
+    "decisive": "zero",
+    "message": "no_effect"
+   },
+   {
+    "name": "weak",
+    "q8": 154
+   },
+   {
+    "name": "normal",
+    "q8": 256
+   },
+   {
+    "name": "strong",
+    "q8": 448
+   }
+  ],
+  "combine": "multiply",
+  "messages": {
+   "above": "super_effective",
+   "below": "not_very_effective"
+  },
+  "types_per_species": 2,
+  "added_types": 1,
+  "default": "normal",
+  "matchups": {
+   "Fire": {
+    "Fire": "weak",
+    "Water": "weak",
+    "Earth": "weak",
+    "Wind": "strong",
+    "Bio": "strong"
+   },
+   "Wind": {
+    "Wind": "weak",
+    "Lightning": "weak",
+    "Earth": "strong",
+    "Bio": "strong"
+   },
+   "Lightning": {
+    "Lightning": "weak",
+    "Bio": "weak",
+    "Earth": "none",
+    "Water": "strong",
+    "Wind": "strong"
+   },
+   "Water": {
+    "Water": "weak",
+    "Bio": "weak",
+    "Fire": "strong",
+    "Earth": "strong"
+   },
+   "Earth": {
+    "Wind": "weak",
+    "Bio": "weak",
+    "Fire": "strong",
+    "Lightning": "strong"
+   },
+   "Darkness": {
+    "Darkness": "weak",
+    "Cosmic": "weak",
+    "Light": "strong"
+   },
+   "Light": {
+    "Light": "weak",
+    "Fire": "weak",
+    "Darkness": "strong",
+    "Bio": "strong"
+   },
+   "Cosmic": {
+    "Cosmic": "weak",
+    "Light": "weak",
+    "Darkness": "strong"
+   },
+   "Bio": {
+    "Bio": "weak",
+    "Fire": "weak",
+    "Wind": "weak",
+    "Water": "strong",
+    "Earth": "strong"
+   }
+  }
+ },
+ "categories": [
+  {
+   "name": "physical",
+   "offense": "attack",
+   "defense": "defence"
+  },
+  {
+   "name": "elemental",
+   "offense": "magic",
+   "defense": "protection"
+  },
+  {
+   "name": "status"
+  }
+ ],
+ "statuses": [
+  {
+   "name": "Scorch",
+   "residual": "1/12",
+   "immune_types": [
+    "Fire"
+   ],
+   "color": 1,
+   "texts": {
+    "inflicted": "{user} is scorched!",
+    "residual": "{user} is hurt by its scorch!",
+    "cured": "{user}'s scorch faded.",
+    "already": "{user} is already scorched!"
+   }
+  },
+  {
+   "name": "Shock",
+   "skip": "1/5",
+   "immune_types": [
+    "Lightning"
+   ],
+   "color": 3,
+   "texts": {
+    "inflicted": "{user} is shocked!",
+    "skip": "{user} is shocked! It can't move!",
+    "cured": "{user} shook off the shock.",
+    "already": "{user} is already shocked!"
+   }
+  },
+  {
+   "name": "Blight",
+   "residual": "1/10",
+   "immune_types": [
+    "Bio"
+   ],
+   "color": 9,
+   "texts": {
+    "inflicted": "{user} is blighted!",
+    "residual": "{user} is hurt by the blight!",
+    "cured": "{user} is no longer blighted.",
+    "already": "{user} is already blighted!"
+   }
+  },
+  {
+   "name": "Doze",
+   "turns": [
+    1,
+    3
+   ],
+   "color": 7,
+   "texts": {
+    "inflicted": "{user} dozed off!",
+    "skip": "{user} is dozing.",
+    "cured": "{user} woke up!",
+    "already": "{user} is already dozing!"
+   }
+  }
+ ],
+ "volatiles": [
+  {
+   "name": "flinch",
+   "duration": "turn",
+   "skip": true,
+   "texts": {
+    "skip": {
+     "message": "staggered"
+    }
+   }
+  },
+  {
+   "name": "dazed",
+   "duration": [
+    1,
+    3
+   ],
+   "texts": {
+    "start": {
+     "message": "became_dazed"
+    },
+    "already": {
+     "message": "already_dazed"
+    },
+    "end": {
+     "message": "daze_end"
+    }
+   }
+  }
+ ],
+ "weathers": [
+  {
+   "name": "Storm",
+   "turns": 5,
+   "texts": {
+    "started": "A storm rolled in!",
+    "continues": "The storm rages on.",
+    "ended": "The storm passed."
+   }
+  }
+ ],
+ "side_conditions": [],
+ "field_conditions": [],
+ "move_flags": [
+  "contact",
+  "protect"
+ ],
+ "growth": {
+  "brisk": "6*n*n + 24*n",
+  "steady": "8*n*n + 32*n"
+ },
+ "formats": [
+  {
+   "name": "Single",
+   "sides": [
+    [
+     0
+    ],
+    [
+     1
+    ]
+   ],
+   "range": "all",
+   "layout": [
+    [
+     64,
+     92
+    ],
+    [
+     176,
+     52
+    ]
+   ],
+   "party_max": 6
+  },
+  {
+   "name": "Double",
+   "sides": [
+    [
+     0,
+     1
+    ],
+    [
+     2,
+     3
+    ]
+   ],
+   "range": "all",
+   "layout": [
+    [
+     44,
+     94
+    ],
+    [
+     100,
+     88
+    ],
+    [
+     196,
+     56
+    ],
+    [
+     140,
+     48
+    ]
+   ],
+   "party_max": 6
+  }
+ ],
+ "turn": {
+  "brackets": {
+   "run": 30,
+   "switch": 20,
+   "item": 25,
+   "move": "priority"
+  },
+  "tie": "random_byte",
+  "end_of_turn": [
+   {
+    "run": "weather"
+   },
+   {
+    "run": "battlers",
+    "sources": [
+     "status",
+     "volatile",
+     "side",
+     "field",
+     "weather",
+     "passive",
+     "item"
+    ]
+   },
+   {
+    "run": "sides",
+    "each": "battler"
+   },
+   {
+    "run": "field",
+    "each": "battler"
+   },
+   {
+    "run": "regen"
+   }
+  ],
+  "effect_order": [
+   "status",
+   "volatile",
+   "side",
+   "field",
+   "weather",
+   "passive",
+   "item"
+  ],
+  "switching": {
+   "send_out": "foes_first",
+   "switch_in": "speed"
+  }
+ },
+ "learn": {
+  "on_full": "skip",
+  "default_moves": "last_n_by_level"
+ },
+ "exp_policy": {
+  "share": "faced",
+  "receivers": "human_side",
+  "outsider": "never"
+ },
+ "generation": [
+  {
+   "role": "seed",
+   "random_range": [
+    0,
+    "max"
+   ]
+  },
+  {
+   "role": "stat_genes",
+   "random_range": [
+    0,
+    "max"
+   ]
+  },
+  {
+   "role": "trait",
+   "random_range": [
+    0,
+    "last"
+   ]
+  },
+  {
+   "role": "passive_selector",
+   "random_range": [
+    0,
+    "last"
+   ]
+  }
+ ],
+ "terms": {
+  "party": {
+   "one": "Rival",
+   "many": "Rivals"
+  },
+  "trait": {
+   "one": "Temperament",
+   "many": "Temperaments"
+  },
+  "passive": {
+   "one": "Talent",
+   "many": "Talents"
+  },
+  "item": {
+   "one": "Charm",
+   "many": "Charms"
+  },
+  "reward": {
+   "one": "Coins",
+   "many": "Coins"
+  }
+ },
+ "pockets": [
+  {
+   "name": "supplies",
+   "label": "Supplies",
+   "capacity": 20,
+   "quantity_max": 99,
+   "sort": "added"
+  },
+  {
+   "name": "orbs",
+   "label": "Orbs",
+   "capacity": 8,
+   "quantity_max": 99,
+   "sort": "index"
+  },
+  {
+   "name": "charms",
+   "label": "Charms",
+   "capacity": 16,
+   "quantity_max": 9,
+   "sort": "name"
+  },
+  {
+   "name": "key",
+   "label": "Key",
+   "capacity": 16,
+   "quantity_max": 1,
+   "sort": "added"
+  }
+ ],
+ "species_fields": [
+  {
+   "name": "recruit_rate",
+   "width": 8,
+   "default": 100
+  },
+  {
+   "name": "yield_hp",
+   "width": 2,
+   "default": 0
+  },
+  {
+   "name": "yield_attack",
+   "width": 2,
+   "default": 0
+  },
+  {
+   "name": "yield_magic",
+   "width": 2,
+   "default": 0
+  },
+  {
+   "name": "yield_agility",
+   "width": 2,
+   "default": 0
+  },
+  {
+   "name": "kin",
+   "width": 3,
+   "values": [
+    "none",
+    "paw",
+    "wing",
+    "fin",
+    "glow",
+    "leaf"
+   ]
+  },
+  {
+   "name": "hatch_cycles",
+   "width": 3,
+   "default": 5
+  }
+ ],
+ "recruit": {
+  "checks": 3,
+  "rate": "recruit_rate",
+  "status_bonus": {
+   "none": 0,
+   "Doze": 25,
+   "Shock": 10,
+   "Scorch": 10,
+   "Blight": 10
+  },
+  "owned": "refuse",
+  "keep": [
+   "hp",
+   "status"
+  ],
+  "messages": {
+   "check": "orb_wobble",
+   "recruited": "orb_caught",
+   "refused": "orb_refused",
+   "blocked": "orb_blocked",
+   "no_room": "orb_no_room",
+   "to_party": "orb_to_party",
+   "to_storage": "orb_to_box"
+  },
+  "break_free": [
+   "orb_free"
+  ]
+ },
+ "storage": {
+  "box_count": 8,
+  "box_size": 28,
+  "names": "Box {n}"
+ },
+ "transformation": {
+  "context_values": [
+   {
+    "name": "time_of_day",
+    "values": [
+     "morning",
+     "day",
+     "evening",
+     "night"
+    ]
+   }
+  ],
+  "cancel": [
+   "level_up",
+   "after_battle"
+  ],
+  "form_role": "form"
+ },
+ "training": {
+  "gain": "train_gain",
+  "stat_cap": 32,
+  "total_cap": 96,
+  "yields": {
+   "hp": "yield_hp",
+   "attack": "yield_attack",
+   "magic": "yield_magic",
+   "agility": "yield_agility"
+  }
+ },
+ "field_effects": [
+  {
+   "name": "ward",
+   "label": "Ward",
+   "unit": "steps",
+   "stack": "refresh",
+   "expiry": "The Ward charm's glow fades.",
+   "persists": true
+  }
+ ],
+ "field_actions": [
+  {
+   "name": "wade",
+   "label": "Wade",
+   "requires": "knows.tide_slam || knows.torrent",
+   "target": {
+    "behavior": "water"
+   },
+   "ask": true,
+   "prompt": "The water is calm.\nWade across?",
+   "script": "field_wade"
+  },
+  {
+   "name": "clear",
+   "label": "Clear",
+   "requires": "knows.vine_lash || knows.spore_burst",
+   "target": {
+    "object": "bush"
+   },
+   "ask": true,
+   "prompt": "A thick bush blocks\nthe way. Clear it?",
+   "script": "field_clear"
+  },
+  {
+   "name": "light",
+   "label": "Light",
+   "requires": "knows.mend_light || knows.prism_beam",
+   "target": {
+    "tag": "dark"
+   },
+   "ask": true,
+   "prompt": "It is dark here.\nLight the way?",
+   "script": "field_light"
+  }
+ ],
+ "step_effects": [
+  {
+   "name": "blight",
+   "label": "Blight",
+   "every": 4,
+   "damage": "survive",
+   "messages": {
+    "survived": "blight_survived"
+   }
+  },
+  {
+   "name": "bond",
+   "label": "Bond",
+   "every": 64
+  },
+  {
+   "name": "grove_check",
+   "label": "Grove",
+   "every": 128
+  },
+  {
+   "name": "egg_cycle",
+   "label": "Egg",
+   "every": 256
+  }
+ ],
+ "combine_methods": [
+  {
+   "name": "merge_altar",
+   "label": "Merge Altar",
+   "kind": "immediate",
+   "inputs": {
+    "count": 2,
+    "slots": [
+     {
+      "role": "first",
+      "requires": "level >= 5"
+     },
+     {
+      "role": "second",
+      "requires": "level >= 5"
+     }
+    ]
+   },
+   "tables": {
+    "elements": {
+     "key": "type",
+     "cells": [
+      [
+       "Fire",
+       "Water",
+       "Wind"
+      ],
+      [
+       "Fire",
+       "Earth",
+       "Lightning"
+      ],
+      [
+       "Water",
+       "Earth",
+       "Bio"
+      ],
+      [
+       "Wind",
+       "Water",
+       "Light"
+      ],
+      [
+       "Light",
+       "Darkness",
+       "Cosmic"
+      ]
+     ]
+    }
+   },
+   "results": [
+    {
+     "table": "elements",
+     "pick": {
+      "where": "cand.base == cand.species",
+      "choose": "first"
+     }
+    }
+   ],
+   "level": "level_avg",
+   "moves": {
+    "sources": [
+     {
+      "kind": "combine_moves",
+      "all": true
+     },
+     {
+      "kind": "known",
+      "limit": 2
+     }
+    ],
+    "chooser": "ordered"
+   },
+   "afterwards": "consumed",
+   "messages": {
+    "unfit": "merge_unfit",
+    "refused": "merge_refused",
+    "combined": "merge_done",
+    "no_room": "merge_no_room"
+   }
+  },
+  {
+   "name": "grove",
+   "label": "Grove",
+   "kind": "nursery",
+   "inputs": {
+    "count": 2,
+    "slots": [
+     {
+      "role": "first"
+     },
+     {
+      "role": "second"
+     }
+    ]
+   },
+   "odds": {
+    "value": "if(first.kin == second.kin && first.kin > 0, 50, 0)"
+   },
+   "results": [
+    {
+     "expression": "first.base"
+    }
+   ],
+   "level": "1",
+   "moves": {
+    "sources": [
+     {
+      "kind": "combine_moves"
+     }
+    ],
+    "chooser": "ordered"
+   },
+   "afterwards": "kept",
+   "delivery": "egg",
+   "cycle_steps": 256
+  }
+ ],
+ "eggs": {
+  "role": "egg",
+  "counter": "hatch_counter",
+  "cycles_field": "hatch_cycles",
+  "step_effect": "egg_cycle",
+  "hatch_script": "hatch_egg",
+  "name": "Egg"
+ },
+ "nursery": {
+  "slots": 2,
+  "method": "grove",
+  "check": "grove_check"
+ }
+}

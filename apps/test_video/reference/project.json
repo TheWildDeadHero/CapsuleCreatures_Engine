@@ -1,0 +1,18 @@
+{
+  "schema": "capsule.project/1",
+  "name": "test_video",
+  "editor": {
+    "notes": "Test app for hal::video: palettes, flips, layers, map sizes."
+  },
+  "rom": {
+    "title": "VIDEO TEST",
+    "code": "CTVD",
+    "maker": "00"
+  },
+  "sources": [
+    "src/test_video.cpp"
+  ],
+  "libraries": [
+    "test_kit"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+ "schema": "capsule.texts/1",
+ "language": "fr",
+ "texts": {
+  "text:C10.HELLO": {
+   "text": "BA"
+  }
+ }
+}

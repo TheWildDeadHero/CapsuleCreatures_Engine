@@ -1,0 +1,5 @@
+# Extra glyphs of the text test app's code page (data/text/test.codepage.json),
+# added to the engine's default font (assets/fonts/default_8x8.txt).
+# Format: as the default font; the first token is the character's code point.
+
+U+25C6 ..#.. .###. ##### .###. ..#.. ..... .....

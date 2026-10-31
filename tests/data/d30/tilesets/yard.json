@@ -1,0 +1,225 @@
+{
+ "schema": "capsule.tileset/2",
+ "id": "yard",
+ "editor": {
+  "notes": "Tiles 0-6: ground, wall, door, mark, three flower targets (entry 5 until the animation's first frame change); glow frames 0-3 are entries 7-10."
+ },
+ "sheets": [
+  {
+   "name": "tiles",
+   "palette": [
+    "#208020",
+    "#604020",
+    "#c0a060",
+    "#ff00ff",
+    "#f8f8f8",
+    "#ff0000",
+    "#00ff00",
+    "#0000ff",
+    "#ffff00",
+    "#00ffff"
+   ],
+   "size": [
+    64,
+    8
+   ],
+   "shapes": [
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 1
+    },
+    {
+     "shape": "rect",
+     "x": 8,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 2
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 3
+    },
+    {
+     "shape": "rect",
+     "x": 24,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 4
+    },
+    {
+     "shape": "rect",
+     "x": 32,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 40,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 48,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 5
+    },
+    {
+     "shape": "rect",
+     "x": 56,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 6
+    }
+   ]
+  },
+  {
+   "name": "glow",
+   "palette": "@tiles",
+   "size": [
+    32,
+    8
+   ],
+   "shapes": [
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 7
+    },
+    {
+     "shape": "rect",
+     "x": 8,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 8
+    },
+    {
+     "shape": "rect",
+     "x": 16,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 9
+    },
+    {
+     "shape": "rect",
+     "x": 24,
+     "y": 0,
+     "w": 8,
+     "h": 8,
+     "color": 10
+    }
+   ]
+  }
+ ],
+ "metatiles": [
+  {
+   "name": "ground",
+   "tiles": [
+    "tiles:0",
+    "tiles:0",
+    "tiles:0",
+    "tiles:0"
+   ]
+  },
+  {
+   "name": "wall",
+   "tiles": [
+    "tiles:1",
+    "tiles:1",
+    "tiles:1",
+    "tiles:1"
+   ]
+  },
+  {
+   "name": "door",
+   "tiles": [
+    "tiles:2",
+    "tiles:2",
+    "tiles:2",
+    "tiles:2"
+   ]
+  },
+  {
+   "name": "mark",
+   "tiles": [
+    "tiles:3",
+    "tiles:3",
+    "tiles:3",
+    "tiles:3"
+   ]
+  },
+  {
+   "name": "flower_a",
+   "tiles": [
+    "tiles:4",
+    "tiles:4",
+    "tiles:4",
+    "tiles:4"
+   ]
+  },
+  {
+   "name": "flower_b",
+   "tiles": [
+    "tiles:5",
+    "tiles:5",
+    "tiles:5",
+    "tiles:5"
+   ]
+  },
+  {
+   "name": "flower_c",
+   "tiles": [
+    "tiles:6",
+    "tiles:6",
+    "tiles:6",
+    "tiles:6"
+   ]
+  }
+ ],
+ "animations": [
+  {
+   "name": "glow",
+   "count": 1,
+   "frames": "glow",
+   "period": 4,
+   "phase": 0,
+   "targets": [
+    {
+     "tiles": "tiles:4",
+     "offset": 0
+    },
+    {
+     "tiles": "tiles:5",
+     "offset": 2
+    },
+    {
+     "tiles": "tiles:6",
+     "offset": 3,
+     "phase": 1
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,6 @@
+{
+  "schema": "capsule.scripts/1",
+  "editor": {"notes": "Scripts of the combination fixture (B2): the battle manifest's step effects (nest_check, egg_cycle) become implicit counter variables, the eggs the implicit variable egg_member; the hatch script the eggs name and the nursery statements (tests/nursery_tests.cpp, tests/test_battle_nursery.py)."},
+  "sources": ["nursery.cscript"],
+  "battle": "battle.json"
+}

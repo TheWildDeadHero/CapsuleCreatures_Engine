@@ -1,0 +1,33 @@
+{
+ "schema": "capsule.world/1",
+ "id": "n2_world",
+ "editor": {
+  "notes": "N2 (D-32) test fixture (tests/n2_tests.cpp): a room and its other layout (room_alt) for the cell edits and set_layout(), a ledge cell with collision, one object for the draw order, sprite offsets and effect slots. It reuses the D-30 fixture's tileset (simple shapes)."
+ },
+ "behaviors": [
+  {
+   "name": "normal"
+  },
+  {
+   "name": "wall",
+   "solid": true
+  },
+  {
+   "name": "ledge_down",
+   "ledge": "down"
+  }
+ ],
+ "tilesets": {
+  "yard": "../d30/tilesets/yard.json"
+ },
+ "maps": {
+  "room": "maps/room.json",
+  "room_alt": "maps/room_alt.json"
+ },
+ "start": {
+  "map": "room",
+  "x": 4,
+  "y": 4,
+  "facing": "down"
+ }
+}

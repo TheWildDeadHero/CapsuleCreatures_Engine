@@ -1,0 +1,145 @@
+{
+  "schema": "capsule.sequence/1",
+  "id": "test_credits_showcase",
+  "editor": {
+    "notes": "Test fixture: credits whose scenes alternate with a showcase looping over a game-supplied list (zoom, drift, blend out), tinted text pages from a macro, a condition-gated fast-forward, and an end screen held 7200 frames or until a key."
+  },
+  "exits": ["soft_reset"],
+  "conditions": ["player_female", "fast_forward_allowed"],
+  "lists": ["credits_showcase"],
+  "macros": {
+    "page": {
+      "params": ["heading", "names", "tint"],
+      "body": [
+        {"op": "wait", "frames": 72},
+        {"op": "pal_fade", "palettes": ["bg:8"], "color": "$tint", "amount": 16},
+        {"op": "text_style", "style": 1},
+        {"op": "text", "target": "bg0", "x": 15, "y": 14, "align": "center", "asset": "$heading"},
+        {"op": "text_style", "style": 0},
+        {"op": "text", "target": "bg0", "x": 15, "y": 16, "align": "center", "asset": "$names"},
+        {"op": "pal_fade", "palettes": ["bg:8"], "color": "$tint", "amount": 0, "frames": 16},
+        {"op": "wait", "frames": 115},
+        {"op": "pal_fade", "palettes": ["bg:8"], "color": "$tint", "amount": 16, "frames": 16},
+        {"op": "wait_for", "what": "pal_fade"},
+        {"op": "text_clear", "target": "bg0"}
+      ]
+    },
+    "riders": {
+      "params": ["scene"],
+      "body": [
+        {"op": "if", "cond": "player_female", "to": "female"},
+        {"op": "spr_load", "slot": 4, "asset": "sprite:CREDITS RIDER MALE"},
+        {"op": "spr_load", "slot": 5, "asset": "sprite:CREDITS PARTNER FEMALE"},
+        {"op": "jump", "to": "placed"},
+        {"op": "label", "name": "female"},
+        {"op": "spr_load", "slot": 4, "asset": "sprite:CREDITS RIDER FEMALE"},
+        {"op": "spr_load", "slot": 5, "asset": "sprite:CREDITS PARTNER MALE"},
+        {"op": "label", "name": "placed"},
+        {"op": "spr_pos", "slot": 4, "x": 120, "y": 96},
+        {"op": "spr_show", "slot": 4},
+        {"op": "bg_load", "bg": 3, "asset": "$scene"},
+        {"op": "bg_show", "bg": 3},
+        {"op": "bg_scroll", "bg": 3, "vx": 2},
+        {"op": "scanline", "bg": 3, "asset": "scanline:CREDITS BOB"},
+        {"op": "pal_anim", "slot": 0, "asset": "palanim:CREDITS SKY CYCLE"}
+      ]
+    }
+  },
+  "start": "ride_morning",
+  "stages": [
+    {
+      "name": "ride_morning",
+      "flags": ["reset_visuals"],
+      "fast_forward": {"keys": ["B"], "speed": 2, "cond": "fast_forward_allowed"},
+      "on": {"done": "stage:showcase"},
+      "tracks": [
+        [
+          {"op": "video_mode", "mode": 0},
+          {"op": "song", "asset": "song:CREDITS"},
+          {"op": "use", "macro": "riders", "scene": "image:CREDITS OCEAN MORNING"},
+          {"op": "fade", "dir": "in", "color": "black", "frames": 16}
+        ],
+        [
+          {"op": "use", "macro": "page", "tint": "#a0f0a0", "heading": "text:CREDITS HEAD 01", "names": "text:CREDITS NAMES 01"},
+          {"op": "use", "macro": "page", "tint": "#a0f0a0", "heading": "text:CREDITS HEAD 02", "names": "text:CREDITS NAMES 02"}
+        ]
+      ]
+    },
+    {
+      "name": "showcase",
+      "flags": ["reset_visuals"],
+      "fast_forward": {"keys": ["B"], "speed": 2, "cond": "fast_forward_allowed"},
+      "on": {"done": "stage:ride_sunset"},
+      "tracks": [
+        [
+          {"op": "bg_load", "bg": 3, "asset": "image:CREDITS GRASS"},
+          {"op": "bg_show", "bg": 3},
+          {"op": "blend", "mode": "alpha", "src": 16, "tgt": 0, "src_layers": ["obj"], "tgt_layers": ["bg3"]},
+          {"op": "for_each", "list": "credits_showcase", "max": 71},
+          {"op": "spr_load", "slot": 0, "asset": "$item"},
+          {"op": "spr_blend", "slot": 0},
+          {"op": "spr_pos", "slot": 0, "x": 88, "y": 40},
+          {"op": "spr_affine", "slot": 0, "scale": 0.25},
+          {"op": "spr_show", "slot": 0},
+          {"op": "blend_ramp", "src": 16, "tgt": 0, "frames": 0},
+          {"op": "spr_affine", "slot": 0, "scale": 1.0, "frames": 24},
+          {"op": "wait_for", "what": "sprite", "slot": 0},
+          {"op": "spr_move", "slot": 0, "vx": 0.5, "frames": 60},
+          {"op": "wait", "frames": 40},
+          {"op": "blend_ramp", "src": 0, "tgt": 16, "frames": 20},
+          {"op": "wait_for", "what": "blend"},
+          {"op": "spr_hide", "slot": 0},
+          {"op": "wait", "frames": 50},
+          {"op": "next"},
+          {"op": "blend", "mode": "off"}
+        ],
+        [
+          {"op": "use", "macro": "page", "tint": "#204020", "heading": "text:CREDITS HEAD 03", "names": "text:CREDITS NAMES 03"}
+        ]
+      ]
+    },
+    {
+      "name": "ride_sunset",
+      "flags": ["reset_visuals"],
+      "fast_forward": {"keys": ["B"], "speed": 2, "cond": "fast_forward_allowed"},
+      "on": {"done": "stage:the_end"},
+      "tracks": [
+        [
+          {"op": "use", "macro": "riders", "scene": "image:CREDITS OCEAN SUNSET"}
+        ],
+        [
+          {"op": "use", "macro": "page", "tint": "#a0f0a0", "heading": "text:CREDITS HEAD 04", "names": "text:CREDITS NAMES 04"},
+          {"op": "song_fade", "frames": 60},
+          {"op": "fade", "dir": "out", "color": "black", "frames": 30},
+          {"op": "wait_for", "what": "fade"}
+        ]
+      ]
+    },
+    {
+      "name": "the_end",
+      "flags": ["reset_visuals"],
+      "skip": ["A", "B", "START", "SELECT"],
+      "timeout": 7200,
+      "on": {"skip": "stage:leave", "timeout": "stage:leave"},
+      "tracks": [
+        [
+          {"op": "song", "asset": "song:THE END"},
+          {"op": "bg_load", "bg": 0, "asset": "image:THE END"},
+          {"op": "bg_show", "bg": 0},
+          {"op": "fade", "dir": "in", "color": "black", "frames": 16}
+        ]
+      ]
+    },
+    {
+      "name": "leave",
+      "on": {"done": "exit:soft_reset"},
+      "tracks": [
+        [
+          {"op": "song_fade", "frames": 16},
+          {"op": "fade", "dir": "out", "color": "white", "frames": 16},
+          {"op": "wait_for", "what": "fade"}
+        ]
+      ]
+    }
+  ]
+}

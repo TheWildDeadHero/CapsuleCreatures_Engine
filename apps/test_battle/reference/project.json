@@ -1,0 +1,19 @@
+{
+  "schema": "capsule.project/1",
+  "name": "test_battle",
+  "editor": {
+    "notes": "Test app for the battle engine's logic: scripted scenarios on the Starter sample's battle data (samples/starter), stepped one unit at a time, live state and the event log."
+  },
+  "rom": {
+    "title": "BATTLE TEST",
+    "code": "CTBT",
+    "maker": "00"
+  },
+  "sources": [
+    "src/test_battle.cpp"
+  ],
+  "libraries": [
+    "test_kit"
+  ],
+  "battle": "../../samples/starter/battle.json"
+}

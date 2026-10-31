@@ -1,0 +1,22 @@
+// Test fixture for tests/save_tests.cpp (C6): flags, variables and a name slot a save image keeps (invented).
+
+flag lit;
+flag met;
+flag fresh;
+flag seen : daily;
+var walked : u16 0..500;
+var coins : u32;
+var mood : u8 0..9;
+var door : u8 map;
+
+script touch {
+    set flag(lit);
+    set flag(met);
+    set flag(fresh);
+    set flag(seen);
+    var(walked) = 1;
+    var(coins) = 2;
+    var(mood) = 3;
+    var(door) = 4;
+    msg "{hero}";
+}

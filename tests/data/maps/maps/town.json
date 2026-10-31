@@ -1,0 +1,276 @@
+{
+ "schema": "capsule.map/2",
+ "id": "town",
+ "layers": [
+  {
+   "bg": 2,
+   "priority": 2,
+   "content": "tilemap",
+   "purpose": "terrain"
+  }
+ ],
+ "metatiles": [
+  "test/ground"
+ ],
+ "behaviors": [
+  "normal"
+ ],
+ "chunks": [
+  {
+   "at": [
+    0,
+    0
+   ],
+   "cells": [
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   ],
+   "layers": [
+    [
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   ]
+  }
+ ],
+ "border": {
+  "size": [
+   1,
+   1
+  ],
+  "layers": [
+   [
+    0
+   ]
+  ]
+ },
+ "objects": [
+  {
+   "name": "guard",
+   "at": [
+    2,
+    2
+   ],
+   "sprite": "sprite:BLINK",
+   "facing": "down",
+   "script": "talk_guard",
+   "pages": [
+    {
+     "when": {
+      "flag": "guard_moved"
+     },
+     "facing": "left",
+     "script": "guard_after"
+    }
+   ]
+  },
+  {
+   "name": "rival",
+   "at": [
+    6,
+    1
+   ],
+   "sprite": "sprite:NOPE",
+   "facing": "down",
+   "script": "rival_battle",
+   "spotter": {
+    "sight": 3,
+    "until": "beat_rival"
+   }
+  },
+  {
+   "name": "wanderer",
+   "at": [
+    5,
+    6
+   ],
+   "sprite": "sprite:NOPE",
+   "movement": "wander",
+   "range": [
+    1,
+    1
+   ]
+  },
+  {
+   "name": "ghost",
+   "at": [
+    1,
+    6
+   ],
+   "sprite": "sprite:NOPE",
+   "flag": "ghost_gone",
+   "script": "obj_moves"
+  },
+  {
+   "name": "pacer",
+   "at": [
+    3,
+    7
+   ],
+   "sprite": "sprite:NOPE",
+   "movement": "pace_horizontal",
+   "range": [
+    2,
+    0
+   ],
+   "facing": "right",
+   "kind": "boulder"
+  }
+ ]
+}

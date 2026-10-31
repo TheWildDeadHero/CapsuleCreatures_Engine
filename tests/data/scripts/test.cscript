@@ -1,0 +1,245 @@
+// Test fixture for tests/script_tests.cpp (invented content).
+
+flag f_perm;
+flag f_daily : daily;
+flag f_area : area;
+flag f_map : map;
+var v8 : u8;
+var v16 : u16 0..1000;
+var vmin : u8 map 5..10;
+var answer : u8 map;
+var out : u32;
+const LIMIT = 7;
+native add(a, b) -> value;
+native slow(frames) waits;
+
+// Loops, conditions, switch, calls and saturation.
+script flow {
+    var(v8) = 0;
+    while var(v8) < LIMIT { var(v8) += 1; }
+    if var(v8) == 7 && !flag(f_perm) { set flag(f_perm); }
+    switch var(v8) {
+        case 1, 2 { var(v16) = 1; }
+        case 7 { var(v16) = 70; }
+        default { var(v16) = 999; }
+    }
+    call sub;
+    var(v16) += 2000;
+    when game(other) { var(v16) = 5; }
+    when not game(other) { set flag(f_daily); }
+}
+
+script sub { var(out) = 123456; return; }
+
+// Messages and menus.
+script talk {
+    msg "Hello";
+    wait_button;
+    yesno -> var(answer);
+    if var(answer) == yes { msgbox text:"Test line"; }
+    choice ["One", "Two", "Three"] cancel 2 -> var(answer);
+    close_msg;
+}
+
+script natives {
+    native add(2, var(v8)) -> var(out);
+    native slow(3);
+    delay 2;
+    var(out) += 1;
+}
+
+script table { call var(v8) of [t0, t1]; }
+script t0 { var(out) = 10; }
+script t1 { var(out) = 11; }
+
+// Never waits: the VM yields after kOpsPerFrame instructions.
+script spin {
+top:
+    var(v16) += 1;
+    goto top;
+}
+
+script deep1 { call deep2; }
+script deep2 { call deep3; }
+script deep3 { var(out) = 3; }
+
+script load_field { set flag(f_map); }
+script fire { var(answer) = 0; clear flag(f_map); }
+
+map_scripts field {
+    on_load -> load_field;
+    on_frame flag(f_map) -> fire;
+}
+
+script banks { set flag(f_area); var(vmin) = 7; }
+
+// Map object commands (B-21) against the test world (tests/script_tests.cpp).
+const GUARD = 3;
+script objects {
+    face self player;
+    move self left 2;
+    move player up;
+    face player self;
+    face GUARD right;
+    hide GUARD;
+    show var(v8);
+    move 9 down 0;
+}
+
+// C8: a walk by the field's movement rules (tests/script_tests.cpp test_checked_move()).
+var walk_ok : u8 0..1;
+script checked_walk { move player up 2 checked -> var(walk_ok); }
+
+// RPG Maker XP-style commands (D-17) against the test world.
+var key : u8 0..10;
+var num : u16;
+script eventing {
+    route self skip { up 2; wait 3; }
+    route 2 repeat { left; }
+    wait_moves;
+    set self(B);
+    if self(B) { var(out) = pos_x(self); }
+    var(v16) = pos_y(player);
+    var(v16) += steps;
+    var(out) *= 3;
+    var(v8) = 7;
+    var(v8) %= 4;
+    msg_pos top;
+    input_number 3 -> var(num);
+    wait_key -> var(key);
+    place player 4 5 up;
+    scroll right 2;
+    tint 31 0 0 8 30;
+    flash 0 0 31 10;
+    shake 2 20;
+    timer start 90;
+    timer stop;
+    encounters off;
+    vehicle swim;
+    vehicle 0;
+    warp field 1 2 down box;
+    var(answer) = facing(self);
+}
+
+// Field placeholders (D-22 decision 6): a name slot, a variable, a term and a
+// party record field; a prompt and a page break.
+script greet {
+    msgbox "Hi {hero}! {count} in {town}.{prompt}{page}{lead} {@town:many}";
+    close_msg;
+}
+
+// Party records (D-22 decision 2): engine and custom roles of the game's layout
+// (the manifest's battle) by name, by role ID and by constant.
+const SECOND = 1;
+const RIBBONS_ID = 129;
+var met : u8 0..127;
+script records {
+    role_set(0, met_level, 42);
+    role_get(0, met_level) -> var(met);
+    role_set(SECOND, ribbons, 31, 1);
+    role_get(SECOND, ribbons, 31) -> var(v8);
+    role_get(2, level) -> var(v16);
+    role_set(var(v8), gender, 3);
+    role_set(0, RIBBONS_ID, 0, 1);
+    role_set(0, 129, 1, var(v8));
+    role_get(0, nickname, 7) -> var(answer);
+}
+
+// The bag (G2): give / take / count by item id (this fixture's battle has no items: the port stub counts),
+// the bag menu and the game's time of day.
+var bag_ok : u8;
+script bag {
+    give_item(3, 2) -> var(bag_ok);
+    count_item(3) -> var(v8);
+    take_item(3) -> var(answer);
+    give_item(var(v8), 1);
+    time_of_day -> var(v16);
+    open_bag -> var(met);
+}
+
+// G3: the storage boxes through the boxes port (tests/script_tests.cpp test_boxes: a stub port)
+script boxes {
+    deposit_box(1) -> var(bag_ok);
+    count_boxed -> var(v8);
+    withdraw_box(var(v8)) -> var(answer);
+    deposit_box(9);
+    open_boxes -> var(met);
+}
+
+// G4: a party member's transformation through the growth port (tests/script_tests.cpp test_transform: a stub
+// port: member 1 changes, member 0 is stopped)
+script grow {
+    transform(1) -> var(v8);
+    transform(0) -> var(answer);
+}
+
+// B1: the combination statements through the combine port (tests/script_tests.cpp test_combine: a stub port that
+// answers the queries from their kind, method and members, combines in run and backs out in open)
+script mix {
+    combine preview pair (0, 1) -> var(v8);
+    combine status pair (1, 0) -> var(v16);
+    combine fee pair (0, 1) -> var(bag_ok);
+    combine run pair (1, var(v8)) -> var(answer);
+    combine open pair -> var(out);
+}
+
+// F1: the timed field effects of the battle manifest's structure (tests/data/battle_stats3: ward by steps, refused
+// while it runs; glow by minutes, added up; lure by steps, started over); tests/script_tests.cpp test_field_effects
+script fx {
+    field_effect start ward 3 -> var(bag_ok);
+    field_effect start ward 9 -> var(answer);
+    field_effect active ward -> var(v8);
+    field_effect remaining ward -> var(v16);
+    field_effect start glow 5;
+}
+
+// F2 (D-27 section 3): darkness, the world's flight points, the escape point (test_f2).
+script f2 {
+    darkness 2;
+    flight record home;
+    flight visit town_gate wipe_h;
+    flight menu -> var(out);
+    escape -> var(answer);
+}
+script f2_escape { escape fade -> var(answer); }
+
+// I4 (D-29): the statements imported event scripts need (tests/script_tests.cpp test_i4()).
+movement i4_walk { up; }
+mart i4_mart { 1, 2 }
+script i4_other { var(out) = 7; return; }
+script i4 {
+    lock all;
+    msg "Hi" nowait;
+    wait_msg;
+    route 2 i4_walk nowait;
+    wait_moves last;
+    remove 2;
+    visible 2 off;
+    set_template 2 pos 3 4;
+    door open 1 2;
+    door wait;
+    weather set 3;
+    fade to_black;
+    set_metatile 1 2 5 1;
+    respawn 4;
+    set_warp dynamic town 1 2;
+    sound se 9;
+    wait_sound se;
+    mart i4_mart;
+    wait_state;
+    release all;
+    call i4_other loose;
+    goto i4_loop;
+}
+// a loose call that recurses: past the stack (stack_depth 4) it goes on as a jump
+script i4_loop {
+    var(v8) += 1;
+    if var(v8) < 30 { call i4_loop loose; }
+}
+script i4_resume { var(answer) = 5; }
+script i4_warp_into { var(answer) += 1; }
+map_scripts town {
+    on_resume -> i4_resume;
+    on_warp_into var(v8) == 0 -> i4_warp_into;
+    on_warp_into var(v8) == 0 -> i4_other;
+}

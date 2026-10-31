@@ -1,0 +1,312 @@
+// Scripts of the map sandbox's events (B-3). Invented content.
+
+flag found_berry;                 // the hidden berry in the showcase is gone once found
+var welcomed : u8 0..1;           // the welcome trigger fires while this is 0
+var berries : u8 0..99;
+var meadow_visits : u16 0..9999;  // counted by the meadow's on_transition script
+
+// Sign on the wall north of the start (read facing up).
+script showcase_sign {
+    msgbox "SHOWCASE\nEvery map feature at once:\nwater, ice, ledges, pushes,\nbridges and grass.";
+    close_msg;
+}
+
+// Trigger one step south of the start, once. {player} is the name slot the
+// sandbox sets; {page} waits for A, then starts a new page of the box.
+script welcome {
+    msgbox "Welcome to the map sandbox,\n{player}!{page}Read signs with A.\nWarps: the west edge here,\nthe east edge to the meadow.";
+    close_msg;
+    var(welcomed) = 1;
+}
+
+// A hidden item: a sign on an open cell, gone once its flag is set.
+script hidden_berry {
+    var(berries) += 1;
+    msgbox "{player} found a berry\nhidden in the ground!{prompt}\nBerries: {berries}";
+    close_msg;
+    set flag(found_berry);
+}
+
+// Step hook: every 64 steps (the sandbox's pedometer asks for it).
+script pedometer {
+    msgbox "64 more steps walked.";
+    close_msg;
+}
+
+script meadow_enter { var(meadow_visits) += 1; flight record meadow; }
+
+map_scripts meadow { on_transition -> meadow_enter; on_frame flag(race_on) -> meadow_race; }
+
+// Map objects (B-21) of the showcase. Local IDs follow the map's object list
+// (world_ids.h OBJ_SHOWCASE_...).
+const GATEKEEPER = 4;
+flag gate_open;       // the gatekeeper is gone once set
+flag beat_rival;      // the rival's sight is off once set
+
+script guide_talk {
+    if flag(gate_open) {
+        msgbox "The meadow is east,\npast the rival on the path.";
+    } else {
+        msgbox "Talk to people with A.\nI'll tell the gatekeeper\nto let you through.";
+        set flag(gate_open);
+        face GATEKEEPER up;
+        move GATEKEEPER up 2;
+        hide GATEKEEPER;
+    }
+    close_msg;
+}
+
+script stroller_talk {
+    msgbox "I walk around here all day.";
+    close_msg;
+}
+
+script sentry_talk {
+    msgbox "Hut! Two! Hut! Two!";
+    close_msg;
+}
+
+script rival_battle {
+    msgbox "You walked into my sight!\nLet's battle!";
+    close_msg;
+    msgbox "(No battles in the map\nsandbox: you win.)";
+    close_msg;
+    set flag(beat_rival);
+}
+
+script rival_after {
+    msgbox "Good battle! I won't stop\nyou again.";
+    close_msg;
+}
+
+script gatekeeper_talk {
+    face self player;
+    msgbox "The meadow is closed.\nAsk the guide in the plaza.";
+    close_msg;
+}
+
+// RPG Maker XP-style eventing (D-17) in the showcase: a jogger on a custom
+// route, a chest with a self switch, a quake (shake, flash, tint), a lookout
+// panning the camera by a number you enter, a puddle you step on, and a race
+// against the timer.
+flag race_on;
+
+script jogger_talk {
+    face self player;
+    msgbox "Five laps before breakfast!\nWant to race to the meadow\ngate? You have 40 seconds.";
+    yesno -> var(answer_race);
+    close_msg;
+    if var(answer_race) == 1 {
+        timer start 40;
+        set flag(race_on);
+    }
+}
+var answer_race : u8 0..1;
+
+script chest_open {
+    msgbox "You open the box...\nA berry! (self switch A on)";
+    close_msg;
+    var(berries) += 1;
+    set self(A);
+}
+
+script chest_empty {
+    msgbox "The box is empty.";
+    close_msg;
+}
+
+script quake {
+    msgbox "Watch this!";
+    close_msg;
+    shake 3 40;
+    flash 31 31 31 20;
+    delay 40;
+    tint 31 12 0 8 30;
+    msgbox "Sunset, at noon.";
+    close_msg;
+    tint off 30;
+}
+
+var cells : u8 0..9;
+script lookout {
+    msgbox "How far east should I look?";
+    input_number 1 -> var(cells);
+    close_msg;
+    scroll right var(cells);
+    delay 30;
+    scroll back;
+    msgbox "Nice view.";
+    close_msg;
+}
+
+script splash {
+    msgbox "Splash! (a Through object\nwith Player Touch)";
+    close_msg;
+}
+
+script meadow_race {
+    if flag(race_on) {
+        clear flag(race_on);
+        if timer > 0 {
+            msgbox "You made it in time!";
+        } else {
+            msgbox "Too late... try again.";
+        }
+        close_msg;
+        timer stop;
+    }
+}
+
+// F2 (D-27 section 3): the Starter's field actions (structure.json field_actions: wade, clear and light; each
+// asks first, its question an implicit script), the flight points and the escape point. The member that uses an
+// action is var(field_action_member) (its party slot).
+var flown : u8 0..1;      // the flight menu warped
+var escaped : u8 0..1;    // the escape warped
+var helper : u8 0..9;     // field_action available: the member + 1
+
+// Wade: swim (which enters only water and steps back onto land on foot), then one step onto the water.
+script field_wade {
+    vehicle swim;
+    switch facing(player) {
+        case 0 { move player down 1; }
+        case 1 { move player up 1; }
+        case 2 { move player left 1; }
+        default { move player right 1; }
+    }
+}
+
+// Clear: the bush goes until the map is entered again.
+script field_clear {
+    msgbox "The bush is cleared away.";
+    close_msg;
+    hide self;
+}
+
+// Light: the cave is lit until the next map.
+script field_light {
+    darkness 0;
+    msgbox "A soft glow lights the cave.";
+    close_msg;
+}
+
+// The sandbox menu's flight menu and escape.
+script sandbox_fly {
+    flight menu -> var(flown);
+}
+script sandbox_escape {
+    escape -> var(escaped);
+    if var(escaped) == 0 {
+        msgbox "There is nowhere to escape to.";
+        close_msg;
+    }
+}
+
+// The cave's entry: its flight point; a hint when nobody could light it.
+script cave_enter {
+    flight record cave_mouth;
+}
+script cave_hint {
+    field_action available light -> var(helper);
+    if var(helper) == 0 {
+        msgbox "It is pitch dark. Nobody here\ncould light the way.";
+    } else {
+        msgbox "It is dark. Open the menu to\nuse Light.";
+    }
+    close_msg;
+}
+script showcase_enter { flight record park; }
+map_scripts cave { on_transition -> cave_enter; }
+map_scripts showcase { on_transition -> showcase_enter; }
+
+// B1 (D-28 section 1): the Starter's Merge Altar from the menu: pick two members (level 5 or more) in the text box's
+// menu, the altar shows what they would give and asks, then merges them (both leave, the result takes the first
+// one's place). Breezle + Tidepup give Glimmet; Sproutle (level 3) is not ready; Breezle + Glimmet have no rule.
+var merged : u8 0..2;     // combine open: 0 backed out, 1 merged, 2 refused
+script merge_altar {
+    msgbox "The Merge Altar hums.\nPick two to merge.";
+    combine open merge_altar -> var(merged);
+    if var(merged) == 0 {
+        msgbox "You step away from the altar.";
+    }
+    close_msg;
+}
+
+// B2 (D-28 sections 2 and 3): the Grove, the Starter's two-slot nursery (the menu's "grove" row). With an egg
+// waiting it gives it; with fewer than two left there it takes one (the party menu); with two it offers the first
+// back. Its checks run every 128 steps (50% for two of one kin); the egg hatches by steps (hatch_egg).
+var grove_n : u8 0..9;       // nursery count / ready / deposit / take / withdraw
+var grove_pick : u8 0..9;    // nursery pick: the member + 1, 0 backed out
+var grove_yes : u8 0..1;
+script grove {
+    nursery ready -> var(grove_n);
+    if var(grove_n) == 1 {
+        msgbox "The Grove keeper: an egg\nturned up! Take it?";
+        yesno -> var(grove_yes);
+        if var(grove_yes) == 1 {
+            nursery take -> var(grove_n);
+            if var(grove_n) == 1 {
+                msgbox "You took the egg.";
+            } else {
+                msgbox "There is no room for it.";
+            }
+        }
+        close_msg;
+    } else {
+        nursery count -> var(grove_n);
+        if var(grove_n) < 2 {
+            msgbox "The Grove keeper: leave one\nof yours here?";
+            nursery pick -> var(grove_pick);
+            if var(grove_pick) > 0 {
+                var(grove_pick) -= 1;
+                nursery deposit var(grove_pick) -> var(grove_n);
+                if var(grove_n) == 1 {
+                    msgbox "It settles in the Grove.";
+                } else {
+                    msgbox "That one has to stay.";
+                }
+            }
+            close_msg;
+        } else {
+            msgbox "Both rest in the Grove.\nTake the first back?";
+            yesno -> var(grove_yes);
+            if var(grove_yes) == 1 {
+                nursery withdraw 0 -> var(grove_n);
+                if var(grove_n) == 1 {
+                    msgbox "It comes back to you.";
+                } else {
+                    msgbox "There is no room for it.";
+                }
+            }
+            close_msg;
+        }
+    }
+}
+
+// B2: an egg in the party hatched (the structure's eggs.hatch_script; egg_member holds its party slot)
+var named : u8 0..1;
+script hatch_egg {
+    msgbox "Oh? The egg is hatching!";
+    nursery name var(egg_member) -> var(named);
+    close_msg;
+}
+
+// DS1 (D-30): the hut's garden sign toggles the override set garden (kept through its flag), the hut's people.
+flag garden_planted;          // the garden override set is applied while it is set
+script garden_sign {
+    if flag(garden_planted) {
+        override clear garden;
+        msgbox "The flowers are gone.";
+    } else {
+        override apply garden;
+        msgbox "Flowers grow by the hut!";
+    }
+    close_msg;
+}
+script porter_talk {
+    msgbox "My sheet has three columns:\nmy right side is my left\nside, mirrored.";
+    close_msg;
+}
+script keeper_talk {
+    msgbox "Mine has all four.";
+    close_msg;
+}

@@ -1,0 +1,70 @@
+-- rival_novice
+> Novice Kit wants to battle!
+> Novice Kit sent out Sproutle!
+switch_in #1 Sproutle at 1
+> Go, Tidepup!
+switch_in #0 Tidepup at 0
+turn 1
+resource #0 Tidepup MP 20 (was 28)
+> Tidepup used Torrent!
+hp #1 Sproutle 11 (was 32)
+> It's not very effective...
+resource #1 Sproutle MP 9 (was 16)
+> Sproutle used Spore Burst!
+hp #0 Tidepup 36 (was 49)
+> It's very effective!
+> [Tidepup's Recharge]
+resource #0 Tidepup MP 22 (was 20)
+turn 2
+resource #0 Tidepup EP 24 (was 30)
+> Tidepup used Tide Slam!
+hp #1 Sproutle 0 (was 11)
+> It's not very effective...
+faint #1 Sproutle
+> Sproutle fainted!
+> Tidepup gained 31 EXP!
+> [Tidepup's Recharge]
+resource #0 Tidepup MP 24 (was 22)
+resource #0 Tidepup EP 25 (was 24)
+> Novice Kit sent out Breezle!
+switch_in #2 Breezle at 1
+turn 3
+resource #2 Breezle MP 9 (was 16)
+> Breezle used Cyclone!
+hp #0 Tidepup 28 (was 36)
+> Tidepup became dazed!
+> Tidepup is dazed!
+> It hurt itself in its daze!
+hp #0 Tidepup 21 (was 28)
+> [Tidepup's Recharge]
+resource #0 Tidepup MP 26 (was 24)
+resource #0 Tidepup EP 26 (was 25)
+turn 4
+resource #2 Breezle MP 2 (was 9)
+> Breezle used Cyclone!
+> Breezle's attack missed!
+> Tidepup is no longer dazed!
+resource #0 Tidepup EP 20 (was 26)
+> Tidepup used Tide Slam!
+hp #2 Breezle 2 (was 28)
+> [Tidepup's Recharge]
+resource #0 Tidepup MP 28 (was 26)
+resource #0 Tidepup EP 21 (was 20)
+turn 5
+resource #2 Breezle EP 14 (was 18)
+> Breezle used Gale Kick!
+hp #0 Tidepup 17 (was 21)
+resource #0 Tidepup EP 15 (was 21)
+> Tidepup used Tide Slam!
+hp #2 Breezle 0 (was 2)
+faint #2 Breezle
+> Breezle fainted!
+> Tidepup gained 37 EXP!
+> Novice Kit was defeated!
+> You got 150 Coins for winning!
+end Victory
+-- outcome Victory, turns 5, reward 150, rng B2E995A5
+battler #0 Tidepup lv 12 hp 17/49 status none item none exp 1604 MP 28/28 EP 15/30
+battler #1 Sproutle lv 6 hp 0/32 status none item none exp 480 MP 9/16 EP 16/16
+battler #2 Breezle lv 7 hp 0/28 status none item none exp 462 MP 2/16 EP 14/18
+record 0.0 Tidepup lv 12 exp 1604 hp 17 status none/0 item none moves Tide Slam Mist Veil Torrent Quake MP 28 EP 15

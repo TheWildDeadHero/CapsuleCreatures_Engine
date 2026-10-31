@@ -1,0 +1,13 @@
+# Neutral fixture logic (E8, D-25): resources through effect logic.
+
+move "Refresh" {
+   use {
+      restore user mp 6;
+   }
+}
+
+move "Drain" {
+   hit {
+      target.resource(mp) -= 5;
+   }
+}

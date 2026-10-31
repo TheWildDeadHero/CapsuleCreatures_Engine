@@ -1,0 +1,131 @@
+# Neutral condition fixture (tests/battle_conditions_tests.cpp): moves that start conditions, and the conditions'
+# own logic next to what their records expand into (tools/battlec/conditions.py).
+
+# A word: the veil takes the damage of hits until its word runs out (a piercing move goes through).
+move "Veil" {
+   use {
+      if user.has(veil) {
+         fail;
+      }
+      vol_on user veil;
+      user.word(veil) = 25;
+   }
+}
+
+volatile "veil" {
+   on before_damage when other != holder and not move.has(pierce) {
+      let d = min(value, holder.word(veil));
+      holder.word(veil) -= d;
+      if holder.word(veil) == 0 {
+         vol_off holder veil;
+      }
+      modify set 0;
+   }
+}
+
+# A lock-in: the record's duration [2, 2] counts down before each move; the move locks its user while it lasts.
+move "Rampage" {
+   use {
+      if not user.locked {
+         vol_on user rampage;
+      }
+      if user.has(rampage) {
+         lock user;
+      }
+   }
+}
+
+# A charge: the first turn starts the volatile (Volatile events: its record has hud) and locks; the second hits.
+move "Beam" {
+   use {
+      if not user.has(charging) {
+         vol_on user charging;
+         lock user free;
+         stop;
+      }
+      vol_off user charging;
+   }
+}
+
+# A tag through a volatile: a floating battler is spared by the thorns (passes on with a passing switch).
+move "Hover" {
+   use {
+      vol_on user hover;
+   }
+}
+
+# Layers: up to three on the user's own side; each switch-in on that side hurts by the layers.
+move "Thorns" {
+   hit {
+      if side(target).layers(Thorns) >= 3 {
+         fail;
+      }
+      side_on side(target) Thorns add_layer;
+   }
+}
+
+side_condition "Thorns" {
+   on switch_in when not holder.has(floating) {
+      damage_hp holder max(1, holder.max_hp / pick(side(holder).layers(Thorns) - 1, 10, 8, 6));
+      text thorns_hurt;
+   }
+}
+
+# Turns: the screen lasts its record's 3 turns; its residual phase runs for each battler of its side.
+move "Screen" {
+   use {
+      if side(user).has(Screen) {
+         fail;
+      }
+      side_on side(user) Screen;
+   }
+}
+
+side_condition "Screen" {
+   on side_residual {
+      text glow;
+   }
+}
+
+# A field condition for its record's 2 turns: every battler loses 1 HP at the end of each.
+move "Haze" {
+   hit {
+      if field.has(Haze) {
+         fail;
+      }
+      field_on Haze;
+   }
+}
+
+field_condition "Haze" {
+   on field_residual {
+      damage_hp holder 1;
+   }
+}
+
+# A status with escalation (its record: residual 1/10, escalating cap 3).
+move "Spore" {
+   hit {
+      inflict target Blight;
+   }
+}
+
+# A status with a length (its record: turns [2, 2]).
+move "Lullaby" {
+   hit {
+      inflict target Doze;
+   }
+}
+
+# The taken record: hits back one and a half times what the user took from a move this turn.
+move "Retort" {
+   target {
+      if user.taken.turn != turn or user.taken.amount == 0 {
+         fail;
+      }
+      set_target user.taken.from;
+   }
+   hit {
+      damage_hp target user.taken.amount * 3 / 2 typed;
+   }
+}

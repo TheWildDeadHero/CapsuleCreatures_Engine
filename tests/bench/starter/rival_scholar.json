@@ -1,0 +1,37 @@
+{
+   "schema": "capsule.bench/1",
+   "name": "rival_scholar",
+   "description": "A rival with status moves, charms (Focus Lens, Mana Drop), the status AI and save_resources (C2). (E9 neutral golden transcripts/rival_scholar.txt)",
+   "expect": "../../data/starter/golden/transcripts/rival_scholar.txt",
+   "rng": "default",
+   "format": "Single",
+   "seed": 11,
+   "parties": [
+      {
+         "side": 0,
+         "controller": "human",
+         "members": [
+            {
+               "species": "Voltmink",
+               "level": 16
+            },
+            {
+               "species": "Glimmet",
+               "level": 15
+            }
+         ]
+      },
+      {
+         "side": 1,
+         "data": "Scholar Wen"
+      }
+   ],
+   "choices": [
+      {
+         "move": 1
+      },
+      {
+         "move": 2
+      }
+   ]
+}

@@ -1,0 +1,96 @@
+# The Starter sample's talents (passives, E9): two latent slots per species; the record's passive_selector picks
+# one. `announce;` in a handler shows the talent the first time one of its parts is about to change something.
+
+passive "Blaze Heart" {
+   # holder has at most 2/5 of its HP (max_hp 0: not on the field): Fire moves x1.4
+   point power when move.type == Fire and holder.max_hp > 0 and holder.hp * 5 <= holder.max_hp * 2 {
+      modify by 1.4;
+   }
+}
+
+passive "Thick Hide" {
+   # the guard point: the target's side of the damage
+   point guard when move.category == physical {
+      modify by 0.75;
+   }
+}
+
+passive "Insight" {
+   # the odds point: the user's secondary effects and statuses land more often
+   point odds {
+      modify by 1.5;
+   }
+}
+
+passive "Stubborn" {
+   # the resist point: secondary effects and statuses land on the holder half as often
+   point resist {
+      modify by 0.5;
+   }
+}
+
+passive "Quick Feet" {
+   # holder has at most half of its HP: speed x1.3
+   point speed when holder.max_hp > 0 and holder.hp * 2 <= holder.max_hp {
+      modify by 1.3;
+   }
+   # F1: leading the party, it meets creatures half as often again (the encounter rate x3/2)
+   on encounter {
+      encounter_rate 3 2;
+   }
+}
+
+passive "Recharge" {
+   announce;
+   on residual {
+      if holder.alive and holder.resource(mp) < holder.resource_max(mp) {
+         announce;
+         restore holder mp 2;
+      }
+   }
+}
+
+passive "Static Coat" {
+   announce;
+   on damaging_hit {
+      let contact = move.has(contact);
+      # 255: no status; a Lightning type cannot be shocked
+      if contact != 0 and other.alive and other.status == 255 and not other.has_type(Lightning) {
+         # the holder's Intelligence against the attacker's
+         if odds(30, 100, holder, other) {
+            announce;
+            inflict other Shock quiet;
+         }
+      }
+   }
+}
+
+passive "Second Wind" {
+   announce;
+   on switch_in {
+      if holder.resource(ep) < holder.resource_max(ep) {
+         announce;
+         # a quarter of the EP maximum, at least 1
+         restore holder ep max(1, holder.resource_max(ep) / 4);
+      }
+   }
+}
+
+passive "Lightfoot" {
+   announce;
+   on try_hit {
+      let earth_move = move.type == Earth;
+      if earth_move != 0 {
+         announce;
+         immune;
+      }
+   }
+}
+
+# B2 (D-28 section 3, README "Eggs"): a member with Nurture (Sproutle's line's hidden talent) takes twice the steps off
+# every egg each egg cycle (the eggs hatch in half the steps); it does nothing in battle
+passive "Nurture" {
+   on hatch {
+      modify by 2;
+   }
+}

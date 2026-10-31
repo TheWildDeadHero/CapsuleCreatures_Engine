@@ -1,0 +1,29 @@
+-- unowned_single
+> Sproutle blocks the way!
+switch_in #1 Sproutle at 1
+> Go, Emberkit!
+switch_in #0 Emberkit at 0
+turn 1
+resource #0 Emberkit MP 13 (was 21)
+> Emberkit used Fireball!
+hp #1 Sproutle 5 (was 38)
+> It's very effective!
+resource #1 Sproutle MP 14 (was 19)
+> Sproutle used Toxic Pollen!
+> Emberkit is blighted!
+> Emberkit is hurt by the blight!
+hp #0 Emberkit 36 (was 40)
+turn 2
+resource #0 Emberkit MP 5 (was 13)
+> Emberkit used Fireball!
+hp #1 Sproutle 0 (was 5)
+> It's very effective!
+faint #1 Sproutle
+> Sproutle fainted!
+> Emberkit gained 34 EXP!
+end Victory
+-- outcome Victory, turns 2, reward 0, rng F2C9C166
+battler #0 Emberkit lv 10 hp 36/40 status Blight item none exp 1154 MP 5/21 EP 23/23
+battler #1 Sproutle lv 7 hp 0/38 status none item none exp 616 MP 14/19 EP 19/19
+record 0.0 Emberkit lv 10 exp 1154 hp 36 status Blight/0 item none moves Flare Claw Smolder Fireball Gale Kick MP 5 EP 23
+record 1.0 Sproutle lv 7 exp 616 hp 38 status none/0 item none moves Vine Lash Toxic Pollen Spore Burst MP 19 EP 19

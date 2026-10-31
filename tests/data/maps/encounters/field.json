@@ -1,0 +1,83 @@
+{
+ "schema": "capsule.encounters/1",
+ "editor": {
+  "notes": "Encounters of map field: (1,5) slot 0, (2,5) slot 1, water (10,0) slot 2."
+ },
+ "tables": [
+  {
+   "slot": 0,
+   "method": "walk",
+   "editor": {
+    "label": "Grass"
+   },
+   "rate": "1/1",
+   "entries": [
+    {
+     "species": "Sproutle",
+     "levels": [
+      3,
+      5
+     ],
+     "weight": 60,
+     "excludes": [
+      "night"
+     ]
+    },
+    {
+     "species": "Duskowl",
+     "levels": 4,
+     "weight": 40,
+     "requires": [
+      "night"
+     ]
+    },
+    {
+     "species": "Voltmink",
+     "levels": [
+      5,
+      5
+     ],
+     "weight": 10,
+     "modifiers": [
+      {
+       "when": "rain",
+       "multiply": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slot": 1,
+   "method": "walk",
+   "rate": [
+    0,
+    1
+   ],
+   "entries": [
+    {
+     "species": "Clodbun",
+     "levels": 2,
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "slot": 2,
+   "method": "swim",
+   "table": "water"
+  },
+  {
+   "slot": 2,
+   "method": "old lure",
+   "rate": "1/1",
+   "entries": [
+    {
+     "species": "Tidepup",
+     "levels": 5,
+     "weight": 1
+    }
+   ]
+  }
+ ]
+}

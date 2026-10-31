@@ -1,0 +1,10 @@
+{
+ "schema": "capsule.scripts/1",
+ "editor": {
+  "notes": "Scripts of the D-30 fixture (tests/d30_tests.cpp): override sets applied and cleared."
+ },
+ "sources": [
+  "d30.cscript"
+ ],
+ "world": "../world.json"
+}

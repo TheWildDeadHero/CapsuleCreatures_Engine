@@ -1,0 +1,13 @@
+{
+  "schema": "capsule.codepage/1",
+  "id": "en",
+  "name": "English (ASCII)",
+  "ranges": [
+    {
+      "first": "0x20",
+      "chars": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+    }
+  ],
+  "map": {},
+  "aliases": {}
+}

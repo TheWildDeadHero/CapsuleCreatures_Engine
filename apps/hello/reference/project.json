@@ -1,0 +1,15 @@
+{
+  "schema": "capsule.project/1",
+  "name": "hello",
+  "editor": {
+    "notes": "Hello world: the default font on BG0, moved with the D-pad."
+  },
+  "rom": {
+    "title": "HELLO",
+    "code": "CHEL",
+    "maker": "00"
+  },
+  "sources": [
+    "src/hello.cpp"
+  ]
+}

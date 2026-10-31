@@ -1,0 +1,46 @@
+{
+  "editor": {
+    "description": "Engine default input map (B-11). Logical action -> physical buttons, per target. null = no button on that target: the action becomes a main-menu entry instead. Dreamcast has no Select; its analog triggers act as L/R."
+  },
+  "config": {
+    "chord_window": 6,
+    "sleep_hold_frames": 60,
+    "reset_hold_frames": 60,
+    "wake_keys": { "gba": ["SELECT", "START"], "snes_layout": ["SELECT", "START"], "dreamcast": ["START"] }
+  },
+  "targets": {
+    "gba": {
+      "UP": ["UP"], "DOWN": ["DOWN"], "LEFT": ["LEFT"], "RIGHT": ["RIGHT"],
+      "ACCEPT": ["A"],
+      "BACK": ["B"],
+      "MAIN_MENU": ["START"],
+      "DEVICE_MENU": ["SELECT"],
+      "TOGGLE_RUN": null,
+      "HELP": null,
+      "WHEEL_1": ["R"],
+      "WHEEL_2": ["L"]
+    },
+    "snes_layout": {
+      "UP": ["UP"], "DOWN": ["DOWN"], "LEFT": ["LEFT"], "RIGHT": ["RIGHT"],
+      "ACCEPT": ["A"],
+      "BACK": ["B"],
+      "MAIN_MENU": ["X"],
+      "DEVICE_MENU": ["Y"],
+      "TOGGLE_RUN": ["START"],
+      "HELP": ["SELECT"],
+      "WHEEL_1": ["R"],
+      "WHEEL_2": ["L"]
+    },
+    "dreamcast": {
+      "UP": ["UP"], "DOWN": ["DOWN"], "LEFT": ["LEFT"], "RIGHT": ["RIGHT"],
+      "ACCEPT": ["A"],
+      "BACK": ["B"],
+      "MAIN_MENU": ["X"],
+      "DEVICE_MENU": ["Y"],
+      "TOGGLE_RUN": ["START"],
+      "HELP": null,
+      "WHEEL_1": ["R"],
+      "WHEEL_2": ["L"]
+    }
+  }
+}

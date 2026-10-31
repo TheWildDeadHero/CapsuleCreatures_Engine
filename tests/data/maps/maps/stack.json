@@ -1,0 +1,314 @@
+{
+ "schema": "capsule.map/2",
+ "id": "stack",
+ "editor": {
+  "notes": "Tile layers on BG0 (behind, priority 3) and BG2 (in front, priority 0): priority is independent of the BG number."
+ },
+ "tilesets": [
+  "test"
+ ],
+ "layers": [
+  {
+   "bg": 0,
+   "priority": 3,
+   "content": "tilemap",
+   "purpose": "terrain"
+  },
+  {
+   "bg": 2,
+   "priority": 0,
+   "content": "tilemap",
+   "purpose": "canopy"
+  }
+ ],
+ "metatiles": [
+  "test/ground",
+  "test/tree_top"
+ ],
+ "behaviors": [
+  "normal"
+ ],
+ "chunks": [
+  {
+   "at": [
+    0,
+    0
+   ],
+   "cells": [
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   ],
+   "layers": [
+    [
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ],
+    [
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      1,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ],
+     [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ]
+    ]
+   ]
+  }
+ ],
+ "border": {
+  "size": [
+   1,
+   1
+  ],
+  "layers": [
+   [
+    null
+   ],
+   [
+    null
+   ]
+  ]
+ },
+ "backdrop": "#000000",
+ "events": {
+  "warps": [
+   {
+    "at": [
+     1,
+     1
+    ],
+    "to": "field",
+    "warp": 1
+   }
+  ]
+ }
+}

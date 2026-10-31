@@ -1,0 +1,312 @@
+{
+ "schema": "capsule.assets/1",
+ "id": "sandbox_menu",
+ "editor": {
+  "notes": "The menu sandbox (N3, simple shapes): the engine's 8x8 glyphs as a proportional font, a frame and an arrow image drawn as plain shapes, a sprite of two arrows, and text box styles with menus."
+ },
+ "assets": [
+  {
+   "key": "font:SANDBOX_MENU",
+   "kind": "font",
+   "font": "menu.font.json"
+  },
+  {
+   "key": "sprite:SANDBOX_ARROWS",
+   "kind": "sprite",
+   "width": 16,
+   "height": 16,
+   "palette": [
+    "#e03020"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "rect",
+       "x": 4,
+       "y": 6,
+       "w": 8,
+       "h": 4,
+       "color": 1
+      }
+     ]
+    },
+    {
+     "shapes": [
+      {
+       "shape": "rect",
+       "x": 6,
+       "y": 4,
+       "w": 4,
+       "h": 8,
+       "color": 1
+      }
+     ]
+    }
+   ],
+   "animations": [
+    {
+     "frames": [
+      0
+     ],
+     "period": 30
+    },
+    {
+     "frames": [
+      0
+     ],
+     "period": 30,
+     "flips": [
+      1
+     ]
+    },
+    {
+     "frames": [
+      0
+     ],
+     "period": 30
+    },
+    {
+     "frames": [
+      0
+     ],
+     "period": 30,
+     "flips": [
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "key": "text_box:SANDBOX_COLUMN",
+   "kind": "text_box",
+   "font": "font:SANDBOX_MENU",
+   "window": {
+    "bg": 0,
+    "first_tile": 100,
+    "palette_bank": 15,
+    "x": 1,
+    "y": 1,
+    "width": 7,
+    "height": 6,
+    "top": 1,
+    "ink": 2,
+    "shadow": 3,
+    "background": 1,
+    "frames_per_char": 0
+   },
+   "frame": {
+    "first_tile": 90,
+    "palette_bank": 15,
+    "image": "frame.png",
+    "palette": [
+     "#ffffff",
+     "#203070",
+     "#90a8e0"
+    ]
+   },
+   "palette": [
+    "#000000",
+    "#ffffff",
+    "#303030",
+    "#b0b0b0"
+   ],
+   "menu": {
+    "option_x": 8,
+    "cursor_x": 0,
+    "top": 1,
+    "row_height": 16,
+    "cursor_width": 8,
+    "cursor_height": 16,
+    "cursor": 62,
+    "sound_move": 5,
+    "sound_choose": 5,
+    "sound_cancel": 5,
+    "wrap": "above",
+    "wrap_above": 3,
+    "input_delay": 2
+   }
+  },
+  {
+   "key": "text_box:SANDBOX_GRID",
+   "kind": "text_box",
+   "font": "font:SANDBOX_MENU",
+   "window": {
+    "bg": 0,
+    "first_tile": 150,
+    "palette_bank": 15,
+    "x": 10,
+    "y": 1,
+    "width": 8,
+    "height": 4,
+    "top": 1,
+    "ink": 2,
+    "shadow": 3,
+    "background": 1,
+    "frames_per_char": 0
+   },
+   "frame": {
+    "first_tile": 90,
+    "palette_bank": 15
+   },
+   "menu": {
+    "option_x": 8,
+    "cursor_x": 0,
+    "top": 1,
+    "row_height": 16,
+    "cursor_width": 8,
+    "cursor_height": 16,
+    "cursor": 62,
+    "sound_move": 5,
+    "sound_choose": 5,
+    "sound_cancel": 5
+   }
+  },
+  {
+   "key": "text_box:SANDBOX_LIST",
+   "kind": "text_box",
+   "font": "font:SANDBOX_MENU",
+   "window": {
+    "bg": 0,
+    "first_tile": 190,
+    "palette_bank": 15,
+    "x": 20,
+    "y": 2,
+    "width": 8,
+    "height": 8,
+    "top": 1,
+    "ink": 2,
+    "shadow": 3,
+    "background": 1,
+    "frames_per_char": 0
+   },
+   "frame": {
+    "first_tile": 90,
+    "palette_bank": 15
+   },
+   "menu": {
+    "option_x": 8,
+    "cursor_x": 0,
+    "top": 1,
+    "row_height": 16,
+    "cursor_width": 8,
+    "cursor_height": 16,
+    "cursor": 62,
+    "sound_move": 5,
+    "sound_choose": 5,
+    "sound_cancel": 5,
+    "move_keys": "repeated",
+    "sound_open": 7,
+    "arrow_sprite": "sprite:SANDBOX_ARROWS",
+    "arrow_up": 2,
+    "arrow_down": 3,
+    "arrow_amplitude": 2,
+    "arrow_speed": 8
+   }
+  },
+  {
+   "key": "text_box:SANDBOX_YESNO",
+   "kind": "text_box",
+   "font": "font:SANDBOX_MENU",
+   "window": {
+    "bg": 0,
+    "first_tile": 260,
+    "palette_bank": 15,
+    "x": 1,
+    "y": 9,
+    "width": 5,
+    "height": 4,
+    "top": 1,
+    "ink": 2,
+    "shadow": 3,
+    "background": 1,
+    "frames_per_char": 0
+   },
+   "frame": {
+    "first_tile": 90,
+    "palette_bank": 15
+   },
+   "menu": {
+    "option_x": 8,
+    "cursor_x": 0,
+    "top": 1,
+    "row_height": 16,
+    "cursor_width": 8,
+    "cursor_height": 16,
+    "cursor": 62,
+    "sound_move": 5,
+    "sound_choose": 5,
+    "sound_cancel": 5,
+    "wrap": "never",
+    "input_delay": 5
+   }
+  },
+  {
+   "key": "text_box:SANDBOX_VALUE",
+   "kind": "text_box",
+   "font": "font:SANDBOX_MENU",
+   "window": {
+    "bg": 0,
+    "first_tile": 290,
+    "palette_bank": 15,
+    "x": 9,
+    "y": 9,
+    "width": 8,
+    "height": 2,
+    "top": 1,
+    "ink": 2,
+    "shadow": 3,
+    "background": 1,
+    "frames_per_char": 0
+   },
+   "frame": {
+    "first_tile": 90,
+    "palette_bank": 15
+   }
+  },
+  {
+   "key": "text_box:SANDBOX_MESSAGE",
+   "kind": "text_box",
+   "font": "font:SANDBOX_MENU",
+   "window": {
+    "bg": 0,
+    "first_tile": 320,
+    "palette_bank": 14,
+    "x": 2,
+    "y": 15,
+    "width": 26,
+    "height": 4,
+    "top": 1,
+    "ink": 2,
+    "shadow": 3,
+    "background": 1,
+    "frames_per_char": 1,
+    "lines": 2,
+    "typing": "counter",
+    "char_delay": 0,
+    "speedup": "none",
+    "arrow_image": {
+     "image": "arrow.png",
+     "height": 4,
+     "steps": [
+      0,
+      1,
+      2,
+      1
+     ],
+     "delay": 8
+    }
+   },
+   "frame": {
+    "first_tile": 90,
+    "palette_bank": 14
+   },
+   "palette": [
+    "#ffffff",
+    "#606060",
+    "#d0d0c8",
+    "#e00808"
+   ]
+  }
+ ]
+}

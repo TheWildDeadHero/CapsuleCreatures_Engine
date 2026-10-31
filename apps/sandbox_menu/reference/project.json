@@ -1,0 +1,16 @@
+{
+  "schema": "capsule.project/1",
+  "name": "sandbox_menu",
+  "editor": {
+    "notes": "The ui module's sandbox (N3, D-32): a column menu, a grid, a scrolling list with its arrows, yes / no, a value box and a message box with the arrow image, all styled by text box assets (simple shapes)."
+  },
+  "rom": {
+    "title": "MENUS",
+    "code": "CSMN",
+    "maker": "00"
+  },
+  "sources": [
+    "src/sandbox_menu.cpp"
+  ],
+  "assets": "data/assets.json"
+}

@@ -1,0 +1,59 @@
+-- out_of_energy
+> Clodbun blocks the way!
+switch_in #1 Clodbun at 1
+> Go, Breezle!
+switch_in #0 Breezle at 0
+turn 1
+refused move slot 2 #0 Breezle
+> Breezle used Strike!
+hp #1 Clodbun 56 (was 65)
+> A critical hit!
+resource #1 Clodbun EP 37 (was 43)
+> Clodbun used Tide Slam!
+hp #0 Breezle 42 (was 62)
+resource #0 Breezle EP 4 (was 1)
+resource #1 Clodbun EP 38 (was 37)
+turn 2
+resource #0 Breezle EP 0 (was 4)
+> Breezle used Gale Kick!
+hp #1 Clodbun 35 (was 56)
+> It's very effective!
+resource #1 Clodbun EP 32 (was 38)
+> Clodbun used Tide Slam!
+hp #0 Breezle 24 (was 42)
+resource #0 Breezle EP 3 (was 0)
+resource #1 Clodbun EP 33 (was 32)
+turn 3
+refused move slot 0 #0 Breezle
+> Breezle used Strike!
+hp #1 Clodbun 30 (was 35)
+resource #1 Clodbun MP 26 (was 30)
+> Clodbun used Harden!
+> Clodbun's Defence rose sharply!
+resource #0 Breezle EP 6 (was 3)
+resource #1 Clodbun EP 34 (was 33)
+turn 4
+resource #0 Breezle EP 2 (was 6)
+> Breezle used Gale Kick!
+hp #1 Clodbun 14 (was 30)
+> It's very effective!
+resource #1 Clodbun EP 27 (was 34)
+> Clodbun used Boulder Bash!
+> [Breezle's Lightfoot]
+> It doesn't affect Breezle...
+resource #0 Breezle EP 5 (was 2)
+resource #1 Clodbun EP 29 (was 27)
+turn 5
+resource #0 Breezle EP 1 (was 5)
+> Breezle used Gale Kick!
+hp #1 Clodbun 0 (was 14)
+> It's very effective!
+faint #1 Clodbun
+> Clodbun fainted!
+> Breezle gained 91 EXP!
+end Victory
+-- outcome Victory, turns 5, reward 0, rng 83CBCFC7
+battler #0 Breezle lv 20 hp 24/62 status none item none exp 2971 MP 0/40 EP 1/44
+battler #1 Clodbun lv 16 hp 0/65 status none item none exp 2560 MP 26/30 EP 29/43
+record 0.0 Breezle lv 20 exp 2971 hp 24 status none/0 item none moves Gale Kick Updraft Cyclone Vine Lash Arc Bolt MP 0 EP 1
+record 1.0 Clodbun lv 16 exp 2560 hp 65 status none/0 item none moves Boulder Bash Harden Quake Tide Slam Flare Claw MP 30 EP 43

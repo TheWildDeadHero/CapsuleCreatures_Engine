@@ -1,0 +1,1210 @@
+{
+ "schema": "capsule.assets/1",
+ "id": "starter",
+ "editor": {
+  "notes": "The Starter sample's placeholder art: simple shapes only (one sprite pair per creature, the presenter, the battle backdrop). Replace with a game's own art."
+ },
+ "assets": [
+  {
+   "key": "sprite:EMBERKIT FRONT",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#e86030",
+    "#a24321",
+    "#ffd040",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "rect",
+       "x": 14,
+       "y": 18,
+       "w": 8,
+       "h": 10,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 42,
+       "y": 18,
+       "w": 8,
+       "h": 10,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 24,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      },
+      {
+       "shape": "rect",
+       "x": 36,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:EMBERKIT BACK",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#e86030",
+    "#a24321",
+    "#ffd040",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "rect",
+       "x": 14,
+       "y": 18,
+       "w": 8,
+       "h": 10,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 42,
+       "y": 18,
+       "w": 8,
+       "h": 10,
+       "color": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:BREEZLE FRONT",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#c8e8f0",
+    "#8ca2a8",
+    "#7090b0",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 22,
+       "rx": 14,
+       "ry": 6,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 24,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      },
+      {
+       "shape": "rect",
+       "x": 36,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:BREEZLE BACK",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#c8e8f0",
+    "#8ca2a8",
+    "#7090b0",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 22,
+       "rx": 14,
+       "ry": 6,
+       "color": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:VOLTMINK FRONT",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#f0d020",
+    "#a89116",
+    "#806010",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "rect",
+       "x": 28,
+       "y": 12,
+       "w": 8,
+       "h": 16,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 24,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      },
+      {
+       "shape": "rect",
+       "x": 36,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:VOLTMINK BACK",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#f0d020",
+    "#a89116",
+    "#806010",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "rect",
+       "x": 28,
+       "y": 12,
+       "w": 8,
+       "h": 16,
+       "color": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:TIDEPUP FRONT",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#3878e0",
+    "#27549c",
+    "#a0e0ff",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 12,
+       "cy": 44,
+       "rx": 6,
+       "ry": 10,
+       "color": 3
+      },
+      {
+       "shape": "ellipse",
+       "cx": 52,
+       "cy": 44,
+       "rx": 6,
+       "ry": 10,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 24,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      },
+      {
+       "shape": "rect",
+       "x": 36,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:TIDEPUP BACK",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#3878e0",
+    "#27549c",
+    "#a0e0ff",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 12,
+       "cy": 44,
+       "rx": 6,
+       "ry": 10,
+       "color": 3
+      },
+      {
+       "shape": "ellipse",
+       "cx": 52,
+       "cy": 44,
+       "rx": 6,
+       "ry": 10,
+       "color": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:CLODBUN FRONT",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#8c8478",
+    "#625c54",
+    "#c0a070",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "rect",
+       "x": 16,
+       "y": 54,
+       "w": 32,
+       "h": 6,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 24,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      },
+      {
+       "shape": "rect",
+       "x": 36,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:CLODBUN BACK",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#8c8478",
+    "#625c54",
+    "#c0a070",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "rect",
+       "x": 16,
+       "y": 54,
+       "w": 32,
+       "h": 6,
+       "color": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:DUSKOWL FRONT",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#4a3a6a",
+    "#2e2444",
+    "#c04060",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 22,
+       "cy": 24,
+       "rx": 6,
+       "ry": 6,
+       "color": 3
+      },
+      {
+       "shape": "ellipse",
+       "cx": 42,
+       "cy": 24,
+       "rx": 6,
+       "ry": 6,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 24,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      },
+      {
+       "shape": "rect",
+       "x": 36,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:DUSKOWL BACK",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#4a3a6a",
+    "#2e2444",
+    "#c04060",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 22,
+       "cy": 24,
+       "rx": 6,
+       "ry": 6,
+       "color": 3
+      },
+      {
+       "shape": "ellipse",
+       "cx": 42,
+       "cy": 24,
+       "rx": 6,
+       "ry": 6,
+       "color": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:GLIMMET FRONT",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#f8f0c0",
+    "#c8b878",
+    "#ffffff",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 14,
+       "rx": 10,
+       "ry": 10,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 24,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      },
+      {
+       "shape": "rect",
+       "x": 36,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:GLIMMET BACK",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#f8f0c0",
+    "#c8b878",
+    "#ffffff",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 14,
+       "rx": 10,
+       "ry": 10,
+       "color": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:STARMOTE FRONT",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#6a4c8c",
+    "#4a3562",
+    "#e0c040",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "rect",
+       "x": 30,
+       "y": 6,
+       "w": 4,
+       "h": 20,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 22,
+       "y": 14,
+       "w": 20,
+       "h": 4,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 24,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      },
+      {
+       "shape": "rect",
+       "x": 36,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:STARMOTE BACK",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#6a4c8c",
+    "#4a3562",
+    "#e0c040",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "rect",
+       "x": 30,
+       "y": 6,
+       "w": 4,
+       "h": 20,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 22,
+       "y": 14,
+       "w": 20,
+       "h": 4,
+       "color": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:SPROUTLE FRONT",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#48b048",
+    "#327b32",
+    "#c0e070",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 20,
+       "rx": 6,
+       "ry": 12,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 24,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      },
+      {
+       "shape": "rect",
+       "x": 36,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:SPROUTLE BACK",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#48b048",
+    "#327b32",
+    "#c0e070",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 20,
+       "rx": 6,
+       "ry": 12,
+       "color": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:PRESENTER",
+   "kind": "sprite",
+   "width": 32,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#f0c8a0",
+    "#40a070",
+    "#283848"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 16,
+       "cy": 11,
+       "rx": 7,
+       "ry": 8,
+       "color": 1
+      },
+      {
+       "shape": "rect",
+       "x": 7,
+       "y": 20,
+       "w": 18,
+       "h": 26,
+       "color": 2
+      },
+      {
+       "shape": "rect",
+       "x": 9,
+       "y": 46,
+       "w": 5,
+       "h": 16,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 18,
+       "y": 46,
+       "w": 5,
+       "h": 16,
+       "color": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "image:BATTLE FIELD",
+   "kind": "background",
+   "palette": [
+    "#88b8e8",
+    "#a8d0f0",
+    "#c8e4f8",
+    "#70a050",
+    "#5a8a40",
+    "#c8b878"
+   ],
+   "fill": 1,
+   "shapes": [
+    {
+     "shape": "vgradient",
+     "x": 0,
+     "y": 0,
+     "w": 256,
+     "h": 96,
+     "colors": [
+      1,
+      2,
+      3
+     ]
+    },
+    {
+     "shape": "rect",
+     "x": 0,
+     "y": 96,
+     "w": 256,
+     "h": 64,
+     "color": 4
+    },
+    {
+     "shape": "ellipse",
+     "cx": 64,
+     "cy": 120,
+     "rx": 48,
+     "ry": 10,
+     "color": 6
+    },
+    {
+     "shape": "ellipse",
+     "cx": 176,
+     "cy": 72,
+     "rx": 48,
+     "ry": 10,
+     "color": 6
+    }
+   ]
+  },
+  {
+   "key": "sprite:GLIMMET RADIANT FRONT",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#c8d8ff",
+    "#7888c8",
+    "#ffffff",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 14,
+       "rx": 10,
+       "ry": 10,
+       "color": 3
+      },
+      {
+       "shape": "rect",
+       "x": 24,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      },
+      {
+       "shape": "rect",
+       "x": 36,
+       "y": 36,
+       "w": 4,
+       "h": 4,
+       "color": 4
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 14,
+       "rx": 14,
+       "ry": 4,
+       "color": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sprite:GLIMMET RADIANT BACK",
+   "kind": "sprite",
+   "width": 64,
+   "height": 64,
+   "palette": [
+    "#202028",
+    "#c8d8ff",
+    "#7888c8",
+    "#ffffff",
+    "#181818"
+   ],
+   "frames": [
+    {
+     "shapes": [
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 22,
+       "ry": 18,
+       "color": 2
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 42,
+       "rx": 20,
+       "ry": 16,
+       "color": 1
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 14,
+       "rx": 10,
+       "ry": 10,
+       "color": 3
+      },
+      {
+       "shape": "ellipse",
+       "cx": 32,
+       "cy": 14,
+       "rx": 14,
+       "ry": 4,
+       "color": 2
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

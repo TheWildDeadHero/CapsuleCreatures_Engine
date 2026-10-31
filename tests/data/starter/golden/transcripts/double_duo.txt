@@ -1,0 +1,65 @@
+-- double_duo
+> Duo Ash & Bly wants to battle!
+> Duo Ash & Bly sent out Clodbun!
+switch_in #2 Clodbun at 2
+> Duo Ash & Bly sent out Tidepup!
+switch_in #3 Tidepup at 3
+> Go, Clodbun!
+switch_in #0 Clodbun at 0
+> Go, Starmote!
+switch_in #1 Starmote at 1
+turn 1
+resource #1 Starmote MP 41 (was 51)
+> Starmote used Starfall!
+hp #3 Tidepup 0 (was 51)
+> A critical hit!
+faint #3 Tidepup
+> Tidepup fainted!
+> Clodbun gained 46 EXP!
+> Starmote gained 46 EXP!
+resource #0 Clodbun MP 20 (was 29)
+> Clodbun used Quake!
+hp #2 Clodbun 31 (was 56)
+resource #2 Clodbun EP 27 (was 34)
+> Clodbun used Boulder Bash!
+> Clodbun's attack missed!
+resource #2 Clodbun EP 28 (was 27)
+> Duo Ash & Bly sent out Emberkit!
+switch_in #4 Emberkit at 3
+turn 2
+resource #4 Emberkit EP 24 (was 31)
+> Emberkit used Boulder Bash!
+hp #1 Starmote 41 (was 64)
+resource #1 Starmote MP 31 (was 41)
+> Starmote used Starfall!
+hp #4 Emberkit 0 (was 45)
+faint #4 Emberkit
+> Emberkit fainted!
+> Clodbun gained 51 EXP!
+> Starmote gained 51 EXP!
+resource #0 Clodbun MP 11 (was 20)
+> Clodbun used Quake!
+hp #2 Clodbun 6 (was 31)
+resource #2 Clodbun EP 21 (was 28)
+> Clodbun used Boulder Bash!
+hp #1 Starmote 10 (was 41)
+resource #2 Clodbun EP 22 (was 21)
+turn 3
+resource #1 Starmote MP 21 (was 31)
+> Starmote used Starfall!
+hp #2 Clodbun 0 (was 6)
+faint #2 Clodbun
+> Clodbun fainted!
+> Clodbun gained 48 EXP!
+> Starmote gained 48 EXP!
+> Duo Ash & Bly was defeated!
+> You got 287 Coins for winning!
+end Victory
+-- outcome Victory, turns 3, reward 287, rng DB5CF620
+battler #0 Clodbun lv 18 hp 79/79 status none item none exp 3313 MP 11/29 EP 49/49
+battler #1 Starmote lv 18 hp 10/64 status none item none exp 2521 MP 21/51 EP 39/39
+battler #2 Clodbun lv 14 hp 0/56 status none item Vigor Bar exp 2016 MP 20/20 EP 22/34
+battler #3 Tidepup lv 14 hp 0/51 status none item none exp 2016 MP 28/28 EP 28/28
+battler #4 Emberkit lv 15 hp 0/45 status none item none exp 2280 MP 26/26 EP 24/31
+record 0.0 Clodbun lv 18 exp 3313 hp 79 status none/0 item none moves Boulder Bash Harden Quake Tide Slam Flare Claw MP 11 EP 49
+record 0.1 Starmote lv 18 exp 2521 hp 10 status none/0 item none moves Orbit Knock Stardust Lull Starfall Prism Beam Night Pulse MP 21 EP 39

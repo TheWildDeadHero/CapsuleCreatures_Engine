@@ -1,0 +1,15 @@
+// Scripts of the C13b fixture (tests/c13b_tests.cpp): the cell interaction rules start them (empty bodies).
+
+flag shelf_open;   // the shelf's first rule needs it
+flag climb;        // the fall's first rule needs it
+
+script use_pc { }
+script watch { }
+script read { }
+script read_open { clear flag(shelf_open); }
+script base_pc { }
+script talk { }
+script sign_read { }
+script climb_up { clear flag(climb); }
+script cannot_climb { }
+script swim { }

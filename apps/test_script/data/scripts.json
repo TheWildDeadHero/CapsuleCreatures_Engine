@@ -1,0 +1,6 @@
+{
+  "schema": "capsule.scripts/1",
+  "editor": {"notes": "Demo scripts for the script test app (invented content)."},
+  "sources": ["demo.cscript"],
+  "stack_depth": 8
+}

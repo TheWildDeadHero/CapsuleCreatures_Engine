@@ -1,0 +1,483 @@
+{
+ "schema": "capsule.battle/1",
+ "id": "battle_moves",
+ "editor": {
+  "notes": "Neutral fixture of E13b's battle primitives (tests/battle_moves_tests.cpp): a move's own point handlers (power against a volatile, a weather-made type), side condition and volatile damage points, crit read before damage, silent stages and a stage reset, typed damage through before_damage, trapping, redirection, a delayed effect, the reward pool, ending the battle against an unowned party, the last move that targeted a battler with a chained move, species fields read by logic, and owner texts in the transcript. Placeholder names, simple shapes only."
+ },
+ "ruleset": "ruleset.json",
+ "structure": "structure.json",
+ "types": [
+  {
+   "name": "Plain",
+   "color": 0
+  },
+  {
+   "name": "Stone",
+   "color": 1
+  }
+ ],
+ "moves": [
+  {
+   "name": "Tap",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected",
+   "power": 40
+  },
+  {
+   "name": "Wait",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "self"
+  },
+  {
+   "name": "Gust",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected",
+   "power": 30
+  },
+  {
+   "name": "Rise",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "self"
+  },
+  {
+   "name": "Shift",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected",
+   "power": 40
+  },
+  {
+   "name": "Screen",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "self"
+  },
+  {
+   "name": "Brace",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "self"
+  },
+  {
+   "name": "Pump",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "self"
+  },
+  {
+   "name": "Calm",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "field"
+  },
+  {
+   "name": "Shell",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "self"
+  },
+  {
+   "name": "Fixed",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected",
+   "power": 1
+  },
+  {
+   "name": "Snare",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected"
+  },
+  {
+   "name": "Spotlight",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "self",
+   "priority": 3
+  },
+  {
+   "name": "Foresee",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected"
+  },
+  {
+   "name": "Coins",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected",
+   "power": 10
+  },
+  {
+   "name": "Shoo",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected",
+   "priority": -3
+  },
+  {
+   "name": "Echo",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "self",
+   "priority": -3
+  },
+  {
+   "name": "Heave",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected",
+   "power": 1
+  },
+  {
+   "name": "Keen",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected",
+   "power": 40,
+   "crit_stage": 3
+  },
+  {
+   "name": "Knack",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected",
+   "power": 1
+  },
+  {
+   "name": "Sink",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "self"
+  },
+  {
+   "name": "Hold",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "self"
+  },
+  {
+   "name": "Lash",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "pp": 30,
+   "target": "random_foe",
+   "power": 20
+  },
+  {
+   "name": "Retort",
+   "type": "Plain",
+   "category": "strike",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected",
+   "priority": -3
+  },
+  {
+   "name": "Ward",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "self",
+   "priority": 4
+  },
+  {
+   "name": "Finale",
+   "type": "Plain",
+   "category": "support",
+   "accuracy": null,
+   "pp": 30,
+   "target": "selected"
+  }
+ ],
+ "passives": [
+  {
+   "name": "Plain Talent",
+   "announce": false
+  }
+ ],
+ "traits": [
+  {
+   "name": "Even"
+  },
+  {
+   "name": "Quick",
+   "up": "pace",
+   "down": "power",
+   "pct": [
+    115,
+    88
+   ]
+  }
+ ],
+ "species": [
+  {
+   "name": "Blob",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    40,
+    30
+   ],
+   "passives": [
+    "Plain Talent"
+   ],
+   "growth": "flat",
+   "exp_yield": 50,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "mass": 30
+   }
+  },
+  {
+   "name": "Cube",
+   "types": [
+    "Plain"
+   ],
+   "base": [
+    80,
+    45,
+    35
+   ],
+   "passives": [
+    "Plain Talent"
+   ],
+   "growth": "flat",
+   "exp_yield": 50,
+   "learnset": [
+    [
+     1,
+     "Tap"
+    ]
+   ],
+   "fields": {
+    "mass": 90
+   }
+  }
+ ],
+ "parties": [
+  {
+   "name": "Left",
+   "members": [
+    {
+     "species": "Blob",
+     "level": 20,
+     "moves": [
+      "Tap",
+      "Gust",
+      "Shift",
+      "Keen",
+      "Fixed",
+      "Shoo"
+     ]
+    },
+    {
+     "species": "Blob",
+     "level": 20,
+     "moves": [
+      "Wait",
+      "Pump",
+      "Calm",
+      "Coins",
+      "Echo",
+      "Heave"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Hitter",
+   "members": [
+    {
+     "species": "Cube",
+     "level": 20,
+     "moves": [
+      "Tap",
+      "Snare",
+      "Foresee",
+      "Wait",
+      "Hold"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Waiters",
+   "members": [
+    {
+     "species": "Cube",
+     "level": 20,
+     "moves": [
+      "Wait",
+      "Rise",
+      "Screen",
+      "Brace",
+      "Shell",
+      "Spotlight"
+     ]
+    },
+    {
+     "species": "Cube",
+     "level": 20,
+     "moves": [
+      "Wait",
+      "Snare",
+      "Foresee",
+      "Tap"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Lures",
+   "members": [
+    {
+     "species": "Cube",
+     "level": 20,
+     "moves": [
+      "Spotlight",
+      "Wait",
+      "Tap",
+      "Finale"
+     ]
+    },
+    {
+     "species": "Cube",
+     "level": 20,
+     "moves": [
+      "Spotlight",
+      "Wait",
+      "Lash",
+      "Retort",
+      "Ward",
+      "Sink"
+     ]
+    }
+   ]
+  }
+ ],
+ "messages": {
+  "appeared": "{user} blocks the way!",
+  "party_challenge": "{party} wants to battle!",
+  "send_out": "Go, {user}!",
+  "party_sends": "{party} sent out {user}!",
+  "come_back": "{user}, come back!",
+  "used_move": "{user} used {move}!",
+  "missed": "{user}'s attack missed!",
+  "no_effect": "It doesn't affect {target}...",
+  "super_effective": "It's very effective!",
+  "not_very_effective": "It's not very effective...",
+  "critical": "A critical hit!",
+  "hit_count": "Hit {value} time(s)!",
+  "fainted": "{user} fainted!",
+  "stat_up": "{user}'s {stat} rose!",
+  "stat_up2": "{user}'s {stat} rose sharply!",
+  "stat_down": "{user}'s {stat} fell!",
+  "stat_down2": "{user}'s {stat} harshly fell!",
+  "stat_max": "{user}'s {stat} won't go any higher!",
+  "stat_min": "{user}'s {stat} won't go any lower!",
+  "confused": "{user} is dazed!",
+  "confusion_hit": "It hurt itself in its daze!",
+  "confusion_end": "{user} is no longer dazed!",
+  "became_confused": "{user} became dazed!",
+  "already_confused": "{user} is already dazed!",
+  "flinched": "{user} flinched!",
+  "protected": "{target} protected itself!",
+  "protect_start": "{user} is guarding itself!",
+  "recoil": "{user} is hit with recoil!",
+  "drained": "{user} had its energy drained!",
+  "healed": "{user} regained health!",
+  "hp_full": "{user}'s HP is full!",
+  "failed": "But it failed!",
+  "no_target": "But there was no target...",
+  "passive": "[{user}'s {passive}]",
+  "item_used": "{user}'s {item} activated!",
+  "absorbed": "{user} soaked it up!",
+  "exp_gained": "{user} gained {value} EXP!",
+  "level_up": "{user} grew to Lv. {value}!",
+  "learned": "{user} learned {move}!",
+  "not_learned": "{user} couldn't learn {move}.",
+  "got_away": "Got away safely!",
+  "cant_escape": "Can't escape!",
+  "escape_blocked": "No running from this battle!",
+  "party_defeated": "{party} was defeated!",
+  "reward": "You got ${value} for winning!",
+  "out_of_creatures": "You have no creatures left!",
+  "no_usable_move": "{user} has no moves left!",
+  "blocked": "It didn't work on {user}!",
+  "foreseen": "{user} foresaw an attack!",
+  "landed": "{user} took the attack!",
+  "coins": "Coins scattered everywhere!",
+  "shooed": "{user} ran off!",
+  "trapped": "{user} can't get away!",
+  "drawn": "{user} drew the attention!",
+  "crit_seen": "{user} felt the crit coming!",
+  "held": "{user} won't let {target} go!",
+  "cheered": "{user} cheered!"
+ },
+ "effects": [
+  "moves.ceffect"
+ ],
+ "texts": {
+  "hello": "{user} says hello.",
+  "pumped": "{user} pumped up quietly."
+ }
+}

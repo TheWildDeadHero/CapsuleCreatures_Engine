@@ -1,0 +1,7 @@
+{
+ "schema": "capsule.map/2",
+ "id": "plain",
+ "editor": {
+  "notes": "A blank map (F2 fixture)."
+ }
+}

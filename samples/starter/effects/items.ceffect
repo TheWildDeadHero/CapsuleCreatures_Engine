@@ -1,0 +1,127 @@
+# The Starter sample's charms (held items, E9): Mana Drop and Vigor Bar restore MP / EP through effect logic when
+# they run low; Focus Lens raises the holder's effect odds.
+
+item "Mana Drop" {
+   announce;
+   on residual {
+      # holder has at most a quarter of its MP
+      let low = holder.alive and holder.resource(mp) * 4 <= holder.resource_max(mp);
+      if low != 0 {
+         announce;
+         consume_item holder;
+         restore holder mp 20;
+      }
+   }
+}
+
+item "Vigor Bar" {
+   announce;
+   on residual {
+      # holder has at most a quarter of its EP
+      let low = holder.alive and holder.resource(ep) * 4 <= holder.resource_max(ep);
+      if low != 0 {
+         announce;
+         consume_item holder;
+         restore holder ep 20;
+      }
+   }
+}
+
+item "Focus Lens" {
+   point odds {
+      # x1.25
+      modify by 1.25;
+   }
+}
+
+# G2 (D-26 section 2): the bag's supplies, used out of battle on a party member (use_field; Tonic also in battle,
+# use_battle, which the battle's Item action runs from G3 on). A full pool, or a fainted member's hit points, is
+# "no effect": the logic fails and nothing is consumed.
+
+item "Tonic" {
+   on use_field {
+      if holder.hp == 0 or holder.hp >= holder.max_hp {
+         fail;
+      }
+      restore holder hp 20;
+      text tonic_used;
+   }
+   on use_battle {
+      if holder.hp == 0 or holder.hp >= holder.max_hp {
+         fail;
+      }
+      restore holder hp 20;
+      text tonic_used;
+   }
+}
+
+item "Mana Tea" {
+   on use_field {
+      if holder.resource(mp) >= holder.resource_max(mp) {
+         fail;
+      }
+      restore holder mp 15;
+      text mana_tea_used;
+   }
+}
+
+item "Spark Snack" {
+   on use_field {
+      if holder.resource(ep) >= holder.resource_max(ep) {
+         fail;
+      }
+      restore holder ep 15;
+      text spark_snack_used;
+   }
+}
+
+item "Remedy" {
+   on use_field {
+      # a member without a status: nothing to cure (G3 fix: `status` reads a status's manifest index, none when it
+      # has none; 0 is the first status)
+      if holder.status == none {
+         fail;
+      }
+      cure holder;
+   }
+}
+
+# G3 (D-26 section 3): the Orb recruits an unowned creature in battle (holder = the creature aimed at, other = the
+# user): the structure's 3 checks against the ruleset's recruit_odds with a bonus of 5 (README "Recruiting").
+item "Orb" {
+   on use_battle {
+      text orb_thrown;
+      recruit holder 5;
+   }
+}
+
+# G4 (D-26 section 4): a charm that transforms Sproutle (its item_use rule), a key charm that toggles Glimmet's
+# Radiant form, and notes that train attack (within the structure's caps; the notes stop at 16 of their own)
+
+item "Bloom Charm" {
+   on use_field {
+      transform holder;
+   }
+}
+
+item "Glow Charm" {
+   on use_field {
+      if holder.species != Glimmet {
+         fail;
+      }
+      if holder.role(form) == 1 {
+         form holder base;
+      } else {
+         form holder Radiant;
+      }
+   }
+}
+
+item "Drill Notes" {
+   on use_field {
+      if holder.role(stat_training, 3) >= 16 {
+         fail;
+      }
+      train holder attack 4;
+   }
+}
