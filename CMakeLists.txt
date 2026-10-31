@@ -76,6 +76,9 @@ if(NOT Python3_Interpreter_FOUND)
    message(FATAL_ERROR "CapsuleCreatures needs Python 3.10 or later for its build tools, and CMake found none. "
                        "Install it (the toolkit's ./setup does), or name it with -DPython3_EXECUTABLE=<path>.")
 endif()
+# The build host's Python runs the tools and the Python tests; a cross build's emulator (big-endian-check: qemu)
+# runs only the built programs, never that interpreter.
+set_property(TARGET Python3::Interpreter PROPERTY CROSSCOMPILING_EMULATOR "")
 if(CAPSULE_PLATFORM STREQUAL "desktop")
    if(WIN32 AND NOT MINGW)
       message(FATAL_ERROR "Windows builds use MinGW-w64 (GCC). Use the windows-* presets from an MSYS2 UCRT64 shell.")

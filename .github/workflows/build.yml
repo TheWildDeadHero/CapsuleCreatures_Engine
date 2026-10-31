@@ -48,7 +48,10 @@ jobs:
          - name: Shell scripts
            run: shellcheck -S warning tools/ci/*.sh tools/setup/*.sh tools/dreamcast/*.sh
          - name: Documentation (Doxygen; fails on anything undocumented)
-           run: doxygen Doxyfile
+           # Doxygen 1.9 makes only the last folder of OUTPUT_DIRECTORY (build/docs); a fresh checkout has no build/.
+           run: |
+              mkdir -p build/docs
+              doxygen Doxyfile
 
    headless:
       runs-on: ubuntu-24.04
@@ -170,13 +173,13 @@ jobs:
            run: python .github/scripts/sdl2_source.py "$(cygpath -m '${{ runner.temp }}')/sdl2"
          - name: Debug build + tests
            run: |
-              cmake --preset windows-debug -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
-              cmake --build --preset windows-debug
+              bash .github/scripts/run_annotated.sh "windows-debug configure" cmake --preset windows-debug -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
+              bash .github/scripts/run_annotated.sh "windows-debug build" cmake --build --preset windows-debug
               bash .github/scripts/ctest_annotated.sh windows-debug -j 4
          - name: Release build
            run: |
-              cmake --preset windows-release -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
-              cmake --build --preset windows-release
+              bash .github/scripts/run_annotated.sh "windows-release configure" cmake --preset windows-release -DFETCHCONTENT_SOURCE_DIR_SDL2="${{ steps.sdl2.outputs.dir }}"
+              bash .github/scripts/run_annotated.sh "windows-release build" cmake --build --preset windows-release
 
    big-endian:
       runs-on: ubuntu-24.04
@@ -252,8 +255,8 @@ jobs:
               key: ${{ steps.kos-cache.outputs.cache-primary-key }}
          - name: Debug build
            run: |
-              cmake --preset dc-debug
-              cmake --build --preset dc-debug
+              bash .github/scripts/run_annotated.sh "dc-debug configure" cmake --preset dc-debug
+              bash .github/scripts/run_annotated.sh "dc-debug build" cmake --build --preset dc-debug
          - name: Release build
            run: |
               cmake --preset dc-release
