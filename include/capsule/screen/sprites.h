@@ -84,6 +84,32 @@ struct Images
    uint16_t frames;         ///< Frames.
 };
 
+/// @name Subsprite modes (Sprite::subsprite_mode; M5 P1)
+///@{
+inline constexpr uint8_t kSubspritesOff = 0;             ///< The sprite draws as one OAM entry.
+inline constexpr uint8_t kSubspritesOn = 1;              ///< Its table's pieces, each with its own priority.
+inline constexpr uint8_t kSubspritesIgnorePriority = 2;  ///< Its table's pieces, all with the sprite's priority.
+///@}
+
+/// M5 P1: one piece of a sprite drawn as several OAM entries (data; the reference games' subsprite): its offset
+/// from the sprite's centre, its own shape and size, its first tile counted from the sprite's, its priority.
+struct Subsprite
+{
+   int8_t x;                    ///< Left edge from the sprite's centre (mirrored with the sprite).
+   int8_t y;                    ///< Top edge from the sprite's centre.
+   hal::video::ObjShape shape;  ///< OBJ shape.
+   uint8_t size;                ///< OBJ size 0-3.
+   uint16_t tile_offset;        ///< Added to the sprite's first tile.
+   uint8_t priority;            ///< Its priority (kSubspritesOn).
+};
+
+/// M5 P1: a sprite's pieces (data).
+struct SubspriteTable
+{
+   const Subsprite* pieces;   ///< The pieces in OAM order, or nullptr (the sprite as one entry).
+   uint8_t count;             ///< Entries of pieces.
+};
+
 struct Sprite;
 /// A sprite's per-frame function (animate() calls it before its animation).
 using Callback = void (*)(Sprite& s);
@@ -135,7 +161,23 @@ struct Sprite
    bool anim_ended;           ///< It reached End.
    bool anim_paused;          ///< Its frames stay.
    bool coord_offset;         ///< set_offset() moves it.
+   uint8_t affine_mode;       ///< BF: kAffineOff, kAffineNormal or kAffineDouble (the template's at create()).
+   uint8_t matrix;            ///< BF: its affine matrix (the template's at create(), affine::attach()'s after; its
+                              ///< affine animations and anchor are the matrix's: capsule/screen/affine.h).
+   hal::video::ObjMode obj_mode;   ///< BF: its drawing mode (the template's at create()).
+   bool affine_beginning : 1; ///< BF: its affine animation starts at its next step.
+   bool affine_ended : 1;     ///< BF: its affine animation reached End.
+   bool affine_paused : 1;    ///< BF: its affine frames stay.
+   const SubspriteTable* subsprite_tables;   ///< M5 P1: its piece tables (set_subsprites()), or nullptr.
+   uint8_t subsprite_table;   ///< M5 P1: the table drawn.
+   uint8_t subsprite_mode;    ///< M5 P1: kSubspritesOff, kSubspritesOn or kSubspritesIgnorePriority.
 };
+
+/// BF: a step run on a new sprite before its callback (create_and_animate()).
+using Prepare = void (*)(uint8_t id, const void* arg);
+
+/// BF: a sprite's affine animation step (capsule/screen/affine.h installs it; nullptr: none).
+using AffineStep = void (*)(Sprite& s);
 
 /// Frees every sprite, sheet and palette; hides every OAM entry; the sort order and the offset start over.
 void reset();
@@ -187,6 +229,11 @@ uint8_t load_palette(uint16_t tag, const hal::video::Color* colors);
 /// @return its bank, or kNoBank
 uint8_t alloc_palette(uint16_t tag);
 
+/// Keeps the first banks out of the tag allocation (the reference games' gReservedSpritePaletteCount: a scene that
+/// writes banks directly, such as a battle's creatures in banks 0-3). reset() clears it.
+/// @param count  banks reserved from bank 0
+void reserve_palettes(uint8_t count);
+
 /// A tag's bank.
 /// @param tag  its tag
 /// @return the bank, or kNoBank
@@ -212,9 +259,35 @@ uint8_t create(const Template& t, int16_t x, int16_t y, uint8_t subpriority);
 /// @return its entry, or kNoSprite
 uint8_t create_at_end(const Template& t, int16_t x, int16_t y, uint8_t subpriority);
 
+/// BF: creates a sprite in the first free entry and animates it at once: the prepare step, its callback, then (if it
+/// still exists) its animations, as the reference games' CreateSpriteAndAnimate.
+/// @param t            its template
+/// @param x            centre x
+/// @param y            centre y
+/// @param subpriority  lower in front
+/// @param prepare      run first (e.g. affine::prepare), or nullptr
+/// @param arg          the prepare step's argument
+/// @return its entry, or kNoSprite
+uint8_t create_and_animate(const Template& t, int16_t x, int16_t y, uint8_t subpriority, Prepare prepare = nullptr,
+                           const void* arg = nullptr);
+
+/// BF: sets a sprite's centre-to-corner offsets for its shape, size and affine mode (twice the half size for
+/// kAffineDouble), as create() does.
+/// @param s  the sprite
+void set_center(Sprite& s);
+
+/// BF: installs the affine animation step animate() runs after each sprite's frame animation.
+/// @param step  the step, or nullptr
+void set_affine_step(AffineStep step);
+
 /// Destroys a sprite (an images sprite's tiles are freed).
 /// @param id  its entry
 void destroy(uint8_t id);
+
+/// P2 (M5): destroys a sprite and keeps its tiles (the reference games' usingSheet: a copy of another sprite that
+/// shows the other's tiles).
+/// @param id  its entry
+void destroy_keep_tiles(uint8_t id);
 
 /// A sprite.
 /// @param id  0 to kMaxSprites - 1
@@ -229,8 +302,23 @@ void start_anim(uint8_t id, uint8_t anim);
 /// Runs every sprite's callback and animation once (the scene's Step::Animate).
 void animate();
 
-/// Sorts the sprites and writes OAM (the scene's Step::BuildOam).
+/// P2 (M5): runs one sprite's frame and affine animations once, without its callback (the reference games'
+/// AnimateSprite).
+/// @param id  its entry
+void animate_one(uint8_t id);
+
+/// Sorts the sprites and writes OAM (the scene's Step::BuildOam). A sprite with subsprites (set_subsprites())
+/// writes one entry per piece of its table, in the table's order (the reference games' AddSubspritesToOamBuffer):
+/// each piece at the sprite's centre plus its offset (mirrored when the sprite's frame is: x becomes -(x + width),
+/// y -(y + height)), its own shape and size, the sprite's tile plus its offset, and its own priority unless the
+/// mode is kSubspritesIgnorePriority. A table without pieces writes the sprite as one entry.
 void build_oam();
+
+/// M5 P1: gives a sprite piece tables and draws it from the first (the reference games' SetSubspriteTables:
+/// kSubspritesOn).
+/// @param id      its entry
+/// @param tables  the tables (static storage), or nullptr (one entry again)
+void set_subsprites(uint8_t id, const SubspriteTable* tables);
 
 /// Sets the offset added to sprites with coord_offset.
 /// @param x  pixels

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""!Tests for eggs and the nursery (D-28 sections 2 and 3, package B2: tools/battlec/nursery.py): the sections'
-checks and emitted tables, the refusal flags of the systems that use records, the hatch hook and the nursery
+"""!Tests for eggs and the nursery (combination sections 2 and 3, package the nursery: tools/battlec/nursery.py): the
+sections' checks and emitted tables, the refusal flags of the systems that use records, the hatch hook and the nursery
 pipelines, the Python mirrors (hatch_steps(), egg_record(), nursery_fee(), nursery_gain()), the save image's Nursery
 section (tools/save_layout.py), the script compiler's nursery statements and implicit egg_member, and the Starter's
 Grove (run by CTest, or directly)."""
@@ -104,8 +104,8 @@ class SectionTests(unittest.TestCase):
       self.assertIn("{nullptr, 0, 0, 0, monster::kNoRole, monster::kNoRole, kNoField, kNoField, kNoStepEffect, 0}",
                     bc.emit("battle.json", compile_with(path=STATS3)))
 
-   def test_c9_flags(self) -> None:
-      """!C9: the egg flags of the lead rules, transformations and step effects; the transfer rule for eggs (also
+   def test_egg_flags(self) -> None:
+      """!The egg flags of the lead rules, transformations and step effects; the transfer rule for eggs (also
       without an egg section) and the egg role's transfer key.
       @return None
       """

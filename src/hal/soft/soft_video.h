@@ -32,6 +32,18 @@ void latch();
 /// @param frame_bgr555  kFramePixels BGR555 pixels, row-major; written
 void compose(uint16_t* frame_bgr555);
 
+/// FX2 (M5): the frame the display drew from the last latch(), composed at the END of the game's frame: the GBA
+/// draws a frame while the main loop runs after its blank, so a scanline table the game writes during the frame (the
+/// one the HBlank transfer reads) shows in that frame; the registers, OAM, VRAM and palettes are the latched ones
+/// (the uploads land at the blank). The non-GBA HALs call it at the start of update(), before the blank's uploads
+/// land and before latch().
+/// @return the frame (kFramePixels BGR555 pixels, row-major), valid until the next call
+const uint16_t* present();
+
+/// FX2 (M5): the frame present() composed last (what the display shows now: screenshots of the frame shown).
+/// @return kFramePixels BGR555 pixels (black before the first present())
+const uint16_t* shown();
+
 /// Reads one halfword of video memory (tests and debugging tools).
 /// @param region  the region
 /// @param offset  byte offset, even

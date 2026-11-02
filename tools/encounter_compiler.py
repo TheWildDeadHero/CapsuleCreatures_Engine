@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""!Compile a world's encounter tables (C-03c, C-03d, C-03e, D-12).
+"""!Compile a world's encounter tables (C-03c, C-03d, C-03e).
 
 Called by tools/map_compiler.py, which emits the result with the world
 (capsule::map::kWorld.encounters). Run alone, it checks a world's
@@ -93,7 +93,7 @@ Q8_SHIFT = 8
 ## Halves per unit: doubling, adding one and halving again rounds to the nearest.
 HALVES = 2
 ## Highest level when the battle manifest's rules name none (the battle compiler's neutral default: the engine's
-## 8-bit cap, D-22 decision 8).
+## 8-bit cap).
 DEFAULT_LEVEL_MAX = 255
 ## Lowest rules.level_max.
 MIN_LEVEL_MAX = 2
@@ -319,7 +319,7 @@ def load_species(path: str | Path, deps: list[Path] | None = None, sources: Sour
    b = load_json(path, "world battle", sources)
    if not isinstance(b, dict) or b.get("schema") != BATTLE_SCHEMA:
       raise ManifestError(f"world battle: {path.name} is not a {BATTLE_SCHEMA} manifest")
-   # the species are content (battle.json), rules.level_max is structure (the structure manifest it names, E5s)
+   # the species are content (battle.json), rules.level_max is structure (the structure manifest it names)
    try:
       b, _st_path = read_battle(path, sources, deps)
    except BattleManifestError as e:
@@ -682,7 +682,7 @@ def emit_ids(src_name: str, enc: dict[str, Any]) -> str:
    @return header text
    """
    L = [f"// Generated from {src_name} by tools/map_compiler.py (encounters). Do not edit.", "#pragma once", "",
-        "#include <cstdint>", "", "/// Encounter methods and condition bits of the build's world (D-12).",
+        "#include <cstdint>", "", "/// Encounter methods and condition bits of the build's world.",
         "namespace encounter_ids {", ""]
    for prefix, names in (("ENCOUNTER_METHOD", [m["name"] for m in enc["methods"]]),
                          ("ENCOUNTER_CONDITION", enc["conditions"])):

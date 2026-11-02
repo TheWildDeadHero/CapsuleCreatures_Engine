@@ -1,4 +1,4 @@
-"""!Combination methods (D-28 section 1, package B1): structure.json `combine_methods`.
+"""!Combination methods: structure.json `combine_methods`.
 
 The engine has no idea of breeding, fusion or synthesis: N records go in, ordered result rules pick a species, the
 `on combine` effect logic builds the result record and the engine delivers it. Every rule, table, number and name
@@ -7,15 +7,15 @@ is the manifest's. A method is {"name", "label", "kind", "inputs", "odds", "fee"
 
   - name: a lower-case identifier (effect logic `field.combine_method == NAME`, scripts `combine open NAME`, the ids
     header COMBINE_METHOD_<NAME>); label: what menus show (default the name);
-  - kind: "immediate" (a script or menu combines records on the spot; B1) or "nursery" (records left in a nursery,
-    the result appears over steps: B2, structure `nursery` runs it; a script or menu cannot combine with it);
+  - kind: "immediate" (a script or menu combines records on the spot) or "nursery" (records left in a nursery,
+    the result appears over steps: the nursery, structure `nursery` runs it; a script or menu cannot combine with it);
   - inputs: {"count": N or [min, max] (2 to the platform's max_combine_inputs), "slots": [{"role": NAME,
     "requires": EXPR}] (one per input, max of them; the role names the slot for the other rules: `NAME.level`,
     and for the logic: `input.NAME`); requires is a growth `when` expression over that input's record (its roles,
     stats, species fields, the field action words; tools/battlec/growth.py WhenScope), compiled as one more growth
     rule with the script trigger};
   - odds (optional): {"value": EXPR}: the method's value through the ruleset pipeline combine_odds (0: the inputs
-    are incompatible; an immediate method allows anything above 0; a nursery method's chance per check in B2);
+    are incompatible; an immediate method allows anything above 0; a nursery method's chance per check in the nursery);
   - fee (optional): {"value": EXPR} through the pipeline combine_fee (a script reads it and charges);
   - tables: {NAME: {"key": a species field (with value names or numbers) or "type" (the species' first type),
     "inputs": [i, j] (the two inputs keyed; default [0, 1]), "symmetric" (default true: a, b matches b, a),
@@ -35,16 +35,16 @@ is the manifest's. A method is {"name", "label", "kind", "inputs", "odds", "fee"
     without one), "fill": bool (default true: the result's own moves fill the slots left)}; the sources:
     known (the inputs' moves), combine_moves (the result species' combine_moves list known by an input; "all":
     true takes the whole list), shared_level_up (moves of the result's learnset every input knows),
-    teachable_known (the result's teachable moves an input knows); C9: a source's "from": ROLE reads that one
+    teachable_known (the result's teachable moves an input knows); a source's "from": ROLE reads that one
     input only, its moves in move slot order (e.g. one parent's egg moves); "push": true (default
     false) keeps the result's own moves first and learns the chosen ones after them in order, each pushing the
     first move out when the slots are full (a known one skipped; the ordered chooser then takes every candidate);
   - afterwards: "kept" or "consumed" (consumed inputs leave the party or boxes after the result is placed);
-  - delivery: "immediate" (the party, else the storage boxes) or "egg" (B2: the result is an egg, structure
+  - delivery: "immediate" (the party, else the storage boxes) or "egg" (the result is an egg, structure
     `eggs`; tools/battlec/nursery.py);
-  - cycle_steps (B2, egg delivery only): the steps of one egg cycle (default 256): the egg's hatch counter starts at
+  - cycle_steps (egg delivery only): the steps of one egg cycle (default 256): the egg's hatch counter starts at
     the result species' hatch cycles field times it;
-  - allow_eggs: whether eggs may be inputs (B2: the structure's egg role; default refused);
+  - allow_eggs: whether eggs may be inputs (the structure's egg role; default refused);
   - messages: {moment: message key} for MOMENTS (the battle's messages; {user} is the result, or the input).
 
 Expressions (EXPR) are the ruleset language over: per input slot ROLE: ROLE.species (species index + 1; 0 for a
@@ -77,7 +77,7 @@ from .nursery import DEFAULT_CYCLE_STEPS, MAX_CYCLE_STEPS, egg_initializer, nurs
 COMBINE_KEY = "combine_methods"
 ## Method kinds in capsule::combine::MethodKind order.
 KINDS = ["nursery", "immediate"]
-## The kind that runs end to end in B1.
+## The kind that runs end to end in the combination.
 IMMEDIATE = "immediate"
 ## Deliveries in capsule::combine::Delivery order.
 DELIVERIES = ["immediate", "egg"]
@@ -147,13 +147,13 @@ NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
 RESERVED_ROLES = set(AGGREGATES) | {COUNT_INPUT, CANDIDATE, RESULT, "sp", "type"}
 ## MethodData::flags: the result's own moves fill the slots the sources leave.
 FLAG_FILL = 1
-## MethodData::flags: eggs may be inputs (B2's seam).
+## MethodData::flags: eggs may be inputs (seam).
 FLAG_ALLOW_EGGS = 2
-## MethodData::flags: the result's own moves first, the chosen ones pushed after them (C9).
+## MethodData::flags: the result's own moves first, the chosen ones pushed after them.
 FLAG_PUSH = 4
-## A move source's key naming the one slot role it reads (C9).
+## A move source's key naming the one slot role it reads.
 FROM_KEY = "from"
-## A method's moves key: push the chosen moves after the result's own ones (C9).
+## A method's moves key: push the chosen moves after the result's own ones.
 PUSH_KEY = "push"
 ## MoveSourceData::from of a source reading every input (capsule::combine::kAnyInput).
 ANY_INPUT = NONE8
@@ -260,7 +260,7 @@ def slot_roles(methods: Sequence[Mapping[str, Any]]) -> dict[str, int | None]:
 
 
 def qualified_roles(methods: Sequence[Mapping[str, Any]]) -> dict[str, int]:
-   """!C9: the slot roles effect logic may name with their method, `input.METHOD.ROLE` (unambiguous when methods
+   """!The slot roles effect logic may name with their method, `input.METHOD.ROLE` (unambiguous when methods
    share a role name: a rename in one method follows only its own qualified reads).
    @param methods  method_records() result
    @return "METHOD.ROLE" -> input index
@@ -602,7 +602,7 @@ def compile_moves(src: Json, move_slots: int, where: str, roles: Sequence[str] =
    @param src         its moves section (None: the result keeps its own moves)
    @param move_slots  the layout's move slots
    @param where       location
-   @param roles       the method's slot roles (C9: a source's `from`)
+   @param roles       the method's slot roles (a source's `from`)
    @return {"sources" [{"kind", "limit", "on", "all", "from" (a role or None), "from_slot"}], "limit", "chooser",
            "fill", "push"}
    """
@@ -627,7 +627,7 @@ def compile_moves(src: Json, move_slots: int, where: str, roles: Sequence[str] =
          raise ManifestError(f"{sw}: on / all are true or false")
       if every and kind != "combine_moves":
          raise ManifestError(f"{sw}.all: only combine_moves takes the whole list")
-      # C9: one input's moves only (its slot role), in its move slot order
+      # One input's moves only (its slot role), in its move slot order
       role = s.get(FROM_KEY)
       if role is not None and role not in roles:
          raise ManifestError(f"{sw}.{FROM_KEY}: a slot role of the method ({', '.join(roles) or 'none'})")
@@ -797,7 +797,7 @@ def compile_combine(b: Mapping[str, Any], layout: Mapping[str, Any], species: Se
       eggs = m.get("allow_eggs", False)
       if not isinstance(eggs, bool):
          raise ManifestError(f"{w}.allow_eggs: true or false")
-      # B2: an egg delivery's cycle length (the hatch counter starts at the species' cycles times it)
+      # An egg delivery's cycle length (the hatch counter starts at the species' cycles times it)
       if "cycle_steps" in m and delivery != "egg":
          raise ManifestError(f"{w}.cycle_steps: only a method delivering eggs counts egg cycles")
       cycle = integer(m.get("cycle_steps", DEFAULT_CYCLE_STEPS), 1, MAX_CYCLE_STEPS, f"{w}.cycle_steps")
@@ -826,7 +826,7 @@ def emit_combine(c: Mapping[str, Any]) -> list[str]:
    """
    cb = c["combine"]
    L = ["namespace capsule::rules {", "",
-        "/// A combination expression's value (generated from the combine methods; B1).",
+        "/// A combination expression's value (generated from the combine methods).",
         "int32_t combine_value(int32_t expr, const combine::ValueInputs& in) {"]
    if not cb["exprs"]:
       L += ["    (void)expr;", "    (void)in;", "    return 0;   // no combination expressions", "}", ""]
@@ -939,7 +939,7 @@ def emit_combine(c: Mapping[str, Any]) -> list[str]:
    L.append(f"const uint16_t kMoves[] = {{{', '.join(str(x) for x in flat) or '0'}}};")
    base = cb["base"] or [0]
    L.append(f"const uint16_t kBase[] = {{{', '.join(str(x) for x in base)}}};")
-   # B2: the egg and nursery tables
+   # The egg and nursery tables
    egg_lines, eggs = egg_initializer(cb.get("eggs"), cb.get("transfer_flags", 0))
    L += egg_lines
    L += ["", "} // namespace", ""]
@@ -1109,7 +1109,7 @@ def recipe_matches(c: Mapping[str, Any], matchers: Sequence[tuple[int, int, int]
 def preview(c: Mapping[str, Any], name: str, records: Sequence[Mapping[str, Any]],
             context: Mapping[str, Any] | None = None) -> dict[str, Any]:
    """!What a combination would give, without its random parts (combine::preview()): the count, each slot's
-   requirement, the odds, then the result rules in order; a random pick gives its group (C9: and the highest fee
+   requirement, the odds, then the result rules in order; a random pick gives its group (and the highest fee
    over its candidates).
    @param c        compile_battle() result
    @param name     the method's name
@@ -1123,7 +1123,7 @@ def preview(c: Mapping[str, Any], name: str, records: Sequence[Mapping[str, Any]
    idx, m = method_of(c, name)
    out: dict[str, Any] = {"status": "ok", "slot": None, "rule": None, "species": None, "group": None, "level": 0,
                           "odds": 0, "fee": 0}
-   # B2: a nursery method and an egg delivery preview as any other (the nursery runs them; the result is an egg)
+   # A nursery method and an egg delivery preview as any other (the nursery runs them; the result is an egg)
    if not m["min"] <= len(records) <= m["max"]:
       return {**out, "status": "wrong_count"}
    for k, rule in enumerate(m["slots"][:len(records)]):
@@ -1161,7 +1161,7 @@ def preview(c: Mapping[str, Any], name: str, records: Sequence[Mapping[str, Any]
    if m["fee"] != NO_EXPR and out["species"] is not None:
       out["fee"] = fee_value(c, m, idx, values, rv, level)
    elif m["fee"] != NO_EXPR and pool:
-      # C9: a random pick shows the highest fee over its candidates (the most it can cost before the draw)
+      # A random pick shows the highest fee over its candidates (the most it can cost before the draw)
       fees = []
       for si in pool:
          cv = result_values(c, si)
@@ -1243,7 +1243,7 @@ def rule_result(c: Mapping[str, Any], m: Mapping[str, Any], r: Mapping[str, Any]
    @param r         compiled rule
    @param values    input_values()
    @param kinds     species index per input
-   @param pool_out  C9: receives a random pick's candidates (species indices), or None
+   @param pool_out  the egg flags: receives a random pick's candidates (species indices), or None
    @return ("species", index), ("random", group) for a random pick, or None (no match)
    """
    if r["kind"] == "recipe":
@@ -1300,7 +1300,7 @@ def move_candidates(c: Mapping[str, Any], name: str, result: str, records: Seque
       if not s["on"]:
          continue
       if s.get("from") is not None:
-         # C9: one input's moves in its slot order, those the source's list holds
+         # One input's moves in its slot order, those the source's list holds
          one = known[s["from_slot"]] if s["from_slot"] < len(known) else []
          listed = {"known": None, "combine_moves": c["combine"]["combine_moves"][si],
                    "shared_level_up": [mv for _lv, mv in sp["learnset"]],

@@ -1,28 +1,28 @@
 /// @file
-/// What the script VM needs from the rest of the game (B-1, P-13).
+/// What the script VM needs from the rest of the game (B-1).
 ///
 /// - namespace port: presentation and input for messages and menus. The
 ///   engine's port (src/script/script_port_hal.cpp) uses the text box
 ///   (capsule/text/text_layer.h) and the pad; tests link their own.
 /// - namespace party: the player's party records for role_get / role_set and
-///   record placeholders (D-22 decision 2). The engine's port reads and
+///   record placeholders. The engine's port reads and
 ///   writes the party given to party::attach(); tests link their own.
-/// - namespace items (G2): the bag the bag statements reach, the bag and shop
+/// - namespace items: the bag the bag statements reach, the bag and shop
 ///   menus and the learn question of a move-teaching item; the engine's
 ///   defaults (src/script/script_items.cpp) use the attached bag and the
 ///   text box's choice menu; tests link their own.
-/// - namespace boxes (G3): the storage boxes and party the box statements move
+/// - namespace boxes: the storage boxes and party the box statements move
 ///   records between, and the boxes menu; the engine's defaults
 ///   (src/script/script_boxes.cpp) use the attached storage and party.
 /// - namespace game: natives, the game's own actions (give an item, start a
 ///   battle, play a cutscene, ...). The engine's default
 ///   (src/script/script_game_default.cpp) knows none; a game builds its own
 ///   file defining game::native() instead of that one.
-/// - I4 (D-29): what imported event scripts need beyond those: message modes,
+/// - What imported event scripts need beyond those: message modes,
 ///   object locks, removal, visibility and templates, doors, weather, fades,
 ///   metatiles, the respawn point, remembered warps (world), sound (audio),
 ///   marts (items) and the game's busy state (game). Their engine defaults
-///   (src/script/script_i4_default.cpp) are weak (CAPSULE_WEAK): the field
+///   (src/script/script_port_defaults.cpp) are weak (CAPSULE_WEAK): the field
 ///   ones act through capsule::field, the rest do nothing at once; a game that
 ///   has them defines its own.
 #pragma once
@@ -84,7 +84,7 @@ int8_t key_poll();
 /// script::frame() once per frame, before any context runs.
 void tick();
 
-/// I4: how the next message() types (MessageEx; the default: kMessage... bits clear, typed and waited for). The VM
+/// How the next message() types (MessageEx; the default: kMessage... bits clear, typed and waited for). The VM
 /// calls it before each message() of a MessageEx and with 0 after it.
 /// @param flags  kMessageInstant, kMessageAutoScroll (kMessageNoWait is the VM's)
 void message_mode(uint8_t flags);
@@ -103,7 +103,7 @@ namespace capsule::script::world
 /// @return false when there is no such (shown) object
 bool move(uint8_t obj, uint8_t dir, uint16_t steps);
 
-/// Whether a walk would take every step by the field's movement rules (C8: the `move ... checked` statement;
+/// Whether a walk would take every step by the field's movement rules (the `move ... checked` statement;
 /// nothing moves): the walker's terrain, elevation, vehicle class (one that dismounts may step onto land) and the
 /// objects in the way, or an object's (field::object_path_clear()).
 /// @param obj    local ID, or kObjectPlayer
@@ -218,21 +218,21 @@ void timer_stop();
 /// @param on  on
 void encounters(bool on);
 
-/// Changes the walker's vehicle class (A2; implemented by capsule::field).
+/// Changes the walker's vehicle class (implemented by capsule::field).
 /// @param vehicle  vehicle class (the compiler checks it against the world)
 void set_vehicle(uint8_t vehicle);
 
-/// Sets the shown map's darkness level until the next map (F2; implemented by capsule::overworld).
+/// Sets the shown map's darkness level until the next map (implemented by capsule::overworld).
 /// @param level  0 (lit) to map::kMaxDarkness
 void set_darkness(uint8_t level);
 
-/// Warps to the recorded escape point (F2; capsule/script/field_actions.h escape_point(); implemented by
+/// Warps to the recorded escape point (capsule/script/field_actions.h escape_point(); implemented by
 /// capsule::overworld), as `warp` does.
 /// @param transition  Transition, or kTransitionDefault
 /// @return false when none is recorded (nothing happens)
 bool escape(uint8_t transition);
 
-/// @name I4 (D-29)
+/// @name the script ports
 ///@{
 
 /// Stops the objects' own movement (lock / lock all; the default: field::lock()).
@@ -263,7 +263,7 @@ void set_visible(uint8_t obj, bool on);
 /// @param b     Pos: row
 void set_template(uint8_t obj, TemplateOp kind, int32_t a, int32_t b);
 
-/// A door's animation on a cell (DS1: the default plays the door bound to the cell, capsule/field/doors.h).
+/// A door's animation on a cell (the default plays the door bound to the cell, capsule/field/doors.h).
 /// @param kind  DoorOp (not Wait)
 /// @param x     column
 /// @param y     row
@@ -273,7 +273,7 @@ void door(DoorOp kind, int16_t x, int16_t y);
 /// @return true while one does (the default: field::doors::busy())
 bool door_busy();
 
-/// DS1: applies or clears a cell override set (D-30 section 2; the default: map::set_override_set() on the shown
+/// Applies or clears a cell override set (the default: map::set_override_set() on the shown
 /// map, the set's flag or variable written when it persists).
 /// @param set    index into map::kWorld.override_sets
 /// @param apply  apply it (else clear it)
@@ -315,7 +315,7 @@ void set_warp(WarpSlot slot, AssetKey map, int32_t x, int32_t y);
 
 } // namespace capsule::script::world
 
-/// I4: sound for the script VM (the default: silence; src/script/script_i4_default.cpp).
+/// Sound for the script VM (the default: silence; src/script/script_port_defaults.cpp).
 namespace capsule::script::audio
 {
 
@@ -359,9 +359,9 @@ void attach(monster::Party* records);
 
 } // namespace capsule::script::party
 
-/// The bag, shops and move teaching from scripts (G2, D-26 section 2). The engine's defaults
+/// The bag, shops and move teaching from scripts. The engine's defaults
 /// (src/script/script_items.cpp) work on the bag given to attach() and show the menus in the text box through the
-/// port's choice menu; a game replaces any of them by defining it (link time). N1: give(), take() and count() are
+/// port's choice menu; a game replaces any of them by defining it (link time). give(), take() and count() are
 /// weak, so a game with its own bag rules defines those three and keeps the default menus.
 namespace capsule::script::items
 {
@@ -417,19 +417,19 @@ void learn_open(uint8_t member, uint16_t move);
 /// @return -1 while it is open, else the move slot to forget or battle::kKeepMoves (0xFF) to keep every move
 int16_t learn_poll();
 
-/// I4: opens a mart list (Mart; the default: nothing, it closes at once).
+/// Opens a mart list (Mart; the default: nothing, it closes at once).
 /// @param kind   the game's mart kind (0: items)
 /// @param items  @p count little-endian 16-bit item numbers (in the bytecode: unaligned)
 /// @param count  items
 void mart_open(uint8_t kind, const uint8_t* items, uint16_t count);
 
-/// I4: polls the mart list.
+/// Polls the mart list.
 /// @return true while it is open
 bool mart_poll();
 
 } // namespace capsule::script::items
 
-/// The storage boxes for the script VM's box statements (G3, D-26 section 3); the engine's defaults
+/// The storage boxes for the script VM's box statements; the engine's defaults
 /// (src/script/script_boxes.cpp) move records between the attached party and storage and show the boxes in the
 /// text box's choice menu; tests link their own.
 namespace capsule::script::boxes
@@ -488,7 +488,7 @@ enum class NativeStatus : uint8_t
 /// @return Done or Wait
 NativeStatus native(uint16_t id, const int32_t* args, uint8_t argc, int32_t& result);
 
-/// I4: whether the game is busy with something a native started over frames (WaitState; the default: false).
+/// Whether the game is busy with something a native started over frames (WaitState; the default: false).
 /// @return true while it is
 bool state_busy();
 

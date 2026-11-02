@@ -1,0 +1,33 @@
+{
+  "schema": "capsule.vm-ext/1",
+  "vm": "anim",
+  "name": "anim_alias_tests",
+  "notes": "tests/anim_alias_tests.cpp: aliases of the animation player's generic steps (simple test content), run against hand-written natives of the same layouts.",
+  "owner": "VX",
+  "tier": 0,
+  "space": {"first": 64, "last": 79},
+  "refs": {"turn": 0, "fade": 1, "flag": 2, "pair": 3},
+  "dispatch": {"form": "fragment", "symbol": "kAliasCommands", "resolver": "resolve_ref", "native_prefix": "native_"},
+  "ops": [
+    {"id": 64, "name": "mark", "kind": "native", "symbol": "native_mark", "operands": ["s16"],
+     "reason": "Test-only native: logs the frame and a value (the test's observation point)."},
+    {"id": 65, "name": "spin", "kind": "alias", "expands": [{"op": "hold", "args": {}}]},
+    {"id": 66, "name": "ifturn", "kind": "alias", "operands": [{"name": "turn", "type": "u8"}, {"name": "to", "type": "code"}],
+     "expands": [{"op": "jump_if", "width": 1, "args": {"compare": {"const": "equal"}, "ref": {"ref": "turn"}, "value": "turn", "target": "to"}}]},
+    {"id": 67, "name": "choose", "kind": "alias", "operands": [{"name": "first", "type": "code"}, {"name": "second", "type": "code"}],
+     "expands": [{"op": "jump_if", "width": 1, "args": {"compare": {"const": "common_bits"}, "ref": {"ref": "turn"}, "value": {"const": 1}, "target": "second"}},
+                 {"op": "jump", "args": {"target": "first"}}]},
+    {"id": 68, "name": "waitfade", "kind": "alias", "waits": true,
+     "expands": [{"op": "wait_until", "width": 1, "args": {"compare": {"const": "equal"}, "ref": {"ref": "fade"}, "value": {"const": 2}}}]},
+    {"id": 69, "name": "ifflag", "kind": "alias", "operands": [{"name": "to", "type": "code"}],
+     "expands": [{"op": "jump_if", "width": 1, "args": {"compare": {"const": "not_equal"}, "ref": {"ref": "flag"}, "value": {"const": 0}, "target": "to"}}]},
+    {"id": 70, "name": "setturn", "kind": "alias", "operands": [{"name": "value", "type": "u8"}],
+     "expands": [{"op": "modify", "alu": "set", "width": 1, "args": {"ref": {"ref": "turn"}, "value": "value"}}]},
+    {"id": 71, "name": "copypair", "kind": "alias",
+     "expands": [{"op": "copy", "args": {"dest": {"ref": "pair"}, "src": {"ref": "fade"}, "size": {"const": 2}}}]},
+    {"id": 72, "name": "ifpair", "kind": "alias", "operands": [{"name": "to", "type": "code"}],
+     "expands": [{"op": "jump_if_bytes", "when": "equal", "args": {"a": {"ref": "pair"}, "b": {"ref": "fade"}, "size": {"const": 2}, "target": "to"}}]},
+    {"id": 73, "name": "goto2", "kind": "alias", "operands": [{"name": "to", "type": "code"}],
+     "expands": [{"op": "yield", "args": {}}, {"op": "jump", "args": {"target": "to"}}]}
+  ]
+}

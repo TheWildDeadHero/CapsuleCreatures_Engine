@@ -13,28 +13,28 @@ Follows the manifest rule (P-1): editor data stripped, unknown keys rejected,
 names resolved to numbers, sizes checked against the engine (C-03a/b/c, E-7).
 
 World (`capsule.world/1`):
-  - vehicle_classes: up to 8 movement modes (A2, D-22 decision 5); class 0
+  - vehicle_classes: up to 8 movement modes; class 0
     is on foot. Each is a name (on-foot defaults) or {"name", "speeds":
     {"walk", "run"} (pixels per frame: 1, 2, 4 or 8; default 1 and 2, the
     walker's capsule::field::kWalkSpeed / kRunSpeed), "can_run" (default
     true), "first_animation" (the sprite animation its set starts at, a
     multiple of 4, default 0; see capsule/field/field.h), "passable" (the
     behavior names it may enter; default every behavior that lets it),
-    "dismount" (F2, default false; not class 0: stepping onto a cell only
+    "dismount" (default false; not class 0: stepping onto a cell only
     class 0 enters changes the walker to class 0, leaving the water),
-    "turn_frames" (I3: frames a turn in place takes, default 0 = the
-    field's 6), "bumps" (I3: a blocked step walks in place for a step's
-    time), "keeps_moving" (I3: arriving with another direction held steps
+    "turn_frames" (frames a turn in place takes, default 0 = the
+    field's 6), "bumps" (a blocked step walks in place for a step's
+    time), "keeps_moving" (arriving with another direction held steps
     on without turning)}. Scripts change the class with `vehicle NAME;`.
   - behaviors: terrain classes, index 0 first ("normal"). Each may be solid,
     passable only by some vehicle classes, or move the walker: "slide"
     (keep going until blocked), "ledge": DIR (jump over it moving DIR, a wall
-    otherwise), "push": DIR (forced step). "walls" (I2, optional): the
+    otherwise), "push": DIR (forced step). "walls" (optional): the
     cell's sides that are walls (directions): a step leaving it through one,
-    or entering it through one, is blocked (one-way fences). "counter" (I3):
+    or entering it through one, is blocked (one-way fences). "counter":
     true: pressing A facing it talks to the object beyond. A class enters a behavior when
     both the behavior's "passable" and the class's "passable" allow it.
-  - elevations: the 16 levels of a cell's elevation (A1), each {"name",
+  - elevations: the 16 levels of a cell's elevation, each {"name",
     "meets": "all" | "same" | [levels, by number or name] (a level always
     meets itself; two levels meet when either names the other; default
     "same"), "on_arrive": "take" (the mover takes the level, default) |
@@ -53,16 +53,16 @@ World (`capsule.world/1`):
   - battle, encounter_methods, encounter_conditions, encounter_tables
     (optional): encounters, see tools/encounter_compiler.py. --ids
     writes the method and condition identifiers (encounter_ids.h).
-  - object_kinds, map_tags (F2, D-27 section 3; optional): names of the
+  - object_kinds, map_tags (optional): names of the
     kinds map objects may have (a bush, a boulder: up to 254) and of the
     tags maps may carry (dark, cave, outdoors: up to 16). Field actions of
     the battle manifest's structure target behaviors, object kinds and map
     tags by name (the script compiler resolves them).
-  - flight_points (F2, optional): up to 32 {"name", "label", "map", "x",
+  - flight_points (optional): up to 32 {"name", "label", "map", "x",
     "y", "facing"} places a flight menu lists once recorded (the script
     compiler gives each an implicit permanent flag flight_<name>; scripts:
     `flight record NAME;`, `flight visit NAME;`, `flight menu -> var(v);`).
-  - draw_order (DS1, D-30 section 4, optional): the rule giving every object's
+  - draw_order (optional): the rule giving every object's
     sprite its sub-priority each frame from its bottom edge on screen and its
     elevation: {"elevation_base": 16 values, "bias", "row_pixels" (a power of
     two), "rows", "row_step", "add", "wrap" (a power of two up to 256)}:
@@ -71,12 +71,12 @@ World (`capsule.world/1`):
     sub-priority, the lower edge first on a tie). Missing keys take the
     defaults (base 0, bias 8, row_pixels 16, rows 16, row_step 2, add 1,
     wrap 256).
-  - doors (DS1, D-30 section 1, optional): door bindings by metatile,
+  - doors (optional): door bindings by metatile,
     [{"tileset": NAME or "*" (any of a map's tilesets), "metatile": NAME,
     "door": "door:KEY"}]: every cell showing that metatile (on any layer) is
     that door's anchor (its bottom-left cell). A warp's "door": "door:KEY"
     (tools/event_compiler.py) binds its own cell and wins over a metatile.
-  - interactions (C13b, optional): what A facing a cell does when no object
+  - interactions (optional): what A facing a cell does when no object
     and no sign answers, in order (the first rule that holds starts its
     script): [{"behavior": NAME, "script": SCRIPT, "facing": DIRECTION
     (optional: any), "vehicle": CLASS (optional: any), "flag": FLAG (optional:
@@ -101,17 +101,17 @@ Tileset (`capsule.tileset/2`):
     every "period" display frames. "phase" (optional, 0 to period - 1) is
     the frames into the period at map entry (the first frame change comes
     period - phase frames later); without it the compiler spreads the map's
-    animations over their periods. I3: "from_sheet": true uploads no frame
+    animations over their periods. "from_sheet": true uploads no frame
     at entry (the tileset's own tiles show until the first change);
     "on_shift": keep (default) | reload (a seamless shift reloads its
     tiles: its own show until the next change) | restart (reloaded and
     started over); kept ones follow the map's animation clock.
-    DS1 (D-30 section 5): "targets": [{"tiles" ("at" in a fixed tileset),
+    "targets": [{"tiles" ("at" in a fixed tileset),
     "offset": 0 to frames - 1, "phase"}, ...] in place of "tiles" / "at":
     the same frames shown on several tile ranges, target k showing frame
     (t + phase_k) / period + offset_k; the frames are stored once. The
     compiler checks that no two targets of a tileset replace the same tile.
-  - place (I2, optional): a fixed-placement tileset, for imported indexed
+  - place (optional): a fixed-placement tileset, for imported indexed
     graphics whose tilemap entries already name VRAM tiles and palette
     banks. {"sheet": the sheet loaded at "tile" (first VRAM tile), "tiles":
     VRAM tiles it owns, "palette": first palette bank, "palettes": banks it
@@ -132,7 +132,7 @@ Map (`capsule.map/2`, C-01b):
     "content": "tilemap", "purpose": ...}; one BG per layer. Draw priority
     is independent of the BG number (0 = front; default: the BG number).
   - metatiles: the map's dictionary, "tileset/metatile" names; layer cells
-    index it (up to MAX_METATILES entries). "all" (I2) is every metatile of
+    index it (up to MAX_METATILES entries). "all" is every metatile of
     the map's tilesets, in their order (tileset by tileset).
   - tilesets also says what a map of fixed tilesets loads: all of them, at
     their places, whether its dictionary names their metatiles or not.
@@ -153,24 +153,24 @@ Map (`capsule.map/2`, C-01b):
     emits one unpainted chunk at 0,0.
   - backdrop: color behind every layer.
   - can_run (optional, default true): false forbids running on the map.
-  - darkness (F2, optional, 0 to the world's darkest level, default 0):
+  - darkness (optional, 0 to the world's darkest level, default 0):
     how dark the map is on entering (a lit box around the walker, the rest
     darkened; a script's `darkness N;` changes it until the next map, kept
-    across a save: C8). The world's darkness_levels (C8, optional, at most
+    across a save: the field effects). The world's darkness_levels (optional, at most
     MAX_DARKNESS) say what level n looks like: {"lit": half size of the
     lit box in pixels, "brightness": 0-16 of the rest}; without it the
     default levels DEFAULT_DARKNESS_LEVELS apply.
-  - tags (F2, optional): world map_tags the map carries (field actions'
+  - tags (optional): world map_tags the map carries (field actions'
     menu targets: a light action on dark maps, an escape action in caves).
-  - escape_point (F2, optional, default false): the map is outdoors: a warp
+  - escape_point (optional, default false): the map is outdoors: a warp
     from it to a map without escape_point records the escape point (where
     the walker stood before the warp; scripts' `escape;` returns there).
-  - object_view (I3, optional): [left, right, up, down] cells around the
+  - object_view (optional): [left, right, up, down] cells around the
     walker its objects spawn in (they go when both their cell and their
     template cell are outside); with it a map may list up to 64 objects,
-    without it at most 15, all spawned at entry. stacked_objects (I3,
+    without it at most 15, all spawned at entry. stacked_objects (
     optional): objects may share a cell (data whose flags keep one there).
-    unpainted_events (I3, optional, default false): its warps, triggers and
+    unpainted_events (optional, default false): its warps, triggers and
     objects may stand on unpainted cells of its chunks (objects outside its
     chunks too), and warps may land on them (imported data kept as its
     source has it; the walker never steps onto such a cell by itself).
@@ -178,7 +178,7 @@ Map (`capsule.map/2`, C-01b):
     tools/encounter_compiler.py.
   - area, events (optional): the map's area root (B-2) and its warps,
     triggers and signs (B-3), see tools/event_compiler.py.
-  - override_sets (DS1, D-30 section 2, optional): named cell overrides
+  - override_sets (optional): named cell overrides
     scripts apply and clear (`override apply NAME;` / `override clear NAME;`):
     [{"name" (unique in the world), "persist": {"flag": NAME} | {"var":
     NAME, "value": N} (absent: until the map is left), "cells": [{"cell":
@@ -215,7 +215,7 @@ from sequence_compiler import BLUE_SHIFT as SEQUENCE_BLUE_SHIFT, GREEN_SHIFT as 
 CHUNK = 8
 ## Highest metatile id; the value itself marks an unpainted cell.
 UNDEFINED = 0x3FF
-## Most entries of a map's metatile dictionary (X1: UNDEFINED, 1,023; I2: 4,095, for imported maps whose two
+## Most entries of a map's metatile dictionary (UNDEFINED, 1,023; 4,095, for imported maps whose two
 ## tilesets offer 1,024 two-layer metatiles, each one engine metatile per layer).
 MAX_METATILES = 0xFFF
 ## 4bpp tiles the map's character blocks hold (gfx plan: blocks 0-1).
@@ -333,7 +333,7 @@ ELEVATION_KEEP = 1
 MEETS_WORDS = ("all", "same")
 ## Elevation "on_arrive" words, in flag order (take = 0, keep = ELEVATION_KEEP).
 ON_ARRIVE = ("take", "keep")
-## Longest turn in place of a vehicle class, frames (I3; an 8-bit count).
+## Longest turn in place of a vehicle class, frames (an 8-bit count).
 MAX_TURN_FRAMES = 255
 ## Animation flag bits (capsule::map::kAnimFromSheet, kAnimReloadOnShift, kAnimRestartOnShift).
 ANIM_FROM_SHEET, ANIM_RELOAD_ON_SHIFT, ANIM_RESTART_ON_SHIFT = 1, 2, 4
@@ -357,27 +357,27 @@ ANIMATION_SET = 4
 MAX_FIRST_ANIMATION = 255
 ## Map flag: running is not allowed (capsule::map::kMapNoRun).
 MAP_NO_RUN = 1
-## Map flag: warps leaving the map record the escape point (capsule::map::kMapEscapePoint; F2).
+## Map flag: warps leaving the map record the escape point (capsule::map::kMapEscapePoint).
 MAP_ESCAPE_POINT = 2
-## Most darkness levels a world defines (capsule::map::kMaxDarkness; F2, C8: the levels are the world's data).
+## Most darkness levels a world defines (capsule::map::kMaxDarkness; the levels are the world's data).
 MAX_DARKNESS = 15
 ## Widest lit box half size of a darkness level, pixels (capsule::map::DarknessLevel::lit_half, a u8).
 MAX_LIT_HALF = 255
 ## Darkest brightness of a darkness level (the Darken blend's coefficient, 0-16; capsule::map::DarknessLevel).
 MAX_DARK_BRIGHTNESS = 16
-## The darkness levels of a world that states none (C8: F2's table, the Starter's and the sandbox's): level n
+## The darkness levels of a world that states none (table, the Starter's and the sandbox's): level n
 ## (1 up) is entry n - 1: the lit box's half size around the walker (pixels) and how dark the rest goes.
 DEFAULT_DARKNESS_LEVELS = [{"lit": 72, "brightness": 6}, {"lit": 56, "brightness": 10},
                            {"lit": 40, "brightness": 13}, {"lit": 24, "brightness": 16}]
-## Map tags of a world (capsule::map::kMaxMapTags: a 16-bit mask; F2).
+## Map tags of a world (capsule::map::kMaxMapTags: a 16-bit mask).
 MAX_MAP_TAGS = 16
-## Object kinds of a world (an 8-bit kind, 0 = none; F2).
+## Object kinds of a world (an 8-bit kind, 0 = none).
 MAX_OBJECT_KINDS = obc.MAX_KINDS
-## Flight points of a world (capsule::script::kMaxFlightPoints; F2).
+## Flight points of a world (capsule::script::kMaxFlightPoints).
 MAX_FLIGHT_POINTS = 32
 ## Longest flight point label (letters).
 MAX_FLIGHT_LABEL = 16
-## Vehicle class flag: stepping onto a cell only class 0 enters makes the walker class 0 (kVehicleDismount; F2).
+## Vehicle class flag: stepping onto a cell only class 0 enters makes the walker class 0 (kVehicleDismount).
 VEHICLE_DISMOUNT = 2
 ## Largest border pattern side, in metatiles.
 MAX_BORDER_SIZE = 8
@@ -385,42 +385,42 @@ MAX_BORDER_SIZE = 8
 MIN_COORD = -32768
 ## Highest start position coordinate (an int16).
 MAX_COORD = 32767
-## DS1: most more targets of a map's animations (capsule::map::kMaxAnimTargets).
+## Most more targets of a map's animations (capsule::map::kMaxAnimTargets).
 MAX_ANIM_TARGETS = 64
-## DS1: bytes of one TileAnimation record on the GBA (a pointer and 8 bytes).
+## Bytes of one TileAnimation record on the GBA (a pointer and 8 bytes).
 TILE_ANIMATION_BYTES = 12
-## DS1: bytes of one AnimTarget record.
+## Bytes of one AnimTarget record.
 ANIM_TARGET_BYTES = 4
-## DS1: bytes of one 4bpp tile.
+## Bytes of one 4bpp tile.
 TILE_BYTES = 32
-## DS1: override sets per map (capsule::map::kMaxMapOverrideSets: a 32-bit mask).
+## Override sets per map (capsule::map::kMaxMapOverrideSets: a 32-bit mask).
 MAX_MAP_OVERRIDE_SETS = 32
-## DS1: override cells, sets and entry groups of a world (16-bit indices).
+## Override cells, sets and entry groups of a world (16-bit indices).
 MAX_OVERRIDE_ITEMS = 0xFFFF
-## DS1: OverrideCell::flags bit: the value indexes the world's override entries (capsule::map::kOverrideEntries).
+## OverrideCell::flags bit: the value indexes the world's override entries (capsule::map::kOverrideEntries).
 OVERRIDE_ENTRIES = 1
-## DS1: capsule::map::OverridePersist names, in order.
+## capsule::map::OverridePersist names, in order.
 OVERRIDE_PERSISTS = ("Map", "Flag", "Var")
-## DS1: lowest and highest value of an override set's variable (an int16).
+## Lowest and highest value of an override set's variable (an int16).
 MIN_OVERRIDE_VALUE, MAX_OVERRIDE_VALUE = -32768, 32767
-## DS1: door bindings per map (an 8-bit count).
+## Door bindings per map (an 8-bit count).
 MAX_DOOR_BINDINGS = 255
-## C13b: most cell interaction rules (16-bit count).
+## Most cell interaction rules (16-bit count).
 MAX_INTERACTIONS = 0xFFFF
-## C13b: capsule::map::kAnyDirection, kAnyVehicle, kNoEventCondition.
+## capsule::map::kAnyDirection, kAnyVehicle, kNoEventCondition.
 ANY_DIRECTION, ANY_VEHICLE, NO_CONDITION = 4, 0xFF, 0xFFFF
-## C13b: capsule::map::kInteractSameLevel, kInteractAfterActions.
+## capsule::map::kInteractSameLevel, kInteractAfterActions.
 INTERACT_SAME_LEVEL, INTERACT_AFTER_ACTIONS = 1, 2
-## DS1: DoorBinding::x of a metatile binding (capsule::map::kDoorAnyCell).
+## DoorBinding::x of a metatile binding (capsule::map::kDoorAnyCell).
 DOOR_ANY_CELL = -32768
-## DS1: a door binding's tileset that matches any of the map's tilesets.
+## A door binding's tileset that matches any of the map's tilesets.
 ANY_TILESET = "*"
-## DS1: the draw-order rule of a world without one (capsule::map::kDefaultDrawOrder).
+## The draw-order rule of a world without one (capsule::map::kDefaultDrawOrder).
 DEFAULT_DRAW_ORDER = {"elevation_base": [0] * ELEVATIONS, "bias": 8, "row_pixels": 16, "rows": 16, "row_step": 2,
                       "add": 1, "wrap": 256}
-## DS1: a draw-order rule's 8-bit fields and bias range.
+## A draw-order rule's 8-bit fields and bias range.
 MAX_U8, MIN_I8, MAX_I8 = 255, -128, 127
-## DS1: largest wrap of a draw-order rule (an 8-bit mask: 256 rows of pixels).
+## Largest wrap of a draw-order rule (an 8-bit mask: 256 rows of pixels).
 MAX_DRAW_WRAP = 256
 ## Values per line of an emitted 32-bit array.
 WORDS_PER_LINE = 8
@@ -558,7 +558,7 @@ class Sheet:
       self.w = len(px[0]) // TILE_SIZE if px else 0
       ## Height, tiles.
       self.h = len(px) // TILE_SIZE
-      ## C10 (S1): tiles cut out so far, by number (a sheet's tile is the same for every map that loads it).
+      ## Tiles cut out so far, by number (a sheet's tile is the same for every map that loads it).
       self.cut: dict[int, Tile] = {}
 
    def tile(self, index: int, where: str) -> Tile:
@@ -594,11 +594,11 @@ class Tileset:
       self.metatiles: dict[str, dict[str, Any]] = {}
       ## Animation dicts.
       self.animations: list[dict[str, Any]] = []
-      ## I2: the fixed placement ({"sheet", "tile", "tiles", "palette", "palettes"}), or None.
+      ## The fixed placement ({"sheet", "tile", "tiles", "palette", "palettes"}), or None.
       self.place: dict[str, Any] | None = None
-      ## I2: a fixed tileset's banks, 16 BGR555 colors each (entry 0 included).
+      ## A fixed tileset's banks, 16 BGR555 colors each (entry 0 included).
       self.bank_colors: list[list[int]] = []
-      ## DS1: ROM its animations' more targets save (frames stored once instead of once per target).
+      ## ROM its animations' more targets save (frames stored once instead of once per target).
       self.target_saved = 0
 
 
@@ -810,7 +810,7 @@ def compile_tileset(name: str, path: str | Path, behaviors: Mapping[str, int], d
 
 
 def animation_flags(an: Mapping[str, Any], where: str) -> int:
-   """!I3: an animation's flags (capsule::map::kAnim...): "from_sheet" (no frame at entry: the map's own tiles show
+   """!an animation's flags (capsule::map::kAnim...): "from_sheet" (no frame at entry: the map's own tiles show
    until the first change) and "on_shift" ("keep": runs on; "reload": its tiles are reloaded, the map's own show until
    the next change; "restart": reloaded and started over).
    @param an     the animation manifest
@@ -841,7 +841,7 @@ def animation_phase(an: Mapping[str, Any], period: int, where: str) -> int | Non
 def animation_targets(an: Mapping[str, Any], frames: list[Any], period: int, where: str, ref_key: str,
                       target_kind: str, resolve: Any) -> tuple[Any, int | None, list[tuple[Any, int, int | None]],
                                                                list[Any]]:
-   """!DS1 (D-30 section 5): an animation's tile targets. Without "targets" its "tiles" / "at" (and "phase") is its one
+   """!an animation's tile targets. Without "targets" its "tiles" / "at" (and "phase") is its one
    target; with "targets" ([{"tiles" | "at", "offset", "phase"}, ...]) the first target becomes the record's own (the
    frames rotated so its offset is 0) and the others follow as more targets, their offsets relative to it.
    @param an           the animation manifest
@@ -877,7 +877,7 @@ def animation_targets(an: Mapping[str, Any], frames: list[Any], period: int, whe
 
 
 def check_target_overlap(spans: list[tuple[Any, int, int, str]], where: str) -> None:
-   """!DS1: no two animation targets of a tileset replace the same tile.
+   """!no two animation targets of a tileset replace the same tile.
    @param spans  (space, first, count, name): a sheet name (or the fixed place) and the tiles replaced
    @param where  location for error messages
    @return None
@@ -889,7 +889,7 @@ def check_target_overlap(spans: list[tuple[Any, int, int, str]], where: str) -> 
 
 
 def target_savings(frames: Sequence[Any], count: int, more: int) -> int:
-   """!DS1: ROM the more targets of an animation save against one animation (with its own frames) per target.
+   """!ROM the more targets of an animation save against one animation (with its own frames) per target.
    @param frames  the frames
    @param count   tiles per frame
    @param more    more targets
@@ -899,7 +899,7 @@ def target_savings(frames: Sequence[Any], count: int, more: int) -> int:
 
 
 def compile_fixed_tileset(ts: Tileset, m: Mapping[str, Any], base: Path, where: str, deps: list[Path]) -> Tileset:
-   """!The fixed-placement form of a tileset (I2, see the module notes: "place").
+   """!The fixed-placement form of a tileset (see the module notes: "place").
    @param ts     the tileset being compiled (name set)
    @param m      its manifest (keys checked)
    @param base   its folder
@@ -1004,8 +1004,8 @@ def compile_map(name: str, path: str | Path, tilesets: Mapping[str, Tileset], be
    @param behaviors     the world's behavior names, in order (default: just "normal")
    @param where_prefix  label for error messages
    @param sources       in-memory manifests (see load_json()), or None
-   @param tags          the world's map tags (F2: the map's "tags" name them)
-   @param darkest       the world's darkest level (C8: len(darkness_levels()); the map's "darkness" goes up to it)
+   @param tags          the world's map tags (the map's "tags" name them)
+   @param darkest       the world's darkest level (len(darkness_levels()); the map's "darkness" goes up to it)
    @return dict of everything emit() needs
    """
    where = f"{where_prefix} {name!r}"
@@ -1040,7 +1040,7 @@ def compile_map(name: str, path: str | Path, tilesets: Mapping[str, Tileset], be
       layers.append((bg, integer(ly.get("priority", bg), 0, MAX_PRIORITY, f"{lw} priority")))
 
    names = m.get("metatiles", [])
-   if names == "all":   # I2: every metatile of the map's tilesets, tileset by tileset
+   if names == "all":   # every metatile of the map's tilesets, tileset by tileset
       if uses is None:
          raise ManifestError(f"{where}: metatiles \"all\" needs the map's tilesets")
       names = [f"{t}/{n}" for t in uses for n in tilesets[t].metatiles]
@@ -1070,7 +1070,7 @@ def compile_map(name: str, path: str | Path, tilesets: Mapping[str, Tileset], be
 
    fixed = [t for t in (uses or []) if tilesets[t].place is not None] + \
       [ts.name for ts, _ in metas if ts.place is not None]
-   if fixed:   # I2: fixed tilesets load at their places (fixed_vram()); no renumbering, no deduplication
+   if fixed:   # fixed tilesets load at their places (fixed_vram()); no renumbering, no deduplication
       tiles, pals, metatiles, anims = fixed_vram(where, uses, tilesets, metas)
       banks = {}
    else:
@@ -1102,7 +1102,7 @@ def compile_map(name: str, path: str | Path, tilesets: Mapping[str, Tileset], be
       for ts in used_ts:
          for an in ts.animations:
             firsts = []
-            # DS1: each target's tiles get map tiles of their own (the frames stay one array)
+            # Each target's tiles get map tiles of their own (the frames stay one array)
             for sheet_name, sheet_first in [(an["sheet"], an["first"])] + [tg[0] for tg in an.get("targets", [])]:
                sheet = ts.sheets[sheet_name]
                firsts.append(len(tiles))
@@ -1248,7 +1248,7 @@ def compile_map(name: str, path: str | Path, tilesets: Mapping[str, Tileset], be
 
 def compile_override_sets(m: Mapping[str, Any], dictionary: Sequence[str], layer_count: int,
                           chunk_positions: set[tuple[int, int]], where: str) -> list[dict[str, Any]]:
-   """!DS1 (D-30 section 2): a map's "override_sets": [{"name", "persist": {"flag": NAME} | {"var": NAME,
+   """!A map's "override_sets": [{"name", "persist": {"flag": NAME} | {"var": NAME,
    "value": N} (absent: until the map is left), "cells": [{"cell": [x, y], "layer": n, "metatile": "tileset/name" |
    null, or "entries": [4 map entries]}]}], checked: cells inside the map's chunks, layers the map has, metatiles of
    its dictionary. Flag and variable names are resolved by compile_world() (the scripts' names).
@@ -1316,7 +1316,7 @@ def compile_override_sets(m: Mapping[str, Any], dictionary: Sequence[str], layer
 
 
 def compile_draw_order(w: Mapping[str, Any]) -> dict[str, Any] | None:
-   """!DS1 (D-30 section 4): the world's "draw_order": the rule turning a sprite's bottom edge on screen and its
+   """!The world's "draw_order": the rule turning a sprite's bottom edge on screen and its
    elevation into a sub-priority (capsule::map::DrawOrder): {"elevation_base": 16 values, "bias", "row_pixels" (a
    power of two), "rows", "row_step", "add", "wrap" (a power of two up to 256: the edge's pixels kept)}; missing
    keys take DEFAULT_DRAW_ORDER's.
@@ -1345,7 +1345,7 @@ def compile_draw_order(w: Mapping[str, Any]) -> dict[str, Any] | None:
 
 def compile_door_bindings(w: Mapping[str, Any], maps: Sequence[dict[str, Any]],
                           events: Mapping[str, Any]) -> dict[str, list[tuple[int, int, int, int, str]]]:
-   """!DS1 (D-30 section 1): each map's door bindings: its warps' "door" (a cell binding at the warp's cell) first,
+   """!each map's door bindings: its warps' "door" (a cell binding at the warp's cell) first,
    then the world's "doors": [{"tileset": T (or "*": any of the map's tilesets), "metatile": NAME, "door":
    "door:KEY"}], one binding per entry of the map's dictionary showing that metatile.
    @param w       the world manifest
@@ -1369,7 +1369,7 @@ def compile_door_bindings(w: Mapping[str, Any], maps: Sequence[dict[str, Any]],
    out = {}
    for mp in maps:
       found = [(k, NO_METATILE, x, y, text) for x, y, k, text in events.get(mp["name"], {}).get("doors", [])]
-      # C10 (S1): the dictionary's entries by metatile name, split once per map (not once per rule)
+      # The dictionary's entries by metatile name, split once per map (not once per rule)
       by_name: dict[str, list[tuple[int, str]]] = {}
       for idx, entry in enumerate(mp["dictionary"]):
          t_name, m_name = entry.split("/", 1)
@@ -1387,7 +1387,7 @@ def compile_door_bindings(w: Mapping[str, Any], maps: Sequence[dict[str, Any]],
 def fixed_vram(where: str, uses: Sequence[str] | None, tilesets: Mapping[str, Tileset],
                metas: Sequence[tuple[Tileset, Mapping[str, Any]]]) -> tuple[list[Tile], list[list[int]],
                                                                           list[list[int]], list[dict[str, Any]]]:
-   """!What a map of fixed tilesets loads (I2): each of its tilesets at its place.
+   """!What a map of fixed tilesets loads: each of its tilesets at its place.
    @param where     location for error messages
    @param uses      the map's tilesets (all of them fixed, none overlapping)
    @param tilesets  the world's tilesets
@@ -1436,7 +1436,7 @@ def fixed_vram(where: str, uses: Sequence[str] | None, tilesets: Mapping[str, Ti
 
 
 def object_view(m: Mapping[str, Any], where: str) -> tuple[int, int, int, int]:
-   """!I3: a map's "object_view": [left, right, up, down], the cells around the walker its objects spawn in (more than
+   """!A map's "object_view": [left, right, up, down], the cells around the walker its objects spawn in (more than
    15 objects need one); absent: every object spawns at entry.
    @param m      the map manifest
    @param where  location for messages
@@ -1456,11 +1456,11 @@ def object_view(m: Mapping[str, Any], where: str) -> tuple[int, int, int, int]:
 
 def map_field_rules(m: Mapping[str, Any], tags: Sequence[str], where: str,
                     darkest: int = MAX_DARKNESS) -> tuple[int, int, bool]:
-   """!A map's F2 properties (darkness, tags, escape_point), checked; studios call it in-process.
+   """!A map's field actions properties (darkness, tags, escape_point), checked; studios call it in-process.
    @param m        the map manifest
    @param tags     the world's map tags
    @param where    location for messages
-   @param darkest  the world's darkest level (C8: len(darkness_levels(world)))
+   @param darkest  the world's darkest level (len(darkness_levels(world)))
    @return (darkness level, tag mask, escape point)
    """
    darkness = integer(m.get("darkness", 0), 0, darkest, f"{where} darkness")
@@ -1555,7 +1555,7 @@ def vehicle_class_names(w: Mapping[str, Any]) -> list[Any]:
 
 
 def compile_vehicle_classes(w: Mapping[str, Any]) -> list[dict[str, Any]]:
-   """!The world's movement modes (A2), checked; studios call it in-process.
+   """!The world's movement modes, checked; studios call it in-process.
    Behavior names in "passable" are checked by compile_behaviors().
    @param w  the world manifest
    @return per class {"name", "walk", "run", "can_run", "first_animation",
@@ -1603,7 +1603,7 @@ def compile_vehicle_classes(w: Mapping[str, Any]) -> list[dict[str, Any]]:
 
 
 def name_list(w: Mapping[str, Any], key: str, most: int) -> list[str]:
-   """!One of the world's name lists (F2: object_kinds, map_tags), checked.
+   """!One of the world's name lists (object_kinds, map_tags), checked.
    @param w     the world manifest
    @param key   its key
    @param most  most names
@@ -1617,7 +1617,7 @@ def name_list(w: Mapping[str, Any], key: str, most: int) -> list[str]:
 
 
 def object_kinds(w: Mapping[str, Any]) -> list[str]:
-   """!The world's object kinds (F2; a map object's "kind" names one; ObjectTemplate::kind = index + 1).
+   """!The world's object kinds (a map object's "kind" names one; ObjectTemplate::kind = index + 1).
    @param w  the world manifest
    @return names
    """
@@ -1625,7 +1625,7 @@ def object_kinds(w: Mapping[str, Any]) -> list[str]:
 
 
 def map_tags(w: Mapping[str, Any]) -> list[str]:
-   """!The world's map tags (F2; Map::tags bit n = tag n).
+   """!The world's map tags (Map::tags bit n = tag n).
    @param w  the world manifest
    @return names
    """
@@ -1633,7 +1633,7 @@ def map_tags(w: Mapping[str, Any]) -> list[str]:
 
 
 def darkness_levels(w: Mapping[str, Any]) -> list[dict[str, int]]:
-   """!The world's darkness levels (C8: data, not engine constants; DEFAULT_DARKNESS_LEVELS when it states none):
+   """!The world's darkness levels (data, not engine constants; DEFAULT_DARKNESS_LEVELS when it states none):
    level n (1 up) is entry n - 1; a map's darkness and scripts' `darkness N;` go up to the last level, and an empty
    list makes every map lit.
    @param w  the world manifest
@@ -1652,7 +1652,7 @@ def darkness_levels(w: Mapping[str, Any]) -> list[dict[str, int]]:
 
 
 def compile_flight_points(w: Mapping[str, Any], map_names: Sequence[str]) -> list[dict[str, Any]]:
-   """!The world's flight points (F2), checked; the script compiler emits them (capsule::script::FlightPointInfo).
+   """!The world's flight points, checked; the script compiler emits them (capsule::script::FlightPointInfo).
    @param w          the world manifest
    @param map_names  the world's map names
    @return [{"name", "label", "map", "x", "y", "facing" (index)}]
@@ -1701,7 +1701,7 @@ def default_elevations(priorities: Sequence[int] | None = None) -> list[dict[str
 
 
 def compile_elevations(w: Mapping[str, Any]) -> list[tuple[int, int, int, str]]:
-   """!The world's 16 levels (A1) as the runtime table; studios call it in-process.
+   """!The world's 16 levels as the runtime table; studios call it in-process.
    @param w  the world manifest
    @return per level (meet mask, flags, sprite priority, name)
    """
@@ -1895,7 +1895,7 @@ def compile_world_events(w: Mapping[str, Any], base: Path, map_paths: Mapping[st
 
 
 def used_tilesets(w: Mapping[str, Any], base: Path, only_maps: Iterable[str], sources: Sources | None) -> set[str]:
-   """!C10 (S1): the tilesets some maps draw from (their manifests' "tilesets"; a map without the key may use any).
+   """!The tilesets some maps draw from (their manifests' "tilesets"; a map without the key may use any).
    @param w          the world manifest
    @param base       its folder
    @param only_maps  the maps
@@ -1995,7 +1995,7 @@ def compile_world(path: str | Path, deps: list[Path] | None = None, sources: Sou
       p = (base / rel).resolve()
       deps.append(p)
       if wanted is not None and n not in wanted:
-         continue   # C10 (S1): a preview of some maps compiles only the tilesets they draw from
+         continue   # A preview of some maps compiles only the tilesets they draw from
       tilesets[n] = compile_tileset(n, p, by_name, deps, sources, images)
    maps = []
    for n, rel in (w.get("maps") or {}).items():
@@ -2022,7 +2022,7 @@ def compile_world(path: str | Path, deps: list[Path] | None = None, sources: Sou
       raise ManifestError(f"world start: facing must be one of {', '.join(DIRECTIONS)}")
    start = (names.index(s["map"]), integer(s.get("x"), MIN_COORD, MAX_COORD, "world start x"),
             integer(s.get("y"), MIN_COORD, MAX_COORD, "world start y"), DIRECTIONS.index(facing))
-   # F2: the flight points (the script compiler emits them; checked here too) and the object kinds
+   # The flight points (the script compiler emits them; checked here too) and the object kinds
    compile_flight_points(w, list((w.get("maps") or {}).keys()))
    object_kinds(w)
    map_paths = {n: (base / rel).resolve() for n, rel in (w.get("maps") or {}).items()}
@@ -2034,7 +2034,7 @@ def compile_world(path: str | Path, deps: list[Path] | None = None, sources: Sou
    conditions = w.get("encounter_conditions") or []
    import script_compiler as sc
 
-   # Location names are field text when the game's scripts declare field placeholders (D-22 decision 6).
+   # Location names are field text when the game's scripts declare field placeholders.
    try:
       field = sc.load_placeholders(scripts_manifest(w, base, scripts_path), codepage)
    except sc.ScriptError as e:
@@ -2068,7 +2068,7 @@ def compile_world(path: str | Path, deps: list[Path] | None = None, sources: Sou
 
 def compile_interactions(w: Mapping[str, Any], behaviors: Mapping[str, int], classes: Sequence[str],
                          names: Any) -> list[dict[str, Any]]:
-   """!C13b: the world's "interactions" (cell interaction rules, in order; see the module notes).
+   """!The world's "interactions" (cell interaction rules, in order; see the module notes).
    @param w          the world manifest
    @param behaviors  behavior name -> index
    @param classes    vehicle class names, in order
@@ -2108,7 +2108,7 @@ def compile_interactions(w: Mapping[str, Any], behaviors: Mapping[str, int], cla
 
 
 def resolve_override_sets(maps: Sequence[dict[str, Any]], names: Any) -> list[dict[str, Any]]:
-   """!DS1: every map's override sets as the world's list (map order, then the map's order), their names unique the
+   """!every map's override sets as the world's list (map order, then the map's order), their names unique the
    world over (scripts name them) and their flags and variables resolved.
    @param maps   compile_map() results, in the world's order
    @param names  event_compiler.Names (the scripts' flags and variables)
@@ -2159,7 +2159,7 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
          L.append("    " + ", ".join(fmt.format(v) for v in values[i:i + per_line]) + ",")
       L.append("};")
 
-   # I2: an array equal to one emitted before (maps sharing tilesets or a layout) is not emitted again; the maps
+   # An array equal to one emitted before (maps sharing tilesets or a layout) is not emitted again; the maps
    # name the first one
    emitted: dict[tuple[str, tuple[int, ...]], str] = {}
 
@@ -2185,7 +2185,7 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
       refs.append((sym, count))
    syms: list[dict[str, str]] = []
    metatile_syms: dict[tuple[int, ...], str] = {}
-   door_syms: dict[tuple[tuple[int, int, int, int], ...], str] = {}   # C10: identical binding lists, stored once
+   door_syms: dict[tuple[tuple[int, int, int, int], ...], str] = {}   # identical binding lists, stored once
    for i, mp in enumerate(maps):
       sym = {}
       syms.append(sym)
@@ -2231,14 +2231,14 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
       frames = [shared("uint32_t", f"kAnimFrames{i}_{j}", [w for fr in an["frames"] for t in fr
                                                            for w in ac.words_4bpp(t)])
                 for j, an in enumerate(mp["anims"])]
-      more_targets = []   # DS1: (first tile, offset, phase) of the animations' more targets, in animation order
+      more_targets = []   # (first tile, offset, phase) of the animations' more targets, in animation order
       if mp["anims"]:
          L.append(f"const TileAnimation kAnims{i}[] = {{")
          for j, an in enumerate(mp["anims"]):
             phase = an.get("phase")
             if phase is None:
                phase = (j * an["period"]) // max(1, len(mp["anims"]))   # spread uploads over the period
-            # DS1: the count of more targets only when it has some (the initializer of before stays valid)
+            # The count of more targets only when it has some (the initializer of before stays valid)
             more = an.get("targets", [])
             count = f", {len(more)}" if more else ""
             L.append(f"    {{{frames[j]}, {an['first']}, {an['count']}, {len(an['frames'])}, "
@@ -2252,10 +2252,10 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
          L.extend(f"    {{{first}, {offset}, {phase}}},   // {name}" for first, offset, phase, name in more_targets)
          L.append("};")
       bindings = world.get("doors", {}).get(mp["name"], [])
-      # C10 (DS1 note): maps of the same tilesets bind the same metatiles: a binding list another map already has
+      # Doors note: maps of the same tilesets bind the same metatiles: a binding list another map already has
       # is that map's table (the bindings and the lookup are unchanged; only the ROM copies go)
       shape = tuple((k, mt, x, y) for k, mt, x, y, _text in bindings)
-      if bindings and shape not in door_syms:   # DS1: cell bindings first, then metatile bindings
+      if bindings and shape not in door_syms:   # cell bindings first, then metatile bindings
          door_syms[shape] = f"kDoorBindings{i}"
          L.append(f"const DoorBinding kDoorBindings{i}[] = {{")
          L.extend(f"    {{AssetKey{{0x{k:08X}u}}, 0x{mt:04X}, {x}, {y}, 0}},   // {text}"
@@ -2299,12 +2299,12 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
             for i, (m, f, p, n) in enumerate(world["elevations"]))
    L.append("};")
    L.append("const VehicleClass kVehicleClasses[] = {")
-   # I3: the turn time only when set (the initializer of before stays valid)
+   # The turn time only when set (the initializer of before stays valid)
    L.extend(f"    {{{v['walk']}, {v['run']}, {v['first_animation']}, {vehicle_flags(v)}"
             f"{', ' + str(v['turn_frames']) if v.get('turn_frames') else ''}}},   // {v['name']}"
             for v in world["vehicles"])
    L.append("};")
-   # C8: the world's darkness levels (level n is entry n - 1)
+   # The world's darkness levels (level n is entry n - 1)
    dark = world.get("darkness_levels", [])
    dark_sym = "kDarknessLevels" if dark else "nullptr"
    if dark:
@@ -2324,7 +2324,7 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
    self_sym = "nullptr"
    if self_bytes:
       self_sym = "g_self_switches"
-      L.append(f"uint8_t g_self_switches[{self_bytes}];   // map objects' self switches A-D (permanent, D-17)")
+      L.append(f"uint8_t g_self_switches[{self_bytes}];   // map objects' self switches A-D (permanent)")
    start_map, start_x, start_y, start_facing = world["start"]
    names = ("kBehaviorNames", "kMapNames") if debug_names else ("nullptr", "nullptr")
    ds1 = emit_world_ds1(L, world)
@@ -2340,7 +2340,7 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
 
 
 def emit_world_ds1(L: list[str], world: Mapping[str, Any]) -> str:
-   """!DS1: the world's draw-order rule and override sets (arrays appended to L).
+   """!The world's draw-order rule and override sets (arrays appended to L).
    @param L      the source lines
    @param world  compile_world() result
    @return the World initializer's last fields (empty when the world has neither, so the initializer of before stays)
@@ -2386,7 +2386,7 @@ def emit_world_ds1(L: list[str], world: Mapping[str, Any]) -> str:
 
 
 def emit_world_interactions(L: list[str], rules: Sequence[Mapping[str, Any]]) -> str:
-   """!C13b: the world's cell interaction rules (an array appended to L).
+   """!The world's cell interaction rules (an array appended to L).
    @param L      the source lines
    @param rules  compile_interactions() result
    @return the World initializer's last two fields (empty without rules)
@@ -2401,7 +2401,7 @@ def emit_world_interactions(L: list[str], rules: Sequence[Mapping[str, Any]]) ->
 
 
 def anim_flags_text(an: Mapping[str, Any]) -> str:
-   """!A TileAnimation's flags initializer (I3): "0", or the kAnim... names.
+   """!A TileAnimation's flags initializer: "0", or the kAnim... names.
    @param an  compile_map() animation
    @return C++ text
    """
@@ -2414,7 +2414,7 @@ def anim_flags_text(an: Mapping[str, Any]) -> str:
 def vehicle_flags(v: Mapping[str, Any]) -> str:
    """!A vehicle class's VehicleClass::flags initializer.
    @param v  compile_vehicle_classes() entry
-   @return C++ text (kVehicleCanRun, F2's kVehicleDismount, or 0)
+   @return C++ text (kVehicleCanRun, the field actions' kVehicleDismount, or 0)
    """
    bits = (["kVehicleCanRun"] if v["can_run"] else []) + (["kVehicleDismount"] if v.get("dismount") else []) + \
       (["kVehicleBumps"] if v.get("bumps") else []) + (["kVehicleKeepsMoving"] if v.get("keeps_moving") else [])
@@ -2423,7 +2423,7 @@ def vehicle_flags(v: Mapping[str, Any]) -> str:
 
 def map_trailer(mp: Mapping[str, Any]) -> str:
    """!The Map initializer's optional last fields: flags, darkness and tags, as far as any is set (a map without
-   them keeps the shorter initializer of before F2).
+   them keeps the shorter initializer of from an older version).
    @param mp  compile_map() result
    @return C++ text (empty, or starting with ", ")
    """
@@ -2435,9 +2435,9 @@ def map_trailer(mp: Mapping[str, Any]) -> str:
    # each field with its default, then the last one that is set decides how many are written
    fields = [(" | ".join(flags) or "0", bool(flags)), (str(mp.get("darkness", 0)), bool(mp.get("darkness"))),
              (f"0x{mp.get('tags', 0):04X}", bool(mp.get("tags"))),
-             ("{" + ", ".join(str(n) for n in view) + "}", any(view)),   # I3: the object view
-             (targets, targets != "nullptr"),   # DS1: the animations' more targets
-             (doors, door_count > 0), (str(door_count), door_count > 0)]   # DS1: the door bindings
+             ("{" + ", ".join(str(n) for n in view) + "}", any(view)),   # the object view
+             (targets, targets != "nullptr"),   # the animations' more targets
+             (doors, door_count > 0), (str(door_count), door_count > 0)]   # the door bindings
    last = max((k for k, (_text, used) in enumerate(fields) if used), default=-1)
    return "".join(", " + text for text, _used in fields[:last + 1])
 
@@ -2526,7 +2526,7 @@ def main(argv: Sequence[str]) -> int:
    print(f"{src}: {len(world['maps'])} maps, {chunks} chunks, {tiles} tiles, "
          f"{len(world['behaviors'])} behaviors; encounters: {ec.summary(world['encounters'])}")
    targets = sum(len(an.get("targets", [])) for mp in world["maps"] for an in mp["anims"])
-   if targets:   # DS1: what the animations' more targets save (frames stored once per tileset animation)
+   if targets:   # what the animations' more targets save (frames stored once per tileset animation)
       print(f"{src}: {targets} more animation targets on the maps; {world['target_saved']} B of ROM saved by the "
             "tilesets' targets against one animation per target")
    return 0

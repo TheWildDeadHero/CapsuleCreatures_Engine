@@ -1,4 +1,4 @@
-"""!Stats of the battle compiler (D-20 C, D-22 A7): the manifest's permanent
+"""!Stats of the battle compiler (C): the manifest's permanent
 stats (capsule::battle::StatInfo, each computed by a ruleset stat formula),
 the stages (capsule::battle::StageData), move categories (which stats their
 damage uses), traits (percent per stat), and preview_stats() for editors.
@@ -14,7 +14,7 @@ damage uses), traits (percent per stat), and preview_stats() for editors.
 
 Stat flags: pool (exactly one stat: the creature's hit points; trait
 defaults to false), order (exactly one: turn order and escape use it), odds
-(at most one, E9: the ruleset's effect_odds pipeline reads it for both
+(at most one, the field placeholders: the ruleset's effect_odds pipeline reads it for both
 battlers as user_stat / target_stat; without one they read 0), trait
 (default true: traits may raise or lower it), transfer (the stat's key in
 transfers, default its name). label is the in-game text ({stat});
@@ -52,7 +52,7 @@ SINGLE_STAGE_KINDS = ["accuracy", "evasion", "crit"]
 STAGE_LIMIT = rc.STAGE_LIMIT
 ## Arguments of a stage formula (the value and the stage value).
 STAGE_FORMULA_ARGS = 2
-## Stat names of the six-stat layout the studio still offers until it reads the manifest's stats (S3).
+## Stat names of the six-stat layout the studio still offers until it reads the manifest's stats.
 STATS = ["hp", "atk", "def", "spa", "spd", "spe"]
 ## A stat's name: a lower-case identifier (stage references, battle_ids STAT_<NAME>).
 STAT_NAME = re.compile(r"[a-z][a-z0-9_]*")
@@ -135,7 +135,7 @@ def compile_stats(entries: Json, ruleset: Mapping[str, Any], rs_name: str, max_s
    for i, sd in enumerate(entries):
       w = f"{where}: stats[{i}] ({sd.get('name')})"
       if isinstance(sd, dict) and "stage" in sd:
-         raise ManifestError(f"{w}.stage is gone (E6a): a stat has a stage when \"stages\" lists one for it "
+         raise ManifestError(f"{w}.stage is gone: a stat has a stage when \"stages\" lists one for it "
                              f"({{\"stat\": \"{sd.get('name')}\", \"range\": [lo, hi], \"table\": [...]}})")
       check_keys(sd, "stat", w)
       name = sd["name"]
@@ -201,7 +201,7 @@ def stage_range(v: Json, where: str) -> tuple[int, int]:
 
 def compile_stages(entries: Json, stats: list[dict[str, Any]], ruleset: Mapping[str, Any], rs_name: str,
                    max_stats: int, where: str, enc: Texts) -> list[dict[str, Any]]:
-   """!The stages section (capsule::battle::StageData, D-22 A7). Sets each staged stat's "stage" (its index).
+   """!The stages section (capsule::battle::StageData). Sets each staged stat's "stage" (its index).
    @param entries    the manifest's stages (None: none)
    @param stats      compile_stats() result (updated)
    @param ruleset    compiled ruleset (named formulas of formula stages)
@@ -351,16 +351,16 @@ def compile_categories(entries: Sequence[Json], stats: Sequence[Mapping[str, Any
    return categories
 
 
-## The structure key of the category rule by type (E11).
+## The structure key of the category rule by type.
 CATEGORY_BY_TYPE_KEY = "category_by_type"
-## The structure key of the hit types' categories (C5): a move whose hit type is not its own takes this category.
+## The structure key of the hit types' categories: a move whose hit type is not its own takes this category.
 HIT_CATEGORY_KEY = "hit_category_by_type"
 
 
 def compile_category_by_type(spec: Json, type_entries: Sequence[Json], category_entries: Sequence[Json],
                              categories: Sequence[Mapping[str, int]], where: str,
                              key: str = CATEGORY_BY_TYPE_KEY) -> list[int] | None:
-   """!A category rule by type (E11): `"category_by_type": {type: damaging category}` makes a damaging move's
+   """!A category rule by type: `"category_by_type": {type: damaging category}` makes a damaging move's
    category its type's (the rule of rulesets whose types decide physical or special); every type is listed. A move
    then states no category, or a non-damaging one (a status move), or its type's (content.compile_moves()).
    @param spec              the structure's category_by_type, or None (each move states its category)
@@ -399,7 +399,7 @@ def compile_category_by_type(spec: Json, type_entries: Sequence[Json], category_
 def compile_hit_category_by_type(spec: Json, type_entries: Sequence[Json], category_entries: Sequence[Json],
                                  categories: Sequence[Mapping[str, int]], by_type: list[int] | None,
                                  where: str) -> list[int] | None:
-   """!The categories hit types give (C5, BattleData::hit_categories): a damaging move whose hit type is not its own
+   """!The categories hit types give (BattleData::hit_categories): a damaging move whose hit type is not its own
    (the ruleset's move_type point changed it: a move typed in use) hits with the category this table names for
    the hit type: `"hit_category_by_type": {type: damaging category}`, every type listed, for a structure whose moves
    state their categories. A structure with category_by_type needs none: its table is used (a damaging move's
@@ -448,7 +448,7 @@ def compile_traits(entries: Sequence[Json], stats: Sequence[Mapping[str, Any]], 
       check_keys(nd, "trait", w)
       up, down = nd.get("up"), nd.get("down")
 
-      # a trait that raises or lowers a stat states by how much (no default percentages, D-22 decision 8)
+      # a trait that raises or lowers a stat states by how much (no default percentages)
       up_pct, down_pct = PERCENT, PERCENT
       if up is not None or down is not None:
          given = nd.get("pct")

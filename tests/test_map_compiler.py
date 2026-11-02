@@ -364,7 +364,7 @@ class MapCompilerTests(unittest.TestCase):
             self.fails(fragment)
 
    def test_darkness_levels(self) -> None:
-      """!C8: the darkness levels are the world's data: emitted as kDarknessLevels, the default levels when it states
+      """!The darkness levels are the world's data: emitted as kDarknessLevels, the default levels when it states
       none, no map darker than its darkest level, each level's limits checked."""
       w = self.s.compile()
       self.assertEqual(w["darkness_levels"], [{"lit": 64, "brightness": 8}, {"lit": 32, "brightness": 12},
@@ -405,11 +405,11 @@ class MapCompilerTests(unittest.TestCase):
       raw["vehicle_classes"][1]["passable"] = ["water"]
       self.s.save("world.json", raw)
       masks = {n: m for m, _k, _d, n in self.s.compile()["behaviors"]}
-      self.assertEqual(masks["normal"], 0b1001)   # foot and (I3) trek
-      self.assertEqual(masks["water"], 0b110)   # swim and (F2) paddle
+      self.assertEqual(masks["normal"], 0b1001)   # foot and trek
+      self.assertEqual(masks["water"], 0b110)   # swim and paddle
       # Names alone still work (on-foot defaults); load_world gives names either way.
       raw["vehicle_classes"] = ["foot", "swim"]
-      raw["behaviors"][1]["passable"] = ["swim"]   # F2: the fixture's water also names paddle
+      raw["behaviors"][1]["passable"] = ["swim"]   # the fixture's water also names paddle
       self.s.save("world.json", raw)
       self.assertEqual(mc.load_world(self.s.dir / "world.json")[2], ["foot", "swim"])
       self.assertEqual([(v["walk"], v["run"], v["can_run"]) for v in self.s.compile()["vehicles"]],
@@ -437,9 +437,9 @@ class MapCompilerTests(unittest.TestCase):
       w = self.s.compile()
       flags = {mp["name"]: mp["flags"] for mp in w["maps"]}
       self.assertEqual(flags["small"], mc.MAP_NO_RUN)
-      self.assertEqual(flags["field"], mc.MAP_ESCAPE_POINT)   # F2: field is an escape point
+      self.assertEqual(flags["field"], mc.MAP_ESCAPE_POINT)   # field is an escape point
       src = mc.emit("world.json", w)
-      # F2: small is also dark (level 2, tag dark), field an escape point
+      # Small is also dark (level 2, tag dark), field an escape point
       self.assertEqual(src.count("kMapNoRun, 2, 0x0001}"), 1)
       self.assertEqual(src.count("kMapEscapePoint}"), 1)
       mp = self.s.load("maps/field.json")
@@ -449,7 +449,7 @@ class MapCompilerTests(unittest.TestCase):
 
 
 class FixedPlacementTests(unittest.TestCase):
-   """!I2: fixed-placement tilesets, the "all" dictionary, animation phases, behavior walls, shared arrays."""
+   """!fixed-placement tilesets, the "all" dictionary, animation phases, behavior walls, shared arrays."""
 
    def setUp(self) -> None:
       """!Fresh scratch copy."""
@@ -481,9 +481,9 @@ class FixedPlacementTests(unittest.TestCase):
       self.assertEqual(fixed["dictionary"], ["fixed/floor", "fixed/wall", "fixed/glow", "fixed/white"])
       self.assertEqual(fixed["metatiles"][1], [2, 0x402, 0x802, 0xC02])
       self.assertEqual([(a["first"], a["count"], a["period"], a["phase"]) for a in fixed["anims"]], [(3, 1, 4, 1)])
-      self.assertEqual(w["behavior_walls"][-2], 1 << mc.DIRECTIONS.index("right"))   # fence_east (I3: then counter_top)
+      self.assertEqual(w["behavior_walls"][-2], 1 << mc.DIRECTIONS.index("right"))   # fence_east (then counter_top)
       src = mc.emit("world.json", w)
-      self.assertIn("{0x0B, BehaviorKind::None, 0, 8},   // fence_east", src)   # I3: trek walks it too
+      self.assertIn("{0x0B, BehaviorKind::None, 0, 8},   // fence_east", src)   # trek walks it too
       self.assertIn("{kAnimFrames6_0, 3, 1, 2, 4, 1, 0},   // fixed/spark", src)
       # fixed_b's tiles, palettes, metatiles and animation frames are fixed_a's arrays
       self.assertNotIn("kTiles7[]", src)
@@ -529,15 +529,15 @@ class FixedPlacementTests(unittest.TestCase):
       self.fails("walls lists directions")
 
 
-## C13b: the cell interaction fixture (tests/c13b_tests.cpp runs its rules).
-INTERACTIONS = ROOT / "tests/data/c13b/world.json"
+## The cell interaction fixture (tests/cell_interactions_tests.cpp runs its rules).
+INTERACTIONS = ROOT / "tests/data/cell_interactions/world.json"
 
 
 class InteractionTests(unittest.TestCase):
-   """!C13b: the world's "interactions" (capsule::map::Interaction rules)."""
+   """!The world's "interactions" (capsule::map::Interaction rules)."""
 
    def compile_with(self, rules: list[JsonDict]) -> JsonDict:
-      """!Compiles the C13b fixture with other rules (an in-memory manifest).
+      """!Compiles the cell interactions fixture with other rules (an in-memory manifest).
       @param rules  the world's "interactions"
       @return compile_world() result
       """

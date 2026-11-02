@@ -1,0 +1,16 @@
+{
+  "schema": "capsule.project/1",
+  "name": "sandbox_anim",
+  "editor": {
+    "notes": "The scene kit's sandbox (BF, D-38; simple shapes, no input): affine sprite animation (spin, pulse in a 2x box, squash, a matrix set by hand), scanline effects (a wave on BG0's x scroll, per-line blend weights, window 0's edges per line), palette blends (by tag, by bank, a ramp, a fade by tag) and the animation-script player running data/shapes.canim, 180 frames each, in turn."
+  },
+  "rom": {
+    "title": "ANIMKIT",
+    "code": "CANK",
+    "maker": "00"
+  },
+  "sources": [
+    "src/sandbox_anim.cpp",
+    "src/scenes.cpp"
+  ]
+}

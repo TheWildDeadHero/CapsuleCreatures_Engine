@@ -43,9 +43,11 @@ uint8_t g_order[kMaxSprites];         ///< The draw order (kept from frame to fr
 uint32_t g_tiles[kMapWords];          ///< Allocated tiles (bit per tile).
 Sheet g_sheets[kSheets];              ///< Tagged ranges.
 uint16_t g_palette_tags[kBanks];      ///< Each bank's tag, or kNoTag.
+uint8_t g_reserved_banks = 0;          ///< Banks below this are never given to a tag (reserve_palettes()).
 int16_t g_offset_x = 0;               ///< set_offset() x.
 int16_t g_offset_y = 0;               ///< set_offset() y.
 uint8_t g_drawn[kOamLimit];           ///< The sprite each OAM entry shows (kNoSprite: hidden).
+AffineStep g_affine_step = nullptr;   ///< BF: the affine animation step (capsule/screen/affine.h), or nullptr.
 
 /// The reference games' animation of nothing (a sprite without animations shows frame 0 and ends).
 constexpr AnimCmd kStill[] = {{AnimOp::Frame, 0, 0, 0, 0}, {AnimOp::End, 0, 0, 0, 0}};
@@ -189,7 +191,7 @@ const AnimCmd& cmd_of(const Sprite& s, int index)
 void show_frame(Sprite& s, const AnimCmd& c)
 {
    s.delay = c.duration > 0 ? static_cast<uint8_t>(c.duration - 1) : 0;
-   if (s.tmpl->affine == kAffineOff)
+   if (s.affine_mode == kAffineOff)
    {
       s.flips = c.flips;
    }
@@ -272,7 +274,7 @@ void continue_anim(Sprite& s)
       {
          --s.delay;
       }
-      if (s.tmpl->affine == kAffineOff)
+      if (s.affine_mode == kAffineOff)
       {
          s.flips = cmd_of(s, s.cmd).flips;
       }
@@ -316,7 +318,7 @@ int16_t sort_y(const Sprite& s)
    {
       y = static_cast<int16_t>(y - kWrapY);
    }
-   if (s.tmpl != nullptr && s.tmpl->affine == kAffineDouble && s.tmpl->size == kSizeLargest &&
+   if (s.tmpl != nullptr && s.affine_mode == kAffineDouble && s.tmpl->size == kSizeLargest &&
        (s.tmpl->shape == video::OBJ_SQUARE || s.tmpl->shape == video::OBJ_TALL) && y > kDoubleLowY)
    {
       y = static_cast<int16_t>(y - kWrapY);
@@ -362,9 +364,10 @@ uint8_t create_in(int index, const Template& t, int16_t x, int16_t y, uint8_t su
    s.priority = t.priority;
    s.x = x;
    s.y = y;
-   const int dbl = t.affine == kAffineDouble ? kHalf : 1;
-   s.center_x = static_cast<int8_t>(-video::obj_width(t.shape, t.size) / kHalf * dbl);
-   s.center_y = static_cast<int8_t>(-video::obj_height(t.shape, t.size) / kHalf * dbl);
+   s.affine_mode = t.affine;
+   s.matrix = t.matrix;
+   s.obj_mode = t.mode;
+   set_center(s);
    if (t.tile_tag == kNoTag)
    {
       const int frame_tiles = t.images != nullptr ? t.images->frame_tiles : 0;
@@ -385,6 +388,24 @@ uint8_t create_in(int index, const Template& t, int16_t x, int16_t y, uint8_t su
    }
    s.bank = t.palette_tag != kNoTag ? static_cast<uint8_t>(palette_bank(t.palette_tag) & kBankMask) : t.bank;
    return static_cast<uint8_t>(index);
+}
+
+/// Runs a sprite's animations once: its frame animation, then its affine one (the reference games' AnimateSprite).
+/// @param s  the sprite
+void animate_sprite(Sprite& s)
+{
+   if (s.anim_beginning)
+   {
+      begin_anim(s);
+   }
+   else
+   {
+      continue_anim(s);
+   }
+   if (g_affine_step != nullptr)
+   {
+      g_affine_step(s);
+   }
 }
 
 }   // namespace
@@ -408,6 +429,7 @@ void reset()
    {
       tag = kNoTag;
    }
+   g_reserved_banks = 0;   // as the reference games' FreeAllSpritePalettes
    g_offset_x = 0;
    g_offset_y = 0;
    for (uint8_t& d : g_drawn)
@@ -493,12 +515,21 @@ uint8_t palette_bank(uint16_t tag)
 
 uint8_t alloc_palette(uint16_t tag)
 {
-   const uint8_t bank = palette_bank(kNoTag);
-   if (bank != kNoBank)
+   // the first free bank above the reserved ones (the reference games' IndexOfSpritePaletteTag(TAG_NONE))
+   for (int b = g_reserved_banks; b < kBanks; ++b)
    {
-      g_palette_tags[bank] = tag;
+      if (g_palette_tags[b] == kNoTag)
+      {
+         g_palette_tags[b] = tag;
+         return static_cast<uint8_t>(b);
+      }
    }
-   return bank;
+   return kNoBank;
+}
+
+void reserve_palettes(uint8_t count)
+{
+   g_reserved_banks = count < kBanks ? count : static_cast<uint8_t>(kBanks);
 }
 
 uint8_t load_palette(uint16_t tag, const video::Color* colors)
@@ -538,6 +569,50 @@ uint8_t create(const Template& t, int16_t x, int16_t y, uint8_t subpriority)
    return kNoSprite;
 }
 
+uint8_t create_and_animate(const Template& t, int16_t x, int16_t y, uint8_t subpriority, Prepare prepare,
+                           const void* arg)
+{
+   for (int i = 0; i < kMaxSprites; ++i)
+   {
+      if (g_sprites[i].in_use)
+      {
+         continue;
+      }
+      const uint8_t id = create_in(i, t, x, y, subpriority);
+      if (id == kNoSprite)
+      {
+         return kNoSprite;
+      }
+      Sprite& s = g_sprites[id];
+      if (prepare != nullptr)
+      {
+         prepare(id, arg);
+      }
+      if (s.callback != nullptr)
+      {
+         s.callback(s);
+      }
+      if (s.in_use)
+      {
+         animate_sprite(s);
+      }
+      return id;
+   }
+   return kNoSprite;
+}
+
+void set_center(Sprite& s)
+{
+   const int dbl = s.affine_mode == kAffineDouble ? kHalf : 1;
+   s.center_x = static_cast<int8_t>(-video::obj_width(s.tmpl->shape, s.tmpl->size) / kHalf * dbl);
+   s.center_y = static_cast<int8_t>(-video::obj_height(s.tmpl->shape, s.tmpl->size) / kHalf * dbl);
+}
+
+void set_affine_step(AffineStep step)
+{
+   g_affine_step = step;
+}
+
 uint8_t create_at_end(const Template& t, int16_t x, int16_t y, uint8_t subpriority)
 {
    for (int i = kMaxSprites - 1; i >= 0; --i)
@@ -566,6 +641,24 @@ void destroy(uint8_t id)
       }
    }
    s = dummy();
+}
+
+void destroy_keep_tiles(uint8_t id)
+{
+   ENGINE_ASSERT(id < kMaxSprites);
+   if (g_sprites[id].in_use)
+   {
+      g_sprites[id] = dummy();
+   }
+}
+
+void animate_one(uint8_t id)
+{
+   ENGINE_ASSERT(id < kMaxSprites);
+   if (g_sprites[id].in_use)
+   {
+      animate_sprite(g_sprites[id]);
+   }
 }
 
 Sprite& sprite(uint8_t id)
@@ -598,14 +691,7 @@ void animate()
       {
          continue;   // its callback destroyed it
       }
-      if (s.anim_beginning)
-      {
-         begin_anim(s);
-      }
-      else
-      {
-         continue_anim(s);
-      }
+      animate_sprite(s);
    }
 }
 
@@ -650,20 +736,66 @@ void build_oam()
       d.size = s.tmpl->size;
       d.palette_bank = s.bank;
       d.priority = s.priority;
-      d.mode = s.tmpl->mode;
-      d.affine = s.tmpl->affine != kAffineOff;
-      d.double_size = s.tmpl->affine == kAffineDouble;
-      d.affine_group = s.tmpl->matrix;
+      d.mode = s.obj_mode;
+      d.affine = s.affine_mode != kAffineOff;
+      d.double_size = s.affine_mode == kAffineDouble;
+      d.affine_group = s.matrix;
       d.hflip = (flips & kFlipH) != 0;
       d.vflip = (flips & kFlipV) != 0;
-      g_drawn[entry] = g_order[i];
-      video::set_obj(static_cast<uint8_t>(entry++), video::make_obj(d));
+      const SubspriteTable* table = s.subsprite_mode != kSubspritesOff && s.subsprite_tables != nullptr
+                                       ? &s.subsprite_tables[s.subsprite_table]
+                                       : nullptr;
+      if (table == nullptr || table->pieces == nullptr)
+      {
+         g_drawn[entry] = g_order[i];
+         video::set_obj(static_cast<uint8_t>(entry++), video::make_obj(d));
+         continue;
+      }
+      // the pieces from the sprite's centre (the corner minus its centre-to-corner offset)
+      const int16_t base_x = static_cast<int16_t>(d.x - s.center_x);
+      const int16_t base_y = static_cast<int16_t>(d.y - s.center_y);
+      const uint16_t first_tile = d.tile;
+      for (int p = 0; p < table->count && entry < kOamLimit; ++p)
+      {
+         const Subsprite& piece = table->pieces[p];
+         int16_t px = piece.x;
+         int16_t py = piece.y;
+         if (d.hflip)
+         {
+            px = static_cast<int16_t>(-(px + video::obj_width(piece.shape, piece.size)));
+         }
+         if (d.vflip)
+         {
+            py = static_cast<int16_t>(-(py + video::obj_height(piece.shape, piece.size)));
+         }
+         video::ObjDesc pd = d;
+         pd.shape = piece.shape;
+         pd.size = piece.size;
+         pd.x = static_cast<int16_t>(base_x + px);
+         pd.y = static_cast<int16_t>(base_y + py);
+         pd.tile = static_cast<uint16_t>(first_tile + piece.tile_offset);
+         if (s.subsprite_mode != kSubspritesIgnorePriority)
+         {
+            pd.priority = piece.priority;
+         }
+         g_drawn[entry] = g_order[i];
+         video::set_obj(static_cast<uint8_t>(entry++), video::make_obj(pd));
+      }
    }
    for (; entry < kOamLimit; ++entry)
    {
       g_drawn[entry] = kNoSprite;
       video::set_obj(static_cast<uint8_t>(entry), video::kObjHidden);
    }
+}
+
+void set_subsprites(uint8_t id, const SubspriteTable* tables)
+{
+   ENGINE_ASSERT(id < kMaxSprites);
+   Sprite& s = g_sprites[id];
+   s.subsprite_tables = tables;
+   s.subsprite_table = 0;
+   s.subsprite_mode = tables != nullptr ? kSubspritesOn : kSubspritesOff;
 }
 
 void set_offset(int16_t x, int16_t y)

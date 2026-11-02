@@ -21,9 +21,9 @@ endif()
 project(capsule_engine LANGUAGES C CXX)
 
 # The engine checkout (this file's folder). Every engine path below is built from it, so the engine also works as a
-# subproject (add_subdirectory) of another repository: the reference-ruleset repo (D-23 section 4) or a game's tree.
+# subproject (add_subdirectory) of another repository: the reference-ruleset repo or a game's tree.
 set(CAPSULE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
-# The engine's own tests, test apps and sample apps; off when the engine is a subproject (D-23 section 4).
+# The engine's own tests, test apps and sample apps; off when the engine is a subproject.
 option(CAPSULE_ENGINE_TESTS "Build the engine's own tests and apps" ${PROJECT_IS_TOP_LEVEL})
 
 set(CMAKE_CXX_STANDARD 20)
@@ -40,19 +40,19 @@ if(NOT CAPSULE_PLATFORM IN_LIST CAPSULE_PLATFORMS)
 endif()
 message(STATUS "Capsule platform: ${CAPSULE_PLATFORM}")
 option(CAPSULE_TEST_APPS "Build the per-system test apps (apps/test_*)" ON)
-# C6: the GBA cartridge's save medium: 64 KB flash (default) or 32 KB SRAM (the save image's budget follows it:
+# The GBA cartridge's save medium: 64 KB flash (default) or 32 KB SRAM (the save image's budget follows it:
 # tools/save_layout.py --platform gba_sram, capsule::save::kSaveBudget, src/hal/gba/save_gba.cpp).
 option(CAPSULE_GBA_SAVE_SRAM "GBA: save to the cartridge's 32 KB SRAM instead of its 64 KB flash" OFF)
-# UM (D-33): every GBA link fails when EWRAM (.ewram + .sbss) passes 256 KB or IWRAM leaves less stack than this
+# Every GBA link fails when EWRAM (.ewram + .sbss) passes 256 KB or IWRAM leaves less stack than this
 # below __sp_usr (cmake/gba_memory.ld), and prints both regions' use (cmake/gba_memory_report.cmake). The stack holds
 # the deepest call chain plus what the interrupt handlers push (they switch to their own 160 B stack first).
 set(CAPSULE_GBA_STACK_RESERVE 2048 CACHE STRING "GBA: bytes of IWRAM the link keeps free for the user stack")
 # OFF only to measure a program that does not fit (the report then says by how much); never for a ROM that runs.
 option(CAPSULE_GBA_MEMORY_CHECKS "GBA: fail the link past EWRAM's end or below the stack reserve" ON)
-# D-5: every ROM is checked against its game's cartridge target, "rom": {"cart_mb": 8 | 16 | 32} in project.json
+# Every ROM is checked against its game's cartridge target, "rom": {"cart_mb": 8 | 16 | 32} in project.json
 # (cmake/gba_rom_size.cmake); a game that names none gets the GBA's whole ROM window.
 set(CAPSULE_GBA_ROM_WINDOW_MB 32)
-# D-40: on Windows a desktop game is a GUI program (no console window) in every build type but Debug; it still writes
+# On Windows a desktop game is a GUI program (no console window) in every build type but Debug; it still writes
 # its log lines to the console it was started from (src/hal/sdl2/hal_sdl2.cpp). ON keeps a console window always.
 option(CAPSULE_WINDOWS_CONSOLE "Windows: desktop games open a console window in every build type" OFF)
 
@@ -147,7 +147,7 @@ if(CAPSULE_PLATFORM STREQUAL "gba")
    target_compile_definitions(capsule_options INTERFACE CAPSULE_PLATFORM_GBA=1)
 endif()
 
-# Text (C-2, D-20): every compiler that writes text encodes it with
+# Text (C-2): every compiler that writes text encodes it with
 # tools/text_encoder.py and a code page; without one, the engine's ASCII page.
 set(CAPSULE_TEXT_DEPENDS ${CAPSULE_ROOT}/tools/text_encoder.py ${CAPSULE_ROOT}/assets/text/ascii.codepage.json)
 
@@ -219,8 +219,8 @@ endforeach()
 # that package edits its fragment instead of this file.
 include(cmake/parts/rng.cmake)      # CAPSULE_RNG_SOURCES, CAPSULE_TEST_RNG_SOURCES
 include(cmake/parts/battle.cmake)   # CAPSULE_BATTLE_SOURCES, CAPSULE_BATTLE_COMPILER_DEPENDS
-include(cmake/parts/inventory.cmake)   # CAPSULE_INVENTORY_SOURCES (G2: bag, item use, save image)
-include(cmake/parts/growth.cmake)   # CAPSULE_GROWTH_SOURCES, capsule_growth_defaults() (G4)
+include(cmake/parts/inventory.cmake)   # CAPSULE_INVENTORY_SOURCES (bag, item use, save image)
+include(cmake/parts/growth.cmake)   # CAPSULE_GROWTH_SOURCES, capsule_growth_defaults()
 include(cmake/capsule_battle.cmake)  # capsule_battle_data(), capsule_battle_library(), capsule_battle_test()
 
 # Engine core + this platform's HAL.
@@ -257,7 +257,7 @@ add_library(capsule_engine STATIC
    src/script/step_effects.cpp
    src/script/script_empty.cpp
    src/script/script_game_default.cpp
-   src/script/script_i4_default.cpp
+   src/script/script_port_defaults.cpp
    src/script/script_port_hal.cpp
    src/text/font.cpp
    src/text/print.cpp
@@ -279,11 +279,11 @@ if(CAPSULE_PLATFORM STREQUAL "gba")
    set_target_properties(libgba PROPERTIES IMPORTED_LOCATION ${LIBGBA}/lib/libgba.a)
    target_include_directories(libgba SYSTEM INTERFACE ${LIBGBA}/include)
    target_link_libraries(capsule_engine PUBLIC libgba)
-   target_sources(capsule_engine PRIVATE src/hal/gba/save_gba.cpp)   # G2: the cartridge's flash (or SRAM)
+   target_sources(capsule_engine PRIVATE src/hal/gba/save_gba.cpp)   # the cartridge's flash (or SRAM)
 else()
    # Every other platform runs the software GBA video model (src/hal/soft).
    target_sources(capsule_engine PRIVATE src/hal/soft/soft_video.cpp)
-   # G2: the save medium in RAM, the default a desktop game's file backend (CAPSULE_RUNTIME_SOURCES) replaces
+   # The save medium in RAM, the default a desktop game's file backend (CAPSULE_RUNTIME_SOURCES) replaces
    target_sources(capsule_engine PRIVATE src/hal/common/save_memory.cpp)
    if(CAPSULE_PLATFORM STREQUAL "desktop")
       target_sources(capsule_engine PRIVATE src/hal/sdl2/hal_sdl2.cpp)
@@ -298,11 +298,11 @@ endif()
 # settings (capsule_game()). Headless builds no games: the library has them.
 # Absolute, so a parent repository's games compile them too (capsule_game() runs in the caller's directory).
 set(CAPSULE_RUNTIME_SOURCES ${CAPSULE_ROOT}/src/hal/common/vram_queue.cpp
-                            ${CAPSULE_ROOT}/src/screen/arena_storage.cpp)   # UM: screen_arena_bytes
+                            ${CAPSULE_ROOT}/src/screen/arena_storage.cpp)   # screen_arena_bytes
 if(CAPSULE_PLATFORM STREQUAL "gba")
    list(APPEND CAPSULE_RUNTIME_SOURCES ${CAPSULE_ROOT}/src/hal/gba/hal_gba.cpp)
 elseif(CAPSULE_PLATFORM STREQUAL "desktop")
-   # G2: the save file, named after the game (capsule_game() passes CAPSULE_GAME_NAME)
+   # The save file, named after the game (capsule_game() passes CAPSULE_GAME_NAME)
    list(APPEND CAPSULE_RUNTIME_SOURCES ${CAPSULE_ROOT}/src/hal/sdl2/save_file.cpp)
 endif()
 if(CAPSULE_PLATFORM STREQUAL "headless")
@@ -314,7 +314,7 @@ endif()
 # capsule_game() uses for every game with battle data; its tests are added at the end (capsule_transfer_tests()).
 include(cmake/parts/transfer.cmake)
 
-# Apps are laid out like games (P-13 layers): the engine (this library), a
+# Apps are laid out like games (layers): the engine (this library), a
 # reference manifest and data.
 #   apps/<app>/reference/project.json  capsule.project/1: name, ROM header,
 #                                      sources, helper libraries, asset
@@ -339,7 +339,7 @@ function(capsule_project_get out json)
    set(${out} "${value}" PARENT_SCOPE)
 endfunction()
 
-# B1 / B2: whether a game's battle structure declares combination methods and eggs or a nursery (capsule_game()
+# Whether a game's battle structure declares combination methods and eggs or a nursery (capsule_game()
 # links the empty script ports without them). <dir>: the game's folder; <battle>: its battle manifest (relative to
 # dir; empty: none); <out_combine> / <out_eggs>: TRUE or FALSE.
 function(capsule_battle_parts dir battle out_combine out_eggs)
@@ -388,7 +388,7 @@ function(capsule_game dir)
    capsule_project_get(rom_title "${json}" rom title)
    capsule_project_get(rom_code "${json}" rom code)
    capsule_project_get(rom_maker "${json}" rom maker)
-   # D-5: the cartridge the ROM must fit (MB); without one, the GBA's whole 32 MB ROM window
+   # The cartridge the ROM must fit (MB); without one, the GBA's whole 32 MB ROM window
    capsule_project_get(rom_cart_mb "${json}" rom cart_mb)
    if(NOT rom_cart_mb)
       set(rom_cart_mb ${CAPSULE_GBA_ROM_WINDOW_MB})
@@ -428,7 +428,7 @@ function(capsule_game dir)
    target_compile_definitions(${target} PRIVATE ${settings_defs})
    target_link_libraries(${target} PRIVATE ${target}_runtime)
 
-   # Text (C-2, D-20): the game's language selects its code page and font.
+   # Text (C-2): the game's language selects its code page and font.
    set(page)
    set(page_args)
    capsule_project_get(language "${json}" text language)
@@ -458,7 +458,7 @@ function(capsule_game dir)
       list(GET fonts 0 font_args)
       set(more_fonts)
       list(LENGTH fonts font_count)
-      if(font_count GREATER 1)   # I4: list(SUBLIST) refuses a begin past the end (a game with the default font)
+      if(font_count GREATER 1)   # list(SUBLIST) refuses a begin past the end (a game with the default font)
          list(SUBLIST fonts 1 -1 more_fonts)
       endif()
       foreach(more ${more_fonts})
@@ -482,7 +482,7 @@ function(capsule_game dir)
       endforeach()
    endif()
 
-   # Field placeholders (D-22 decision 6): the game's scripts manifest declares them; text assets and battle
+   # Field placeholders: the game's scripts manifest declares them; text assets and battle
    # texts may then use them ({player}: FD 80-FE, resolved when the text prints).
    capsule_project_get(game_scripts "${json}" scripts)
    set(field_args)
@@ -505,7 +505,7 @@ function(capsule_game dir)
       target_sources(${target} PRIVATE ${gen}/assets.cpp)
    endif()
 
-   # Maps: a capsule.world/1 manifest with its tilesets, maps and encounter tables (C-03, D-12).
+   # Maps: a capsule.world/1 manifest with its tilesets, maps and encounter tables (C-03).
    # encounter_ids.h names the world's encounter methods and conditions for the app's code.
    capsule_project_get(world "${json}" maps)
    if(world)
@@ -535,9 +535,9 @@ function(capsule_game dir)
       target_sources(${target} PRIVATE ${gen}/world.cpp ${gen}/encounter_ids.h ${gen}/world_ids.h)
    endif()
 
-   # Battle data: a capsule.battle/1 manifest with its structure manifest and ruleset (C-08, P-13, E5s),
+   # Battle data: a capsule.battle/1 manifest with its structure manifest and ruleset (C-08),
    # checked against this platform's engine limits (stats, record bytes), and its record transfer table
-   # (kTransfer, E2c; nothing is linked from it unless the game calls monster::export_record() / import_record()).
+   # (kTransfer, the record transfer; nothing is linked from it unless the game calls monster::export_record() / import_record()).
    capsule_project_get(battle "${json}" battle)
    if(battle)
       add_custom_command(
@@ -550,9 +550,9 @@ function(capsule_game dir)
          COMMENT "Compiling battle data of ${name}")
       capsule_transfer_table(${dir}/${battle} ${gen}/transfer.cpp)
       target_sources(${target} PRIVATE ${gen}/battle.cpp ${gen}/battle_ids.h ${gen}/transfer.cpp)
-      # G2: the engine save image's sizes (bag, party, boxes, script banks) against this platform's budget
+      # The engine save image's sizes (bag, party, boxes, script banks) against this platform's budget
       # (tools/save_layout.py; the build fails when the image is over it, or when the medium keeps fewer than two
-      # copies unless project.json opts in with "save": {"single_copy": true}; C6: the GBA's SRAM is its own medium)
+      # copies unless project.json opts in with "save": {"single_copy": true}; the GBA's SRAM is its own medium)
       set(save_args)
       set(save_platform ${CAPSULE_PLATFORM})
       if(CAPSULE_PLATFORM STREQUAL "gba" AND CAPSULE_GBA_SAVE_SRAM)
@@ -576,10 +576,10 @@ function(capsule_game dir)
       target_sources(${target} PRIVATE ${gen}/save_layout.txt)
    endif()
 
-   # B1 / B2: a game whose structure has no combination methods (or no eggs and nursery), or no battle data at all,
+   # A game whose structure has no combination methods (or no eggs and nursery), or no battle data at all,
    # links the statements' empty ports (src/script/script_combine_none.cpp, script_nursery_none.cpp) instead of the
    # engine library's defaults, which keep their state in EWRAM (the configure step reads the structure manifest
-   # and runs again when it changes). C9: their definitions are weak (CAPSULE_WEAK), so a game that defines its own
+   # and runs again when it changes). Their definitions are weak (CAPSULE_WEAK), so a game that defines its own
    # combine or nursery port (replacing the functions, capsule/script/combine_port.h) keeps it: no duplicate symbol
    capsule_battle_parts(${dir} "${battle}" has_combine has_eggs)
    if(NOT has_combine)
@@ -625,7 +625,7 @@ function(capsule_game dir)
 
    if(CAPSULE_PLATFORM STREQUAL "gba")
       target_link_options(${target} PRIVATE -Wl,-Map,$<TARGET_FILE_DIR:${target}>/${target}.map)
-      # UM (D-33): the memory checks (an input script after gba_cart.ld: the link fails past EWRAM's end or below the
+      # The memory checks (an input script after gba_cart.ld: the link fails past EWRAM's end or below the
       # stack reserve) and the memory report after the link
       if(CAPSULE_GBA_MEMORY_CHECKS)
          target_link_options(${target} PRIVATE -Wl,--defsym=__capsule_stack_reserve=${CAPSULE_GBA_STACK_RESERVE}
@@ -640,7 +640,7 @@ function(capsule_game dir)
       add_custom_command(TARGET ${target} POST_BUILD
          COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${target}> ${rom}
          COMMAND ${CAPSULE_GBAFIX} ${rom} "-t${rom_title}" -c${rom_code} -m${rom_maker}
-         # D-5: the build fails when the ROM outgrows its cartridge target (cmake/gba_rom_size.cmake)
+         # The build fails when the ROM outgrows its cartridge target (cmake/gba_rom_size.cmake)
          COMMAND ${CMAKE_COMMAND} -DROM=${rom} -DCART_MB=${rom_cart_mb} -P ${CAPSULE_ROOT}/cmake/gba_rom_size.cmake
          COMMENT "Building ROM ${target}.gba"
          VERBATIM)
@@ -678,14 +678,14 @@ if(NOT CAPSULE_PLATFORM STREQUAL "headless")
    # Test apps (one per engine system) and module sandboxes (one per gameplay
    # module); see README "Test apps" and "Conventions". The battle module's
    # sandbox is apps/starter_battle (the Starter sample played); the classic
-   # sample's sandbox_battle lives in the reference-ruleset repo (E11).
+   # sample's sandbox_battle lives in the reference-ruleset repo.
    if(CAPSULE_ENGINE_TESTS AND CAPSULE_TEST_APPS)
       foreach(app test_video test_vram test_script test_text test_sequence sandbox_sequence sandbox_map test_battle)
          capsule_game(${CAPSULE_ROOT}/apps/${app})
       endforeach()
-      # The Starter sample played (E9): samples/starter's battle data and art.
+      # The Starter sample played: samples/starter's battle data and art.
       capsule_game(${CAPSULE_ROOT}/apps/starter_battle)
-      # The inventory's sandbox (G2): the Starter's party and bag, item use, shops, the save image.
+      # The inventory's sandbox: the Starter's party and bag, item use, shops, the save image.
       capsule_game(${CAPSULE_ROOT}/apps/sandbox_party)
    endif()
 endif()
@@ -779,7 +779,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_asset_compiler.py)
    add_test(NAME bitmap_tests
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_bitmap.py)
-   # A6 (M4): the audio author tools (MIDI -> song, WAV -> sample, DPCM)
+   # The audio author tools (MIDI -> song, WAV -> sample, DPCM)
    add_test(NAME midi_song_tests
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_midi_song.py)
    add_test(NAME wav_sample_tests
@@ -831,7 +831,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
       src/overworld/overworld.cpp
       src/script/script.cpp
       src/script/field_actions.cpp
-      src/script/script_i4_default.cpp
+      src/script/script_port_defaults.cpp
       ${CAPSULE_SCRIPT_ITEMS_SOURCES}
       src/seq/sequence.cpp
       src/seq/sequence_port_hal.cpp
@@ -858,24 +858,24 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
 
    # Battle engine, creature records and goldens (cmake/parts/battle_tests.cmake).
    include(cmake/parts/battle_tests.cmake)
-   # G2: the bag, item use out of battle and the save image (cmake/parts/inventory_tests.cmake).
+   # The bag, item use out of battle and the save image (cmake/parts/inventory_tests.cmake).
    include(cmake/parts/inventory_tests.cmake)
-   # G4: transformation rules, forms and training values (cmake/parts/growth_tests.cmake).
+   # Transformation rules, forms and training values (cmake/parts/growth_tests.cmake).
    include(cmake/parts/growth_tests.cmake)
-   # G3: the Item action, recruitment and the storage boxes (cmake/parts/recruit_tests.cmake).
+   # The Item action, recruitment and the storage boxes (cmake/parts/recruit_tests.cmake).
    include(cmake/parts/recruit_tests.cmake)
-   # C6: the save image's migrations, cut writes and failing reads (cmake/parts/save_tests.cmake).
+   # The save image's migrations, cut writes and failing reads (cmake/parts/save_tests.cmake).
    include(cmake/parts/save_tests.cmake)
    # F1: the lead rule, the encounter hooks and pipelines, the timed field effects (cmake/parts/field_tests.cmake).
    include(cmake/parts/field_tests.cmake)
-   # DS1 (D-30): doors, override sets, direction grids, the draw order, animation targets (cmake/parts/d30_tests.cmake).
-   include(cmake/parts/d30_tests.cmake)
-   include(cmake/parts/n2_tests.cmake)   # N2 (D-32): cell edits, layouts, ledges, the camera mover, window lines
-   include(cmake/parts/c13b_tests.cmake)   # C13b: the world's cell interaction rules
-   include(cmake/parts/n1_tests.cmake)   # N1 (D-32): the per-frame gameplay draw
-   # C10: the R7 review's engine findings: VM options, triggers, objects, text box styles (cmake/parts/c10_tests.cmake).
-   include(cmake/parts/c10_tests.cmake)
-   # B1: combination methods, previews, the Combination scope (cmake/parts/combine_tests.cmake).
+   # Doors, override sets, direction grids, the draw order, animation targets (cmake/parts/doors_overrides_tests.cmake).
+   include(cmake/parts/doors_overrides_tests.cmake)
+   include(cmake/parts/map_view_tests.cmake)   # cell edits, layouts, ledges, the camera mover, window lines
+   include(cmake/parts/cell_interactions_tests.cmake)   # the world's cell interaction rules
+   include(cmake/parts/frame_draw_tests.cmake)   # the per-frame gameplay draw
+   # A review's engine findings: VM options, triggers, objects, text box styles (cmake/parts/field_options_tests.cmake).
+   include(cmake/parts/field_options_tests.cmake)
+   # Combination methods, previews, the Combination scope (cmake/parts/combine_tests.cmake).
    include(cmake/parts/combine_tests.cmake)
    # Presenter view on its neutral data set (tests/data/battle_presenters): the shared blend while presenters fade
    # (RA1).
@@ -922,7 +922,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
    add_executable(capsule_script_tests
       tests/script_tests.cpp
       src/script/script_menu.cpp
-      # C9: the weak empty ports a game without methods or eggs links: the test's own port stubs replace them
+      # The weak empty ports a game without methods or eggs links: the test's own port stubs replace them
       src/script/script_combine_none.cpp
       src/script/script_nursery_none.cpp
       src/asset/asset.cpp
@@ -959,7 +959,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
    target_include_directories(capsule_script_port_tests PRIVATE include)
    target_link_libraries(capsule_script_port_tests PRIVATE capsule_options)
    add_test(NAME script_port_tests COMMAND capsule_script_port_tests)
-   # I4: proportional text windows (capsule/text/window.h) on the software video model.
+   # Proportional text windows (capsule/text/window.h) on the software video model.
    add_executable(capsule_text_window_tests
       tests/text_window_tests.cpp
       src/text/window.cpp
@@ -979,16 +979,16 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_location_compiler.py)
    add_test(NAME build_settings_tests
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_build_settings.py)
-   # Text (C-2, D-20): code pages and fonts; the snapshot of every generated source.
+   # Text (C-2): code pages and fonts; the snapshot of every generated source.
    add_test(NAME text_encoder_tests
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_text_encoder.py)
    add_test(NAME font_compiler_tests
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_font_compiler.py)
-   add_test(NAME i4_text_tests   # I4: controls, proportional fonts, text tables, route steps
-            COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_i4_text.py)
+   add_test(NAME text_route_tools_tests   # controls, proportional fonts, text tables, route steps
+            COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_text_route_tools.py)
    add_test(NAME generated_snapshot_tests
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_generated_snapshot.py)
-   # D-40 RP: the sample projects (apps/*/sample.json) stay copyable: paths out of an app lead only to the files
+   # RP: the sample projects (apps/*/sample.json) stay copyable: paths out of an app lead only to the files
    # its shared templates list, and its libraries are ones every game may link (docs/APPS.md, Sample projects).
    add_test(NAME sample_project_tests
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_sample_projects.py)
@@ -1016,15 +1016,18 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
 endif()
 
 # Fragments that add to the targets above (empty until their packages fill them).
-include(cmake/parts/effect.cmake)   # effect VM (D-22 decision 1)
+include(cmake/parts/effect.cmake)   # effect VM
 include(cmake/parts/bench.cmake)    # battle test bench (apps/battle_bench)
-include(cmake/parts/ui.cmake)       # N3: the ui module (menus, lists, key repeat, scroll arrows), its tests, sandbox
-include(cmake/parts/screen.cmake)   # UC: full-screen scenes (layers, sprites, tasks, fades, field return)
-include(cmake/parts/audio.cmake)       # M4 B1a: the audio core, its compiler and tests
-include(cmake/parts/audio_hal.cmake)   # M4 B1b: audio backends, output model, audio_render, test/sandbox apps (after audio.cmake)
+include(cmake/parts/ui.cmake)       # the ui module (menus, lists, key repeat, scroll arrows), its tests, sandbox
+include(cmake/parts/screen.cmake)   # full-screen scenes (layers, sprites, tasks, fades, field return)
+include(cmake/parts/vm_ext.cmake)      # VM extension manifests, generated dispatch, checks
+include(cmake/parts/anim.cmake)     # the scene kit's animation-script player, its tests, viewer, sandbox
+include(cmake/parts/audio.cmake)       # the audio core, its compiler and tests
+include(cmake/parts/audio_hal.cmake)   # audio backends, output model, audio_render, test/sandbox apps (after audio.cmake)
+include(cmake/parts/battle_vm.cmake)   # the battle script machine, the controller channel, their tests, sandbox
 capsule_transfer_tests()            # record transfer v2 tests (cmake/parts/transfer.cmake)
 
-# D-40 RG: games outside the engine, built with the engine's own presets (the umbrella's `./build PRESET --game
+# RG: games outside the engine, built with the engine's own presets (the umbrella's `./build PRESET --game
 # <folder>` passes the folder and turns CAPSULE_ENGINE_TESTS off, so only the engine library and the game build).
 # Each entry is a game folder laid out like the apps (reference/project.json, data/, src/), e.g. one the Studio's
 # New game made; a relative folder is taken from the engine's folder. Not built headless, like every game.

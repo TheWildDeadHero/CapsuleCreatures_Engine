@@ -1,0 +1,42 @@
+{
+  "schema": "capsule.script-bank/1",
+  "commands": [
+    {"name": "nop", "id": 0},
+    {"name": "end", "id": 1},
+    {"name": "goto", "id": 2, "operands": ["code"]},
+    {"name": "call", "id": 3, "operands": ["code"]},
+    {"name": "return", "id": 4},
+    {"name": "send", "id": 5, "operands": ["u8", "u8"]},
+    {"name": "pause", "id": 6, "operands": ["u16"]},
+    {"name": "set", "id": 7, "operands": ["ref", "u8"]},
+    {"name": "yield", "id": 8},
+    {"name": "add", "id": 9, "operands": ["s8"]},
+    {"name": "list", "id": 10, "operands": ["code"]}
+  ],
+  "script": [
+    "label:Main",
+    ["add", 1],
+    ["call", "Twice"],
+    ["add", -3],
+    ["set", {"kind": "variable", "id": 2, "offset": 1}, 7],
+    ["send", 1, 42],
+    ["add", 10],
+    ["pause", 3],
+    ["add", 100],
+    ["yield"],
+    ["list", "Data"],
+    ["end"],
+    "label:Twice",
+    ["add", 2],
+    ["add", 2],
+    ["return"],
+    "label:Recurse",
+    ["call", "Recurse"],
+    "label:Data",
+    ["u8", 3],
+    ["u16", 513, 1027, 1541],
+    "label:Unknown",
+    ["u8", 200],
+    "label:End"
+  ]
+}

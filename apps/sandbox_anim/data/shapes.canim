@@ -1,0 +1,18 @@
+# BF (D-38): the sandbox's animation script (simple shapes; scenes.cpp has its tables and hooks).
+.symbol template ball 0
+.symbol template ghost 1
+.symbol task orbit 0
+.symbol task flash 1
+.script show
+   load_gfx 1
+   create_sprite T:ball 3 [60, 80, 100]       # x, y, frames to live
+   create_sprite T:ghost 2 [120, 80, 70]
+   create_task K:orbit 2 [0, 40, 90]          # sprite 0 orbits at radius 40 for 90 frames
+   set_blend 1 0x00 0x3f 10 6                 # the ghost is see-through
+   delay 20
+   create_task K:flash 3 [1, 1]               # the ball's palette to white and back
+   bg_scroll 0 4 2
+   wait_visual
+   blend_off
+   bg_scroll 0 0 0
+   end

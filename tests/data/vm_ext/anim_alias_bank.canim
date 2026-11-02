@@ -1,0 +1,44 @@
+# VX (D-39): the animation player's alias test bank (tests/anim_alias_tests.cpp), its game opcodes declared by the
+# manifest (tools/anim_bank.py .manifest).
+.manifest anim_alias_vm_ext.json
+
+.script flow
+   mark 1
+   setturn 3
+   ifturn 2 never
+   ifturn 3 three
+never:
+   mark -1
+   end
+three:
+   mark 3
+   choose even odd
+even:
+   mark -2
+   end
+odd:
+   mark 5
+   waitfade
+   mark 6
+   ifflag flagged
+   mark 7
+   copypair
+   ifpair same
+   mark -3
+   end
+flagged:
+   mark -4
+   end
+same:
+   mark 8
+   goto2 done
+   mark -5
+done:
+   mark 9
+   end
+
+.script spin
+   spin
+
+.script bad_target
+   ifturn 0 1000

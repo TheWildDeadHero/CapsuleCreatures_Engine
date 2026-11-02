@@ -58,6 +58,18 @@ sample's sandbox (`sandbox_battle`: unowned creatures and data parties in
 sequence) moved with that sample to the reference-ruleset repo (E11), which
 builds it against this engine with its Method-1 generator.
 
+## Animation and battle script sandboxes
+
+`capsule_sandbox_anim` (`apps/sandbox_anim`) runs the scene kit's four scenes with simple shapes made by code, 180
+frames each and no input: affine animations (spin, pulse, squash, a matrix set by hand), scanline effects (a wave
+on BG0's horizontal offset, per-line blending, a diamond window), palette blends by tag, and an animation script
+(`data/shapes.canim`) through the engine's player. `capsule_anim_view` (same folder) disassembles a bank or writes
+chosen frames of a scene for the tests ([Animation scripts](ANIM_SCRIPT.md)).
+
+`capsule_sandbox_battle_vm` (`apps/sandbox_battle_vm`) runs a small battle script bank
+(`data/sandbox_bank.json`) that slides two squares through the controller channel; the status line shows the
+label, the script position and the controllers' busy mask. A pauses, B restarts.
+
 ## Map sandbox
 
 `capsule_sandbox_map` walks the sandbox world in `apps/sandbox_map/data`

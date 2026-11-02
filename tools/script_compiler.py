@@ -11,7 +11,7 @@ The manifest names the sources and the build settings:
      "game": "base", "games": ["base", "other"], "stack_depth": 20,
      "assets": "assets.json", "world": "world.json"}
 
-C10: "vm" (optional) changes how the VM runs, for a game whose original script engine
+"vm" (optional) changes how the VM runs, for a game whose original script engine
 behaves so: {"resume": "next_frame"} (the instruction after a wait runs on the next
 frame), {"random": "modulo"} (`random(n)` is a draw modulo n, drawn even for n = 0),
 {"vars": "wrap"} (a u8 / u16 variable of its type's whole range overflows as the type
@@ -24,7 +24,7 @@ compiler check `text:` references; `world` (optional) checks map names.
 Inline texts are encoded with the game's code page (tools/text_encoder.py;
 --code-page, default the engine's ASCII page).
 
-Field placeholders (D-22 decision 6, optional): names the game's field texts
+Field placeholders (optional): names the game's field texts
 may use, each bound to a name slot, a variable, a term or a party record
 field; and terms (fixed words):
 
@@ -44,7 +44,7 @@ field; and terms (fixed words):
   a role of 8-bit elements with more than one element as text codes, any
   other in decimal.
 
-Record roles (D-22 decision 2, optional): "battle": "battle.json" names the
+Record roles (optional): "battle": "battle.json" names the
 game's battle manifest, whose monster_layout gives the record's roles (custom
 roles included), widths, counts and party size; without it the engine roles
 of the registry are known, at their registry shapes. script_ids.h then names
@@ -56,7 +56,7 @@ waits for a button (FA), `{page}` waits and starts a new page (FB),
 `{@concept}` / `{@concept:many}` expand a term; braces are not characters
 then. Without it braces stay plain characters (texts encode as before). The
 world's location names follow the same manifest (tools/map_compiler.py).
-script_ids.h names each placeholder PLACEHOLDER_<NAME> (its index; I4: a ':' in the name as '_').
+script_ids.h names each placeholder PLACEHOLDER_<NAME> (its index; a ':' in the name as '_').
 
 The language (`.cscript`, UTF-8) is engine-generic (B-4). Declarations:
 
@@ -77,7 +77,7 @@ Statements: `label:`, `goto l;`, `call s;`, `call var(x) of [a, b];`,
 `yesno -> var(v);`, `choice ["a", text:b] [cancel 1] -> var(v);`,
 `delay <operand>;`, `native name(<operands>) [-> var(v)];`,
 `give_item(<item>[, <n>]) [-> var(ok)];`, `take_item(<item>[, <n>]) [-> var(ok)];`,
-`count_item(<item>) -> var(v);` (the bag, G2: <item> is an item name of
+`count_item(<item>) -> var(v);` (the bag, the inventory: <item> is an item name of
 the manifest's `battle` as a string, or an operand holding its id; n
 defaults to 1; ok is 1 when all of them moved), `open_bag -> var(v);` (the
 bag menu through the script port: the chosen item's id, 0 for none; waits),
@@ -86,18 +86,18 @@ bag menu through the script port: the chosen item's id, 0 for none; waits),
 `time_of_day -> var(v);` (the game's time of day, capsule/core/clock.h),
 `count_boxed -> var(v);`, `deposit_box(<member>) [-> var(ok)];`,
 `withdraw_box(<slot>) [-> var(ok)];` and `open_boxes -> var(v);` (the
-storage boxes through the script port, G3: the records they hold, a party
+storage boxes through the script port, the recruitment: the records they hold, a party
 member into the first free slot, a storage slot's record to the party's end,
 the boxes menu: the chosen box + 1, 0 for none; waits),
-`transform(<member>) -> var(v);` (G4: the member's transformation by the
+`transform(<member>) -> var(v);` (the member's transformation by the
 battle's script-trigger rules through the growth port,
 capsule/script/growth_port.h; waits; v = 0 nothing, 1 changed, 2 stopped),
 `field_effect start NAME <amount> [-> var(ok)];`, `field_effect active NAME
--> var(v);` and `field_effect remaining NAME -> var(v);` (F1, D-27 section 2:
+-> var(v);` and `field_effect remaining NAME -> var(v);` (F1, :
 a timed field effect of the battle manifest's structure, `field_effects`,
 capsule/script/field_effects.h: started by its stack rule, ok = 1 started,
 0 refused; v = 1 while it runs; v = the steps or minutes it has left),
-F2 (D-27 section 3, capsule/script/field_actions.h): `darkness <operand>;`
+, capsule/script/field_actions.h: `darkness <operand>;`
 (the shown map's darkness level, 0 lit to 4, until the next map),
 `flight record NAME;`, `flight visit NAME [transition];` and `flight menu
 -> var(v);` (a flight point of the manifest's world, `flight_points`: record
@@ -113,7 +113,7 @@ map_tags), their scripts, the flags and variables their requirements read;
 an asking action gets the implicit script field_action_ask_<name> (its
 prompt, yes / no, then its script) and the dispatcher writes the member's
 party slot to the implicit variable field_action_member (u8, map).
-F3 (D-27 section 4, capsule/script/step_effects.h): the battle manifest's
+, capsule/script/step_effects.h: the battle manifest's
 step effects become implicit permanent u16 variables step_effect_<name>
 (the steps counted towards the next run, 0 to every - 1: scripts may read
 them) and their records (every, the damage rule, the battle message ids of
@@ -121,7 +121,7 @@ their messages, the script a run with an outcome runs); with a script, the
 implicit variables step_effect_member (u8, map: the first member, in party
 order, with the run's worst outcome) and
 step_effect_outcome (u8, map: 0 none, 1 hurt, 2 survived, 3 fainted).
-B1 (D-28 section 1, capsule/script/combine_port.h): `combine open NAME -> var(v);`
+, capsule/script/combine_port.h: `combine open NAME -> var(v);`
 (a combination method of the battle manifest's structure, `combine_methods`:
 the inputs picked from the party through the menu, the result asked
 about, combined; waits; v = 0 backed out, 1 combined, 2 refused),
@@ -130,7 +130,7 @@ no question; waits), `combine preview NAME (<a>, ...) -> var(v);` (v = the
 result species + 1, 0 none, 65535 a random pick), `combine status NAME
 (<a>, ...) -> var(v);` (capsule::combine::Status) and `combine fee NAME
 (<a>, ...) -> var(v);` (its fee).
-B2 (D-28 sections 2 and 3, capsule/script/nursery_port.h): the battle manifest's
+Combination sections 2 and 3, capsule/script/nursery_port.h: the battle manifest's
 nursery and eggs: `nursery pick -> var(v);` (the party menu; waits; v = the
 member + 1, 0 backed out), `nursery deposit <member> -> var(v);` (v = 1 when
 it went), `nursery withdraw <slot> [pay var(money)] -> var(v);` (its fee taken
@@ -147,18 +147,18 @@ slot and element are operands, the role a role name or ID, element 0 when
 left out; the record's value clamps to the variable's range, a written value
 is truncated to the role's width), the map object
 commands (B-21) `move <obj> down|up|left|right [<steps>];` (waits until it
-stands; C8: `... [<steps>] checked [-> var(ok)];` walks only when the
+stands; `... [<steps>] checked [-> var(ok)];` walks only when the
 field's movement rules allow every step: terrain, elevation, the walker's
 vehicle class, ledges, objects; else nothing moves, ok = 0),
-`face <obj> down|up|left|right|player|self|opposite_player;` (C10:
+`face <obj> down|up|left|right|player|self|opposite_player;` (
 opposite_player turns it opposite the walker's facing, not towards it),
 `hide <obj>;`, `show <obj>;`
 with <obj> = `self` (the object whose talk or sight started the script),
-`player`, C10 `selected` (self, or the walker when no object started the
+`player`, the field options `selected` (self, or the walker when no object started the
 script) or an operand (a local ID: the map's object list
 index, as a number or a constant), `vehicle NAME;` or `vehicle N;` (the
-walker's vehicle class, A2: a name from the world's vehicle_classes, which
-needs the manifest's `world`, or a class number), DS1 (D-30 section 2)
+walker's vehicle class: a name from the world's vehicle_classes, which
+needs the manifest's `world`, or a class number), the doors
 `override apply NAME;` / `override clear NAME;` (a cell override set of a
 map of the manifest's world, the maps' `override_sets`: its cells show their
 override until cleared; a persisting set's flag or variable is written, so it
@@ -204,27 +204,27 @@ OPS = ["End", "Return", "Goto", "Call", "CallTable", "IfFlagClear", "IfFlagSet",
        "ObjectShow", "ObjectHide", "Route", "WaitMoves", "SelfSwitch", "IfSelfSet", "IfSelfClear", "VarOp",
        "InputNumber", "WaitKey", "MessagePos", "Warp", "Place", "Scroll", "Tint", "Flash", "Shake", "TimerStart",
        "TimerStop", "Encounters", "Vehicle", "RoleGet", "RoleSet",
-       # G2 (D-26 section 2): the bag, shops and the game's time of day
+       # The bag, shops and the game's time of day
        "ItemGive", "ItemTake", "ItemCount", "BagOpen", "Shop", "TimeOfDay",
-       # G3 (D-26 section 3): the storage boxes
+       # The storage boxes
        "BoxCount", "BoxDeposit", "BoxWithdraw", "BoxesOpen",
-       # G4 (D-26 section 4): a party member's transformation
+       # A party member's transformation
        "Transform", "FieldEffect",
-       # F2 (D-27 section 3): darkness, flight points, the escape point, field actions
+       # Darkness, flight points, the escape point, field actions
        "Darkness", "Flight", "Escape", "FieldAction",
-       # C8: a walk by the movement rules (`move ... checked`)
+       # A walk by the movement rules (`move ... checked`)
        "ObjectMoveChecked",
-       # B1 (D-28 section 1): a combination method
+       # A combination method
        "Combine",
-       # B2 (D-28 sections 2 and 3): the nursery and the nickname prompt
+       # Combination sections 2 and 3: the nursery and the nickname prompt
        "Nursery",
-       # I4 (D-29, imported event scripts): a jump to another script, object locks, message modes, object waits,
+       # , imported event scripts: a jump to another script, object locks, message modes, object waits,
        # removals, visibility and template changes, doors, weather, screen fades, metatiles, the respawn point,
        # remembered warps, sound, marts
        "Jump", "Lock", "Release", "MessageEx", "WaitMessage", "WaitObject", "ObjectRemove", "ObjectVisible",
        "ObjectTemplate", "Door", "Weather", "Fade", "SetMetatile", "Respawn", "SetWarp", "Sound", "WaitSound",
        "Mart", "CallLoose", "WaitState",
-       # DS1 (D-30 section 2): cell override sets
+       # Cell override sets
        "Override"]
 ## Opcode name -> number.
 OP = {name: i for i, name in enumerate(OPS)}
@@ -232,21 +232,21 @@ OP = {name: i for i, name in enumerate(OPS)}
 COMPARES = ["==", "!=", "<", "<=", ">", ">="]
 ## Negation of each comparison.
 NEGATE = {"==": "!=", "!=": "==", "<": ">=", "<=": ">", ">": "<=", ">=": "<"}
-## Lifetime names in capsule::script::Lifetime order (C10: "session" last: kept in RAM only, never saved).
+## Lifetime names in capsule::script::Lifetime order ("session" last: kept in RAM only, never saved).
 LIFETIMES = ["permanent", "daily", "area", "map", "session"]
 ## The lifetime cleared on every map change (the implicit map-lifetime variables use it).
 MAP_LIFETIME = "map"
-## C10: the lifetime kept in RAM only (last; every lifetime before it is saved).
+## The lifetime kept in RAM only (last; every lifetime before it is saved).
 SESSION_LIFETIME = "session"
 ## Variable types -> (width, lowest, highest).
 TYPES = {"u8": (1, 0, 255), "u16": (2, 0, 65535), "u32": (4, 0, 2**31 - 1)}
-## Trigger kinds in capsule::script::TriggerKind order (I4: on_resume when the field resumes on the map, on_warp_into
+## Trigger kinds in capsule::script::TriggerKind order (on_resume when the field resumes on the map, on_warp_into
 ## after a warp's arrival (the first entry whose condition holds), on_dive when a dive / emerge has no connection,
 ## on_return when the field comes back from a menu or a battle).
 TRIGGER_KINDS = ["on_transition", "on_load", "on_frame", "on_resume", "on_warp_into", "on_dive", "on_return"]
-## I4: trigger kinds whose entries have a condition (on_frame, on_warp_into).
+## Trigger kinds whose entries have a condition (on_frame, on_warp_into).
 CONDITION_KINDS = ("on_frame", "on_warp_into")
-## I4: trigger kinds whose scripts must not wait (every kind but on_frame: they run to their end at once).
+## Trigger kinds whose scripts must not wait (every kind but on_frame: they run to their end at once).
 IMMEDIATE_KINDS = ("on_transition", "on_load", "on_resume", "on_warp_into", "on_dive", "on_return")
 ## Words that cannot name anything.
 KEYWORDS = {"flag", "var", "const", "native", "script", "map_scripts", "when", "game", "not", "goto",
@@ -279,67 +279,67 @@ DEP_VAR = 0x8000
 ## Opcodes that make a script wait.
 WAITING_STATEMENTS = {"msg", "msgbox", "wait_button", "yesno", "choice", "delay", "move", "route", "wait_moves",
                       "input_number", "wait_key", "warp", "scroll", "open_bag", "shop", "open_boxes", "transform"}
-## The bag statements (G2): name -> {"op": opcode, "counted": takes a count, "result": needs a result variable}.
+## The bag statements: name -> {"op": opcode, "counted": takes a count, "result": needs a result variable}.
 ITEM_STATEMENTS = {"give_item": {"op": "ItemGive", "counted": True, "result": False},
                    "take_item": {"op": "ItemTake", "counted": True, "result": False},
                    "count_item": {"op": "ItemCount", "counted": False, "result": True}}
-## The box statements that move a record (G3): name -> opcode (the operand: a party member / a storage slot).
+## The box statements that move a record: name -> opcode (the operand: a party member / a storage slot).
 BOX_STATEMENTS = {"deposit_box": "BoxDeposit", "withdraw_box": "BoxWithdraw"}
-## The box statements that only give a value (G3): name -> opcode (`name -> var(v);`).
+## The box statements that only give a value: name -> opcode (`name -> var(v);`).
 BOX_QUERIES = {"count_boxed": "BoxCount", "open_boxes": "BoxesOpen"}
 ## F1: `field_effect KIND NAME ...` kinds in capsule::script::FieldEffectOp order (start takes an amount; active and
 ## remaining need -> var(v)).
 FIELD_EFFECT_KINDS = ["start", "active", "remaining"]
 ## The statement word of the timed field effects.
 FIELD_EFFECT_WORD = "field_effect"
-## F2: `flight KIND ...` kinds in capsule::script::FlightOp order.
+## `flight KIND ...` kinds in capsule::script::FlightOp order.
 FLIGHT_KINDS = ["record", "visit", "menu"]
 ## The statement word of the flight points.
 FLIGHT_WORD = "flight"
 ## The statement word of the darkness level.
 DARKNESS_WORD = "darkness"
-## C8: the word after a move's steps that makes it a walk by the field's movement rules (`move OBJ DIR [N] checked
+## The word after a move's steps that makes it a walk by the field's movement rules (`move OBJ DIR [N] checked
 ## [-> var(ok)];`: every step allowed, or nothing moves; ok = 1 when it walked).
 CHECKED_WORD = "checked"
 ## The statement word of the escape point.
 ESCAPE_WORD = "escape"
-## F2: `field_action KIND NAME -> var(v);` kinds in capsule::script::FieldActionOp order.
+## `field_action KIND NAME -> var(v);` kinds in capsule::script::FieldActionOp order.
 FIELD_ACTION_KINDS = ["available"]
 ## The statement word of the field actions.
 FIELD_ACTION_WORD = "field_action"
-## B1: `combine KIND NAME ...` kinds in capsule::script::CombineOp order (open: the menu flow; run: given members;
+## `combine KIND NAME ...` kinds in capsule::script::CombineOp order (open: the menu flow; run: given members;
 ## preview / status / fee: queries).
 COMBINE_KINDS = ["open", "run", "preview", "status", "fee"]
-## B1: the combine kinds that wait.
+## The combine kinds that wait.
 COMBINE_WAITING = ("open", "run")
-## B1: the statement word of the combination methods.
+## The statement word of the combination methods.
 COMBINE_WORD = "combine"
-## B1: most party members a combine statement names (capsule::script::kMaxCombineMembers).
+## Most party members a combine statement names (capsule::script::kMaxCombineMembers).
 MAX_COMBINE_MEMBERS = 8
-## B2: `nursery KIND ...` kinds in capsule::script::NurseryOp order.
+## `nursery KIND ...` kinds in capsule::script::NurseryOp order.
 NURSERY_KINDS = ["pick", "deposit", "withdraw", "count", "levels", "fee", "ready", "odds", "take", "name"]
-## B2: the nursery kinds with an operand (a party member or a nursery slot).
+## The nursery kinds with an operand (a party member or a nursery slot).
 NURSERY_OPERAND = ("deposit", "withdraw", "levels", "fee", "name")
-## B2: the nursery kinds that wait (the party menu, the nickname prompt).
+## The nursery kinds that wait (the party menu, the nickname prompt).
 NURSERY_WAITING = ("pick", "name")
-## B2: the kinds a game without a nursery may use (the nickname prompt).
+## The kinds a game without a nursery may use (the nickname prompt).
 NURSERY_ANYWHERE = ("name",)
-## B2: the statement word of the nursery.
+## The statement word of the nursery.
 NURSERY_WORD = "nursery"
-## B2: the word before a withdraw's money variable.
+## The word before a withdraw's money variable.
 PAY_WORD = "pay"
 ## Tokens ahead of `darkness` where a name operand's ';' stands (`darkness NAME;`).
 OPERAND_END_AHEAD = 2
-## Most darkness levels of a world (capsule::map::kMaxDarkness; C8: the world's darkness_levels say how many).
+## Most darkness levels of a world (capsule::map::kMaxDarkness; the world's darkness_levels say how many).
 MAX_DARKNESS = 15
-## C8: the implicit map-lifetime variable that keeps a script-set darkness across a save (level + 1; 0: the map's
+## The implicit map-lifetime variable that keeps a script-set darkness across a save (level + 1; 0: the map's
 ## own level; capsule::script::Bank::darkness_var). Declared for a world with a dark map or scripts using
 ## `darkness`; the map lifetime clears it when the walker goes to another map.
 DARKNESS_VAR = "map_darkness"
 ## Prefix of a flight point's implicit flag (recorded = visited).
 FLIGHT_FLAG_PREFIX = "flight_"
 ## The escape point's implicit variables (capsule::script::EscapeVars order): the map's asset key's high and low
-## 16 bits (C8: a key, so a save keeps naming the same map), column and row (+ ESCAPE_BIAS), facing.
+## 16 bits (a key, so a save keeps naming the same map), column and row (+ ESCAPE_BIAS), facing.
 ESCAPE_VARS = ["escape_map_hi", "escape_map_lo", "escape_x", "escape_y", "escape_facing"]
 ## FieldActionInfo::flags bit: the action asks first (capsule::script::kActionAsks).
 ACTION_ASKS = 1
@@ -353,7 +353,7 @@ OPND_QUERY = 4
 QUERIES = {"pos_x": True, "pos_y": True, "facing": True, "map_index": False, "steps": False, "timer": False}
 ## VarOp sub-operations in capsule::script::VarOpKind order.
 VAR_OPS = ["*=", "/=", "%="]
-## Warp transitions in capsule::script::Transition order ("default" = the warp's own or the world's; I4: silent (a fade
+## Warp transitions in capsule::script::Transition order ("default" = the warp's own or the world's; silent (a fade
 ## without the warp's sound), door (walking into a door), fall (through a hole), teleport, spin).
 TRANSITIONS = ["none", "fade", "white", "mosaic", "wipe_h", "wipe_v", "box", "silent", "door", "fall", "teleport",
                "spin"]
@@ -369,29 +369,29 @@ ROUTE_NOWAIT = 0x80
 DIRECTIONS = ["down", "up", "left", "right"]
 ## Object operands (capsule/script/data.h): the context's own object, the walker.
 OBJECT_SELF, OBJECT_PLAYER = 254, 255
-## Highest local ID of a map object (I4: map::kMaxObjectTemplates - 1: a map with object_view lists up to 64
+## Highest local ID of a map object (map::kMaxObjectTemplates - 1: a map with object_view lists up to 64
 ## templates; plus the manifest's object_base).
 MAX_OBJECT = 63
-## ObjectFace targets beyond the directions: towards the walker, towards self; C10: opposite the walker's facing
+## ObjectFace targets beyond the directions: towards the walker, towards self; opposite the walker's facing
 ## (capsule::script::kFaceOppositePlayer).
 FACE_PLAYER, FACE_SELF, FACE_OPPOSITE_PLAYER = 4, 5, 6
-## C10: the face words beyond the directions and their ObjectFace targets.
+## The face words beyond the directions and their ObjectFace targets.
 FACE_WORDS = {"player": FACE_PLAYER, "self": FACE_SELF, "opposite_player": FACE_OPPOSITE_PLAYER}
 ## Warp / Place facing byte: keep the current facing (kKeepFacing).
 KEEP_FACING = 4
 ## Scroll direction byte: back to the player.
 SCROLL_BACK = 4
 
-# --- I4 (D-29): the statements of imported event scripts ---
+# --- The statements of imported event scripts ---
 ## Object operands beyond the local IDs: the camera (capsule::script::kObjectCamera) and the object a script last
 ## gave a route (kObjectLast; `wait_moves last;` only).
 OBJECT_CAMERA, OBJECT_LAST = 252, 251
-## C10: object operand: the selected object (the script's own object, or the walker when it has none;
+## Object operand: the selected object (the script's own object, or the walker when it has none;
 ## capsule::script::kObjectSelected).
 OBJECT_SELECTED = 250
 ## Object words of object_ref() besides self and player (not keywords: scripts may still name things so).
 OBJECT_WORDS = {"camera": OBJECT_CAMERA, "last": OBJECT_LAST, "selected": OBJECT_SELECTED}
-## C10: the scripts manifest's "vm" object: key -> {value: capsule::script::kVm... bit} (the first value of each key
+## The scripts manifest's "vm" object: key -> {value: capsule::script::kVm... bit} (the first value of each key
 ## is the engine's own behaviour, bit 0).
 VM_OPTIONS = {"resume": {"same_frame": 0, "next_frame": 1},
               "random": {"scaled": 0, "modulo": 2},
@@ -445,10 +445,10 @@ LOOSE_WORD = "loose"
 WARP_NOWAIT_WORD = "nowait"
 ## Warp facing byte bit: the script goes on at once (capsule::script::kWarpNoWait).
 WARP_NOWAIT = 0x80
-## Statement words of I4 that are no keywords.
-I4_WORDS = ("lock", "release", "wait_msg", "remove", "visible", "set_template", "door", "weather", "fade",
+## Statement words of the script ports that are no keywords.
+PORT_WORDS = ("lock", "release", "wait_msg", "remove", "visible", "set_template", "door", "weather", "fade",
             "set_metatile", "respawn", "set_warp", "sound", "wait_sound", "mart", "wait_state", "override")
-## DS1: the override statement's kinds (`override apply NAME;` / `override clear NAME;`) and their apply byte.
+## The override statement's kinds (`override apply NAME;` / `override clear NAME;`) and their apply byte.
 OVERRIDE_KINDS = ("clear", "apply")
 
 ## Stack depth when the manifest gives none.
@@ -571,7 +571,7 @@ RoleShape = tuple[int, int, int]
 
 
 def vm_flags(vm: Any) -> int:
-   """!C10: the scripts manifest's "vm" object as capsule::script::Bank::vm_flags (VM_OPTIONS: "resume":
+   """!The scripts manifest's "vm" object as capsule::script::Bank::vm_flags (VM_OPTIONS: "resume":
    "same_frame" | "next_frame", "random": "scaled" | "modulo", "vars": "saturate" | "wrap"; a key left out keeps the
    engine's own behaviour).
    @param vm  the manifest's value
@@ -592,8 +592,8 @@ def vm_flags(vm: Any) -> int:
 
 def load_record_layout(path: str | PathLike[str], deps: list[str] | None = None) -> dict[str, Any]:
    """!The record layout of a battle manifest (the monster_layout and stat count of the structure manifest it
-   names, E5s; tools/battlec/layout.py), checked against the most generous platform limits (the battle compile
-   checks the target's).
+   names, the battle structure manifest; tools/battlec/layout.py), checked against the most generous platform limits
+   (the battle compile checks the target's).
    @param path  the battle manifest
    @param deps  list collecting the files read (the battle and structure manifests), or None
    @return compile_layout() result
@@ -621,7 +621,7 @@ def load_record_layout(path: str | PathLike[str], deps: list[str] | None = None)
 
 
 def load_inventory_names(path: str | PathLike[str]) -> tuple[list[str], list[str]]:
-   """!The item and shop names of a battle manifest (G2: give_item / take_item / count_item and shop).
+   """!The item and shop names of a battle manifest (give_item / take_item / count_item and shop).
    @param path  the battle manifest
    @return (item names in id order from 1, shop names in index order)
    @throws ScriptError when it cannot be read
@@ -663,7 +663,7 @@ def load_field_effects(path: str | PathLike[str]) -> list[dict[str, Any]]:
 
 
 def load_step_effects(path: str | PathLike[str]) -> list[dict[str, Any]]:
-   """!The step effects of a battle manifest's structure (F3; tools/battlec/field.py compile_step_effects(), their
+   """!The step effects of a battle manifest's structure (tools/battlec/field.py compile_step_effects(), their
    messages resolved against the battle's messages).
    @param path  the battle manifest
    @return the compiled records (structure order)
@@ -681,7 +681,7 @@ def load_step_effects(path: str | PathLike[str]) -> list[dict[str, Any]]:
 
 
 def load_eggs(path: str | PathLike[str]) -> dict[str, Any]:
-   """!Whether a battle manifest's structure has eggs and a nursery, and the eggs' hatch script (B2; the battle
+   """!Whether a battle manifest's structure has eggs and a nursery, and the eggs' hatch script (the battle
    compiler checks the rest).
    @param path  the battle manifest
    @return {"eggs": bool, "nursery": bool, "hatch_script": name or None}
@@ -701,7 +701,7 @@ def load_eggs(path: str | PathLike[str]) -> dict[str, Any]:
 
 
 def egg_source() -> str:
-   """!The implicit declaration of the eggs (B2): the party slot of the egg that hatched.
+   """!The implicit declaration of the eggs: the party slot of the egg that hatched.
    @return the source
    """
    from battlec.nursery import EGG_MEMBER_VAR
@@ -709,7 +709,7 @@ def egg_source() -> str:
 
 
 def step_effect_source(effects: Sequence[Mapping[str, Any]]) -> str:
-   """!The implicit declarations of the step effects (F3), as `.cscript` source: per effect a permanent u16
+   """!The implicit declarations of the step effects, as `.cscript` source: per effect a permanent u16
    variable 0 to every - 1 (the steps counted towards its next run); with any effect naming a script, the member
    and outcome variables that script reads.
    @param effects  load_step_effects() result
@@ -724,7 +724,7 @@ def step_effect_source(effects: Sequence[Mapping[str, Any]]) -> str:
 
 
 def load_field_actions(path: str | PathLike[str]) -> list[dict[str, Any]]:
-   """!The field actions of a battle manifest's structure (F2; tools/battlec/field.py compile_field_action_records(),
+   """!The field actions of a battle manifest's structure (tools/battlec/field.py compile_field_action_records(),
    without their requirements' rules: the battle compiler checks those).
    @param path  the battle manifest
    @return the records (structure order)
@@ -741,7 +741,7 @@ def load_field_actions(path: str | PathLike[str]) -> list[dict[str, Any]]:
 
 
 def load_combine_methods(path: str | PathLike[str]) -> list[dict[str, Any]]:
-   """!The combination methods of a battle manifest's structure (B1; tools/battlec/combine.py method_records(): names,
+   """!The combination methods of a battle manifest's structure (tools/battlec/combine.py method_records(): names,
    kinds and input counts, without their rules: the battle compiler checks those), for the most generous platform.
    @param path  the battle manifest
    @return the records (structure order)
@@ -759,13 +759,13 @@ def load_combine_methods(path: str | PathLike[str]) -> list[dict[str, Any]]:
       raise ScriptError(f"cannot read the combination methods of {path}: {e}") from None
 
 
-## C10 (S1): parsed world and map manifests by (path, modification time, size): the field and the uses readers both
+## Parsed world and map manifests by (path, modification time, size): the field and the uses readers both
 ## read every map; a file read once in a run is parsed once (they only read what it holds).
 _JSON_CACHE: dict[tuple[str, int, int], Any] = {}
 
 
 def read_json_cached(path: Path) -> Any:
-   """!C10: a JSON file, parsed once while it is unchanged (the result is shared: read it, never change it).
+   """!A JSON file, parsed once while it is unchanged (the result is shared: read it, never change it).
    @param path  the file
    @return the parsed value
    @throws OSError, ValueError as json.loads() / reading do
@@ -778,14 +778,14 @@ def read_json_cached(path: Path) -> Any:
 
 
 def load_world_field(path: str | PathLike[str]) -> dict[str, Any]:
-   """!What the F2 statements and the field actions need of a world: its behaviors, object kinds and map tags (the
-   targets), its flight points and whether any map records an escape point. Unreadable map manifests are skipped
+   """!What the field actions statements and the field actions need of a world: its behaviors, object kinds and map tags
+   (the targets), its flight points and whether any map records an escape point. Unreadable map manifests are skipped
    (the map compiler reports them).
    @param path  world manifest path
    @return {"behaviors", "object_kinds", "map_tags" (names in index order), "flight_points"
-           (map_compiler.compile_flight_points()), "escape" (bool), C8: "darkness_levels" (the world's darkest
-           level), "dark" (bool: a map starts dark), DS1: "override_sets" (every map's set names in the world's
-           order: `override` statements' set ids), "override_persist" ([("flag" | "var", name)] the sets persist
+           (map_compiler.compile_flight_points()), "escape" (bool), the field effects: "darkness_levels" (the world's
+           darkest level), "dark" (bool: a map starts dark), the doors: "override_sets" (every map's set names in the
+           world's order: `override` statements' set ids), "override_persist" ([("flag" | "var", name)] the sets persist
            through: used names)}
    @throws ScriptError for a world whose lists are invalid
    """
@@ -802,8 +802,8 @@ def load_world_field(path: str | PathLike[str]) -> dict[str, Any]:
              "darkness_levels": len(mc.darkness_levels(w)), "dark": False}
    except mc.ManifestError as e:
       raise ScriptError(f"{path.name}: {e}") from None
-   out["override_sets"] = []   # DS1: every map's override sets, in the world's order (map::kWorld.override_sets)
-   out["override_persist"] = []   # DS1: ("flag" | "var", name) of the sets that persist
+   out["override_sets"] = []   # every map's override sets, in the world's order (map::kWorld.override_sets)
+   out["override_persist"] = []   # ("flag" | "var", name) of the sets that persist
    for rel in maps.values():
       try:
          m = read_json_cached(path.parent / str(rel))
@@ -818,7 +818,7 @@ def load_world_field(path: str | PathLike[str]) -> dict[str, Any]:
       if isinstance(m, dict) and m.get("escape_point") is True:
          out["escape"] = True
       if isinstance(m, dict) and isinstance(m.get("darkness"), int) and m["darkness"] > 0:
-         out["dark"] = True   # C8: a dark map: the darkness variable is declared
+         out["dark"] = True   # a dark map: the darkness variable is declared
    return out
 
 
@@ -828,7 +828,7 @@ def has_statement(items: Any, kind: str) -> bool:
    @param kind   the statement's node kind
    @return True when one is found
    """
-   # C10 (S1): one walk with a stack instead of a call per node (sources hold many thousand nodes)
+   # One walk with a stack instead of a call per node (sources hold many thousand nodes)
    stack = [items]
    while stack:
       node = stack.pop()
@@ -843,9 +843,9 @@ def has_statement(items: Any, kind: str) -> bool:
 
 def field_action_source(actions: Sequence[Mapping[str, Any]], world: Mapping[str, Any] | None,
                         dark: bool = False) -> str:
-   """!The implicit declarations of F2, as `.cscript` source: the member variable (with field actions), each asking
-   action's wrapper script (its prompt, yes / no, then its script), each flight point's flag, the escape point's
-   variables (a world with escape points) and C8's darkness variable (DARKNESS_VAR).
+   """!The implicit declarations of the field actions, as `.cscript` source: the member variable (with field actions),
+   each asking action's wrapper script (its prompt, yes / no, then its script), each flight point's flag, the escape
+   point's variables (a world with escape points) and the field effects' darkness variable (DARKNESS_VAR).
    @param actions  load_field_actions() result
    @param world    load_world_field() result, or None
    @param dark     declare DARKNESS_VAR (a dark map, or scripts using `darkness`)
@@ -868,7 +868,7 @@ def field_action_source(actions: Sequence[Mapping[str, Any]], world: Mapping[str
       for n in ESCAPE_VARS:
          lines.append(f"var {n} : u16 {LIFETIMES[0]};")
    if dark:
-      # C8: a script-set darkness kept across a save until the next map (the map lifetime)
+      # A script-set darkness kept across a save until the next map (the map lifetime)
       lines.append(f"var {DARKNESS_VAR} : u8 {MAP_LIFETIME} 0..{MAX_DARKNESS + 1};")
    return "\n".join(lines) + "\n"
 
@@ -903,7 +903,7 @@ def record_roles(layout: Mapping[str, Any] | None) -> tuple[dict[str, RoleShape]
 
 
 class FieldPlaceholders:
-   """!A scripts manifest's field placeholders and terms (D-22 decision 6), checked for shape.
+   """!A scripts manifest's field placeholders and terms, checked for shape.
 
    Shared by the script compiler (inline texts, the bank's placeholder table)
    and the map compiler (location names): both encode field text with it.
@@ -1010,7 +1010,7 @@ class FieldPlaceholders:
       text = term if isinstance(term, str) else term.get(form)
       if isinstance(term, str) and form == TERM_MANY:
          text = None
-      if not isinstance(text, str):   # I4: an empty term is a term (an honorific a language leaves out)
+      if not isinstance(text, str):   # an empty term is a term (an honorific a language leaves out)
          raise ScriptError(f"{where}: term {concept!r} has no {form!r} form")
       try:
          codes = self.codepage.encode(text, where, markup=False)
@@ -1147,7 +1147,7 @@ def parse_int(text: str) -> int:
 class Token:
    """!One token with its position."""
 
-   ## C10 (S1): fixed attributes (faster to read, smaller: sources make hundreds of thousands of tokens).
+   ## Fixed attributes (faster to read, smaller: sources make hundreds of thousands of tokens).
    __slots__ = ("kind", "text", "line", "col")
 
    def __init__(self, kind: str, text: str, line: int, col: int) -> None:
@@ -1250,7 +1250,7 @@ class Node(dict):
       super().__init__(k=node_kind, line=tok.line, col=tok.col, **fields)
 
 
-## C10 (S1): the token kinds at() / accept() match by their text.
+## The token kinds at() / accept() match by their text.
 WORD_KINDS = ("name", "sym")
 
 
@@ -1268,7 +1268,7 @@ class Parser:
       self.toks = tokenize(text, file)
       ## Read position.
       self.i = 0
-      ## C10 (S1): the last token's index (the eof token: reading past it reads it).
+      ## The last token's index (the eof token: reading past it reads it).
       self.last = len(self.toks) - 1
 
    def peek(self, ahead: int = 0) -> Token:
@@ -1434,7 +1434,7 @@ class Parser:
          body = self.declaration_block()
          other = self.declaration_block() if self.accept("else") else None
          return Node("when", t, negate=neg, games=games, glitch=glitch, body=body, other=other)
-      # I4: a named move route, a mart list, a game route step (their words are no keywords)
+      # A named move route, a mart list, a game route step (their words are no keywords)
       if self.at(MOVEMENT_WORD) and self.peek(1).kind == "name" and self.peek(DECLARATION_AHEAD).text == "{":
          self.take()
          n = self.name("a movement name")
@@ -1492,7 +1492,7 @@ class Parser:
       return t.text
 
    def when_head(self) -> tuple[bool, list[str], str | None]:
-      """!Parses 'when [not] game(a, b)' or (I4) 'when [not] glitch("id")'.
+      """!Parses 'when [not] game(a, b)' or 'when [not] glitch("id")'.
       @return (negated, [game names], the glitch id or None)
       """
       self.expect("when")
@@ -1563,7 +1563,7 @@ class Parser:
          n = self.var_ref()
          return Node("varop", t, name=n.text)
       if self.at("script") and self.peek(1).text == "(":
-         # I4: a script's ID as a constant (a native's callback)
+         # A script's ID as a constant (a native's callback)
          self.take()
          self.expect("(")
          n = self.name("a script name")
@@ -1598,7 +1598,7 @@ class Parser:
       if self.accept("player"):
          return Node("num", t, value=OBJECT_PLAYER, obj="player")
       if t.kind == "name" and t.text in OBJECT_WORDS and self.peek(1).text != "(":
-         # I4: the camera, the object last given a route (words, not keywords)
+         # The camera, the object last given a route (words, not keywords)
          self.take()
          return Node("num", t, value=OBJECT_WORDS[t.text], obj=t.text)
       return self.operand()
@@ -1695,8 +1695,8 @@ class Parser:
       self.take()
       return Node("cmp", op, op=op.text, a=a, b=self.operand())
 
-   def f2_statement(self) -> Node | None:
-      """!Parses an F2 statement (D-27 section 3) when one starts here: `darkness <operand>;`, `flight record|visit
+   def field_action_statement(self) -> Node | None:
+      """!Parses an field actions statement when one starts here: `darkness <operand>;`, `flight record|visit
       NAME [transition];`, `flight menu -> var(v);`, `escape [transition] [-> var(ok)];`, `field_action available
       NAME -> var(v);`. Their first words are no keywords (a script may still name a label or a variable so).
       @return its node, or None (another statement)
@@ -1740,7 +1740,7 @@ class Parser:
          self.expect(";")
          return Node("field_action", t, kind=kind, name=name, result=n.text)
       if self.at(NURSERY_WORD) and nxt.text in NURSERY_KINDS:
-         # B2: nursery KIND [<operand>] [pay var(money)] -> var(v);
+         # Nursery KIND [<operand>] [pay var(money)] -> var(v);
          self.take()
          kind = self.take().text
          arg = self.operand() if kind in NURSERY_OPERAND else None
@@ -1753,7 +1753,7 @@ class Parser:
          self.expect(";")
          return Node("nursery", t, kind=kind, arg=arg, money=money, result=n.text)
       if self.at(COMBINE_WORD) and nxt.text in COMBINE_KINDS:
-         # B1: combine KIND NAME [(<member>, ...)] -> var(v);
+         # Combine KIND NAME [(<member>, ...)] -> var(v);
          self.take()
          kind = self.take().text
          name = self.name("a combination method name").text
@@ -1798,7 +1798,7 @@ class Parser:
          n = self.name("a script name")
          loose = self.peek().kind == "name" and self.peek().text == LOOSE_WORD
          if loose:
-            self.take()   # I4: a call that may recurse (CallLoose)
+            self.take()   # a call that may recurse (CallLoose)
          self.expect(";")
          return Node("call", t, script=n.text, loose=loose)
       if self.accept("return"):
@@ -1867,11 +1867,11 @@ class Parser:
          box = self.take().text == "msgbox"
          kind = None
          if box and self.peek().text in MSGBOX_KINDS and self.peek(1).kind in ("string", "ref"):
-            kind = self.take().text   # I4: a message box kind
+            kind = self.take().text   # a message box kind
          text = self.text_ref()
          flags = 0
          while not box and self.peek().kind == "name" and self.peek().text in MSG_FLAGS:
-            flags |= MSG_FLAGS[self.take().text]   # I4: msg modifiers
+            flags |= MSG_FLAGS[self.take().text]   # msg modifiers
          result = None
          if kind == "yesno":
             if not self.accept("->"):
@@ -1928,7 +1928,7 @@ class Parser:
             d = self.direction(("down", "up", "left", "right"))
             at_end = self.at(";") or self.at(CHECKED_WORD)
             steps = Node("num", self.peek(), value=1) if at_end else self.operand()
-            # C8: `checked [-> var(ok)]`: the walk by the field's movement rules, or none
+            # `checked [-> var(ok)]`: the walk by the field's movement rules, or none
             checked = self.accept(CHECKED_WORD)
             result = self.var_ref().text if checked and self.accept("->") else None
             self.expect(";")
@@ -1946,7 +1946,7 @@ class Parser:
             flags.add(self.take().text)
          movement = None
          if self.peek().kind == "name" and not self.at("{"):
-            # I4: a named movement (`movement NAME { ... }`), then its flags
+            # A named movement (`movement NAME { ... }`), then its flags
             movement = self.name("a movement name").text
             while self.peek().text in ("repeat", "skip", "nowait"):
                flags.add(self.take().text)
@@ -1958,7 +1958,7 @@ class Parser:
          return Node("route", t, obj=obj, steps=steps, movement=movement, repeat="repeat" in flags,
                      skip="skip" in flags, nowait="nowait" in flags or "repeat" in flags)
       if self.accept("wait_moves"):
-         obj = None if self.at(";") else self.object_ref()   # I4: one object, or the last one given a route
+         obj = None if self.at(";") else self.object_ref()   # one object, or the last one given a route
          self.expect(";")
          return Node("wait_moves", t, obj=obj)
       if self.accept("input_number"):
@@ -1987,7 +1987,7 @@ class Parser:
             trans = self.take().text
          nowait = self.peek().kind == "name" and self.peek().text == WARP_NOWAIT_WORD
          if nowait:
-            self.take()   # I4: the warp starts and the script goes on
+            self.take()   # the warp starts and the script goes on
          self.expect(";")
          return Node("warp", t, map=m.text, x=x, y=y, facing=facing, transition=trans, nowait=nowait)
       if self.accept("place"):
@@ -2035,7 +2035,7 @@ class Parser:
          on = self.direction(("on", "off"))
          self.expect(";")
          return Node("encounters", t, on=on == "on")
-      # G2: the bag statements are read by their first word only where the next token fits (no keywords: older
+      # The bag statements are read by their first word only where the next token fits (no keywords: older
       # scripts may use the names)
       if self.peek().kind == "name" and self.peek().text in ITEM_STATEMENTS and self.peek(1).text == "(":
          kind = self.take().text
@@ -2053,7 +2053,7 @@ class Parser:
             raise self.error(f"{kind} needs -> var(v)", t)
          self.expect(";")
          return Node("item_op", t, kind=kind, item=item, count=count, result=result)
-      # G3: the box statements, read by their first word as the bag's are
+      # The box statements, read by their first word as the bag's are
       if self.peek().kind == "name" and self.peek().text in BOX_STATEMENTS and self.peek(1).text == "(":
          kind = self.take().text
          self.expect("(")
@@ -2073,11 +2073,11 @@ class Parser:
             raise self.error(f"field_effect {kind} needs -> var(v)", t)
          self.expect(";")
          return Node("field_effect", t, kind=kind, name=name, amount=amount, result=result)
-      f2 = self.f2_statement()
+      f2 = self.field_action_statement()
       if f2 is not None:
          return f2
       if self.at("transform") and self.peek(1).text == "(":
-         # G4: transform(<member>) -> var(v);
+         # transform(<member>) -> var(v);
          self.take()
          self.expect("(")
          member = self.operand()
@@ -2146,18 +2146,18 @@ class Parser:
          body = self.block()
          other = self.block() if self.accept("else") else None
          return Node("when", t, negate=neg, games=games, glitch=glitch, body=body, other=other)
-      i4 = self.i4_statement()
+      i4 = self.port_statement()
       if i4 is not None:
          return i4
       raise self.error(f"expected a statement, found {t.text or 'end of file'!r}")
 
-   def i4_statement(self) -> Node | None:
-      """!Parses an I4 statement (D-29: what imported event scripts need) when one starts here. Their first words
+   def port_statement(self) -> Node | None:
+      """!Parses an script port statement (what imported event scripts need) when one starts here. Their first words
       are no keywords: a word starts one only when the next token is no ':' (a label) or '('.
-      @return its node, or None (no I4 statement)
+      @return its node, or None (no script port statement)
       """
       t = self.peek()
-      if t.kind != "name" or t.text not in I4_WORDS or self.peek(1).text in (":", "("):
+      if t.kind != "name" or t.text not in PORT_WORDS or self.peek(1).text in (":", "("):
          return None
       w = self.take().text
       if w in ("lock", "release"):
@@ -2219,7 +2219,7 @@ class Parser:
          value = self.operand()
          self.expect(";")
          return Node("respawn", t, value=value)
-      if w == "override":   # DS1: a cell override set of the world
+      if w == "override":   # a cell override set of the world
          kind = self.direction(OVERRIDE_KINDS)
          name = self.name("an override set's name")
          self.expect(";")
@@ -2261,7 +2261,7 @@ class Emitter:
       self.fixups = []
       ## Counter for generated labels.
       self.serial = 0
-      ## I4: positions of goto targets (a target naming another script makes the goto a Jump).
+      ## Positions of goto targets (a target naming another script makes the goto a Jump).
       self.goto_sites = set()
 
    def new_label(self) -> str:
@@ -2347,25 +2347,25 @@ class Compiler:
       self.vehicle_names = None
       ## The game's record layout (the manifest's "battle"; load_record_layout()), or None: registry roles only.
       self.record_layout = None
-      ## The battle manifest's (item names, shop names) for the bag statements (G2), or None without a battle.
+      ## The battle manifest's (item names, shop names) for the bag statements, or None without a battle.
       self.inventory_names = None
       ## The battle manifest's timed field effects (F1; load_field_effects()): empty without a battle.
       self.field_effects = []
       ## Where their implicit declarations come from (diagnostics).
       self.field_effect_file = ""
-      ## The battle manifest's field actions (F2; load_field_actions()): empty without a battle.
+      ## The battle manifest's field actions (load_field_actions()): empty without a battle.
       self.field_actions = []
-      ## The battle manifest's combination methods (B1; load_combine_methods()): empty without a battle.
+      ## The battle manifest's combination methods (load_combine_methods()): empty without a battle.
       self.combine_methods = []
-      ## The world's F2 data (load_world_field()), or None without a world.
+      ## The world's field actions data (load_world_field()), or None without a world.
       self.world_field = None
-      ## The battle manifest's step effects (F3; load_step_effects()): empty without a battle.
+      ## The battle manifest's step effects (load_step_effects()): empty without a battle.
       self.step_effects = []
-      ## The battle manifest's eggs and nursery (B2; load_eggs()).
+      ## The battle manifest's eggs and nursery (load_eggs()).
       self.eggs = {"eggs": False, "nursery": False, "hatch_script": None}
       ## Where their implicit declarations come from (diagnostics).
       self.step_effect_file = ""
-      ## Where the F2 implicit declarations come from (diagnostics).
+      ## Where the field actions implicit declarations come from (diagnostics).
       self.field_action_file = ""
       ## The script being compiled uses self switches (set while compiling it).
       self.uses_self = False
@@ -2375,7 +2375,7 @@ class Compiler:
       self.diags = []
       ## Files read (for the dependency file).
       self.deps = []
-      ## The recorded save shapes (C6; tools/save_shape.py load_history()).
+      ## The recorded save shapes (tools/save_shape.py load_history()).
       self.save_history = []
       ## Build variant.
       self.game = "base"
@@ -2407,21 +2407,21 @@ class Compiler:
       self.result = None
       ## The manifest's field placeholders (read_manifest()), or None before.
       self.field = None
-      ## I4: the first local ID of the game's numbering (the manifest's object_base).
+      ## The first local ID of the game's numbering (the manifest's object_base).
       self.object_base = 0
-      ## C10: capsule::script::Bank::vm_flags (the manifest's "vm").
+      ## capsule::script::Bank::vm_flags (the manifest's "vm").
       self.vm_flags = 0
-      ## I4: warn about unused flags and variables (the manifest's warn_unused).
+      ## Warn about unused flags and variables (the manifest's warn_unused).
       self.warn_unused = True
-      ## I4: glitch id -> on (the manifest's glitches), for `when [not] glitch("id")`.
+      ## Glitch id -> on (the manifest's glitches), for `when [not] glitch("id")`.
       self.glitch_switches = {}
-      ## I4: movement name -> its declaration (named move routes).
+      ## Movement name -> its declaration (named move routes).
       self.movements = {}
-      ## I4: mart name -> its declaration.
+      ## Mart name -> its declaration.
       self.marts = {}
-      ## I4: game route step names, in declaration order (their IDs).
+      ## Game route step names, in declaration order (their IDs).
       self.route_steps = []
-      ## I4: script -> the scripts it jumps to (goto naming a script).
+      ## Script -> the scripts it jumps to (goto naming a script).
       self.jumps = {}
       ## Bank::placeholders entries: (kind, param, index, text offset), declaration order.
       self.placeholder_table = []
@@ -2481,7 +2481,7 @@ class Compiler:
       if not isinstance(depth, int) or not 1 <= depth <= MAX_STACK:
          raise ScriptError(f"stack_depth must be 1-{MAX_STACK}")
       self.stack_depth = depth
-      # I4: local IDs counted from object_base (an imported game's numbering), the unused warnings, the glitch switches
+      # Local IDs counted from object_base (an imported game's numbering), the unused warnings, the glitch switches
       base = m.get("object_base", 0)
       if isinstance(base, bool) or not isinstance(base, int) or not 0 <= base <= MAX_OBJECT_BASE:
          raise ScriptError(f"object_base must be 0-{MAX_OBJECT_BASE}")
@@ -2509,7 +2509,7 @@ class Compiler:
          self.eggs = load_eggs(self.base / m["battle"])
       self.field_action_file = f"{m.get('battle') or m.get('world')}: field_actions / flight_points"
       self.field = FieldPlaceholders(m, self.codepage, self.record_layout)
-      # C6: the save history (recorded save shapes; tools/save_shape.py), when the file exists
+      # The save history (recorded save shapes; tools/save_shape.py), when the file exists
       if m.get(save_shape.HISTORY_KEY) is not None and not isinstance(m[save_shape.HISTORY_KEY], str):
          raise ScriptError(f"{save_shape.HISTORY_KEY} must name the save history file")
       history = self.base / str(m.get(save_shape.HISTORY_KEY, save_shape.DEFAULT_HISTORY))
@@ -2551,7 +2551,7 @@ class Compiler:
       return out
 
    def game_selected(self, node: Node) -> bool:
-      """!Whether a when-block is compiled in this build (I4: a glitch's when-block by the manifest's glitch switch).
+      """!Whether a when-block is compiled in this build (a glitch's when-block by the manifest's glitch switch).
       @param node  the when node
       @return true when its body is used (else its else-block, when it has one)
       """
@@ -2682,7 +2682,7 @@ class Compiler:
       return None
 
    def check_object(self, v: int, obj: Node, node: Node, last: bool = False) -> None:
-      """!Checks a constant object operand (I4: local IDs count from the manifest's object_base; the camera; the
+      """!Checks a constant object operand (local IDs count from the manifest's object_base; the camera; the
       object last given a route where it may stand).
       @param v     its value
       @param obj   its node
@@ -2953,7 +2953,7 @@ class Compiler:
          return True
       if k == "goto":
          e.op("Goto")
-         e.goto_sites.add(len(e.code))   # I4: a goto naming a script becomes a Jump (compile_script())
+         e.goto_sites.add(len(e.code))   # a goto naming a script becomes a Jump (compile_script())
          e.target(s["label"], s)
          return False
       if k == "call":
@@ -2961,7 +2961,7 @@ class Compiler:
             self.err(f"unknown script {s['script']!r}", s)
          else:
             self.used.add(("script", s["script"]))
-            # I4: a loose call adds no depth to the proof (a full stack makes it a jump at run time)
+            # A loose call adds no depth to the proof (a full stack makes it a jump at run time)
             ctx["loose" if s.get("loose") else "calls"].add(s["script"])
          e.op("CallLoose" if s.get("loose") else "Call")
          e.u16(self.script_ids.get(s["script"], 0))
@@ -3083,7 +3083,7 @@ class Compiler:
       if k == "msg":
          kind = s.get("kind")
          if kind in ("npc", "sign"):
-            # I4: lock (all for a sign), an NPC turns to the player
+            # Lock (all for a sign), an NPC turns to the player
             e.op("Lock")
             e.u8(LOCK_ALL if kind == "sign" else LOCK_SELF)
             if kind == "npc":
@@ -3092,7 +3092,7 @@ class Compiler:
                                          value=OBJECT_SELF))
                e.u8(FACE_PLAYER)
          if s.get("flags"):
-            e.op("MessageEx")   # I4: no wait / instant / autoscroll
+            e.op("MessageEx")   # no wait / instant / autoscroll
             e.u8(s["flags"])
             self.emit_text(e, s["text"])
          else:
@@ -3202,14 +3202,14 @@ class Compiler:
          return r
       if k == "when":
          return self.statements(e, self.when_body(s), ctx)
-      r = self.i4_emit(e, s, ctx)
+      r = self.port_emit(e, s, ctx)
       if r is not None:
          return r
       self.err(f"internal: unknown statement {k}", s)
       return True
 
    def eventing_statement(self, e: Emitter, s: Node, ctx: dict[str, Any]) -> bool | None:
-      """!Emits the RPG Maker XP-style eventing statements (D-17).
+      """!Emits the RPG Maker XP-style eventing statements.
       @param e    emitter
       @param s    statement node
       @param ctx  per-script state
@@ -3244,7 +3244,7 @@ class Compiler:
          steps = s["steps"]
          where = s
          if s.get("movement") is not None:
-            # I4: a named movement's steps
+            # A named movement's steps
             mv = self.movements.get(s["movement"])
             if mv is None:
                self.err(f"unknown movement {s['movement']!r}", s)
@@ -3267,7 +3267,7 @@ class Compiler:
          return True
       if k == "wait_moves":
          if s.get("obj") is not None:
-            # I4: one object's route (or the object last given one)
+            # One object's route (or the object last given one)
             v = self.value(s["obj"])
             if v is not None:
                self.check_object(v, s["obj"], s, last=True)
@@ -3399,14 +3399,14 @@ class Compiler:
          e.u8(index)
          if s["kind"] == "start":
             amount = self.value(s["amount"])
-            # C8: the effect compiler's check too (its "field-effect-amount" message): the variable is a u16
+            # The effect compiler's check too (its "field-effect-amount" message): the variable is a u16
             from battlec.field import MAX_AMOUNT
             if amount is not None and not 1 <= amount <= MAX_AMOUNT:
                self.err(f"field_effect start: the amount is {amount}; it is 1 to {MAX_AMOUNT}", s)
             self.emit_operand(e, s["amount"])
          e.u16(self.var_id(s["result"], s) if s["result"] is not None else NO_VAR)
          return True
-      handled = self.f2_emit(e, s, ctx)
+      handled = self.field_action_emit(e, s, ctx)
       if handled is not None:
          return handled
       if k == "transform":
@@ -3491,8 +3491,8 @@ class Compiler:
          return True
       return None
 
-   def f2_emit(self, e: Emitter, s: Node, ctx: dict[str, Any]) -> bool | None:
-      """!Emits an F2 statement (darkness, flight, escape, field_action).
+   def field_action_emit(self, e: Emitter, s: Node, ctx: dict[str, Any]) -> bool | None:
+      """!Emits an field actions statement (darkness, flight, escape, field_action).
       @param e    emitter
       @param s    the statement
       @param ctx  compile context ("waits" is set by the statements that wait)
@@ -3501,7 +3501,7 @@ class Compiler:
       k = s["k"]
       if k == "darkness":
          level = self.value(s["level"])
-         # C8: the world's darkest level (its darkness_levels), else the engine's most
+         # The world's darkest level (its darkness_levels), else the engine's most
          darkest = (self.world_field or {}).get("darkness_levels", MAX_DARKNESS)
          if level is not None and not 0 <= level <= darkest:
             self.err(f"darkness: level {level} (0 lit to {darkest}, the world's darkest)", s)
@@ -3553,7 +3553,7 @@ class Compiler:
          e.u16(self.var_id(s["result"], s))
          return True
       if k == "nursery":
-         # B2: the battle manifest's nursery (capsule/script/nursery_port.h); the nickname prompt anywhere
+         # The battle manifest's nursery (capsule/script/nursery_port.h); the nickname prompt anywhere
          if s["kind"] not in NURSERY_ANYWHERE and not self.eggs["nursery"]:
             self.err(f"nursery {s['kind']}: the battle manifest's structure has no nursery", s)
          e.op("Nursery")
@@ -3567,7 +3567,7 @@ class Compiler:
             ctx["waits"] = True
          return True
       if k == "combine":
-         # B1: a combination method of the battle manifest's structure (capsule/script/combine_port.h)
+         # A combination method of the battle manifest's structure (capsule/script/combine_port.h)
          methods = [m["name"] for m in self.combine_methods]
          index = 0
          if s["name"] not in methods:
@@ -3595,7 +3595,7 @@ class Compiler:
       return None
 
    def route_step_id(self, name: str) -> int:
-      """!A game route step's ID for the route compiler (I4: `step NAME` declarations, in order).
+      """!A game route step's ID for the route compiler (`step NAME` declarations, in order).
       @param name  the step's name
       @return its ID
       @throws rc.RouteError when it is not declared
@@ -3604,8 +3604,8 @@ class Compiler:
          raise rc.RouteError(f"unknown game route step {name!r} (declare it with 'step {name};')")
       return self.route_steps.index(name)
 
-   def i4_emit(self, e: Emitter, s: Node, ctx: dict[str, Any]) -> bool | None:
-      """!Emits an I4 statement (D-29: lock / release, wait_msg, remove, visible, set_template, door, weather, fade,
+   def port_emit(self, e: Emitter, s: Node, ctx: dict[str, Any]) -> bool | None:
+      """!Emits an script port statement (lock / release, wait_msg, remove, visible, set_template, door, weather, fade,
       set_metatile, respawn, set_warp, sound, wait_sound, mart).
       @param e    emitter
       @param s    the statement
@@ -3782,7 +3782,7 @@ class Compiler:
       @param name  script name
       @param body  statement nodes
       @param node  declaration node
-      @return (bytes, calls, waits_directly, uses_self_switches); I4: the scripts it jumps to are in self.jumps
+      @return (bytes, calls, waits_directly, uses_self_switches); the scripts it jumps to are in self.jumps
       """
       e = Emitter()
       ctx = {"calls": set(), "waits": False, "loose": set()}
@@ -3793,7 +3793,7 @@ class Compiler:
       # Patch each branch target with its label's offset.
       for pos, label, n in e.fixups:
          if label not in e.labels and pos in e.goto_sites and label in self.scripts:
-            # I4: a goto to another script: a Jump (its frame takes the other script; nothing returns here)
+            # A goto to another script: a Jump (its frame takes the other script; nothing returns here)
             e.code[pos - 1] = OP["Jump"]
             struct.pack_into("<H", e.code, pos, self.script_ids[label])
             self.used.add(("script", label))
@@ -3810,7 +3810,7 @@ class Compiler:
 
    def call_graph_checks(self, calls: Mapping[str, Iterable[str]],
                          jumps: Mapping[str, Iterable[str]] | None = None) -> dict[str, int]:
-      """!Recursion and depth checks over the call graph (B-1). I4: a jump (goto naming a script) takes the frame of
+      """!Recursion and depth checks over the call graph (B-1). A jump (goto naming a script) takes the frame of
       the script it leaves, so it adds no depth, and a loop of jumps alone is no recursion; a cycle with a call in it
       is. Iterative (Tarjan's strongly connected components), so long chains of jumps need no deep recursion.
       @param calls  {script: set of scripts it calls}
@@ -3919,8 +3919,8 @@ class Compiler:
          files.append((self.field_effect_file, implicit))
          for e in self.field_effects:
             self.used.add(("var", field_var_name(e["name"])))
-      # F2: the field actions' member variable and wrappers, the flight points' flags, the escape point's variables;
-      # C8: the darkness variable (a dark map, or a source using `darkness`)
+      # The field actions' member variable and wrappers, the flight points' flags, the escape point's variables;
+      # The darkness variable (a dark map, or a source using `darkness`)
       dark = bool((self.world_field or {}).get("dark")) or any(has_statement(items, DARKNESS_WORD)
                                                               for _, items in files)
       if self.field_actions or (self.world_field or {}).get("flight_points") or (self.world_field or {}).get("escape") \
@@ -3936,7 +3936,7 @@ class Compiler:
                        for fp in (self.world_field or {}).get("flight_points", [])}
          from battlec.field import game_refs
          self.used |= set(game_refs(self.field_actions))   # the requirements read them
-      # F3: the step effects' counters (and their scripts' member / outcome variables)
+      # The step effects' counters (and their scripts' member / outcome variables)
       if self.step_effects:
          from battlec.field import MEMBER_STEP_VAR, OUTCOME_STEP_VAR, step_var_name
          implicit = Parser(step_effect_source(self.step_effects), self.step_effect_file).file_items()
@@ -3944,7 +3944,7 @@ class Compiler:
          files.append((self.step_effect_file, implicit))
          self.used |= {("var", step_var_name(e["name"])) for e in self.step_effects}
          self.used |= {("var", MEMBER_STEP_VAR), ("var", OUTCOME_STEP_VAR)}
-      # B2: the eggs' member variable (the hatch script reads it)
+      # The eggs' member variable (the hatch script reads it)
       if self.eggs["eggs"]:
          from battlec.nursery import EGG_MEMBER_VAR
          egg_file = f"{self.step_effect_file.split(':')[0]}: eggs"
@@ -3952,7 +3952,7 @@ class Compiler:
          stamp(implicit, egg_file)
          files.append((egg_file, implicit))
          self.used.add(("var", EGG_MEMBER_VAR))
-      # DS1: the flags and variables the world's override sets persist through (the field reads them)
+      # The flags and variables the world's override sets persist through (the field reads them)
       self.used |= {(kind, name) for kind, name in (self.world_field or {}).get("override_persist", [])}
       for _, items in files:
          self.declare(items)
@@ -3984,7 +3984,7 @@ class Compiler:
          c, cl, w, sw = self.compile_script(n, self.scripts[n]["body"], self.scripts[n])
          codes[n], calls[n], waits[n], selfs[n] = c, cl, w, sw
       self.call_graph_checks(calls, self.jumps)
-      # Waiting is inherited from callees (I4: and from the scripts a script jumps to).
+      # Waiting is inherited from callees (and from the scripts a script jumps to).
       changed = True
       while changed:
          changed = False
@@ -4058,7 +4058,7 @@ class Compiler:
       if len(triggers) > MAX_BANK_ENTRIES or len(deps) > MAX_BANK_ENTRIES:
          self.err("too many map triggers or trigger dependencies in the bank (65,535 at most)")
       maps.sort(key=lambda m: m[0])
-      # Unused declarations (I4: unless the manifest turns the warnings off).
+      # Unused declarations (unless the manifest turns the warnings off).
       for kind, table in (("flag", self.flags), ("var", self.vars)) if self.warn_unused else ():
          used = self.used
          world_uses = self.world_uses
@@ -4112,7 +4112,7 @@ class Compiler:
          "name_bytes": self.name_bytes,
          "field_effects": self.field_effect_records(),
          "field_actions": self.field_action_records(), "field_action_refs": self.field_action_ref_records(),
-         "flight_points": self.flight_point_records(), "f2_vars": self.f2_var_ids(),
+         "flight_points": self.flight_point_records(), "field_action_vars": self.field_action_var_ids(),
          "step_effects": self.step_effect_records(), "step_vars": self.step_var_ids(),
          "hatch": self.hatch_record(),
       }
@@ -4137,7 +4137,7 @@ class Compiler:
       return out
 
    def step_effect_records(self) -> list[tuple[int, int, int, int, int, list[int], str]]:
-      """!The bank's step effect records (F3; capsule::script::StepEffectInfo): the label's offset in the text pool,
+      """!The bank's step effect records (capsule::script::StepEffectInfo): the label's offset in the text pool,
       the implicit variable, every, the script (or NO_SCRIPT_ID), the damage rule, the message ids.
       @return [(label, var, every, script, damage, messages, name)], in the structure's order
       """
@@ -4161,7 +4161,7 @@ class Compiler:
       return out
 
    def hatch_record(self) -> tuple[int, int] | None:
-      """!The bank's egg members (B2): the hatch script and the egg_member variable.
+      """!The bank's egg members: the hatch script and the egg_member variable.
       @return (ScriptId or NO_SCRIPT_ID, VarId), or None without eggs
       """
       from battlec.nursery import EGG_MEMBER_VAR
@@ -4176,7 +4176,7 @@ class Compiler:
       return script, self.var_ids.get(EGG_MEMBER_VAR, NO_VAR)
 
    def step_var_ids(self) -> dict[str, int]:
-      """!The VarIds of F3's member and outcome variables (NO_VAR where absent).
+      """!The VarIds of the step effects' member and outcome variables (NO_VAR where absent).
       @return {"member", "outcome"}
       """
       from battlec.field import MEMBER_STEP_VAR, OUTCOME_STEP_VAR
@@ -4184,7 +4184,7 @@ class Compiler:
                                                                                                NO_VAR)}
 
    def field_action_records(self) -> list[tuple[int, int, int, int, int, str]]:
-      """!The bank's field action records (F2; capsule::script::FieldActionInfo): the label's offset in the text pool,
+      """!The bank's field action records (capsule::script::FieldActionInfo): the label's offset in the text pool,
       the script it runs (an asking action: its wrapper), the target kind and index, the flags; with the target's
       resolution checked against the world.
       @return [(label, script, target kind, target index, flags, name)], in the structure's order
@@ -4220,7 +4220,7 @@ class Compiler:
       return out
 
    def field_action_ref_records(self) -> list[tuple[int, int, str]]:
-      """!The flags and variables the field actions' requirements read (F2; capsule::script::FieldActionRef, in
+      """!The flags and variables the field actions' requirements read (capsule::script::FieldActionRef, in
       tools/battlec/field.py game_refs() order: the battle data's rules::field_state() indices).
       @return [(id, kind (0 flag, 1 variable), name)]
       """
@@ -4234,7 +4234,7 @@ class Compiler:
       return out
 
    def flight_point_records(self) -> list[tuple[int, int, int, int, int, int, str]]:
-      """!The world's flight points (F2; capsule::script::FlightPointInfo).
+      """!The world's flight points (capsule::script::FlightPointInfo).
       @return [(label, map key, x, y, flag, facing, name)]
       """
       out = []
@@ -4248,9 +4248,9 @@ class Compiler:
                      self.flag_ids.get(FLIGHT_FLAG_PREFIX + fp["name"], 0), fp["facing"], fp["name"]))
       return out
 
-   def f2_var_ids(self) -> dict[str, int]:
-      """!The VarIds of F2's implicit variables (NO_VAR where absent).
-      @return {"member", "escape" [map_hi, map_lo, x, y, facing], "darkness" (C8)}
+   def field_action_var_ids(self) -> dict[str, int]:
+      """!The VarIds of the field actions' implicit variables (NO_VAR where absent).
+      @return {"member", "escape" [map_hi, map_lo, x, y, facing], "darkness"}
       """
       from battlec.field import MEMBER_VAR
       return {"member": self.var_ids.get(MEMBER_VAR, NO_VAR),
@@ -4260,7 +4260,7 @@ class Compiler:
    # Output.
 
    def save_bytes(self) -> int:
-      """!Bytes the flags and variables take in a save (C10: the session lifetime's are never saved).
+      """!Bytes the flags and variables take in a save (the session lifetime's are never saved).
       @return bytes
       """
       r = self.result
@@ -4348,11 +4348,11 @@ class Compiler:
             return name
          names = (strs("kScriptNames", r["names"]), strs("kFlagNames", r["flag_names"]),
                   strs("kVarNames", r["var_names"]))
-      c10 = [f"    {self.vm_flags},"] if self.vm_flags else []   # C10: Bank::vm_flags
-      i4 = [f"    {self.object_base},"] if self.object_base or c10 else []   # I4: Bank::object_base
-      b2 = self.b2_initializer(bool(i4))
-      f3 = self.f3_initializer(L, bool(b2))
-      f2 = self.f2_initializer(L, bool(f3))
+      vm_flags = [f"    {self.vm_flags},"] if self.vm_flags else []   # Bank::vm_flags
+      object_base = [f"    {self.object_base},"] if self.object_base or vm_flags else []   # Bank::object_base
+      hatch = self.hatch_initializer(bool(object_base))
+      step_effects = self.step_effect_initializer(L, bool(hatch))
+      field_actions = self.field_action_initializer(L, bool(step_effects))
       L += ["", "} // namespace", "", "const Bank kBank = {",
             f"    {code}, {scripts}, {text}, {vars_}, {maps}, {trig}, {deps},",
             f"    {{{', '.join(flag_store)}}},",
@@ -4368,17 +4368,17 @@ class Compiler:
             f"    {save_shape.hashes_initializer(self)},",
             f"    {remaps}, {moves},",
             f"    {field_effects}, {len(r['field_effects'])},",
-            *f2,
-            *f3,
-            *b2,
-            *i4,
-            *c10,
+            *field_actions,
+            *step_effects,
+            *hatch,
+            *object_base,
+            *vm_flags,
             "};", "", "} // namespace capsule::script", ""]
       return "\n".join(L)
 
-   def b2_initializer(self, forced: bool = False) -> list[str]:
-      """!The Bank's B2 members (the hatch script, the egg_member variable); nothing for a bank without eggs.
-      @param forced  emit them even without eggs (I4 members follow them in the initializer)
+   def hatch_initializer(self, forced: bool = False) -> list[str]:
+      """!The Bank's nursery members (the hatch script, the egg_member variable); nothing for a bank without eggs.
+      @param forced  emit them even without eggs (members follow them in the initializer)
       @return the initializer lines
       """
       h = self.result["hatch"]
@@ -4386,11 +4386,12 @@ class Compiler:
          return [f"    0x{NO_SCRIPT_ID:04X}, 0x{NO_VAR:04X},"] if forced else []
       return [f"    0x{h[0]:04X}, 0x{h[1]:04X},"]
 
-   def f3_initializer(self, out: list[str], forced: bool = False) -> list[str]:
-      """!The Bank's F3 members (the step effects, the member and outcome variables), with their array appended to
-      the anonymous namespace part; nothing for a bank without step effects (its initializer stays as before F3).
+   def step_effect_initializer(self, out: list[str], forced: bool = False) -> list[str]:
+      """!The Bank's step effects members (the step effects, the member and outcome variables), with their array
+      appended to the anonymous namespace part; nothing for a bank without step effects (its initializer stays as from
+      an older version).
       @param out     the lines so far, inside the anonymous namespace (the array is appended)
-      @param forced  emit them even without step effects (B2 members follow them in the initializer)
+      @param forced  emit them even without step effects (members follow them in the initializer)
       @return the initializer lines
       """
       r = self.result
@@ -4405,16 +4406,16 @@ class Compiler:
       v = r["step_vars"]
       return [f"    kStepEffects, {len(r['step_effects'])}, 0x{v['member']:04X}, 0x{v['outcome']:04X},"]
 
-   def f2_initializer(self, out: list[str], forced: bool = False) -> list[str]:
-      """!The Bank's F2 members (F2: field actions, their references, flight points, the member and escape
+   def field_action_initializer(self, out: list[str], forced: bool = False) -> list[str]:
+      """!The Bank's field actions members (field actions, their references, flight points, the member and escape
       variables), with their arrays appended to the anonymous namespace part; nothing for a bank without them (its
-      initializer stays as before F2).
+      initializer stays as from an older version).
       @param out     the lines so far, inside the anonymous namespace (the arrays are appended)
-      @param forced  emit them even without F2 data (F3 members follow them in the initializer)
+      @param forced  emit them even without field actions data (members follow them in the initializer)
       @return the initializer lines
       """
       r = self.result
-      v = r["f2_vars"]
+      v = r["field_action_vars"]
       if not forced and not (r["field_actions"] or r["flight_points"] or v["member"] != NO_VAR or
                              any(x != NO_VAR for x in v["escape"]) or v["darkness"] != NO_VAR):
          return []
@@ -4467,17 +4468,17 @@ class Compiler:
       if r["placeholder_names"]:
          L.append("")
          for i, n in enumerate(r["placeholder_names"]):
-            ident = n.upper().replace(":", "_")   # I4: a name's ':' part (str:1) as an identifier
+            ident = n.upper().replace(":", "_")   # a name's ':' part (str:1) as an identifier
             L.append(f"inline constexpr uint8_t PLACEHOLDER_{ident} = {i};   ///< Field placeholder {{{n}}}.")
       if self.record_layout is not None:
          L.append("")
          for n, (rid, _w, _c) in self.field.roles.items():
             L.append(f"inline constexpr uint8_t ROLE_{n.upper()} = 0x{rid:02X};   ///< Record role {n} (role_get).")
-      if self.route_steps:   # I4: the game route steps (the step IDs field::game::route_step() receives)
+      if self.route_steps:   # the game route steps (the step IDs field::game::route_step() receives)
          L.append("")
          for i, n in enumerate(self.route_steps):
             L.append(f"inline constexpr uint8_t ROUTE_STEP_{n.upper()} = {i};")
-      if r["flight_points"]:   # F2: the flight points by index (the flight menu's order)
+      if r["flight_points"]:   # the flight points by index (the flight menu's order)
          L.append("")
          for i, fp in enumerate(r["flight_points"]):
             L.append(f"inline constexpr uint8_t FLIGHT_POINT_{fp[-1].upper()} = {i};")
@@ -4504,7 +4505,7 @@ def stamp(items: Any, file: str) -> None:
 
 
 def load_asset_keys(path: str | PathLike[str], deps: list[str] | None = None) -> dict[int, Any]:
-   """!The asset keys and kinds of a capsule.assets/1 manifest (for text:key checks; I4: with its includes and the
+   """!The asset keys and kinds of a capsule.assets/1 manifest (for text:key checks; with its includes and the
    texts of its text tables).
    @param path  manifest path
    @param deps  collects the files read, or None
@@ -4546,7 +4547,7 @@ def load_map_names(path: str | PathLike[str]) -> set[str]:
 
 
 def load_vehicle_names(path: str | PathLike[str]) -> list[str]:
-   """!The vehicle class names of a world manifest, in class order (A2; the
+   """!The vehicle class names of a world manifest, in class order (the
    map compiler checks them).
    @param path  world manifest path
    @return names (default: just "foot")

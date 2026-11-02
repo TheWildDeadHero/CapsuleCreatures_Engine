@@ -32,9 +32,9 @@ constexpr int64_t kMaxU8 = UINT8_MAX;
 /// Largest 16-bit value.
 constexpr int64_t kMaxU16 = UINT16_MAX;
 
-/// The parties' bags (G3: a party's "bag"; static storage).
+/// The parties' bags (a party's "bag"; static storage).
 inventory::Bag g_bags[kMaxParties];
-/// The storage boxes a recruited creature goes to when the party is full (G3; empty at the start of each run).
+/// The storage boxes a recruited creature goes to when the party is full (empty at the start of each run).
 storage::Buffer<storage::kMaxStorageBytes, storage::kUsedBytes> g_box_bytes;   ///< Their bytes (host: the most).
 storage::Storage g_boxes = storage::view(g_box_bytes);                          ///< Their view.
 
@@ -173,7 +173,7 @@ struct Loader
    }
 
    /// Reads a "resources" object: {resource name: value} for a battler resource, {name: [value per move slot]}
-   /// for a move resource (D-25).
+   /// for a move resource.
    /// @param v      the object
    /// @param where  its path
    /// @param out    the values (appended)
@@ -231,7 +231,7 @@ struct Loader
                                           "item", "hp", "status", "status_counter", "experience", nullptr};
       if (v.find("pp") != nullptr)
       {
-         return fail(where + ".pp", "PP is a resource now (D-25): \"resources\": {\"pp\": [value per move slot]}");
+         return fail(where + ".pp", "PP is a resource now: \"resources\": {\"pp\": [value per move slot]}");
       }
       if (!expect(v, Kind::Object, where) || !only(v, kKeys, where))
       {
@@ -416,7 +416,7 @@ struct Loader
       int64_t n = 0;
       if (const Value* x = v.find("bag"))
       {
-         // G3: the bag its Item actions use ({item: count})
+         // The bag its Item actions use ({item: count})
          ok = bag(*x, t, where + ".bag") && ok;
          p.bag = &g_bags[t];
       }
@@ -447,7 +447,7 @@ struct Loader
       }
       if (const Value* x = v.find("ai"))
       {
-         // G1: the party's AI profile by name (else the data party's, else the default one)
+         // The party's AI profile by name (else the data party's, else the default one)
          int idx = 0;
          if (name("ai_profiles", *x, where + ".ai", idx))
          {
@@ -697,7 +697,7 @@ struct Loader
       return ok;
    }
 
-   /// Reads an item choice (G3): the item by name, its target position, member and move slot.
+   /// Reads an item choice: the item by name, its target position, member and move slot.
    /// @param v      the choice
    /// @param it     its "item"
    /// @param where  its path
@@ -840,7 +840,7 @@ struct Loader
       }
       sc.setup = Setup{};
       sc.setup.weather = kNone8;
-      // G3: empty storage boxes for a recruit into a full party
+      // Empty storage boxes for a recruit into a full party
       storage::clear(g_boxes);
       sc.setup.storage = &g_boxes;
       sc.weather_turns_given = false;
@@ -894,7 +894,7 @@ struct Loader
       }
       if (const Value* x = doc.find("owner_texts"))
       {
-         // E13b: the transcript also shows owner texts and condition changes (transcript::kOwnerTexts)
+         // The transcript also shows owner texts and condition changes (transcript::kOwnerTexts)
          if (expect(*x, Kind::Bool, "owner_texts"))
          {
             sc.owner_texts = x->boolean;
@@ -1105,7 +1105,7 @@ bool apply_pokes(battle::State& s, const Scenario& sc)
             b.stages[st] = pk.stages[st];
          }
       }
-      // resource pools (D-25), clamped to their maxima; set directly (no events, like the other pokes)
+      // resource pools, clamped to their maxima; set directly (no events, like the other pokes)
       for (const ResourcePoke& rp : pk.resources)
       {
          const battle::ResourceData& d = battle::kData.resources[rp.resource];

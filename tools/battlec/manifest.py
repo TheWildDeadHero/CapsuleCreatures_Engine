@@ -1,4 +1,4 @@
-"""!The files of a battle manifest (D-23 section 2, package E5s).
+"""!The files of a battle manifest.
 
 A game's battle data is two manifests:
   - battle.json (capsule.battle/1): the content (types, moves, species,
@@ -16,10 +16,10 @@ same as before the split, so every section reads its keys unchanged. A key
 in the other file is refused with a message naming the right one, and the
 old single-file form (structure keys in battle.json, no "structure") is
 refused with the migration command (tools/battle_split.py, which uses
-split_manifest()). The schemas are unreleased and renamed in place (D-23
+split_manifest()). The schemas are unreleased and renamed in place (
 open question 3): there is no compatibility reader.
 
-A later package adds keys to STRUCTURE_KEYS (D-25: "resources"); the split
+A later package adds keys to STRUCTURE_KEYS ("resources"); the split
 tool and the refusals follow the tuple.
 """
 from __future__ import annotations
@@ -51,24 +51,24 @@ STRUCTURE_KEYS = ("monster_layout", "stats", "stages", "rules", "chart", "catego
                   "turn", "learn", "exp_policy", "generation", "terms", "resources", "category_by_type",
                   "passive_slots", "species_fields", "hit_category_by_type", "pockets", "delayed_hits",
                   "recruit", "storage", "transformation", "training", "weather_suppress_tag",
-                  # F1 (D-27): the lead rule and the timed field effects
+                  # F1: the lead rule and the timed field effects
                   "lead", "field_effects",
-                  # F2 (D-27 section 3): the field actions
+                  # The field actions
                   "field_actions",
-                  # F3 (D-27 section 4): the step effects
+                  # The step effects
                   "step_effects",
-                  # B1 (D-28 section 1): the combination methods
+                  # The combination methods
                   "combine_methods",
-                  # B2 (D-28 sections 2 and 3): eggs and the nursery
+                  # Combination sections 2 and 3: eggs and the nursery
                   "eggs", "nursery",
-                  # C9: what a build does with a transferred egg its layout has no egg role for
+                  # What a build does with a transferred egg its layout has no egg role for
                   "transfer_eggs")
 ## Keys of the content manifest.
 BATTLE_KEYS = ("schema", "id", RULESET_KEY, STRUCTURE_KEY, "types", "moves", "passives", "items", "traits",
                "species", "presenters", "parties", "messages", "effects", "texts", "cues", "shops", "ai_profiles")
 ## Keys refused in either file, with what replaced them.
 RETIRED_KEYS = {
-   "stage_names": "stage_names is gone (E6a): each stage of \"stages\" has its \"label\" (and its name, kind, range "
+   "stage_names": "stage_names is gone: each stage of \"stages\" has its \"label\" (and its name, kind, range "
                   "and table)",
 }
 ## The command that splits a single-file manifest (run from the engine's folder).
@@ -132,7 +132,7 @@ def structure_path_of(battle: Mapping[str, Json], battle_path: Path) -> Path:
       if inline:
          raise ManifestError(
             f"{where}: the battle structure ({', '.join(inline)}) moved to its own manifest, "
-            f"{STRUCTURE_SCHEMA} (E5s); split this file with `{MIGRATION_COMMAND} {battle_path}` (it writes "
+            f"{STRUCTURE_SCHEMA}; split this file with `{MIGRATION_COMMAND} {battle_path}` (it writes "
             f"{structure_file_for(where)} and names it under \"{STRUCTURE_KEY}\")")
       raise ManifestError(f"{where}: {STRUCTURE_KEY} must name a {STRUCTURE_SCHEMA} file")
    if not isinstance(name, str) or not name:
@@ -199,8 +199,8 @@ def read_battle(path: str | Path, sources: Sources | None = None,
 
 
 def split_manifest(merged: Mapping[str, Json], structure_name: str) -> tuple[Json, Json]:
-   """!Splits a single-file manifest (the form before E5s) into the content manifest and the structure manifest.
-   Keys keep their order within each file; the content manifest names the structure right after its ruleset
+   """!Splits a single-file manifest (the form from an older version) into the content manifest and the structure
+   manifest. Keys keep their order within each file; the content manifest names the structure right after its ruleset
    (or after its id). Editor data ("editor") stays with the content manifest; keys neither file knows stay with
    the content manifest, where the compiler reports them.
    @param merged          the old battle.json

@@ -164,4 +164,28 @@ void restore(const Snapshot& in);
 /// @return the color
 hal::video::Color base(bool obj, int index);
 
+/// BF: a visible color (as palette RAM gets it at the next VBlank).
+/// @param obj    the OBJ palette (else BG)
+/// @param index  entry 0-255
+/// @return the color
+hal::video::Color visible(bool obj, int index);
+
+/// BF: shows a range of entries blended from their base colors toward a color (the reference games' BlendPalette:
+/// each channel moves by ((target - base) x coef) >> 4); the banks' fades are not changed, and the next change of a
+/// bank's fade or base colors shows that bank anew.
+/// @param obj     the OBJ palette (else BG)
+/// @param first   first entry
+/// @param count   entries (first + count at most 256)
+/// @param coef    0 (base) to 16 (the color)
+/// @param target  the color
+void blend_range(bool obj, int first, int count, uint8_t coef, hal::video::Color target);
+
+/// BF: shows colors in a range of entries as they are (the reference games' copies into the faded buffer); as
+/// blend_range(), until the bank is shown anew.
+/// @param obj     the OBJ palette (else BG)
+/// @param first   first entry
+/// @param colors  the colors
+/// @param count   entries
+void show_colors(bool obj, int first, const hal::video::Color* colors, int count);
+
 } // namespace capsule::gfx::palette

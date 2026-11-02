@@ -1,4 +1,4 @@
-"""!Storage boxes (D-26 section 3, package G3): structure.json `storage`, emitted as capsule::storage::kStorage
+"""!Storage boxes: structure.json `storage`, emitted as capsule::storage::kStorage
 (include/capsule/storage/storage.h) next to the battle tables.
 
 The section is {"box_count", "box_size", "names"}: box_count boxes of box_size slots, each slot one creature record
@@ -9,7 +9,7 @@ section has no boxes (a recruit with a full party then has no room).
 
 The save image keeps the boxes as its Boxes section (tools/save_layout.py: every slot's record bytes, a bit per slot,
 the current box). The ids header gives STORAGE_BYTES and STORAGE_USED_BYTES, the sizes of the game's
-capsule::storage::Buffer (C6: the storage is sized from the manifest, not the platform's maximum).
+capsule::storage::Buffer (the storage is sized from the manifest, not the platform's maximum).
 """
 from __future__ import annotations
 
@@ -107,7 +107,7 @@ def storage_ids(storage: Mapping[str, Any]) -> list[str]:
    """
    return [f"inline constexpr int NUM_BOXES = {storage['box_count']};",
            f"inline constexpr int BOX_SIZE = {storage['box_size']};",
-           "/// Record bytes of every storage slot (capsule::storage::Buffer's first size; C6).",
+           "/// Record bytes of every storage slot (capsule::storage::Buffer's first size).",
            f"inline constexpr uint32_t STORAGE_BYTES = {storage['bytes']};",
-           "/// Bytes of the storage slots' used bits (capsule::storage::Buffer's second size; C6).",
+           "/// Bytes of the storage slots' used bits (capsule::storage::Buffer's second size).",
            f"inline constexpr uint32_t STORAGE_USED_BYTES = {used_bytes(storage['slots'])};", ""]

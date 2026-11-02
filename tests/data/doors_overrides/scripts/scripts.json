@@ -1,0 +1,10 @@
+{
+ "schema": "capsule.scripts/1",
+ "editor": {
+  "notes": "Scripts of the doors and overrides fixture (tests/doors_overrides_tests.cpp): override sets applied and cleared."
+ },
+ "sources": [
+  "doors_overrides.cscript"
+ ],
+ "world": "../world.json"
+}

@@ -1,4 +1,4 @@
-"""!Types and the type chart of the battle compiler (D-22 A6): type entries,
+"""!Types and the type chart of the battle compiler: type entries,
 the chart's tiers (capsule::battle::TierData), how the tiers of a defender's
 types combine, how many types a species has and effects may add, and the
 attacker-major matchup table of tier indices; type masks.
@@ -194,7 +194,7 @@ def compile_chart(src: Json, n: Lookups, nt: int, where: str, messages: Sequence
    """
    if not isinstance(src, dict) or "tiers" not in src:
       raise ManifestError(f"{where}: chart is {{tiers, combine, messages, types_per_species, added_types, default, "
-                          f"matchups}} (E6a): declare chart.tiers and move the attacker rows under chart.matchups")
+                          f"matchups}}: declare chart.tiers and move the attacker rows under chart.matchups")
    check_keys(src, "chart", f"{where}: chart")
    combine = src.get("combine", DEFAULT_COMBINE)
    if combine not in COMBINE_MODES:

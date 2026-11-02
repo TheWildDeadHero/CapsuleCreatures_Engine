@@ -1,0 +1,10 @@
+{
+ "schema": "capsule.scripts/1",
+ "editor": {
+  "notes": "Scripts of the cell interactions fixture (tests/cell_interactions_tests.cpp): empty scripts the interaction rules name."
+ },
+ "sources": [
+  "cell_interactions.cscript"
+ ],
+ "world": "../world.json"
+}

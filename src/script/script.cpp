@@ -30,13 +30,13 @@ constexpr int kFlagBranchBytes = 4;     ///< IfFlagSet / IfFlagClear: flag ID an
 constexpr int kChoiceHeaderBytes = 4;   ///< Choice: result variable, cancel index, option count.
 constexpr int kSelfSwitchBytes = 2;     ///< SelfSwitch: letter and on.
 constexpr int kWarpTailBytes = 2;       ///< Warp: facing and transition, after the position.
-constexpr int kFadeKindAt = 0;          ///< I4: Fade: offset of its kind.
-constexpr int kFadeSpeedAt = 1;         ///< I4: Fade: offset of its speed.
-constexpr int kFadeFlagsAt = 2;         ///< I4: Fade: offset of its flags.
-constexpr int kFadeBytes = 3;           ///< I4: Fade: kind, speed and flags.
-constexpr int kOverrideBytes = 3;       ///< DS1: Override: apply and the set (16 bits).
-constexpr int kSoundHeaderBytes = 2;    ///< I4: Sound: kind and operand count.
-constexpr int kMaxSoundArgs = 2;        ///< I4: most operands of a Sound (a song and its save, a cry and its mode).
+constexpr int kFadeKindAt = 0;          ///< Fade: offset of its kind.
+constexpr int kFadeSpeedAt = 1;         ///< Fade: offset of its speed.
+constexpr int kFadeFlagsAt = 2;         ///< Fade: offset of its flags.
+constexpr int kFadeBytes = 3;           ///< Fade: kind, speed and flags.
+constexpr int kOverrideBytes = 3;       ///< Override: apply and the set (16 bits).
+constexpr int kSoundHeaderBytes = 2;    ///< Sound: kind and operand count.
+constexpr int kMaxSoundArgs = 2;        ///< most operands of a Sound (a song and its save, a cry and its mode).
 constexpr int kColorBytes = 3;          ///< Tint / Flash: red, green, blue (5 bits each).
 constexpr int kRed = 0;                 ///< Offset of red in a color operand.
 constexpr int kGreen = 1;               ///< Offset of green.
@@ -50,16 +50,16 @@ constexpr uint8_t kNoByteIndex = 0xFF;  ///< A slot or element operand out of ra
 /// @name Operand ranges
 ///@{
 constexpr int kVarWidth16 = 2;                ///< VarInfo::width of a 16-bit variable.
-constexpr int kBitsPerByte = 8;               ///< Bits of a variable's storage byte (C10: its type's range).
+constexpr int kBitsPerByte = 8;               ///< Bits of a variable's storage byte (its type's range).
 constexpr uint8_t kDirectionMask = 3;         ///< Direction bits of ObjectMove's direction byte.
-/// C10: a direction's opposite differs in its lowest bit (0 down / 1 up, 2 left / 3 right).
+/// A direction's opposite differs in its lowest bit (0 down / 1 up, 2 left / 3 right).
 constexpr uint8_t kOppositeDirectionBit = 1;
-/// C10: draws of `random` in the modulo form are 16-bit (the generator's next16()).
+/// Draws of `random` in the modulo form are 16-bit (the generator's next16()).
 constexpr uint32_t kRandomDrawMask = 0xFFFF;
 constexpr uint8_t kSelfSwitchMask = 3;        ///< Self switch letter bits (A-D).
 constexpr int32_t kMaxSteps = 0xFFFF;         ///< Most steps of one ObjectMove.
 constexpr int32_t kMaxScrollCells = 255;      ///< Most cells of one Scroll.
-constexpr int32_t kMaxItemId = 0xFFFF;        ///< Largest item id an item operand names (G2; 16-bit ids).
+constexpr int32_t kMaxItemId = 0xFFFF;        ///< Largest item id an item operand names (16-bit ids).
 constexpr int32_t kMaxTimerSeconds = 5999;    ///< Longest timer, 99:59.
 ///@}
 
@@ -97,7 +97,7 @@ Lifetime bank_of_flag(uint16_t id)
    return static_cast<Lifetime>(l);
 }
 
-/// C10: a value wrapped into a range (kVmVarsWrap): its distance from the range's start modulo the range's span, so a
+/// A value wrapped into a range (kVmVarsWrap): its distance from the range's start modulo the range's span, so a
 /// 16-bit variable (0-65535) overflows to 0 and below 0 to 65535 as 16-bit arithmetic does.
 /// @param value  the value (wide: a sum may leave 32 bits)
 /// @param lo     the range's lowest value
@@ -114,7 +114,7 @@ int32_t wrap_to(int64_t value, int32_t lo, int32_t hi)
    return static_cast<int32_t>(lo + offset);
 }
 
-/// C10: whether a variable wraps (kVmVarsWrap): with the bank's switch, a variable declared with its type's whole
+/// Whether a variable wraps (kVmVarsWrap): with the bank's switch, a variable declared with its type's whole
 /// range (u8 0-255, u16 0-65535) overflows as that integer type does; one with a narrower range still saturates.
 /// @param v  its info
 /// @return true when it wraps
@@ -222,16 +222,16 @@ const uint8_t* code_of(uint16_t s)
 }
 
 uint8_t g_self = kNoSelf;   ///< Self of the context executing (query operands name it).
-/// C10: update() re-runs a native that waited (its next instruction may wait for the next frame).
+/// update() re-runs a native that waited (its next instruction may wait for the next frame).
 bool g_native_rerun = false;
-/// N1: the statement after the native being run (native_return_point()).
+/// The statement after the native being run (native_return_point()).
 Frame g_native_after{};
-/// N1: where the frame goes on after the native being run (native_goto()), when g_native_goto is set.
+/// Where the frame goes on after the native being run (native_goto()), when g_native_goto is set.
 Frame g_native_to{};
-/// N1: the native being run asked to go on at g_native_to.
+/// The native being run asked to go on at g_native_to.
 bool g_native_goto = false;
 
-/// C10: `random(n)` in the modulo form (kVmRandomModulo): a 16-bit draw modulo n as a 16-bit value, drawn even for
+/// `random(n)` in the modulo form (kVmRandomModulo): a 16-bit draw modulo n as a 16-bit value, drawn even for
 /// n = 0 (then 0: a software modulo by zero returns 0, as the reference game's division routine does).
 /// @param n  the bound operand (taken as 16 bits, as the game's variables are)
 /// @return the draw modulo n
@@ -242,7 +242,7 @@ int32_t random_modulo(int32_t n)
    return bound == 0 ? 0 : static_cast<int32_t>(draw % bound);
 }
 
-/// I4: a numbered object operand as a local ID (the bank's numbering may count from object_base).
+/// A numbered object operand as a local ID (the bank's numbering may count from object_base).
 /// @param v  the operand: below kObjectLast a local ID in the bank's numbering; else a special object
 /// @return a local ID, the special object, or kNoSelf (below object_base)
 uint8_t local_of(int32_t v)
@@ -367,11 +367,11 @@ uint8_t object_of(const Context& c, int32_t v)
    }
    if (v == kObjectLast)
    {
-      return c.last_object;   // I4: the object the context last gave a route
+      return c.last_object;   // the object the context last gave a route
    }
    if (v == kObjectSelected)
    {
-      return c.self != kNoSelf ? c.self : kObjectPlayer;   // C10: the selected object (the walker without one)
+      return c.self != kNoSelf ? c.self : kObjectPlayer;   // the selected object (the walker without one)
    }
    return local_of(v);
 }
@@ -403,13 +403,13 @@ int16_t cell_operand(const uint8_t*& p)
    return static_cast<int16_t>(clamp_to<int32_t>(operand(p), INT16_MIN, INT16_MAX));
 }
 
-/// Executes one I4 instruction (D-29: what imported event scripts need).
+/// Executes one script port instruction (what imported event scripts need).
 /// @param c     the context
 /// @param op    the opcode
 /// @param p     the position after the opcode
 /// @param base  the running script's first byte
 /// @return what happened
-Outcome execute_i4(Context& c, Op op, const uint8_t* p, const uint8_t* base)
+Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
 {
    Frame& f = c.stack[c.depth - 1];
    auto next = [&]()
@@ -541,7 +541,7 @@ Outcome execute_i4(Context& c, Op op, const uint8_t* p, const uint8_t* base)
    }
    case Op::Override:
    {
-      // DS1: apply8, set16 (map::kWorld.override_sets)
+      // apply8, set16 (map::kWorld.override_sets)
       const bool apply = p[0] != 0;
       const uint16_t set = load_le16(p + 1);
       p += kOverrideBytes;
@@ -611,7 +611,7 @@ Outcome execute_i4(Context& c, Op op, const uint8_t* p, const uint8_t* base)
    default:
       break;
    }
-   ENGINE_ASSERT(false && "bad I4 opcode");
+   ENGINE_ASSERT(false && "bad port opcode");
    c.depth = 0;
    return Outcome::Ended;
 }
@@ -644,7 +644,7 @@ Outcome execute(Context& c)
       return Outcome::Continue;
    case Op::Jump:
    {
-      // I4: the frame goes on in another script (nothing returns here)
+      // The frame goes on in another script (nothing returns here)
       const uint16_t s = load_le16(p);
       ENGINE_ASSERT(s < bank().script_count);
       f = Frame{s, 0};
@@ -652,7 +652,7 @@ Outcome execute(Context& c)
    }
    case Op::CallLoose:
    {
-      // I4: a call that may recurse; on a full stack it goes on as a jump (the imported game's VM does so)
+      // A call that may recurse; on a full stack it goes on as a jump (the imported game's VM does so)
       const uint16_t s = load_le16(p);
       p += kU16Bytes;
       ENGINE_ASSERT(s < bank().script_count);
@@ -822,7 +822,7 @@ Outcome execute(Context& c)
       const uint16_t result_var = load_le16(p);
       p += kU16Bytes;
       int32_t result = 0;
-      // N1: the native may ask where the script goes on (native_return_point(), native_goto())
+      // The native may ask where the script goes on (native_return_point(), native_goto())
       g_native_after = Frame{f.script, static_cast<uint16_t>(p - base)};
       g_native_goto = false;
       if (game::native(id, args, argc, result) == game::NativeStatus::Wait)
@@ -841,7 +841,7 @@ Outcome execute(Context& c)
       {
          next();
       }
-      // C10: a native that waited and is now done ends the frame when the bank resumes on the next one
+      // A native that waited and is now done ends the frame when the bank resumes on the next one
       const bool yield = g_native_rerun && (bank().vm_flags & kVmResumeNextFrame) != 0;
       if (result_var != kNoVar)
       {
@@ -882,7 +882,7 @@ Outcome execute(Context& c)
       }
       else if (face == kFaceOppositePlayer)
       {
-         // C10: the walker's facing turned around (down <-> up, left <-> right), whatever the geometry
+         // The walker's facing turned around (down <-> up, left <-> right), whatever the geometry
          const auto facing = static_cast<uint8_t>(world::query(Query::Facing, kObjectPlayer) & kDirectionMask);
          world::face(obj, static_cast<uint8_t>(facing ^ kOppositeDirectionBit));
       }
@@ -905,7 +905,7 @@ Outcome execute(Context& c)
       const uint8_t* code = p;
       p += len;
       next();
-      c.last_object = obj;   // I4: kObjectLast names it
+      c.last_object = obj;   // kObjectLast names it
       if (obj == kNoSelf || !world::route(obj, code, len, true) || (flags & kRouteNoWait) != 0)
       {
          return Outcome::Continue;
@@ -1000,7 +1000,7 @@ Outcome execute(Context& c)
       c.self = kNoSelf;   // the object stays behind on the old map
       if ((facing & kWarpNoWait) != 0)
       {
-         return Outcome::Continue;   // I4: the script goes on while the warp starts
+         return Outcome::Continue;   // the script goes on while the warp starts
       }
       c.wait = Wait::Warp;
       return Outcome::Waiting;
@@ -1100,7 +1100,7 @@ Outcome execute(Context& c)
    case Op::ItemGive:
    case Op::ItemTake:
    {
-      // G2: the bag through the items port (all or nothing); the result variable gets 1 when it worked
+      // The bag through the items port (all or nothing); the result variable gets 1 when it worked
       const uint16_t v = load_le16(p);
       p += kU16Bytes;
       const int32_t item = operand(p);
@@ -1150,7 +1150,7 @@ Outcome execute(Context& c)
    }
    case Op::BoxCount:
    {
-      // G3: the storage boxes through the boxes port
+      // The storage boxes through the boxes port
       const VarId v{load_le16(p)};
       p += kU16Bytes;
       next();
@@ -1180,7 +1180,7 @@ Outcome execute(Context& c)
       return Outcome::Waiting;
    case Op::Transform:
    {
-      // G4: a party member's transformation (the script trigger's rules) through the growth port; waits
+      // A party member's transformation (the script trigger's rules) through the growth port; waits
       c.result_var = load_le16(p);
       p += kU16Bytes;
       const int32_t slot = operand(p);
@@ -1220,7 +1220,7 @@ Outcome execute(Context& c)
    }
    case Op::Darkness:
    {
-      // F2: the shown map's darkness level until the next map
+      // The shown map's darkness level until the next map
       const int32_t level = operand(p);
       next();
       world::set_darkness(static_cast<uint8_t>(clamp_to<int32_t>(level, 0, map::kMaxDarkness)));
@@ -1228,7 +1228,7 @@ Outcome execute(Context& c)
    }
    case Op::Flight:
    {
-      // F2: record, visit or pick a flight point (capsule/script/field_actions.h)
+      // Record, visit or pick a flight point (capsule/script/field_actions.h)
       const auto kind = static_cast<FlightOp>(*p++);
       if (kind == FlightOp::Menu)
       {
@@ -1255,7 +1255,7 @@ Outcome execute(Context& c)
    }
    case Op::Escape:
    {
-      // F2: warp to the escape point the overworld recorded
+      // Warp to the escape point the overworld recorded
       const uint8_t transition = *p++;
       const uint16_t v = load_le16(p);
       p += kU16Bytes;
@@ -1275,7 +1275,7 @@ Outcome execute(Context& c)
    }
    case Op::FieldAction:
    {
-      // F2: the first party member a field action is available to, plus 1 (0: none)
+      // The first party member a field action is available to, plus 1 (0: none)
       p++;   // kind: FieldActionOp::Available, the only one
       const uint8_t action = *p++;
       const uint16_t v = load_le16(p);
@@ -1287,7 +1287,7 @@ Outcome execute(Context& c)
    }
    case Op::Combine:
    {
-      // B1: a combination method through the combine port (Open / Run wait; the queries answer at once)
+      // A combination method through the combine port (Open / Run wait; the queries answer at once)
       const auto kind = static_cast<CombineOp>(*p++);
       const uint8_t method = *p++;
       uint8_t slots[kMaxCombineMembers] = {};
@@ -1327,7 +1327,7 @@ Outcome execute(Context& c)
    }
    case Op::Nursery:
    {
-      // B2: the nursery and the nickname prompt through the nursery port (Pick / Name wait; the rest answer at once)
+      // The nursery and the nickname prompt through the nursery port (Pick / Name wait; the rest answer at once)
       const auto kind = static_cast<NurseryOp>(*p++);
       const bool has_arg = kind == NurseryOp::Deposit || kind == NurseryOp::Withdraw || kind == NurseryOp::Levels ||
                            kind == NurseryOp::Fee || kind == NurseryOp::Name;
@@ -1373,7 +1373,7 @@ Outcome execute(Context& c)
    }
    case Op::ObjectMoveChecked:
    {
-      // C8: the walk by the movement rules: every step allowed, or nothing moves
+      // The walk by the movement rules: every step allowed, or nothing moves
       const uint8_t obj = object_of(c, operand(p));
       const uint8_t dir = static_cast<uint8_t>(*p++ & kDirectionMask);
       const auto steps = static_cast<uint16_t>(clamp_to<int32_t>(operand(p), 0, kMaxSteps));
@@ -1424,7 +1424,7 @@ Outcome execute(Context& c)
    case Op::Mart:
    case Op::WaitState:
    case Op::Override:
-      return execute_i4(c, op, p, base);
+      return execute_port(c, op, p, base);
    case Op::NUM_OPS:
       break;
    }
@@ -1554,7 +1554,7 @@ bool still_waiting(Context& c)
    }
    case Wait::Flight:
    {
-      // F2: the flight menu's answer; a point picked warps there (then the warp's wait)
+      // The flight menu's answer; a point picked warps there (then the warp's wait)
       const int32_t picked = actions::menu_poll();
       if (picked == actions::kFlightWaiting)
       {
@@ -1662,14 +1662,14 @@ bool run_to_end_body(ScriptId s)
    return false;
 }
 
-bool g_immediate = false;   ///< I4: run_to_end() runs (immediate()).
+bool g_immediate = false;   ///< run_to_end() runs (immediate()).
 
 /// Runs a context that must not wait until it ends (immediate() is true meanwhile).
 /// @param s  the script
 /// @return true when it ended with TriggerTrue
 bool run_to_end(ScriptId s)
 {
-   // I4: immediate() is true meanwhile (nested runs keep it so)
+   // immediate() is true meanwhile (nested runs keep it so)
    const bool outer = g_immediate;
    g_immediate = true;
    const bool result = run_to_end_body(s);
@@ -1746,7 +1746,7 @@ void add_var(VarId v, int32_t delta)
    const VarInfo& i = info(raw(v));
    if (wraps(i))
    {
-      // C10: the sum wraps around the range (computed wide, so it never overflows first)
+      // The sum wraps around the range (computed wide, so it never overflows first)
       set_var(v, wrap_to(static_cast<int64_t>(load(i)) + delta, i.min, i.max));
       return;
    }
@@ -1961,7 +1961,7 @@ bool update(Context& c)
    }
    if (was != Wait::None && was != Wait::Native && (bank().vm_flags & kVmResumeNextFrame) != 0)
    {
-      return true;   // C10: the wait ended this frame; the next instruction runs on the next one
+      return true;   // the wait ended this frame; the next instruction runs on the next one
    }
    g_native_rerun = was == Wait::Native;
    for (int i = 0; i < kOpsPerFrame && c.depth != 0; ++i)

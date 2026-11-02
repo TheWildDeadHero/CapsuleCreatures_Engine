@@ -1,0 +1,15 @@
+{
+  "schema": "capsule.project/1",
+  "name": "sandbox_battle_vm",
+  "editor": {
+    "notes": "The battle script machine's sandbox (M5 BX, simple shapes): a script bank (data/sandbox_bank.json, assembled by tools/script_bank.py) slides two squares through the controller channel; the script waits while a square moves, one at a time or both at once; the top line shows the script's label, its position and the exec mask. A pauses the script, B restarts it."
+  },
+  "rom": {
+    "title": "SCRIPTVM",
+    "code": "CSVM",
+    "maker": "00"
+  },
+  "sources": [
+    "src/sandbox_battle_vm.cpp"
+  ]
+}

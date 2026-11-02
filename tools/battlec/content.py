@@ -23,10 +23,10 @@ from .stats import is_damaging
 TARGETS = ["selected", "selected_foe", "self", "ally", "all_foes", "all_others", "random_foe", "field"]
 ## Owner kind of each holder list (the effect language's owner words).
 OWNER_KIND = {"passives": "passive", "items": "item"}
-## The former party AI flags (capsule::battle::AiFlag before G1; a party names an AI profile now: battlec/ai.py,
-## tools/battle_ai.py migrates a flag list).
+## The former party AI flags (capsule::battle::AiFlag from an older version; a party names an AI profile now:
+## battlec/ai.py, tools/battle_ai.py migrates a flag list).
 AI_FLAGS = list(FLAG_RULES)
-## The passive slots of a structure without "passive_slots" (D-25 decision 6: the manifest's count): one rolled
+## The passive slots of a structure without "passive_slots" (the manifest's count): one rolled
 ## slot. A game with more (a classic-style hidden one, say) declares them.
 DEFAULT_PASSIVE_SLOTS = [{"name": "passive", "rolled": True}]
 ## A passive slot's name: a lower-case identifier (editors and member data name it).
@@ -37,7 +37,7 @@ DEFAULT_ROLLED = True
 PARTY_NO_ESCAPE = 2
 ## Default party rank.
 DEFAULT_RANK = 1
-## Most items a party may use in battle (capsule::battle::kMaxPartyItems; G3).
+## Most items a party may use in battle (capsule::battle::kMaxPartyItems).
 MAX_PARTY_ITEMS = 4
 ## Move slots a party member's data holds (capsule::monster::kMaxMoveSlots; MemberData::moves): a member names
 ## up to the layout's move_slots, the rest are padded with NONE16.
@@ -48,11 +48,11 @@ MAX_LEARNSET = 255
 Q8_SHIFT = 8
 ## Highest move priority (the lowest is its negative).
 MAX_PRIORITY = 7
-## Species default: experience yield (neutral, D-22 decision 8: none; a species that gives experience states it).
+## Species default: experience yield (neutral, : none; a species that gives experience states it).
 DEFAULT_EXP_YIELD = 0
 ## Most moves one species learns at one level (one level-up stays one small unit of events).
 MAX_LEARN_PER_LEVEL = 4
-## Most species fields (structure species_fields, E13a).
+## Most species fields (structure species_fields).
 MAX_SPECIES_FIELDS = 16
 ## Widest species field (derived expressions analyse int32 values: 31 bits stay non-negative).
 MAX_SPECIES_FIELD_BITS = 31
@@ -65,7 +65,7 @@ register_keys({
 
 
 def compile_passive_slots(src: Json, limit: int, where: str) -> list[dict[str, Any]]:
-   """!The structure's passive slots (structure.json "passive_slots"; D-25 decision 6), in slot order:
+   """!The structure's passive slots (structure.json "passive_slots"), in slot order:
    [{"name", "rolled"}]. A species names up to one passive per slot (the rest are empty: the passive of the first
    rolled slot it fills applies, never a slot only given; capsule::battle passive_for()); a party member names its
    slot ("passive": index or name); the generation entry {"role": "passive_selector", "random_range": [0, "last"]}
@@ -145,7 +145,7 @@ def compile_moves(entries: Sequence[Json], category_entries: Sequence[Json], cat
       if not isinstance(m, dict):
          raise ManifestError(f"{w}: must be an object")
       if "pp" in m and "pp" not in bases:
-         raise ManifestError(f"{w}.pp: a move's pp is the base of a move resource now (D-25): declare "
+         raise ManifestError(f"{w}.pp: a move's pp is the base of a move resource now: declare "
                              f"{{\"name\": \"pp\", \"scope\": \"move\", \"base\": \"pp\", ...}} in the structure's "
                              f"resources (tools/battle_resources.py migrates a battle)")
       check_keys({k: v for k, v in m.items() if k not in bases}, "move", w)
@@ -274,7 +274,7 @@ def share_of_hp(v: Json) -> int:
 register_keys({
    "move": {"name", "type", "category", "power", "accuracy", "cost", "priority", "target", "flags", "crit_stage"},
    "effect": {"name", "announce", "handlers"},
-   # G4: transforms / forms are tools/battlec/growth.py's
+   # Transforms / forms are tools/battlec/growth.py's
    "species": {"name", "types", "base", "passives", "growth", "exp_yield", "front", "back", "learnset", "fields",
                "transforms", "forms", "teachable", "combine_moves"},
    "species_field": {"name", "width", "default", "values"},
@@ -301,7 +301,7 @@ def compile_holders(entries: Sequence[Json], key: str, w0: str, enc: Texts, hand
    out = []
    for i, a in enumerate(entries):
       w = f"{w0}[{i}] ({a.get('name')})"
-      # G2: an item also has its bag and use fields (battlec/inventory.py checks them)
+      # An item also has its bag and use fields (battlec/inventory.py checks them)
       check_keys(a, "item" if key == "items" else "effect", w)
       first_h = len(handlers)
       hs = a.get("handlers", [])
@@ -317,10 +317,10 @@ def compile_holders(entries: Sequence[Json], key: str, w0: str, enc: Texts, hand
 
 
 def compile_species_fields(src: Json, where: str) -> list[dict[str, Any]]:
-   """!The structure's species fields (E13a, D-23 section 2 species_fields): numeric data columns each species
+   """!The structure's species fields (species_fields): numeric data columns each species
    gives ("fields": {name: value}), read by the generation list's derived expressions as species.NAME. Each is
    {"name", "width": 1-31 bits, "default": the value of a species that leaves it out (0), "values": optional value
-   names (B1, D-28: a group field such as a race or a family; value k is the k-th name, a species may give the
+   names (a group field such as a race or a family; value k is the k-th name, a species may give the
    name, combination tables and expressions read the words FIELD.NAME)}.
    @param src    the structure's species_fields (or None)
    @param where  location
@@ -356,7 +356,7 @@ def compile_species_fields(src: Json, where: str) -> list[dict[str, Any]]:
 
 
 def field_value(v: Json, field: Mapping[str, Any], where: str) -> Json:
-   """!A species field's value as a number (B1: a field with value names takes one of its names).
+   """!A species field's value as a number (a field with value names takes one of its names).
    @param v      the manifest's value (a number or a value name)
    @param field  the field ({"name", "values"})
    @param where  location
@@ -433,11 +433,11 @@ def compile_species(entries: Sequence[Json], n: Lookups, growth_names: list[str]
          if name not in declared:
             raise ManifestError(f"{w}.fields.{name}: not a species field of the structure "
                                 f"({', '.join(declared) or 'none declared'}; species_fields)")
-      # B1: a field with value names takes a name (its index) or a number
+      # A field with value names takes a name (its index) or a number
       fields = {name: integer(field_value(given.get(name, f["default"]), f, f"{w}.fields.{name}"), 0, f["max"],
                               f"{w}.fields.{name}")
                 for name, f in declared.items()}
-      # C6 (review4 finding 23): the moves `teach` may give it (a manifest where any species lists them checks
+      # review4 finding 23: the moves `teach` may give it (a manifest where any species lists them checks
       # every species: one without the key learns none); None: not listed
       teachable = sp.get("teachable")
       if teachable is not None:
@@ -490,7 +490,7 @@ def compile_parties(entries: Sequence[Json], species: Sequence[Mapping[str, Any]
    @param move_slots  the layout's move slots (most moves a member names)
    @param party_size  the layout's party size (most members)
    @param passive_slots  compile_passive_slots() result (a member's "passive": a slot's index or name)
-   @param ai_profiles  battlec.ai.compile_ai_profiles() result (a party's "ai" names one; G1), or None: the
+   @param ai_profiles  battlec.ai.compile_ai_profiles() result (a party's "ai" names one), or None: the
                        default profile only
    @return compiled parties
    """
@@ -525,7 +525,7 @@ def compile_parties(entries: Sequence[Json], species: Sequence[Mapping[str, Any]
       # a party without members only brings presenters and rules: its participant gives records
       if len(members) > party_size:
          raise ManifestError(f"{w}.members: at most {party_size} creatures (the layout's party_size)")
-      # G1: the party's AI profile (none: the default one)
+      # The party's AI profile (none: the default one)
       ai = party_profile(td.get("ai"), profiles, w)
       shown = td.get("presenters", [])
       if not isinstance(shown, list) or len(shown) > MAX_PRESENTERS:
@@ -536,7 +536,7 @@ def compile_parties(entries: Sequence[Json], species: Sequence[Mapping[str, Any]
       escape = td.get("escape", True)
       if not isinstance(escape, bool):
          raise ManifestError(f"{w}.escape: true or false")
-      # G3: the items the party may use in battle (one use each; its AI profile's item rules choose them)
+      # The items the party may use in battle (one use each; its AI profile's item rules choose them)
       used = td.get("items", [])
       if not isinstance(used, list) or len(used) > MAX_PARTY_ITEMS:
          raise ManifestError(f"{w}.items: at most {MAX_PARTY_ITEMS} item names")

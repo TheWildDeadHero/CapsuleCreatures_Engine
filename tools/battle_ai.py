@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""!Migrates a battle's parties from AI flags to AI profiles (D-26 section 1, G1; tools/battlec/ai.py).
+"""!Migrates a battle's parties from AI flags to AI profiles (tools/battlec/ai.py).
 
     battle_ai.py <battle.json>... [--check]
 
@@ -117,7 +117,7 @@ def main(argv: Sequence[str]) -> int:
    @param argv  arguments
    @return exit status
    """
-   ap = argparse.ArgumentParser(description="Turns party AI flags into AI profiles (D-26 section 1).")
+   ap = argparse.ArgumentParser(description="Turns party AI flags into AI profiles.")
    ap.add_argument("battle", nargs="+", help="battle.json files")
    ap.add_argument("--check", action="store_true", help="only report what would change")
    args = ap.parse_args(argv)

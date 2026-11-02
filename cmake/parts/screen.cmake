@@ -9,7 +9,11 @@ set(CAPSULE_SCREEN_SOURCES
    ${CAPSULE_ROOT}/src/screen/sprites.cpp
    ${CAPSULE_ROOT}/src/screen/fade.cpp
    ${CAPSULE_ROOT}/src/screen/tasks.cpp
-   ${CAPSULE_ROOT}/src/screen/arena.cpp)
+   ${CAPSULE_ROOT}/src/screen/arena.cpp
+   # M5 BF (D-38): affine sprite animation, scanline effects, palette blends
+   ${CAPSULE_ROOT}/src/screen/affine.cpp
+   ${CAPSULE_ROOT}/src/screen/scanline.cpp
+   ${CAPSULE_ROOT}/src/screen/blend.cpp)
 target_sources(capsule_engine PRIVATE ${CAPSULE_SCREEN_SOURCES})
 
 if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
