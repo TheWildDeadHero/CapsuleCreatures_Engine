@@ -1,4 +1,4 @@
-"""!Resources of the battle compiler (D-25 decisions 1-5): every pool a battler
+"""!Resources of the battle compiler (resource decisions 1-5): every pool a battler
 spends or loses is a manifest record of the structure manifest's
 "resources" list, in the order costs are paid:
 
@@ -68,7 +68,7 @@ REGEN_RANGE = (-I16_MAX - 1, I16_MAX)
 MAX_FORMULAS = NONE8
 ## Widest record role a pool is persisted in, per scope (the pool's storage).
 STORAGE_ROLE_BITS = {"battler": 16, "move": 8}
-## Registry roles that are plain storage a resource may name (no engine code reads them by name since D-25):
+## Registry roles that are plain storage a resource may name (no engine code reads them by name since ):
 ## role -> the scope its element count fits.
 ENGINE_STORAGE_ROLES = {"current_hp": "battler", "pp": "move", "pp_ups": "move"}
 ## Argument order of each formula use (the engine passes them in this order).
@@ -175,7 +175,7 @@ def compile_resources(entries: Json, stats: Sequence[Mapping[str, Any]], layout:
    w0 = f"{where}: resources"
    if not isinstance(entries, list) or not entries:
       raise ManifestError(f"{w0}: a list of resources; a battle needs at least the battler resource with "
-                          f"\"empty\": \"faint\" on the pool stat (hit points, D-25)")
+                          f"\"empty\": \"faint\" on the pool stat (hit points)")
    stat_names = [st["name"] for st in stats]
    pool = next(st["name"] for st in stats if st["pool"])
    out: list[dict[str, Any]] = []
@@ -468,7 +468,7 @@ def check_costs(resources: Sequence[Mapping[str, Any]], moves: Sequence[Mapping[
    """!Checks the moves' costs: a number cost a pool can never pay is refused (a battler pool reaches its stat's
    highest value, a move's own pool of a move resource its max formula over that move's base and raises:
    move_pool_top(); the faint resource needs more than the amount: paying never faints), and the fallback move
-   states no cost (it pays nothing, D-25 decision 4).
+   states no cost (it pays nothing).
    @param resources  compiled resources
    @param moves      compiled moves
    @param layout     compiled layout
@@ -484,7 +484,7 @@ def check_costs(resources: Sequence[Mapping[str, Any]], moves: Sequence[Mapping[
       stated = entries[fallback].get("cost") if isinstance(entries[fallback], Mapping) else None
       if isinstance(stated, Mapping) and any(v != 0 for v in stated.values()):
          raise ManifestError(f"{where}: moves[{fallback}] ({entries[fallback].get('name')}) is rules.fallback_move, "
-                             f"which pays nothing (D-25): give it no cost")
+                             f"which pays nothing: give it no cost")
    for i, m in enumerate(moves):
       if i == fallback:
          continue

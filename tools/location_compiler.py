@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""!Locations (D-17): the named places maps belong to, their name banners
+"""!Locations: the named places maps belong to, their name banners
 (a sliding name box or frame) and location previews (a full-screen sequence on
 entry), and the world's default warp transition. Called by map_compiler.py; not run on its own.
 
@@ -39,7 +39,7 @@ names that are empty, too long for a banner (28 characters) or not in the
 font; frames that are not 24x24 or use more than 15 colors; sequences that
 do not compile. When no preview entry's conditions hold, none shows.
 
-Field placeholders (D-22 decision 6): when the game's scripts manifest
+Field placeholders: when the game's scripts manifest
 declares "placeholders" (tools/script_compiler.py), location names are field
 text: `{player}` and the other declared names print the field resolver's
 text, and a name's length counts each placeholder at the most it prints.
@@ -383,7 +383,7 @@ def emit(locs: JsonDict, words_4bpp: TilePacker) -> list[str]:
    # one bit per location, rounded up to whole bytes
    visited = (n + BITS_PER_BYTE - 1) // BITS_PER_BYTE
    if visited:
-      L.append(f"uint8_t g_visited[{visited}];   // locations visited (permanent, D-17)")
+      L.append(f"uint8_t g_visited[{visited}];   // locations visited (permanent)")
    L += ["", "} // namespace", "",
          f"const Locations kLocations = {{{'kLocationTable' if n else 'nullptr'}, "
          f"{'kBannerStyles' if locs['styles'] else 'nullptr'}, {'kPreviews' if locs['previews'] else 'nullptr'}, "

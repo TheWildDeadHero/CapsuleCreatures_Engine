@@ -81,7 +81,6 @@ struct Sdl
    }
 };
 constinit Sdl g_sdl;   ///< The SDL objects.
-uint16_t g_frame555[soft::kFramePixels];   ///< Composed frame, BGR555.
 uint32_t g_frame[soft::kFramePixels];      ///< Composed frame, ARGB8888.
 uint64_t g_next_frame = 0;                 ///< Performance-counter tick of the next frame.
 uint64_t g_frame_remainder = 0;            ///< Carried remainder of the frame period.
@@ -252,14 +251,15 @@ uint32_t entropy()
 
 bool update()
 {
-   // Start of "VBlank": latch registers, then show the frame they describe.
-   vram::flush();   // A-5: queued uploads land at "VBlank", with the registers
-   soft::latch();
-   soft::compose(g_frame555);
+   // Start of "VBlank": show the frame the last blank latched, drawn while the game's frame ran (FX2: composed now,
+   // so a scanline table written during the frame shows in it, as on the GBA), then latch the next one.
+   const uint16_t* shown = soft::present();
    for (int i = 0; i < soft::kFramePixels; ++i)
    {
-      g_frame[i] = soft::bgr555_to_argb8888(g_frame555[i]);
+      g_frame[i] = soft::bgr555_to_argb8888(shown[i]);
    }
+   vram::flush();   // A-5: queued uploads land at "VBlank", with the registers
+   soft::latch();
    SDL_UpdateTexture(g_sdl.texture, nullptr, g_frame, video::kScreenWidth * sizeof(uint32_t));
    SDL_RenderClear(g_sdl.renderer);
    SDL_RenderCopy(g_sdl.renderer, g_sdl.texture, nullptr, nullptr);

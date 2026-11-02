@@ -423,6 +423,14 @@ void set_blend_brightness(uint8_t evy);
 /// @param size  block size in pixels, 1 (off; 0 too) to 16
 void set_mosaic(uint8_t size);
 
+/// T1 (D-38): limits the mosaic to some layers (latched), as the hardware's per-layer mosaic bits do (BGnCNT bit 6,
+/// a sprite's mosaic bit): bits 0-3 BG0-BG3, kLayerObj the sprites. Until it is called (and after reset) the mosaic
+/// covers every layer and sprite (set_mosaic()'s whole-screen blocks). With a mask, a masked text layer's pixel at
+/// (x, y) is the one at (x - x % size, y - y % size); affine layers and sprites are not mosaicked in that mode on the
+/// soft compositor (kLayerObj is accepted for the GBA only and ignored there).
+/// @param layers  the layers (kLayerAll: every one, the whole-screen behaviour)
+void set_mosaic_layers(uint8_t layers);
+
 /// Sets a window rectangle (latched). Right and bottom edges are exclusive.
 /// @param win  window 0 or 1
 /// @param x0   left, 0-240
@@ -461,6 +469,104 @@ inline constexpr int kWindowLineShift = 8;               ///< Shift of an entry'
 /// Sets (or clears) window 0's per-scanline edges (latched).
 /// @param lines  kWindowLines entries, or nullptr
 void set_window_lines(const uint16_t* lines);
+///@}
+
+/// @name Register values per scanline (BF, D-38)
+/// One display register may take a value per scanline from a table (wavy layers, squashes, per-line blends and
+/// window edges, per-line affine reference points): entry y is the register's value while scanline y is drawn
+/// (entry 0 is written when the frame starts, entry y + 1 after line y, as an HBlank DMA does: kLineEntries entries,
+/// the last read but not shown). A 32-bit table writes the register and the halfword after it (a layer's x and y
+/// scroll; window 0 and 1's edges; BLDCNT and BLDALPHA; BGnX / BGnY whole). The table is read as the frame shows
+/// (latched: the caller leaves it unchanged until the next frame's update(), e.g. by writing a second table and
+/// switching: capsule/screen/scanline.h). An affine layer's reference point (BGnX / BGnY) written mid-frame restarts
+/// from the value written, as the hardware's internal reference does. A window's edges written per line follow the
+/// hardware (a right edge past the screen is the screen's edge; a right edge left of the left edge wraps around).
+/// Window 0's per-line edges (set_window_lines()) use the same transfer: only one of the two is set at a time.
+/// GBA: HBlank DMA channel 0; other targets: the compositor.
+///@{
+
+/// A register a scanline table may write.
+enum class LineRegister : uint8_t
+{
+   Bg0Hofs,    ///< BG0's x scroll (32-bit: and its y).
+   Bg0Vofs,    ///< BG0's y scroll.
+   Bg1Hofs,    ///< BG1's x scroll (32-bit: and its y).
+   Bg1Vofs,    ///< BG1's y scroll.
+   Bg2Hofs,    ///< BG2's x scroll (32-bit: and its y).
+   Bg2Vofs,    ///< BG2's y scroll.
+   Bg3Hofs,    ///< BG3's x scroll (32-bit: and its y).
+   Bg3Vofs,    ///< BG3's y scroll.
+   Bg0Cnt,     ///< BG0's control (priority, blocks, size; 32-bit: and BG1's).
+   Bg1Cnt,     ///< BG1's control.
+   Bg2Cnt,     ///< BG2's control (32-bit: and BG3's).
+   Bg3Cnt,     ///< BG3's control.
+   Bg2X,       ///< BG2's affine reference x (16-bit: its low half).
+   Bg2Y,       ///< BG2's affine reference y (16-bit: its low half).
+   Bg3X,       ///< BG3's affine reference x (16-bit: its low half).
+   Bg3Y,       ///< BG3's affine reference y (16-bit: its low half).
+   Win0H,      ///< Window 0's left << 8 | right (32-bit: and window 1's).
+   Win1H,      ///< Window 1's left << 8 | right.
+   BldCnt,     ///< Colour effect control (32-bit: and BLDALPHA).
+   BldAlpha,   ///< Alpha weights, eva | evb << 8.
+   BldY,       ///< Brightness level.
+   NUM_LINE_REGISTERS   ///< Number of registers.
+};
+
+/// How wide each table entry is.
+enum class LineWidth : uint8_t
+{
+   Half,   ///< uint16_t entries: the register.
+   Word,   ///< uint32_t entries: the register (low half) and the next (high half); on a word-aligned register.
+   NUM_LINE_WIDTHS   ///< Number of widths.
+};
+
+inline constexpr int kLineEntries = kScreenHeight + 1;   ///< Entries of a scanline table.
+
+/// A register's offset in the GBA's I/O area (its address less 0x04000000).
+/// @param r  the register
+/// @return the offset
+constexpr uint32_t line_register_offset(LineRegister r)
+{
+   constexpr uint16_t kOffsets[] = {0x10, 0x12, 0x14, 0x16, 0x18, 0x1A, 0x1C, 0x1E, 0x08, 0x0A, 0x0C,
+                                    0x0E, 0x28, 0x2C, 0x38, 0x3C, 0x40, 0x42, 0x50, 0x52, 0x54};
+   static_assert(sizeof(kOffsets) / sizeof(kOffsets[0]) == static_cast<int>(LineRegister::NUM_LINE_REGISTERS));
+   return kOffsets[static_cast<int>(r)];
+}
+
+/// Whether a register takes a 32-bit table (word aligned, and the halfword after it is one a table may write, or
+/// the register's own high half).
+/// @param r  the register
+/// @return true when it does
+constexpr bool line_word_allowed(LineRegister r)
+{
+   return r == LineRegister::Bg0Hofs || r == LineRegister::Bg1Hofs || r == LineRegister::Bg2Hofs ||
+          r == LineRegister::Bg3Hofs || r == LineRegister::Bg0Cnt || r == LineRegister::Bg2Cnt ||
+          r == LineRegister::Bg2X || r == LineRegister::Bg2Y || r == LineRegister::Bg3X || r == LineRegister::Bg3Y ||
+          r == LineRegister::Win0H || r == LineRegister::BldCnt;
+}
+
+/// Sets (or clears) the scanline table (latched).
+/// @param reg    the register
+/// @param width  the entries' width (Word only where line_word_allowed())
+/// @param table  kLineEntries entries (uint16_t or uint32_t, 4-byte aligned), or nullptr: off
+void set_line_effect(LineRegister reg, LineWidth width, const void* table);
+
+/// @name A second scanline table (T1, D-38)
+/// Some scenes change two things per scanline at once (a window's edges and a layer's scroll), or give several
+/// registers the same value per line (three layers' scrolls), as the reference games' HBlank interrupt handlers do.
+/// The second table runs beside set_line_effect()'s (or window 0's per-line edges): entry y of its 16-bit table is
+/// written to each of its registers (1 to kMaxLineTargets, distinct, none of them the first table's) while
+/// scanline y is drawn, with the same latching and entry rules as set_line_effect() (entry 0 when the frame starts,
+/// entry y + 1 after line y; kLineEntries entries). GBA: the HBlank interrupt; other targets: the compositor.
+///@{
+inline constexpr int kMaxLineTargets = 3;   ///< Registers the second table may write.
+
+/// Sets (or clears) the second scanline table (latched).
+/// @param regs   count registers (16-bit writes)
+/// @param count  1 to kMaxLineTargets (ignored when table is nullptr)
+/// @param table  kLineEntries entries (2-byte aligned), or nullptr: off
+void set_line_effect_irq(const LineRegister* regs, uint8_t count, const uint16_t* table);
+///@}
 ///@}
 ///@}
 

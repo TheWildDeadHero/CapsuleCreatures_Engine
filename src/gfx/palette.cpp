@@ -220,4 +220,58 @@ hal::video::Color base(bool obj, int index)
    return obj ? g_base_obj[index] : g_base_bg[index];
 }
 
+hal::video::Color visible(bool obj, int index)
+{
+   ENGINE_ASSERT(index >= 0 && index < kColors);
+   return obj ? g_out_obj[index] : g_out_bg[index];
+}
+
+namespace
+{
+
+/// BF: queues a range of visible colors (must-land, from IWRAM as show() does).
+/// @param obj    the OBJ palette (else BG)
+/// @param first  first entry
+/// @param count  entries
+void queue_visible(bool obj, int first, int count)
+{
+   Color* out = obj ? g_out_obj : g_out_bg;
+   hal::vram::copy16(obj ? hal::video::Region::ObjPalette : hal::video::Region::BgPalette,
+                     static_cast<uint32_t>(first) * kColorBytes, out + first, static_cast<uint32_t>(count),
+                     hal::vram::Priority::MustLand, hal::video::Source::Iwram);
+}
+
+}   // namespace
+
+void blend_range(bool obj, int first, int count, uint8_t coef, hal::video::Color target)
+{
+   ENGINE_ASSERT(first >= 0 && count >= 0 && first + count <= kColors && coef <= kFadeFull);
+   if (count == 0)
+   {
+      return;
+   }
+   const Color* base_colors = obj ? g_base_obj : g_base_bg;
+   Color* out = obj ? g_out_obj : g_out_bg;
+   for (int i = first; i < first + count; ++i)
+   {
+      out[i] = blend_floor(base_colors[i], target, coef);
+   }
+   queue_visible(obj, first, count);
+}
+
+void show_colors(bool obj, int first, const hal::video::Color* colors, int count)
+{
+   ENGINE_ASSERT(first >= 0 && count >= 0 && first + count <= kColors);
+   if (count == 0)
+   {
+      return;
+   }
+   Color* out = obj ? g_out_obj : g_out_bg;
+   for (int i = 0; i < count; ++i)
+   {
+      out[first + i] = colors[i];
+   }
+   queue_visible(obj, first, count);
+}
+
 } // namespace capsule::gfx::palette

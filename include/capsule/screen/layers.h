@@ -214,6 +214,19 @@ void copy_rect(hal::video::BgIndex bg, const void* src, int src_x, int src_y, in
 /// @param bg  layer 0-3
 void copy_to_vram(hal::video::BgIndex bg);
 
+/// Copies a text-mode tilemap asset straight into a layer's screen blocks through the upload queue (must-land), with no
+/// buffer: the reference games' decompression of a map into video memory (a layer whose map the screen never edits).
+/// The entries go as stored, from the first screen block, up to the layer's map size; the buffer is not touched.
+/// @param bg   layer 0-3 (configured)
+/// @param map  the tilemap (ROM)
+void load_tilemap_to_vram(hal::video::BgIndex bg, const asset::Tilemap& map);
+
+/// Fills a layer's screen blocks with one entry through the upload queue (must-land; the reference games' CpuFill of
+/// a screen block), with no buffer.
+/// @param bg     layer 0-3 (configured)
+/// @param entry  the entry
+void fill_vram(hal::video::BgIndex bg, hal::video::MapCell entry);
+
 /// Asks for a layer's copy at the next copy_scheduled() (several asks: one copy).
 /// @param bg  layer 0-3
 void schedule_copy(hal::video::BgIndex bg);

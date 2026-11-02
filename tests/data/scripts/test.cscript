@@ -86,11 +86,11 @@ script objects {
     move 9 down 0;
 }
 
-// C8: a walk by the field's movement rules (tests/script_tests.cpp test_checked_move()).
+// A walk by the field's movement rules (tests/script_tests.cpp test_checked_move()).
 var walk_ok : u8 0..1;
 script checked_walk { move player up 2 checked -> var(walk_ok); }
 
-// RPG Maker XP-style commands (D-17) against the test world.
+// RPG Maker XP-style commands against the test world.
 var key : u8 0..10;
 var num : u16;
 script eventing {
@@ -121,14 +121,14 @@ script eventing {
     var(answer) = facing(self);
 }
 
-// Field placeholders (D-22 decision 6): a name slot, a variable, a term and a
+// Field placeholders: a name slot, a variable, a term and a
 // party record field; a prompt and a page break.
 script greet {
     msgbox "Hi {hero}! {count} in {town}.{prompt}{page}{lead} {@town:many}";
     close_msg;
 }
 
-// Party records (D-22 decision 2): engine and custom roles of the game's layout
+// Party records: engine and custom roles of the game's layout
 // (the manifest's battle) by name, by role ID and by constant.
 const SECOND = 1;
 const RIBBONS_ID = 129;
@@ -145,7 +145,7 @@ script records {
     role_get(0, nickname, 7) -> var(answer);
 }
 
-// The bag (G2): give / take / count by item id (this fixture's battle has no items: the port stub counts),
+// The bag: give / take / count by item id (this fixture's battle has no items: the port stub counts),
 // the bag menu and the game's time of day.
 var bag_ok : u8;
 script bag {
@@ -157,7 +157,7 @@ script bag {
     open_bag -> var(met);
 }
 
-// G3: the storage boxes through the boxes port (tests/script_tests.cpp test_boxes: a stub port)
+// The storage boxes through the boxes port (tests/script_tests.cpp test_boxes: a stub port)
 script boxes {
     deposit_box(1) -> var(bag_ok);
     count_boxed -> var(v8);
@@ -166,14 +166,14 @@ script boxes {
     open_boxes -> var(met);
 }
 
-// G4: a party member's transformation through the growth port (tests/script_tests.cpp test_transform: a stub
+// A party member's transformation through the growth port (tests/script_tests.cpp test_transform: a stub
 // port: member 1 changes, member 0 is stopped)
 script grow {
     transform(1) -> var(v8);
     transform(0) -> var(answer);
 }
 
-// B1: the combination statements through the combine port (tests/script_tests.cpp test_combine: a stub port that
+// The combination statements through the combine port (tests/script_tests.cpp test_combine: a stub port that
 // answers the queries from their kind, method and members, combines in run and backs out in open)
 script mix {
     combine preview pair (0, 1) -> var(v8);
@@ -193,7 +193,7 @@ script fx {
     field_effect start glow 5;
 }
 
-// F2 (D-27 section 3): darkness, the world's flight points, the escape point (test_f2).
+// Darkness, the world's flight points, the escape point (test_f2).
 script f2 {
     darkness 2;
     flight record home;
@@ -201,17 +201,17 @@ script f2 {
     flight menu -> var(out);
     escape -> var(answer);
 }
-script f2_escape { escape fade -> var(answer); }
+script field_action_escape { escape fade -> var(answer); }
 
-// I4 (D-29): the statements imported event scripts need (tests/script_tests.cpp test_i4()).
-movement i4_walk { up; }
-mart i4_mart { 1, 2 }
-script i4_other { var(out) = 7; return; }
-script i4 {
+// The statements imported event scripts need (tests/script_tests.cpp test_port_statements()).
+movement port_walk { up; }
+mart port_mart { 1, 2 }
+script port_other { var(out) = 7; return; }
+script ports {
     lock all;
     msg "Hi" nowait;
     wait_msg;
-    route 2 i4_walk nowait;
+    route 2 port_walk nowait;
     wait_moves last;
     remove 2;
     visible 2 off;
@@ -225,21 +225,21 @@ script i4 {
     set_warp dynamic town 1 2;
     sound se 9;
     wait_sound se;
-    mart i4_mart;
+    mart port_mart;
     wait_state;
     release all;
-    call i4_other loose;
-    goto i4_loop;
+    call port_other loose;
+    goto port_loop;
 }
 // a loose call that recurses: past the stack (stack_depth 4) it goes on as a jump
-script i4_loop {
+script port_loop {
     var(v8) += 1;
-    if var(v8) < 30 { call i4_loop loose; }
+    if var(v8) < 30 { call port_loop loose; }
 }
-script i4_resume { var(answer) = 5; }
-script i4_warp_into { var(answer) += 1; }
+script port_resume { var(answer) = 5; }
+script port_warp_into { var(answer) += 1; }
 map_scripts town {
-    on_resume -> i4_resume;
-    on_warp_into var(v8) == 0 -> i4_warp_into;
-    on_warp_into var(v8) == 0 -> i4_other;
+    on_resume -> port_resume;
+    on_warp_into var(v8) == 0 -> port_warp_into;
+    on_warp_into var(v8) == 0 -> port_other;
 }

@@ -1,12 +1,12 @@
-"""!Save shapes of a script bank (C6, review4 finding 1): how the save image's Script section (capsule/save/save.h)
+"""!Save shapes of a script bank (review4 finding 1): how the save image's Script section (capsule/save/save.h)
 keeps the flags, variables and name slots, and how an older save finds its way into a newer build.
 
 The bank's storage is saved as sub-banks (capsule::script::kSaveSubBanks): the flags of each lifetime, the
 variables of each lifetime, then the name slots. A sub-bank's shape is its entries in storage order (a flag's
-name; a variable's name, byte offset, width and sign, then its range when it is not its type's default range (C7: a
+name; a variable's name, byte offset, width and sign, then its range when it is not its type's default range (a
 narrowed range changes the shape, so the remap clamps the old values); a name slot's placeholder name,
 offset and capacity) and its shape hash is FNV-1a 32 over them (0 for an empty sub-bank). The save stores each
-sub-bank's hash with its bytes. A history may hold variable entries without a range (recorded before C7).
+sub-bank's hash with its bytes. A history may hold variable entries without a range (recorded from an older version).
 
 Migration (the cheapest correct option for the GBA: four bytes of hash per sub-bank in the save, nothing per entry):
 a game records the shapes it ships in its save history, the JSON file the scripts manifest's "save_history" names
@@ -17,7 +17,7 @@ name (a flag may change lifetime), or dropped. Loading a sub-bank:
   - a remap names its hash: the entries move (variables clamp to their new range and width, names truncate);
   - else, for a transient lifetime (daily, area, map) the sub-bank is reset (cleared) and for the permanent
     lifetime or the name slots the save is refused (capsule::save::Status::OtherShape).
-Record a release's shapes before changing flags or variables: `save_shape.py record scripts.json`. C7: once a
+Record a release's shapes before changing flags or variables: `save_shape.py record scripts.json`. Once a
 game keeps a history (a file that records shapes), every build checks that each non-empty sub-bank's shape is
 recorded (unrecorded(); tools/save_layout.py fails the build), so no shipped shape is left without a remap.
 
@@ -122,8 +122,8 @@ def default_range(width: int) -> tuple[int, int] | None:
 
 
 def var_entry(name: str, offset: int, width: int, lo: int, hi: int) -> list[Any]:
-   """!A variable's shape entry (C7: its range only when it is not its type's default range, so the shapes of
-   variables declared without a range keep their C6 hash).
+   """!A variable's shape entry (its range only when it is not its type's default range, so the shapes of
+   variables declared without a range keep their save shapes hash).
    @param name    the variable
    @param offset  its byte offset in the sub-bank
    @param width   its bytes
@@ -204,7 +204,7 @@ def load_history(path: str | Path) -> list[dict[str, Any]]:
 
 
 def unrecorded(comp: Any, history: Sequence[Mapping[str, Any]]) -> list[str]:
-   """!The build's non-empty sub-banks whose shape the history does not record (C7, the build check: a shape that
+   """!The build's non-empty sub-banks whose shape the history does not record (the build check: a shape that
    ships unrecorded leaves its saves without a remap once it changes again). A game without a history (no file, or
    one that records nothing) is not checked.
    @param comp     a compiled script_compiler.Compiler
@@ -293,7 +293,7 @@ def emit(comp: Any, history: Sequence[Mapping[str, Any]], lines: list[str]) -> t
       moves += m["moves"]
    if len(moves) > MAX_MOVES:
       raise ShapeError(f"the save history's remaps hold {len(moves)} entries; at most {MAX_MOVES}")
-   lines.append("// C6: the recorded older save shapes (tools/save_shape.py) and where their entries went")
+   lines.append("// The recorded older save shapes (tools/save_shape.py) and where their entries went")
    lines.append("const SaveMove kSaveMoves[] = {")
    lines += [f"    {{{f}, 0x{t:04X}, {fs}, {ts}, {{0, 0}}}}," for f, t, fs, ts in moves]
    lines.append("};")

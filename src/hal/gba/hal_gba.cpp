@@ -43,6 +43,8 @@ constexpr uint32_t kIoBase = 0x04000000;           ///< I/O registers.
 /// @name I/O register offsets (from kIoBase)
 ///@{
 constexpr uint32_t kRegVcount = 0x06;      ///< VCOUNT: current scanline.
+constexpr uint32_t kVcountMask = 0xFF;     ///< T1: VCOUNT's line bits.
+constexpr uint8_t kMosaicLayersSet = 0x80; ///< T1: Shadow::mosaic_layers holds a choice of layers.
 constexpr uint32_t kRegBg2Affine = 0x20;   ///< BG2PA: first of BG2's affine registers.
 constexpr uint32_t kBgAffineStride = 0x10; ///< From BG2's affine registers to BG3's.
 constexpr uint32_t kAffinePa = 0;          ///< BGnPA, from the layer's first affine register.
@@ -153,7 +155,8 @@ constexpr uint32_t kDmaSrcFixed = 0x01000000u;   ///< DMA3CNT: source address fi
 constexpr uint32_t kDmaStartHblank = 0x20000000u;   ///< N2: DMAnCNT: start at each HBlank.
 constexpr uint32_t kDmaRepeat = 0x02000000u;   ///< N2: DMAnCNT: repeat at each start.
 constexpr uint32_t kDmaDstFixed = 0x00400000u;   ///< N2: DMAnCNT: destination address fixed.
-/// N2: DMA0CNT for the window lines: enabled, started at each HBlank, repeated, destination fixed, one 16-bit unit.
+/// N2: DMA0CNT for the window lines (and BF's scanline tables, with kDma32 for 32-bit entries): enabled, started at
+/// each HBlank, repeated, destination fixed, one 16-bit unit.
 constexpr uint32_t kDma0WindowLines = kDma3Enable | kDmaStartHblank | kDmaRepeat | kDmaDstFixed | 1u;
 
 /// A 16-bit I/O register.
@@ -234,11 +237,18 @@ struct Shadow
    uint16_t bldalpha;   ///< BLDALPHA.
    uint16_t bldy;   ///< BLDY.
    uint16_t mosaic;   ///< MOSAIC (0: off).
+   uint8_t mosaic_layers;   ///< T1: per-layer mosaic (0: every layer; else kMosaicLayersSet | the layers' bits).
    uint16_t winh[kNumWindows];   ///< WIN0H / WIN1H.
    uint16_t winv[kNumWindows];   ///< WIN0V / WIN1V.
    uint16_t winin;   ///< WININ.
    uint16_t winout;   ///< WINOUT.
    const uint16_t* winlines;   ///< N2: window 0's edges per scanline (video::set_window_lines()), or nullptr.
+   const void* line_table;     ///< BF: the scanline table (video::set_line_effect()), or nullptr.
+   uint8_t line_offset;        ///< BF: its register's I/O offset.
+   bool line_word;             ///< BF: 32-bit entries.
+   const uint16_t* irq_table;  ///< T1: the second scanline table (video::set_line_effect_irq()), or nullptr.
+   uint8_t irq_count;          ///< T1: its registers.
+   uint8_t irq_offsets[video::kMaxLineTargets];   ///< T1: their I/O offsets.
 };
 
 Shadow g_shadow{};   ///< Register shadow.
@@ -321,26 +331,84 @@ uint32_t map_cell_index(video::BgIndex bg, int x, int y)
           (static_cast<uint32_t>(x) & kScreenBlockTileMask);
 }
 
-/// N2: window 0's per-scanline edges of the frame last committed (video::set_window_lines()), or nullptr: a lag
-/// frame's VBlank arms their transfer again.
-const uint16_t* g_line_winlines = nullptr;
-
-/// N2: (re)starts DMA channel 0 for the committed window lines: line 0's edges written now, then one entry after
-/// each line's HBlank (the hardware runs no HBlank DMA during VBlank). Stops the last frame's transfer first, so
-/// the repeating transfer never runs past the table's end, a lag frame's included (its source address keeps
-/// counting up otherwise).
-CAPSULE_IWRAM_CODE void arm_line_dma()
+/// N2 / BF: the per-scanline transfer of the frame last committed (a lag frame's VBlank arms it again).
+struct LineDma
 {
-   io32(kRegDma0Cnt) = 0;
-   const uint16_t* lines = g_line_winlines;
-   if (lines == nullptr)
+   const void* table;   ///< Its table, or nullptr: none.
+   uint32_t dst;        ///< The register's address.
+   bool word;           ///< 32-bit entries.
+};
+LineDma g_line_dma{};   ///< The transfer last committed.
+
+/// T1: the second scanline table of the frame last committed (the HBlank interrupt writes it).
+struct LineIrq
+{
+   const uint16_t* table;                         ///< Its table, or nullptr: none.
+   uint8_t count;                                 ///< Its registers.
+   uint32_t dst[video::kMaxLineTargets];          ///< Their addresses.
+};
+LineIrq g_line_irq{};   ///< The table last committed.
+
+/// T1: the HBlank interrupt: after line n (0 to 158) writes entry n + 1 of the second table to its registers (the
+/// lines of the vertical blank write nothing: entry 0 was written when the frame was committed).
+CAPSULE_IWRAM_CODE void on_hblank()
+{
+   const LineIrq& t = g_line_irq;
+   const uint32_t line = io16(kRegVcount) & kVcountMask;
+   if (t.table == nullptr || line + 1 >= static_cast<uint32_t>(video::kScreenHeight))
    {
       return;
    }
-   io16(kRegWin0h) = lines[0];
-   io32(kRegDma0Sad) = reinterpret_cast<uint32_t>(lines + 1);
-   io32(kRegDma0Dad) = kIoBase + kRegWin0h;
-   io32(kRegDma0Cnt) = kDma0WindowLines;
+   const uint16_t v = t.table[line + 1];
+   for (uint8_t i = 0; i < t.count; ++i)
+   {
+      *reinterpret_cast<volatile uint16_t*>(t.dst[i]) = v;
+   }
+}
+
+/// T1: writes the second table's entry 0 (line 0's value) and turns the HBlank interrupt on or off for it.
+CAPSULE_IWRAM_CODE void arm_line_irq()
+{
+   const LineIrq& t = g_line_irq;
+   if (t.table == nullptr)
+   {
+      irqDisable(IRQ_HBLANK);
+      return;
+   }
+   for (uint8_t i = 0; i < t.count; ++i)
+   {
+      *reinterpret_cast<volatile uint16_t*>(t.dst[i]) = t.table[0];
+   }
+   irqEnable(IRQ_HBLANK);
+}
+
+/// N2 / BF: (re)starts DMA channel 0 for the committed per-scanline table: line 0's value written now, then one
+/// entry after each line's HBlank (the hardware runs no HBlank DMA during VBlank). Stops the last frame's transfer
+/// first, so a table never runs past its end, a lag frame's included.
+CAPSULE_IWRAM_CODE void arm_line_dma()
+{
+   io32(kRegDma0Cnt) = 0;
+   const LineDma& d = g_line_dma;
+   if (d.table == nullptr)
+   {
+      return;
+   }
+   if (d.word)
+   {
+      const uint32_t* t = static_cast<const uint32_t*>(d.table);
+      *reinterpret_cast<volatile uint32_t*>(d.dst) = t[0];
+      io32(kRegDma0Sad) = reinterpret_cast<uint32_t>(t + 1);
+      io32(kRegDma0Dad) = d.dst;
+      io32(kRegDma0Cnt) = kDma0WindowLines | kDma32;
+   }
+   else
+   {
+      const uint16_t* t = static_cast<const uint16_t*>(d.table);
+      *reinterpret_cast<volatile uint16_t*>(d.dst) = t[0];
+      io32(kRegDma0Sad) = reinterpret_cast<uint32_t>(t + 1);
+      io32(kRegDma0Dad) = d.dst;
+      io32(kRegDma0Cnt) = kDma0WindowLines;
+   }
 }
 
 /// Copies the register and OAM shadows to the hardware (called at the start
@@ -349,9 +417,11 @@ CAPSULE_IWRAM_CODE void commit_registers()
 {
    REG_DISPCNT = static_cast<uint16_t>(g_shadow.dispcnt | kDispcntObj1d);
    const uint16_t mosaic_bit = g_shadow.mosaic != 0 ? kBgcntMosaic : 0;   // BGCNT bit 6 on every layer
+   const uint8_t layers = g_shadow.mosaic_layers;   // T1: or on the chosen ones
    for (int bg = 0; bg < video::kNumBgs; ++bg)
    {
-      BGCTRL[bg] = static_cast<uint16_t>(g_shadow.bgcnt[bg] | mosaic_bit);
+      const bool on = layers == 0 || (layers & (1 << bg)) != 0;
+      BGCTRL[bg] = static_cast<uint16_t>(g_shadow.bgcnt[bg] | (on ? mosaic_bit : 0));
       BG_OFFSET[bg].x = static_cast<uint16_t>(g_shadow.hofs[bg]);
       BG_OFFSET[bg].y = static_cast<uint16_t>(g_shadow.vofs[bg]);
    }
@@ -374,14 +444,24 @@ CAPSULE_IWRAM_CODE void commit_registers()
    io16(kRegWin1v) = g_shadow.winv[1];
    io16(kRegWinin) = g_shadow.winin;
    io16(kRegWinout) = g_shadow.winout;
-   // N2: per-scanline window 0 edges: line 0's now, then an HBlank DMA writes line y + 1's after line y
-   g_line_winlines = g_shadow.winlines;
-   arm_line_dma();
    io16(kRegBldcnt) = g_shadow.bldcnt;
    io16(kRegBldalpha) = g_shadow.bldalpha;
    io16(kRegBldy) = g_shadow.bldy;
    io16(kRegMosaic) = g_shadow.mosaic;
-   if (g_shadow.mosaic != 0)
+   // N2 / BF: a register per scanline (window 0's edges, or set_line_effect()'s register): its line 0 value now,
+   // over the frame's value just written, then an HBlank DMA writes line y + 1's after line y
+   g_line_dma = g_shadow.winlines != nullptr ? LineDma{g_shadow.winlines, kIoBase + kRegWin0h, false}
+                                             : LineDma{g_shadow.line_table, kIoBase + g_shadow.line_offset,
+                                                       g_shadow.line_word};
+   arm_line_dma();
+   g_line_irq.table = g_shadow.irq_table;   // T1: the second table
+   g_line_irq.count = g_shadow.irq_count;
+   for (uint8_t i = 0; i < g_shadow.irq_count; ++i)
+   {
+      g_line_irq.dst[i] = kIoBase + g_shadow.irq_offsets[i];
+   }
+   arm_line_irq();
+   if (g_shadow.mosaic != 0 && (layers == 0 || (layers & video::kLayerObj) != 0))
    {   // OBJ mosaic: attr0 bit 12 on every entry
       for (int i = 0; i < video::kNumObjs; ++i)
       {
@@ -422,7 +502,8 @@ void on_vblank()
    }
    else
    {
-      arm_line_dma();   // N2: a lag frame shows the committed window lines again (never past the table's end)
+      arm_line_dma();   // N2 / BF: a lag frame shows the committed table again (it does not run past its end)
+      arm_line_irq();   // T1: and the second table's line 0
    }
    // M4 (D-34): the sound driver steps after the frame's commit (nothing when audio was never started: no audio
    // code is linked then). C14a (the audio clock): once per game frame, as on every other target; this build's own
@@ -464,6 +545,7 @@ void init()
    irqInit();
    irqSet(IRQ_VBLANK, on_vblank);   // A-2: the frame lands in the VBlank interrupt
    irqEnable(IRQ_VBLANK);
+   irqSet(IRQ_HBLANK, on_hblank);   // T1: the second scanline table (enabled only while one is set)
    io16(kRegWaitcnt) = CAPSULE_GBA_WAITCNT;   // A-2: ROM wait states and prefetch (build setting)
    io16(kRegTm1Count) = 0;   // Timer 1: free running at 16.78 MHz, entropy for A-4
    io16(kRegTm1Control) = kTimerEnable;
@@ -846,6 +928,13 @@ void set_mosaic(uint8_t size)
                 : static_cast<uint16_t>(s | (s << kMosaicBgVShift) | (s << kMosaicObjHShift) | (s << kMosaicObjVShift));
 }
 
+void set_mosaic_layers(uint8_t layers)
+{
+   g_shadow.mosaic_layers =
+      (layers & kLayerAll) == kLayerAll ? uint8_t{0} : static_cast<uint8_t>(kMosaicLayersSet | (layers & kLayerObj) |
+                                                                            (layers & ((1 << kNumBgs) - 1)));
+}
+
 void set_window_rect(uint8_t win, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
 {
    ENGINE_ASSERT(win < kNumWindows && x0 <= x1 && y0 <= y1 && x1 <= kScreenWidth && y1 <= kScreenHeight);
@@ -862,7 +951,36 @@ void set_window_masks(uint8_t in0, uint8_t in1, uint8_t outside, uint8_t obj)
 
 void set_window_lines(const uint16_t* lines)
 {
+   ENGINE_ASSERT(lines == nullptr || g_shadow.line_table == nullptr);   // BF: one HBlank transfer at a time
    g_shadow.winlines = lines;
+}
+
+void set_line_effect(LineRegister reg, LineWidth width, const void* table)
+{
+   ENGINE_ASSERT(reg < LineRegister::NUM_LINE_REGISTERS && width < LineWidth::NUM_LINE_WIDTHS);
+   ENGINE_ASSERT(width == LineWidth::Half || line_word_allowed(reg));
+   ENGINE_ASSERT(table == nullptr || g_shadow.winlines == nullptr);   // one HBlank transfer at a time
+   ENGINE_ASSERT((reinterpret_cast<uint32_t>(table) & (kWordBytes - 1)) == 0);
+   g_shadow.line_table = table;
+   g_shadow.line_offset = static_cast<uint8_t>(line_register_offset(reg));
+   g_shadow.line_word = width == LineWidth::Word;
+}
+
+void set_line_effect_irq(const LineRegister* regs, uint8_t count, const uint16_t* table)
+{
+   g_shadow.irq_table = table;
+   g_shadow.irq_count = 0;
+   if (table == nullptr)
+   {
+      return;
+   }
+   ENGINE_ASSERT(count >= 1 && count <= kMaxLineTargets);
+   for (uint8_t i = 0; i < count; ++i)
+   {
+      ENGINE_ASSERT(regs[i] < LineRegister::NUM_LINE_REGISTERS);
+      g_shadow.irq_offsets[i] = static_cast<uint8_t>(line_register_offset(regs[i]));
+   }
+   g_shadow.irq_count = count;
 }
 
 void set_windows(bool win0, bool win1, bool obj_win)

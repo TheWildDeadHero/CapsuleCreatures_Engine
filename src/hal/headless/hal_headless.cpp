@@ -19,7 +19,6 @@ namespace
 {
 
 uint32_t g_frames = 0;   ///< Frames since init().
-uint16_t g_frame[capsule::hal::soft::kFramePixels];   ///< Composed frame (discarded).
 } // namespace
 
 namespace capsule::hal::system
@@ -40,9 +39,11 @@ uint32_t entropy()
 
 bool update()
 {
+   // FX2: the frame the last blank latched, composed at the end of the game's frame (soft::present(): a scanline table
+   // written during the frame shows in it, as on the GBA; soft::shown() keeps it), then the next one is latched
+   soft::present();
    vram::flush();   // A-5: queued uploads land at "VBlank", with the registers
    soft::latch();
-   soft::compose(g_frame);
    audio::hook::vblank();   // M4: the audio step, once per blank (nothing until audio starts)
    ++g_frames;
    rng::frame_advance();   // N1: a game's per-frame draw at the vertical blank (off by default)

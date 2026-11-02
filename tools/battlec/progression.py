@@ -1,10 +1,10 @@
 """!Progression of the battle compiler: levels, growth (experience) tables,
-party ranks and rewards; and (D-22 A8 / A12, D-23 E6c) the learn policy,
+party ranks and rewards; and (the game-tables stage / A12) the learn policy,
 the experience policy, the generation list of new records (random ranges,
 constants, passive slots, derived roles: rules::derive()). A move resource's
-maximum (the former pp_max() slot) is checked by battlec/resources.py (D-25).
+maximum (the former pp_max() slot) is checked by battlec/resources.py.
 
-E13a: a wide random range draws its high half first ("order": "high_first",
+A wide random range draws its high half first ("order": "high_first",
 the default) or its low half first ("low_first"); derived expressions may use
 the ruleset language's bit operators and read the species' fields
 (`species.NAME`, the structure's species_fields); an unstored custom role
@@ -34,7 +34,7 @@ MAX_EXPERIENCE = (1 << 24) - 1
 MIN_LEVEL_MAX = 2
 ## Highest level_max (levels are 8-bit).
 MAX_LEVEL_MAX = 255
-## Rule default: highest level (neutral, D-22 decision 8: the engine's cap; a game states its own).
+## Rule default: highest level (neutral, : the engine's cap; a game states its own).
 DEFAULT_LEVEL_MAX = MAX_LEVEL_MAX
 
 
@@ -69,7 +69,7 @@ def compile_growth(growth_src: Mapping[str, Any], growth_names: list[str], rules
    return growth
 
 
-# -- progression rules (D-22 A8 / A12, D-23 E6c) ------------------------------------------------------------------
+# -- progression rules (the game-tables stage / A12) ------------------------------------------------------------------
 
 ## learn.on_full values, in capsule::battle::LearnFull order.
 LEARN_ON_FULL = ["skip", "request", "replace_oldest"]
@@ -81,7 +81,7 @@ EXP_SHARES = ["faced", "active", "party"]
 EXP_RECEIVERS = ["human_side", "opposing_sides"]
 ## exp_policy.outsider values, in capsule::battle::ExpOutsider order.
 EXP_OUTSIDERS = ["never", "owner_id"]
-## The learn policy's defaults (neutral, D-22 decision 8: a full creature learns nothing new). default_moves has
+## The learn policy's defaults (neutral, : a full creature learns nothing new). default_moves has
 ## no default: every manifest states which moves a creature made without a move list knows (REQUIRED_LEARN).
 DEFAULT_LEARN = {"on_full": "skip"}
 ## learn keys a manifest must state.
@@ -96,7 +96,7 @@ BOUND_MAX = "max"
 ## Range bound: the last value the role chooses (trait: the last trait; passive_selector: the species' last
 ## rolled passive slot, chosen when the record is made).
 BOUND_LAST = "last"
-## The generation list without a manifest `generation` (neutral, D-22 decision 8: nothing is drawn; every role
+## The generation list without a manifest `generation` (neutral, : nothing is drawn; every role
 ## keeps its default value). The engine's former fixed draws were seed, stat_genes (0..max), trait and
 ## passive_selector (0..last), in that order; a game that wants them states them.
 DEFAULT_GENERATION: list[dict[str, Any]] = []
@@ -105,13 +105,13 @@ GEN_KINDS = ["random", "wide", "constant", "passive_slot", "derived", "wide_low_
 ## Most draws per element of each kind (src/battle/progress.cpp generate()): random draws none for one value;
 ## passive_slot one, or none when the species fills no rolled slot past the first (rolled_passive_slot()).
 DRAWS_PER_KIND = {"random": 1, "wide": 2, "constant": 0, "passive_slot": 1, "derived": 0, "wide_low_first": 2}
-## A wide random range's draw orders (E13a; "order"): the kind each one compiles to.
+## A wide random range's draw orders ("order"): the kind each one compiles to.
 WIDE_ORDERS = {"high_first": "wide", "low_first": "wide_low_first"}
 ## A wide random range's draw order without "order" (the engine's former only order).
 DEFAULT_WIDE_ORDER = "high_first"
 ## Kinds that make no draw, the ones an unstored custom role may have (it is computed on read).
 UNSTORED_KINDS = ("derived", "constant")
-## Prefix of a species field's name in a derived expression (species.NAME, E13a).
+## Prefix of a species field's name in a derived expression (species.NAME).
 SPECIES_PREFIX = "species."
 ## Most generation entries (capsule::battle::kMaxGeneration).
 MAX_GENERATION = 32
@@ -265,7 +265,7 @@ def derived_inputs(layout: Mapping[str, Any]) -> dict[str, tuple[int, int, int, 
 
 
 def species_inputs(species_fields: Sequence[Mapping[str, Any]]) -> dict[str, tuple[int, int]]:
-   """!The species fields a derived expression reads (E13a: `species.NAME`) and their value ranges.
+   """!The species fields a derived expression reads (`species.NAME`) and their value ranges.
    @param species_fields  the compiled species_fields (battlec/content.py compile_species_fields())
    @return name (with SPECIES_PREFIX) -> (lo, hi)
    """
@@ -370,7 +370,7 @@ def compile_generation(src: Json, layout: Mapping[str, Any], ruleset: Mapping[st
 
 
 def check_unstored(entries: Sequence[Mapping[str, Any]], layout: Mapping[str, Any], where: str) -> None:
-   """!Checks that every unstored custom role (computed on read, E13a) has exactly one generation entry, derived or
+   """!Checks that every unstored custom role (computed on read) has exactly one generation entry, derived or
    constant (a draw would be lost: nothing holds it).
    @param entries  compile_generation() entries
    @param layout   compiled layout
@@ -403,20 +403,20 @@ def emit_generation(entries: Sequence[Mapping[str, Any]]) -> list[str]:
 
 def emit_species_fields(species: Sequence[Mapping[str, Any]], species_fields: Sequence[Mapping[str, Any]],
                         entries: Sequence[Mapping[str, Any]], logic_reads: bool = False) -> list[str]:
-   """!The species field table (kSpeciesFields: one row per species in key order, the build's species indices; E13a),
+   """!The species field table (kSpeciesFields: one row per species in key order, the build's species indices),
    species_field() for derived expressions (only when one reads a field: no unused function) and the public
-   species_field_of() effect logic reads (E13b), inside namespace capsule::rules. The table is there only when a
+   species_field_of() effect logic reads, inside namespace capsule::rules. The table is there only when a
    derived expression or effect logic reads a field (else species_field_of() returns 0: no table in ROM).
    @param species         compiled species (battlec/content.py: each with "fields")
    @param species_fields  compiled species_fields
    @param entries         compile_generation() result
-   @param logic_reads     whether effect logic reads a species field (E13b)
+   @param logic_reads     whether effect logic reads a species field
    @return C++ lines
    """
    used = any(n.startswith(SPECIES_PREFIX) for e in entries if GEN_KINDS[e["kind"]] == "derived"
               for n in e["formula"]["used"])
-   # E13b: effect logic reads the fields through species_field_of() (0 for a structure without fields)
-   reader = ["/// A species field of a species (effect logic's `species_field(NAME)`; E13b).",
+   # Effect logic reads the fields through species_field_of() (0 for a structure without fields)
+   reader = ["/// A species field of a species (effect logic's `species_field(NAME)`).",
              "/// @param species  species index", "/// @param field    species_fields index", "/// @return the value",
              "int32_t species_field_of(int32_t species, int32_t field) {"]
    if not species_fields or not (used or logic_reads):

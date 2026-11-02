@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """!Migrates a battle (battle.json, the structure manifest it names, its
 ruleset and `.ceffect` sources) from built-in PP to manifest resources
-(D-25, E8; tools/battlec/resources.py).
+(tools/battlec/resources.py).
 
     battle_resources.py <battle.json>... [--check]
 
@@ -12,7 +12,7 @@ What it writes, so that the compiled behaviour stays the same:
   "empty": "faint", "persist": "current_hp" (when the layout holds it)},
   then, when the layout holds pp or a move states "pp", the move resource
   {"name": "pp", "scope": "move", "base": "pp", "max": "pp_max" (when the
-  layout holds pp_ups or the ruleset declares its pp_max slot: E7 applied it
+  layout holds pp_ups or the ruleset declares its pp_max slot: stage scaling applied it
   either way), "raises": "pp_ups" (when the layout holds it), "persist": "pp"};
 - monster_layout "move_slots": 4 (the former default) when it names none;
 - the ruleset's pp_max slot becomes the named formula pp_max with "args"
@@ -54,9 +54,9 @@ JsonDict = dict[str, Any]
 EXIT_OK = 0
 ## Exit status: a battle was refused.
 EXIT_REFUSED = 1
-## Move slots of a layout that named none before E8 (capsule::monster::kDefaultMoveSlots).
+## Move slots of a layout that named none from an older version (capsule::monster::kDefaultMoveSlots).
 FORMER_MOVE_SLOTS = 4
-## A move's PP before E8 when it named none.
+## A move's PP from an older version when it named none.
 FORMER_DEFAULT_PP = 10
 ## The former default pp_max slot: each raise adds a fifth of the base.
 FORMER_PP_MAX = {"args": ["pp_base", "pp_ups"], "expr": "pp_base + pp_base * pp_ups / 5", "range": [0, 255]}
@@ -118,9 +118,9 @@ def migrate_structure(structure: JsonDict, moves: Sequence[JsonDict],
    """!The structure manifest with resources and move_slots.
    @param structure    the structure manifest
    @param moves        the content's moves (a move stating pp makes the pp resource)
-   @param ruleset_max  the ruleset declares its pp_max slot (E7 applied it with or without raises)
+   @param ruleset_max  the ruleset declares its pp_max slot (applied it with or without raises)
    @return (new structure, what changed, whether the pp resource's max names pp_max)
-   @throws ManifestError when the structure has no stats (it predates D-20) or no pool stat
+   @throws ManifestError when the structure has no stats (it predates ) or no pool stat
    """
    notes: list[str] = []
    roles = layout_roles(structure)
@@ -133,7 +133,7 @@ def migrate_structure(structure: JsonDict, moves: Sequence[JsonDict],
    if "resources" in structure:
       return structure, notes, False
    if not isinstance(structure.get("stats"), list) or not structure["stats"]:
-      raise ManifestError("it has no \"stats\": it predates the manifest stats (D-20); give it its stats first")
+      raise ManifestError("it has no \"stats\": it predates the manifest stats; give it its stats first")
    pool = next((st.get("name") for st in structure["stats"] if st.get("pool")), None)
    if pool is None:
       raise ManifestError("its stats have no pool stat (hit points)")
@@ -146,7 +146,7 @@ def migrate_structure(structure: JsonDict, moves: Sequence[JsonDict],
       pp: JsonDict = {"name": "pp", "label": "PP", "scope": "move", "base": "pp"}
       has_max = raises or ruleset_max
       if has_max:
-         pp["max"] = "pp_max"   # E7 applied pp_max(base, ups) whenever the ruleset had it (ups 0 without the role)
+         pp["max"] = "pp_max"   # stage scaling: pp_max(base, ups) whenever the ruleset had it (ups 0 without the role)
       if raises:
          pp["raises"] = "pp_ups"
       if "pp" in roles:

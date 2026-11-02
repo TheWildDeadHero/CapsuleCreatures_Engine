@@ -36,6 +36,7 @@ constexpr uint32_t kTileBytes4 = 32;   ///< Bytes of a 4bpp tile.
 constexpr uint32_t kTileBytes8 = 64;   ///< Bytes of an 8bpp tile.
 /// Halfwords per queued map piece (one screen block: the queue's largest must-land request).
 constexpr uint32_t kPieceHalfwords = hal::vram::kMaxMustLandBytes / video::kHalfwordBytes;
+constexpr int kEntryBits = 16;   ///< A map entry's bits (two in a word).
 /// Words per queued tile piece.
 constexpr uint32_t kPieceWords = hal::vram::kMaxMustLandBytes / video::kWordBytes;
 constexpr int16_t kQ8Identity = 256;   ///< An affine layer's 1:1 matrix entry.
@@ -497,6 +498,37 @@ void copy_to_vram(video::BgIndex bg)
                         hal::vram::Priority::MustLand, video::Source::Ewram);
    }
    l.scheduled = false;
+}
+
+void load_tilemap_to_vram(video::BgIndex bg, const asset::Tilemap& map)
+{
+   const Layer& l = at(bg);
+   ENGINE_ASSERT(l.used && !l.affine && map.cells != nullptr);
+   const uint32_t limit = map_bytes(bg) / video::kHalfwordBytes;
+   const uint32_t halfwords = map.count < limit ? map.count : limit;
+   for (uint32_t done = 0; done < halfwords; done += kPieceHalfwords)
+   {
+      const uint32_t n = halfwords - done < kPieceHalfwords ? halfwords - done : kPieceHalfwords;
+      hal::vram::copy16(video::Region::BgVram, map_offset(l) + done * video::kHalfwordBytes, map.cells + done, n,
+                        hal::vram::Priority::MustLand, video::Source::Rom);
+   }
+}
+
+void fill_vram(video::BgIndex bg, video::MapCell entry)
+{
+   const Layer& l = at(bg);
+   ENGINE_ASSERT(l.used);
+   // two entries a word; the queue's must-land pieces
+   const uint32_t value = static_cast<uint32_t>(entry) | (static_cast<uint32_t>(entry) << kEntryBits);
+   constexpr uint32_t kWordBytes = 4;
+   const uint32_t words = map_bytes(bg) / kWordBytes;
+   constexpr uint32_t kPieceWords = hal::vram::kMaxMustLandBytes / kWordBytes;
+   for (uint32_t done = 0; done < words; done += kPieceWords)
+   {
+      const uint32_t n = words - done < kPieceWords ? words - done : kPieceWords;
+      hal::vram::fill32(video::Region::BgVram, map_offset(l) + done * kWordBytes, value, n,
+                        hal::vram::Priority::MustLand);
+   }
 }
 
 void schedule_copy(video::BgIndex bg)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""!Effect logic compiler (D-22 decision 1, D-23 section 1): the `.ceffect`
+"""!Effect logic compiler: the `.ceffect`
 language, its JSON AST (capsule.effect-ast/1), the canonical formatter, the
 checks, the bytecode for capsule/battle/effect.h and the pure backend for
 point handlers (generated C++ and a Python evaluator).
@@ -18,7 +18,7 @@ get a counter / word slot), "weathers", "side_conditions",
 "field_conditions", "moves", "items", "passives", "species", "stats",
 "stages", "move_flags", "tags", "texts", "messages", "cues", "roles",
 "species_fields", "move_fields" and "resources" (objects with "name" and
-"scope" battler | move, D-25). A list's index is the name's id.
+"scope" battler | move). A list's index is the name's id.
 
 Grammar (statements end with a semicolon; a hash sign starts a comment that runs to the end of the line):
 
@@ -61,9 +61,9 @@ names and refs (from the hook / point / ref catalogs below and the
 structure); a hook on an owner kind that cannot hold it; `per_foe` on another
 hook than switch_in (a per-foe handler also runs once per foe on the field,
 with value 1, after the battler's own run with value 0: kHandlerPerFoe) or
-try_switch (C5: it runs only when a foe of its holder switches out or runs:
+try_switch (it runs only when a foe of its holder switches out or runs:
 other = that foe, value its battler; the others only for the holder's own);
-writes to an unstored record role (C5: computed on read, it has no bits);
+writes to an unstored record role (computed on read, it has no bits);
 writes to read-only refs; results (modify, immune, block) where the hook has none; the operand
 stack depth (proven on the bytecode, kEffectStack); locals (kEffectLocals);
 the sub call graph (acyclic, kEffectCallDepth deep); loop bounds (repeat max
@@ -111,7 +111,7 @@ MAX_EFFECT_DEPTH = 4
 HOOK_EVENT_BUDGET = 32
 ## Events of one battle step (kEventsPerStep): a top-level segment's budget.
 EVENTS_PER_STEP = 128
-## Move phases that never suspend but run as a step's unit of their own, so a step's budget is theirs (G1: a delayed
+## Move phases that never suspend but run as a step's unit of their own, so a step's budget is theirs (a delayed
 ## hit's land phase, one unit of the end-of-turn delayed phase, works a whole hit out).
 UNIT_PHASES = {"land"}
 ## Highest repeat bound (kMaxRepeat).
@@ -171,13 +171,13 @@ SUBJ_SIDE = 0x80
 SUBJ_BASE_MASK = 0x7F
 ## Battler subject words, in code order.
 BATTLER_SUBJECTS = ["holder", "other", "user", "target"]
-## B1: a fixed battler (+ n: battler n; capsule::battle::effect::kSubjBattler): a combination's inputs.
+## A fixed battler (+ n: battler n; capsule::battle::effect::kSubjBattler): a combination's inputs.
 SUBJ_BATTLER = 0x20
-## B1: the subject word of a combination's inputs (`input.0`, `input.ROLE`: a slot role of the methods).
+## The subject word of a combination's inputs (`input.0`, `input.ROLE`: a slot role of the methods).
 INPUT_SUBJECT = "input"
-## B1: the battler of a combination's first input in the `on combine` field context (battle::kFieldOther).
+## The battler of a combination's first input in the `on combine` field context (battle::kFieldOther).
 FIRST_INPUT_BATTLER = 1
-## B1: the tokens of an input subject after `input`: the dot and the index or slot role.
+## The tokens of an input subject after `input`: the dot and the index or slot role.
 INPUT_TOKENS = 2
 
 ## One half (rounding Q8 literals).
@@ -249,16 +249,16 @@ OPS = [
    ("Odds", [], 4, 1),
    ("ResetStages", ["subj"], 0, 1), ("Delay", ["subj"], 2, 1), ("Reward", [], 1, 0), ("EndBattle", [], 0, 0),
    ("Teach", ["subj"], 1, 1),
-   # G1: use_move ... unless FLAG (fails the run on a flagged move or none), delayed hits, a decoy's mark
+   # use_move ... unless FLAG (fails the run on a flagged move or none), delayed hits, a decoy's mark
    ("CallMove", ["subj", "id"], 1, 0), ("DelayHit", ["subj", "id"], 1, 1), ("Absorb", [], 0, 0),
-   # G3: the recruit checks of the battle's Item action (pushes 1: recruited, 0: it broke free)
+   # The recruit checks of the battle's Item action (pushes 1: recruited, 0: it broke free)
    ("Recruit", ["subj"], 1, 1),
-   # G4: a form by name, an item's transformation rules on a field context's member, a training value
+   # A form by name, an item's transformation rules on a field context's member, a training value
    ("Form", ["subj", "id"], 0, 1), ("Transform", ["subj"], 0, 1), ("Train", ["subj", "id"], 1, 1),
    # F1: an encounter hook's change to the roll (mode = ENCOUNTER_KINDS, id = a type or a species field; three
    # operands), a timed field effect started (id = the effect; amount; pushes 1 started, 0 refused)
    ("Encounter", ["mode", "id"], 3, 0), ("FieldEffect", ["id"], 1, 1),
-   # B1: an inheritance primitive of the combine hook (mode = INHERIT_KINDS, subj = the input, role; two operands;
+   # An inheritance primitive of the combine hook (mode = INHERIT_KINDS, subj = the input, role; two operands;
    # pushes 1 when it changed the result's record)
    ("Inherit", ["subj", "role", "mode"], 2, 1),
 ]
@@ -302,37 +302,37 @@ BATTLER_KINDS = {"passive", "item", "status", "volatile", "weather", "side_condi
 KIND_FAN = {"passive": "max", "item": "max", "status": "max", "weather": "max", "volatile": "sum",
             "side_condition": "sum", "field_condition": "sum", "global": "sum"}
 
-# -- the hook and point catalogs (D-23 section 1.3) --------------------------------------------------------------------
+# -- the hook and point catalogs --------------------------------------------------------------------
 
 ## Owner kinds of the encounter hooks (F1): the game's global rules and the lead's passive and held item.
 ENCOUNTER_OWNERS = {"global", "passive", "item"}
 ## Highest encounter method index (capsule::encounter::kMaxMethods - 1): the encounter hook's value.
 MAX_ENCOUNTER_METHOD = 15
-## Owner kinds of the steps hook (F3): the game's global rules and a party member's status, passive and held item.
+## Owner kinds of the steps hook: the game's global rules and a party member's status, passive and held item.
 STEP_OWNERS = {"global", "status", "passive", "item"}
 ## Highest step effect index (capsule::script::kMaxStepEffects - 1): the steps hook's value.
 MAX_STEP_EFFECT = 15
-## The steps hook (F3): `field.step_effect` reads its value.
+## The steps hook: `field.step_effect` reads its value.
 STEPS_HOOK = "steps"
-## The field read of the step effect running (F3; FIELD_REFS).
+## The field read of the step effect running (FIELD_REFS).
 STEP_EFFECT_REF = "step_effect"
-## B1: the combine hook (a combination's result record built from its inputs).
+## The combine hook (a combination's result record built from its inputs).
 COMBINE_HOOK = "combine"
-## B1: owner kinds of the combine hook: the game's global rules.
+## Owner kinds of the combine hook: the game's global rules.
 COMBINE_OWNERS = {"global"}
-## B1: highest combination method index (capsule::combine::kMaxMethods - 1): the combine hook's value.
+## Highest combination method index (capsule::combine::kMaxMethods - 1): the combine hook's value.
 MAX_COMBINE_METHOD = 15
-## B1: most inputs of a combination on any platform (capsule::combine::kMaxInputs).
+## Most inputs of a combination on any platform (capsule::combine::kMaxInputs).
 MAX_COMBINE_INPUTS = 8
-## B1: the field reads of the combine hook (FIELD_REFS): the method running, its input count.
+## The field reads of the combine hook (FIELD_REFS): the method running, its input count.
 COMBINE_METHOD_REF = "combine_method"
-## B1: the input count's field read.
+## The input count's field read.
 COMBINE_INPUTS_REF = "combine_inputs"
-## B2: the hatch hook (an egg cycle's steps off each egg; capsule/combine/eggs.h).
+## The hatch hook (an egg cycle's steps off each egg; capsule/combine/eggs.h).
 HATCH_HOOK = "hatch"
-## B2: owner kinds of the hatch hook: the game's global rules and a member's passive and held item.
+## Owner kinds of the hatch hook: the game's global rules and a member's passive and held item.
 HATCH_OWNERS = {"global", "passive", "item"}
-## B2: the most steps an egg cycle takes off a counter (the 16-bit hatch counter role's range).
+## The most steps an egg cycle takes off a counter (the 16-bit hatch counter role's range).
 MAX_HATCH_STEPS = 0xFFFF
 ## A hook catalog entry: who may hold it, its context bindings, its value (None: no value; modify is not
 ## allowed), the verdicts it accepts and the engine's own draws around it.
@@ -348,7 +348,7 @@ def _hook(name: str, owners: set[str], binds: str, value: tuple[int, int] | None
    @param value    range of ctx.value, or None when the hook has no value
    @param results  verdict statements allowed (immune, block)
    @param draws    the engine's draws around the hook (for the editor)
-   @param pure     its handlers may only read, modify and give its verdicts (G1: the AI runs them to score)
+   @param pure     its handlers may only read, modify and give its verdicts (the AI runs them to score)
    @return the entry
    """
    return {"name": name, "owners": owners, "binds": binds, "value": value, "results": set(results), "draws": draws,
@@ -401,7 +401,7 @@ HOOKS = [
    _hook("hit", {"move"}, "move phase per target: holder = user, target = the target; default `damage;`"),
    _hook("try_start", CONDITION_KINDS, "condition-own: about to start on holder (other = its source, value = the "
          "turns asked for); immune / block refuse it, fail fails the run that started it", results=["immune", "block"]),
-   # E13b: trapping, redirection and delayed effects
+   # Trapping, redirection and delayed effects
    _hook("try_switch", BATTLER_KINDS, "holder = the battler choosing to switch out or run away, value = it; "
          "per_foe: holder = each active foe of it, other = it; block: it cannot (say why); forced switches do not "
          "ask", results=["block"]),
@@ -410,22 +410,22 @@ HOOKS = [
          "BATTLER claims the move: the first valid claim wins", value=(0, U8_MAX)),
    _hook("land", {"move"}, "move phase: the move's pending effect (delay) lands at the end of a turn: holder = user = "
          "who used it, target = the battler at the position, value = the stored amount"),
-   # G2 (D-26 section 2): an item used from the bag; fail: it has no effect (it is not consumed)
+   # An item used from the bag; fail: it has no effect (it is not consumed)
    _hook("use_field", {"item"}, "out of battle (a field context): holder = the party member the item is used on "
          "(its record as a battler; none for target none), move = the chosen move slot's move (target move_slot); "
          "fail: no effect, the item stays"),
    _hook("use_battle", {"item"}, "the battle's Item action (G3): holder = the target (member or battler), "
          "other = the user's active battler; fail: no effect"),
-   # G1 (D-26 section 1): an AI profile's hook rule; pure (no draw, no event, no change)
+   # An AI profile's hook rule; pure (no draw, no event, no change)
    _hook("ai_score", BATTLER_KINDS | {"move"}, "the AI scores a move: user = the AI's battler, target = the move's "
          "target, holder = the user (the move's own handler, its owners) then the target (its owners; other = the "
          "user), value = the score so far; modify changes it, block vetoes the move; move none: a switching rule asks "
          "what switching out is worth (value 0 in; it switches when that beats the best move)",
          value=(INT32_MIN, INT32_MAX), results=["block"], pure=True),
-   # C6 (review4 finding 19): the weather changed; forms that follow it change at once
+   # review4 finding 19: the weather changed; forms that follow it change at once
    _hook("weather_changed", BATTLER_KINDS, "holder = each active battler (position order), other = who changed the "
          "weather, value = the weather acting now (255: none; a suppressed weather reads none)", value=(0, U8_MAX)),
-   # F1 (D-27 section 1): an encounter roll out of battle (a field context: holder = the party's lead), before the
+   # F1: an encounter roll out of battle (a field context: holder = the party's lead), before the
    # pick (the encounter_* primitives change the roll; block: no encounter) and after it (target = the creature
    # made, its record; role writes go into it; encounter_reroll picks again; block: no encounter)
    _hook("encounter", ENCOUNTER_OWNERS, "out of battle, before the pick: holder = user = the party's lead (a field "
@@ -435,7 +435,7 @@ HOOKS = [
    _hook("encounter_made", ENCOUNTER_OWNERS, "out of battle, after the pick, before the battle: holder = user = the "
          "lead, target = other = the creature made (its record: `target.role(NAME) = ...` writes it), value = its "
          "level; encounter_reroll picks another, block: no encounter", value=(0, U8_MAX), results=["block"]),
-   # F3 (D-27 section 4): a step effect's run out of battle, every N steps of the walker, on each party member (a
+   # A step effect's run out of battle, every N steps of the walker, on each party member (a
    # field context: its record as a battler; its role writes go into it); the engine applies the effect's damage
    # rule (faint / survive at 1) after the handlers
    _hook(STEPS_HOOK, STEP_OWNERS, "out of battle, every N steps: holder = user = target = each party member (a field "
@@ -444,7 +444,7 @@ HOOKS = [
          "member is on no position, damage_hp needs one), restore, cure and role writes change the member, the "
          "effect's damage rule keeps it at 1 or lets it faint; fail / block end its owner's run",
          value=(0, MAX_STEP_EFFECT), results=["block"]),
-   # B1 (D-28 section 1): a combination's result record, built out of battle (a field context: holder = user = target
+   # A combination's result record, built out of battle (a field context: holder = user = target
    # = the result, made at its level; input.0 .. input.N-1 / input.ROLE are the inputs' records, read only)
    _hook(COMBINE_HOOK, COMBINE_OWNERS, "out of battle, a combination: holder = user = target = the result (a field "
          "context; its record as a battler), input.0 / input.ROLE = the inputs (read only), value = the method "
@@ -452,7 +452,7 @@ HOOKS = [
          "primitives write the result's record (inherit ROLE from input.X, inherit_pick ROLE N, inherit_odds ROLE "
          "from input.X N D, inherit_add ROLE AMOUNT); fail / block refuse the combination",
          value=(0, MAX_COMBINE_METHOD), results=["block"]),
-   # B2 (D-28 section 3): an egg cycle (the structure's eggs.step_effect running): each member that is not an egg is
+   # An egg cycle (the structure's eggs.step_effect running): each member that is not an egg is
    # asked how many steps the eggs' counters lose this run (a warming passive doubles them)
    _hook(HATCH_HOOK, HATCH_OWNERS, "out of battle, an egg cycle: holder = user = target = each party member that is "
          "not an egg (a field context; the game's global rules, then its passive, then its held item), value = the "
@@ -461,7 +461,7 @@ HOOKS = [
 ]
 ## Hook number by name.
 HOOK = {h["name"]: i for i, h in enumerate(HOOKS)}
-## Bits per word of an owner's hook mask (capsule::battle::effect::kHookMaskWordBits; G3: the mask is as many
+## Bits per word of an owner's hook mask (capsule::battle::effect::kHookMaskWordBits; the mask is as many
 ## 32-bit words as the hooks need).
 HOOK_MASK_WORD_BITS = 32
 ## The low bits of a hook mask word.
@@ -546,12 +546,12 @@ BATTLER_REFS = {
    "has": _ref(None, "bool", arg="has", rng=BOOL_RANGE, has="?"),
    "has_type": _ref(None, "bool", arg="types", rng=BOOL_RANGE, has="type"),
    "role": _ref(None, "int", arg="roles", rng=(0, INT32_MAX)),
-   # D-25 resources by name: a battler pool, or the context move's slot of a move pool (writes clamp to the max)
+   # Resource resources by name: a battler pool, or the context move's slot of a move pool (writes clamp to the max)
    "resource": _ref("resource", arg="resources", writable=True), "resource_max": _ref("resource_max", arg="resources"),
-   # E13b: the last move that targeted it (any move), its position's pending effect, its party's controller and kind
+   # The last move that targeted it (any move), its position's pending effect, its party's controller and kind
    "targeted_by": _ref("targeted_by", "move"), "delayed_turns": _ref("delayed_turns", rng=BYTE_RANGE),
    "human": _ref("human", "bool", rng=BOOL_RANGE), "unowned": _ref("unowned", "bool", rng=BOOL_RANGE),
-   # C5: on the human player's side (the side of the first human party), whoever controls the battler
+   # On the human player's side (the side of the first human party), whoever controls the battler
    "player_side": _ref("player_side", "bool", rng=BOOL_RANGE),
    "gene": _ref("gene", arg="stats", rng=BYTE_RANGE),
 }
@@ -572,9 +572,9 @@ FIELD_REFS = {
    # F1: a timed field effect runs / what it has left (steps or minutes; 0 out of the engine library's programs)
    "effect_active": _ref("field_effect_active", "bool", arg="field_effects", rng=BOOL_RANGE),
    "effect_remaining": _ref("field_effect_remaining", arg="field_effects", rng=(0, U16_MAX)),
-   # F3: the step effect a steps handler runs for (the hook's value; `field.step_effect == NAME`)
+   # The step effect a steps handler runs for (the hook's value; `field.step_effect == NAME`)
    STEP_EFFECT_REF: _ref("value", "step_effect", rng=(0, MAX_STEP_EFFECT)),
-   # B1: the combination method a combine handler runs for (the hook's value) and its input count
+   # The combination method a combine handler runs for (the hook's value) and its input count
    COMBINE_METHOD_REF: _ref("value", "combine_method", rng=(0, MAX_COMBINE_METHOD)),
    COMBINE_INPUTS_REF: _ref("dealt", rng=(0, MAX_COMBINE_INPUTS)),
 }
@@ -588,7 +588,7 @@ SIDE_REFS = {
 ## Global reads (bare words).
 GLOBAL_REFS = {
    "turn": _ref("turn"), "hits": _ref("hits", rng=BYTE_RANGE), "crit": _ref("crit", "bool", rng=BOOL_RANGE),
-   # G1: a decoy took the move's latest hit (its before_damage handler said `absorb`)
+   # A decoy took the move's latest hit (its before_damage handler said `absorb`)
    "absorbed": _ref("absorbed", "bool", rng=BOOL_RANGE),
    "value": _ref("value", rng=(INT32_MIN, INT32_MAX)), "dealt": _ref("dealt", rng=(0, INT32_MAX)),
    "move": _ref("move", "move"), "owner": _ref("owner"),
@@ -596,11 +596,11 @@ GLOBAL_REFS = {
 ## Kinds whose names are values (a name in an expression resolves in one of these lists).
 VALUE_KINDS = {"type": "types", "category": "categories", "status": "statuses", "weather": "weathers",
                "move": "moves", "item": "items", "passive": "passives", "species": "species",
-               # F3: a step effect's name (`field.step_effect == NAME`)
+               # A step effect's name (`field.step_effect == NAME`)
                "step_effect": "step_effects",
-               # B1: a combination method's name (`field.combine_method == NAME`)
+               # A combination method's name (`field.combine_method == NAME`)
                "combine_method": "combine_methods"}
-## The word for "none" of a kind (C5: `user.targeted_by == none`): what a ref of that kind reads when there is none.
+## The word for "none" of a kind (`user.targeted_by == none`): what a ref of that kind reads when there is none.
 NONE_WORD = "none"
 ## Its value per kind: 16-bit ids read 65535, 8-bit ones 255 (the engine's kNone16 / kNone8).
 NONE_VALUES = {"move": U16_MAX, "item": U16_MAX, "species": U16_MAX, "type": U8_MAX, "category": U8_MAX,
@@ -612,7 +612,7 @@ HAS_LOOKUP = [("volatile", "volatiles"), ("tag", "tags"), ("status", "statuses")
 FUNCTIONS = {"min": (2, 2), "max": (2, 2), "clamp": (3, 3), "abs": (1, 1), "pick": (2, MAX_PICK + 1),
              "scale": (2, 2), "chance": (2, 2), "between": (2, 2), "rand": (1, 1), "is_foe": (2, 2),
              "is_ally": (2, 2), "odds": (2, 4)}
-## Battlers odds() is between when the logic names none: the user against the target (E9).
+## Battlers odds() is between when the logic names none: the user against the target.
 ODDS_DEFAULT_SUBJECTS = ("user", "target")
 ## Largest odds() operand (capsule::battle::effect_odds_of() clamps n and m to 1..this, kMaxU16): an operand whose
 ## analysed range passes it is refused; one whose range is unknown is clamped at run time.
@@ -649,7 +649,7 @@ PRIMITIVES: dict[str, list[tuple[str, str]]] = {
    "switch": [("who", "subj"), ("mode", "mode:ask:pass,ask,random")],
    "lock": [("who", "subj"), ("", "flags:free")],
    "unlock": [("who", "subj")],
-   # G1: `unless FLAG` refuses (fails the run on) none or a move with that move flag (uncallable, unmirrorable, ...)
+   # `unless FLAG` refuses (fails the run on) none or a move with that move flag (uncallable, unmirrorable, ...)
    "use_move": [("who", "subj"), ("move", "expr"), ("unless", "kwid:unless:move_flags")],
    "set_target": [("who", "expr")],
    "credit": [("amount", "expr")],
@@ -664,31 +664,31 @@ PRIMITIVES: dict[str, list[tuple[str, str]]] = {
    "say": [("msg", "id:messages"), ("at", "kws:at"), ("about", "kws:about"), ("value", "kw:value")],
    "announce": [],
    "cue": [("cue", "id:cues")],
-   # D-25: refill a resource (by amount, or to its maximum without one) / add raises to a move resource's slots
+   # Refill a resource (by amount, or to its maximum without one) / add raises to a move resource's slots
    "restore": [("who", "subj"), ("resource", "id:resources"), ("amount", "opt_expr"), ("", "flags:every_slot")],
    "raise": [("who", "subj"), ("resource", "id:resources"), ("amount", "expr"), ("", "flags:every_slot")],
-   # E13b: every stage back to 0 (no texts, no stage_change hooks); a pending effect of the move at a battler's
+   # Every stage back to 0 (no texts, no stage_change hooks); a pending effect of the move at a battler's
    # position (its land phase runs after `turns` ends of turn); the reward pool; the battle's end (nobody wins)
    "reset_stages": [("who", "subj")],
    "delay": [("who", "subj"), ("amount", "expr"), ("turns", "expr")],
-   # G1: a delayed hit (structure delayed_hits): a snapshot of the user now, the land phase's `damage` works it out;
+   # A delayed hit (structure delayed_hits): a snapshot of the user now, the land phase's `damage` works it out;
    # in before_damage, `absorb` marks the hit as taken by a decoy (ref `absorbed`)
    "delay_hit": [("who", "subj"), ("turns", "expr"), ("hit", "id:delayed_hits")],
    "absorb": [],
    "reward": [("amount", "expr")],
    "end_battle": [],
-   # G2: offer a move as a level-up does (pushes 0: knows it or cannot, 1: learned, 2: offered, an answer pending)
+   # Offer a move as a level-up does (pushes 0: knows it or cannot, 1: learned, 2: offered, an answer pending)
    "teach": [("who", "subj"), ("move", "expr")],
-   # G3 (D-26 section 3): an item's use_battle logic tries to recruit a battler (structure recruit: the checks
+   # An item's use_battle logic tries to recruit a battler (structure recruit: the checks
    # against the ruleset's recruit_odds with this bonus; success ends the battle; refused: the run fails)
    "recruit": [("who", "subj"), ("bonus", "expr")],
-   # G4 (D-26 section 4): a form by name (`base`: the species' own; pushes 1 when it changed), the running item's
+   # A form by name (`base`: the species' own; pushes 1 when it changed), the running item's
    # item_use transformation rules on a field context's member (none holds: the run fails), a training value
    # within the structure's caps (pushes the change made)
    "form": [("who", "subj"), ("form", "id:forms")],
    "transform": [("who", "subj")],
    "train": [("who", "subj"), ("stat", "id:stats"), ("amount", "expr")],
-   # F1 (D-27 section 1): an encounter hook changes the roll (operands within ENCOUNTER_ARGS): the trigger odds
+   # F1: an encounter hook changes the roll (operands within ENCOUNTER_ARGS): the trigger odds
    # times N / D, the levels' bounds moved, the level pipeline's bias, no encounter below a level, the pick kept to
    # a type's or a species field value's entries with odds N in D, another pick (encounter_made only)
    "encounter_rate": [("n", "expr"), ("d", "expr")],
@@ -698,10 +698,10 @@ PRIMITIVES: dict[str, list[tuple[str, str]]] = {
    "encounter_type": [("type", "id:types"), ("n", "expr"), ("d", "expr")],
    "encounter_field": [("field", "id:species_fields"), ("value", "expr"), ("n", "expr"), ("d", "expr")],
    "encounter_reroll": [],
-   # F1 (D-27 section 2): start a timed field effect by its stack rule (refused, e.g. Refuse while it runs: the run
+   # F1: start a timed field effect by its stack rule (refused, e.g. Refuse while it runs: the run
    # fails, so an item used for it stays)
    "field_effect": [("mode", "mode::start"), ("effect", "id:field_effects"), ("amount", "expr")],
-   # B1 (D-28 section 1): the combine hook's inheritance primitives on the result's record: copy a role from an
+   # The combine hook's inheritance primitives on the result's record: copy a role from an
    # input, N elements of a role (a per-stat group) each from a random input, a role from an input with odds N in D,
    # add to a counter role (clamped to its range)
    "inherit": [("role", "id:roles"), ("from", "kws:from")],
@@ -709,11 +709,11 @@ PRIMITIVES: dict[str, list[tuple[str, str]]] = {
    "inherit_odds": [("role", "id:roles"), ("from", "kws:from"), ("n", "expr"), ("d", "expr")],
    "inherit_add": [("role", "id:roles"), ("amount", "expr")],
 }
-## B1: the inheritance primitives in capsule::combine::InheritOp order (the Inherit op's mode).
+## The inheritance primitives in capsule::combine::InheritOp order (the Inherit op's mode).
 INHERIT_KINDS = ["inherit", "inherit_pick", "inherit_odds", "inherit_add"]
-## B1: operands the Inherit op pops (the unused ones are pushed as 0).
+## Operands the Inherit op pops (the unused ones are pushed as 0).
 INHERIT_OPERANDS = 2
-## B1: the most elements inherit_pick takes (a per-stat role's elements: capsule::battle::kMaxStats).
+## The most elements inherit_pick takes (a per-stat role's elements: capsule::battle::kMaxStats).
 MAX_INHERIT_PICK = 32
 ## Encounter primitives in capsule::battle::EncounterOp order (the Encounter op's mode).
 ENCOUNTER_KINDS = ["encounter_rate", "encounter_levels", "encounter_level_bias", "encounter_skip_below",
@@ -736,7 +736,7 @@ ENCOUNTER_ARGS = {
 ENCOUNTER_OPERANDS = 3
 ## Hooks the encounter primitives belong to (encounter_reroll: encounter_made only).
 ENCOUNTER_HOOKS = {"encounter", "encounter_made"}
-## C8: the encounter hook without a creature: `target` is the holder's own record there, so writes through it are
+## The encounter hook without a creature: `target` is the holder's own record there, so writes through it are
 ## refused (encounter_made's target is the creature made).
 ENCOUNTER_TARGETLESS_HOOK = "encounter"
 ## The subject name of a hook's target (BATTLER_SUBJECTS).
@@ -749,27 +749,27 @@ RECRUIT_MOMENT_EVENTS = 2
 RECRUIT_END_MOMENTS = 2
 ## Events one `recruit` may queue: every check's moment, then the outcome's and the placement's.
 RECRUIT_EVENTS = (MAX_RECRUIT_CHECKS + RECRUIT_END_MOMENTS) * RECRUIT_MOMENT_EVENTS
-## Events of a form change (G4): its Transform event and an Hp event.
+## Events of a form change: its Transform event and an Hp event.
 FORM_EVENTS = 2
-## Highest amount `field_effect start NAME N` takes (battlec/field.py MAX_AMOUNT: the effect's u16 variable; C8).
+## Highest amount `field_effect start NAME N` takes (battlec/field.py MAX_AMOUNT: the effect's u16 variable).
 FIELD_EFFECT_MAX_AMOUNT = U16_MAX
 ## Most moves one level teaches (battlec/content.py MAX_LEARN_PER_LEVEL), a Learned message each.
 LEARN_PER_LEVEL = 4
-## Events of a transformation (G4): its Hp and Transform events, then the learn messages of its level.
+## Events of a transformation: its Hp and Transform events, then the learn messages of its level.
 TRANSFORM_EVENTS = FORM_EVENTS + LEARN_PER_LEVEL
-## Events of a training change (G4): an Hp event (the stats follow).
+## Events of a training change: an Hp event (the stats follow).
 TRAIN_EVENTS = 1
 ## Flag bits per primitive flag word (effect.h kDamage* / kInflictQuiet / kSideAddLayer / kLockNoPp).
 FLAG_BITS = {"typed": 1, "quiet": 2, "no_faint_check": 4, "add_layer": 1, "free": 1, "every_slot": 1}
 ## Restore without an amount: to the maximum (kResourceFull).
 RESOURCE_FULL = 2
 ## Primitive flag words that are gone, with what replaced them.
-RETIRED_FLAGS = {("lock", "no_pp"): "lock's no_pp is `free` now (D-25: the locked action pays no cost)"}
+RETIRED_FLAGS = {("lock", "no_pp"): "lock's no_pp is `free` now (the locked action pays no cost)"}
 ## Inflict's and cure's own flag bit for `quiet` (kInflictQuiet, kCureQuiet).
 INFLICT_QUIET = 1
 ## Stage's `quiet`: a bit of its stage id8 (kStageQuiet; the stage is the bits below, kStageIdMask).
 STAGE_QUIET = 0x80
-## Stage's `silent`: no message at all (kStageSilent, E13b).
+## Stage's `silent`: no message at all (kStageSilent).
 STAGE_SILENT = 0x40
 ## Largest stage id (kStageIdMask).
 MAX_STAGE_ID = STAGE_SILENT - 1
@@ -786,14 +786,14 @@ PRIMITIVE_OPS = {"damage_hp": "DamageHp", "self_hit": "SelfHit", "heal": "Heal",
                  "form": "Form", "transform": "Transform", "train": "Train",
                  # F1: every encounter primitive is the Encounter op (its mode), field_effect start the FieldEffect op
                  **{k: "Encounter" for k in ENCOUNTER_KINDS}, "field_effect": "FieldEffect",
-                 # B1: every inheritance primitive is the Inherit op (its mode)
+                 # Every inheritance primitive is the Inherit op (its mode)
                  **{k: "Inherit" for k in INHERIT_KINDS}}
 
 ## Event cost of each statement that emits events, and the hooks it triggers (battler hooks of the subject, or
 ## condition-own hooks of the named condition: "own:<list>:<start|end|try_start>"; start counts start or already).
 OP_EVENTS: dict[str, tuple[int, list[str]]] = {
    "damage": (4, ["before_damage", "damaging_hit", "after_hit", "update", "faint"]),
-   # E13b: a typed hit runs the target's before_damage hooks first (primitive_cost() skips them for an untyped one)
+   # A typed hit runs the target's before_damage hooks first (primitive_cost() skips them for an untyped one)
    "damage_hp": (2, ["before_damage", "update", "faint"]),
    "self_hit": (3, ["update", "faint"]),
    "heal": (1, ["update"]),
@@ -813,17 +813,17 @@ OP_EVENTS: dict[str, tuple[int, list[str]]] = {
    "modify": (0, []), "immune": (1, ["update"]), "block": (1, []),
    "text": (1, []), "say": (1, []), "announce": (1, []), "cue": (1, []), "ask": (1, []),
    "restore": (1, ["update"]), "raise": (1, []),
-   # E13b: reset_stages emits one Stage event per stage (primitive_cost() counts the structure's stages)
+   # reset_stages emits one Stage event per stage (primitive_cost() counts the structure's stages)
    "reset_stages": (0, []), "delay": (0, []), "reward": (0, []), "end_battle": (1, []),
    "teach": (1, []),
    "delay_hit": (0, []), "absorb": (0, []),
-   # G3: an event per check, the outcome and where the record went (and a refusal's message)
+   # An event per check, the outcome and where the record went (and a refusal's message)
    "recruit": (RECRUIT_EVENTS, []),
-   # G4: a form change, a transformation (with the learn messages of its level), a training change
+   # A form change, a transformation (with the learn messages of its level), a training change
    "form": (FORM_EVENTS, []), "transform": (TRANSFORM_EVENTS, []), "train": (TRAIN_EVENTS, []),
    # F1: the encounter primitives change the roll's plan, field_effect a script variable (no events)
    **{k: (0, []) for k in ENCOUNTER_KINDS}, "field_effect": (0, []),
-   # B1: the inheritance primitives write the result's record (no events)
+   # The inheritance primitives write the result's record (no events)
    **{k: (0, []) for k in INHERIT_KINDS},
 }
 
@@ -890,7 +890,7 @@ MESSAGES = {
    "recruit-context": "recruit only in an item's use_battle handler (the battle's Item action)",
    "encounter-context": "{what} only in an encounter or encounter_made handler (an encounter roll out of battle)",
    "steps-context": "field.step_effect only in a steps handler (a step effect's run out of battle)",
-   # B1: the combine hook's reads, subjects and primitives
+   # The combine hook's reads, subjects and primitives
    "combine-context": "{what} only in a combine handler (a combination out of battle)",
    "unknown-input": "unknown input {name!r} (input.N with N below {limit}, or a slot role of the methods: {roles})",
    "inherit-role": "{what}: role {name!r} cannot be inherited ({why})",
@@ -1207,7 +1207,7 @@ class ExprParser(rc.Parser):
       if of is not None:
          node["of"] = of
       if parts == [INPUT_SUBJECT] and self.peek() == ("op", ".") and self.owner.toks[self.pos + 1].kind == "number":
-         # B1: input.N (a combination's input by index) is a subject: its number is the next part
+         # input.N (a combination's input by index) is a subject: its number is the next part
          self.pos += INPUT_TOKENS
          parts.append(self.owner.toks[self.pos - 1].text)
       while self.peek() == ("op", "."):
@@ -1335,7 +1335,7 @@ class EffectParser:
       return t
 
    def name(self, what: str) -> str:
-      """!Consumes a name token (B1: a subject may be a combination's input, `input.N` or `input.ROLE`).
+      """!Consumes a name token (a subject may be a combination's input, `input.N` or `input.ROLE`).
       @param what  what is expected
       @return its text
       """
@@ -1347,7 +1347,7 @@ class EffectParser:
          nxt = self.toks[self.pos + 1]
          if nxt.kind in ("name", "number"):
             self.pos += INPUT_TOKENS
-            # C9: `input.METHOD.ROLE` (one method's own slot role; a subject is never followed by a field)
+            # `input.METHOD.ROLE` (one method's own slot role; a subject is never followed by a field)
             if nxt.kind == "name" and self.is_sym(".") and self.toks[self.pos + 1].kind == "name":
                role = self.toks[self.pos + 1].text
                self.pos += INPUT_TOKENS
@@ -1688,7 +1688,7 @@ class EffectParser:
                self.pos += 1
                node[field] = self.name("a subject")
          elif head == "kwid":
-            # G1: `WORD NAME`, optional (a name from a structure list, e.g. use_move ... unless FLAG)
+            # `WORD NAME`, optional (a name from a structure list, e.g. use_move ... unless FLAG)
             keyword, _, names = rest.partition(":")
             if self.is_word(keyword):
                self.pos += 1
@@ -1976,7 +1976,7 @@ class Formatter:
       self.lines.append("}")
 
 
-def format(ast: Mapping[str, Any]) -> str:   # noqa: A001 (the API name D-23 gives)
+def format(ast: Mapping[str, Any]) -> str:   # noqa: A001 (the API name effect logic gives)
    """!The canonical text of an AST (a file AST, or one owner).
    @param ast  the AST
    @return the text (ends with a newline)
@@ -2060,13 +2060,13 @@ def owner_ast(ast: Mapping[str, Any], name: str) -> dict[str, Any]:
 LIST_KEYS = ["types", "categories", "statuses", "volatiles", "weathers", "side_conditions", "field_conditions",
              "moves", "items", "passives", "species", "stats", "stages", "move_flags", "tags", "texts", "messages",
              "cues", "roles", "species_fields", "move_fields", "points", "resources", "delayed_hits",
-             # G4: the species' form names (effect `form`; "base" first: a species' own form)
+             # The species' form names (effect `form`; "base" first: a species' own form)
              "forms",
              # F1: the timed field effects (effect `field_effect start NAME N`, `field.effect_active(NAME)`)
              "field_effects",
-             # F3: the step effects (`field.step_effect == NAME` in a steps handler)
+             # The step effects (`field.step_effect == NAME` in a steps handler)
              "step_effects",
-             # B1: the combination methods (`field.combine_method == NAME`) and their slot roles (`input.ROLE`:
+             # The combination methods (`field.combine_method == NAME`) and their slot roles (`input.ROLE`:
              # entries {"name", "input": index or None when two methods disagree})
              "combine_methods", "combine_slots"]
 
@@ -2150,7 +2150,7 @@ class Catalog:
             self.points[name] = (lo, hi)
       ## Role name -> role ID (an entry's "id", else its index).
       self.roles: dict[str, int] = {}
-      ## Roles the record does not store (an entry's "stored": false; E13a): read on demand, never written (C5).
+      ## Roles the record does not store (an entry's "stored": false): read on demand, never written.
       self.unstored_roles: set[str] = set()
       for i, r in enumerate(self.entries.get("roles", [])):
          name = r if isinstance(r, str) else r["name"]
@@ -2486,11 +2486,11 @@ PROGRAM_RNG = 4
 ## kHandlerPoint.
 HANDLER_POINT = 1
 ## kHandlerPerFoe: a switch_in handler that also runs once per foe (`on switch_in per_foe`); a try_switch handler
-## that runs for a foe's switch or run only (C5).
+## that runs for a foe's switch or run only.
 HANDLER_PER_FOE = 2
 ## The hook whose handlers may run per foe (the first of PER_FOE_HOOKS; kept for its readers).
 PER_FOE_HOOK = "switch_in"
-## The hooks whose handlers may be marked per_foe (C5: try_switch, a foe's trap).
+## The hooks whose handlers may be marked per_foe (try_switch, a foe's trap).
 PER_FOE_HOOKS = (PER_FOE_HOOK, "try_switch")
 ## The word marking a per-foe handler.
 PER_FOE_WORD = "per_foe"
@@ -3026,7 +3026,7 @@ class Compiler:
       k = s["stmt"]
       ctx = self.context
       if ctx.get("pure") and k in ("assign", "call"):
-         # G1: a pure hook (ai_score) changes nothing (a sub may: it is not called from one)
+         # A pure hook (ai_score) changes nothing (a sub may: it is not called from one)
          self.err("pure-hook", s, hook=ctx["hook"], what="writing a ref" if k == "assign" else "calling a sub")
          return False
       if k == "let":
@@ -3169,9 +3169,9 @@ class Compiler:
          self.err("not-writable", s, ref=t["ref"])
          return
       if form == "role" and t.get("arg") in self.catalog.unstored_roles:
-         self.err("unstored-role", s, name=t["arg"])   # C5: the engine's role_set would drop it silently
+         self.err("unstored-role", s, name=t["arg"])   # the engine's role_set would drop it silently
          return
-      # C8: in `on encounter` no creature is picked yet: target is the holder's own record (the field context has
+      # In `on encounter` no creature is picked yet: target is the holder's own record (the field context has
       # no other), so a write through it would change the lead; encounter_made's target is the creature
       if self.context.get("hook") == ENCOUNTER_TARGETLESS_HOOK and subj == BATTLER_SUBJECTS.index(TARGET_SUBJECT):
          self.err("encounter-target", s, ref=t.get("ref", TARGET_SUBJECT))
@@ -3207,8 +3207,8 @@ class Compiler:
       return SUBJ_HOLDER
 
    def input_subject(self, name: str, node: Any) -> int:
-      """!The subject code of a combination's input (B1): `input.N` (N below MAX_COMBINE_INPUTS), `input.ROLE` (a
-      slot role the methods give one index) or (C9) `input.METHOD.ROLE` (that method's slot role: unambiguous when
+      """!The subject code of a combination's input: `input.N` (N below MAX_COMBINE_INPUTS), `input.ROLE` (a
+      slot role the methods give one index) or `input.METHOD.ROLE` (that method's slot role: unambiguous when
       methods share a role name), only in a combine handler.
       @param name  "input.N", "input.ROLE" or "input.METHOD.ROLE"
       @param node  node (position)
@@ -3227,7 +3227,7 @@ class Compiler:
       return SUBJ_BATTLER + FIRST_INPUT_BATTLER + index
 
    def ref_head(self, parts: Sequence[str]) -> tuple[str, list[str]]:
-      """!A ref's base and fields (B1: `input.X` is one base; C9: `input.METHOD.ROLE` too, when the catalog names
+      """!A ref's base and fields (`input.X` is one base; `input.METHOD.ROLE` too, when the catalog names
       that method's role: it wins over a role X's field ROLE).
       @param parts  the ref's dotted parts
       @return (base, field parts)
@@ -3241,7 +3241,7 @@ class Compiler:
       return head, rest
 
    def qualified_inputs(self) -> set[str]:
-      """!The method-qualified slot roles the catalog names (C9: METHOD.ROLE).
+      """!The method-qualified slot roles the catalog names (METHOD.ROLE).
       @return the names
       """
       entries = self.catalog.entries.get("combine_slots", [])
@@ -3268,12 +3268,12 @@ class Compiler:
       elif head == "field":
          table, subj = FIELD_REFS, SUBJ_FIELD
          if field == STEP_EFFECT_REF:
-            # F3: the steps hook's value under its own name (a plain context read, no field subject)
+            # The steps hook's value under its own name (a plain context read, no field subject)
             subj = SUBJ_NONE
             if self.context.get("hook") != STEPS_HOOK:
                self.err("steps-context", e)
          elif field in (COMBINE_METHOD_REF, COMBINE_INPUTS_REF):
-            # B1: the combine hook's value (the method) and its input count (the context's dealt register)
+            # The combine hook's value (the method) and its input count (the context's dealt register)
             subj = SUBJ_NONE
             if self.context.get("hook") != COMBINE_HOOK:
                self.err("combine-context", e, what=f"field.{field}")
@@ -3417,7 +3417,7 @@ class Compiler:
          _slot, kind, rng = found
          return (kind, None, rng)
       if name == NONE_WORD:
-         # C5: the none value of the kind it is compared with or given as
+         # The none value of the kind it is compared with or given as
          if expect not in NONE_VALUES:
             self.err("none-kind", e, kinds=", ".join(NONE_VALUES))
             return ("int", 0, (0, 0))
@@ -3543,7 +3543,7 @@ class Compiler:
             self.err("pure-hook", e, hook=self.context["hook"], what=f"{fn}() (it draws)")
          self.prog.flags |= PROGRAM_RNG
       if fn == "odds":
-         # odds(n, m[, by[, on]]): the ruleset's effect_odds pipeline for battler by against on (E9)
+         # odds(n, m[, by[, on]]): the ruleset's effect_odds pipeline for battler by against on
          for which, operand in zip(ODDS_OPERANDS, args):
             r = self.range_of(operand)
             if r is not None and r[1] > ODDS_OPERAND_MAX:
@@ -3678,7 +3678,7 @@ class Compiler:
          return self.inherit_primitive(s)
       if k == "damage":
          if not (is_move and ctx["hook"] in ("hit", "land") and ctx["kind"] == "handler"):
-            self.err("damage-context", s)   # G1: a delayed hit's land phase too
+            self.err("damage-context", s)   # a delayed hit's land phase too
          a.emit("Damage")
          a.emit("Drop")
          if ctx["repeat"]:
@@ -3784,7 +3784,7 @@ class Compiler:
       elif k in ("recruit",):
          self.value(s["bonus"])
       elif k == "field_effect":
-         # F1: the steps or minutes; C8: a constant amount the effect's variable cannot hold is refused (the
+         # F1: the steps or minutes; a constant amount the effect's variable cannot hold is refused (the
          # script compiler's check; a computed one is clamped by the engine, below 1 it does not start)
          r = self.range_of(s["amount"])
          if r is not None and r[0] == r[1] and not 1 <= r[0] <= FIELD_EFFECT_MAX_AMOUNT:
@@ -3818,7 +3818,7 @@ class Compiler:
       elif k == "cure":
          a.emit(op, subj, flags)
       elif k == "use_move" and "unless" in s:
-         # G1: refused (the run fails) for none or a move with the flag
+         # Refused (the run fails) for none or a move with the flag
          op = "CallMove"
          a.emit(op, subj, self.lookup_id("move_flags", s["unless"], s, "move flag"))
       elif k in ("heal", "unlock", "use_move", "consume_item", "set_item", "set_passive", "reset_stages", "delay",
@@ -3827,11 +3827,11 @@ class Compiler:
       elif k == "delay_hit":
          a.emit(op, subj, self.lookup_id("delayed_hits", s["hit"], s, "delayed hit"))
       elif k == "transform":
-         a.emit(op, subj)   # G4: the running item's item_use rules
+         a.emit(op, subj)   # the running item's item_use rules
       elif k == "form":
-         a.emit(op, subj, self.lookup_id("forms", s["form"], s, "form"))   # G4: a form name ("base" is 0)
+         a.emit(op, subj, self.lookup_id("forms", s["form"], s, "form"))   # a form name ("base" is 0)
       elif k == "train":
-         a.emit(op, subj, self.lookup_id("stats", s["stat"], s, "stat"))   # G4: amount on the stack
+         a.emit(op, subj, self.lookup_id("stats", s["stat"], s, "stat"))   # amount on the stack
       elif k == "field_effect":
          a.emit(op, self.lookup_id("field_effects", s["effect"], s, "field effect"))   # F1: amount on the stack
       elif k == "inflict":
@@ -3866,7 +3866,7 @@ class Compiler:
       return False
 
    def inherit_primitive(self, s: Mapping[str, Any]) -> bool:
-      """!Generates an inheritance primitive (B1): its operands (zeros for the unused ones), the Inherit op with the
+      """!Generates an inheritance primitive: its operands (zeros for the unused ones), the Inherit op with the
       input's subject (SUBJ_NONE for inherit_pick / inherit_add), the role and the mode; the result is dropped.
       @param s  the node
       @return false (they never end the program)
@@ -3956,7 +3956,7 @@ class Compiler:
             _slot, _kind, rng = found
             return rng
          if e["name"] == NONE_WORD:
-            return (0, U16_MAX)   # C5: 255 or 65535 by the kind it stands for
+            return (0, U16_MAX)   # 255 or 65535 by the kind it stands for
          i = self.catalog.lookup(VALUE_KINDS.get(self.static_kind(e) or "", ""), e["name"])
          return (i, i) if i is not None else (0, MAX_ID16)
       if "ref" in e:
@@ -4207,7 +4207,7 @@ class Compiler:
          total += len(self.catalog.ids.get("stages") or {})   # a Stage event per stage it changes
       for t in triggers:
          if t == "before_damage" and s["stmt"] == "damage_hp" and not s.get("typed"):
-            continue   # only a typed hit runs the target's before_damage hooks (E13b)
+            continue   # only a typed hit runs the target's before_damage hooks
          if t.startswith("own:"):
             _, key, which = t.split(":")
             field = {"statuses": "status", "volatiles": "volatile", "side_conditions": "condition",
@@ -4718,7 +4718,7 @@ class Bank:
       self.lines = [list(p.lines) for p in compiler.programs]
 
 
-# -- debug line table (bench builds only; D-23 section 3.3) ------------------------------------------------------------
+# -- debug line table (bench builds only) ------------------------------------------------------------
 
 def track_lines(on: bool) -> None:
    """!Turns the debug line table on or off for the parses and compiles that follow: with it on, every parsed node
@@ -4930,7 +4930,7 @@ class Unit:
 
 def check(ast: Mapping[str, Any], structure: Mapping[str, Any] | Catalog | None,
           positions: Positions | None = None, file: str = "") -> list[EffectDiagnostic]:
-   """!Checks an AST (D-23 API).
+   """!Checks an AST (API).
    @param ast        file AST
    @param structure  the structure (or a Catalog)
    @param positions  node positions, when it came from text
@@ -4942,7 +4942,7 @@ def check(ast: Mapping[str, Any], structure: Mapping[str, Any] | Catalog | None,
 
 
 def emit_bytecode(ast: Mapping[str, Any], structure: Mapping[str, Any] | Catalog | None) -> Bank:
-   """!Compiles an AST to a bank (D-23 API).
+   """!Compiles an AST to a bank (API).
    @param ast        file AST
    @param structure  the structure (or a Catalog)
    @return the bank
@@ -4988,7 +4988,7 @@ def main(argv: Sequence[str]) -> int:
    @param argv  arguments (without the program name)
    @return exit status
    """
-   ap = argparse.ArgumentParser(description="Effect logic compiler (D-23 section 1)")
+   ap = argparse.ArgumentParser(description="Effect logic compiler")
    ap.add_argument("file", help=".ceffect source or capsule.effects/1 manifest")
    mode = ap.add_mutually_exclusive_group(required=True)
    mode.add_argument("--check", action="store_true", help="report diagnostics")

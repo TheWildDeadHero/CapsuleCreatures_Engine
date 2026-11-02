@@ -30,6 +30,7 @@ constexpr uint16_t kDispcntObj = 0x1000;          ///< DISPCNT sprite layer enab
 constexpr uint16_t kDispcntWin0 = 0x2000;         ///< DISPCNT window 0 enable.
 constexpr uint16_t kDispcntWin1 = 0x4000;         ///< DISPCNT window 1 enable.
 constexpr uint16_t kDispcntObjWin = 0x8000;       ///< DISPCNT OBJ window enable.
+constexpr uint16_t kDispcntHblankFree = 0x0020;   ///< FX2: DISPCNT H-blank interval free (a shorter OBJ budget).
 constexpr uint16_t kForcedBlankColor = 0x7FFF;    ///< Forced blank shows white.
 
 /// @name BGnCNT fields
@@ -67,6 +68,24 @@ constexpr int kNibbleMask = 15;           ///< Mask of one 4bpp pixel.
 /// @name Sprites, windows and blending
 ///@{
 constexpr int kObjXNegative = 256;    ///< attr1 x values from here up are negative (9-bit signed).
+///@}
+
+/// @name FX2 (M5): the per-line OBJ render budget (the GBA's: its OBJ unit draws a line's sprites in OAM order until
+/// the line's cycles run out; the model is mGBA's, the reference the GBA builds' pictures come from)
+///@{
+constexpr int kObjLineCycles = 1210;           ///< Cycles a line gives the OBJ unit ...
+constexpr int kObjLineCyclesHblankFree = 954;  ///< ... or with DISPCNT's H-blank interval free.
+constexpr int kObjEntryCycles = 2;             ///< Cycles per OAM entry the unit steps over.
+constexpr int kAffineObjCycles = 8;            ///< An affine sprite on the line: 8 + 2 per pixel of its box width.
+constexpr int kAffineObjPixelCycles = 2;       ///< ...
+constexpr int kNormalObjCredit = 2;            ///< A normal sprite: its width less 2 ...
+constexpr int kNormalObjLeftShift = 1;         ///< ... less half of what lies left of the screen.
+constexpr int kObjLinesTotal = 228;            ///< Lines of a frame (visible and blank): a sprite below the screen
+                                               ///< that does not wrap back is not listed.
+///@}
+
+/// @name Sprites, windows and blending (continued)
+///@{
 constexpr int kNoPriority = 4;        ///< Sprite line priority where no sprite pixel is (behind priority 3).
 constexpr int kDoubleSize = 2;        ///< An affine sprite with double_size set draws in a box twice its size.
 constexpr int kHalf = 2;              ///< Halves a box size: its centre.
@@ -88,6 +107,31 @@ constexpr int kMaskObj = 3;           ///< win_mask index: inside the OBJ window
 constexpr int kBlendShift = 4;        ///< Divides by 16 (kBlendMax) after weighting.
 constexpr int kBlendLayers = 2;       ///< Front-most layers a pixel blends: first and second target.
 constexpr int kHalfwordBits = 16;     ///< Bits in a halfword: the high half of a word.
+///@}
+
+/// @name BF: register writes per scanline (I/O offsets, video::line_register_offset())
+///@{
+constexpr uint32_t kIoBgcnt0 = 0x08;      ///< BG0CNT; BGnCNT is 2n after it.
+constexpr uint32_t kIoHofs0 = 0x10;       ///< BG0HOFS; BGnHOFS is 4n after it, BGnVOFS 4n + 2.
+constexpr uint32_t kIoBg2X = 0x28;        ///< BG2X (low half; the high half is 2 after it).
+constexpr uint32_t kIoBg2Y = 0x2C;        ///< BG2Y.
+constexpr uint32_t kIoBg3X = 0x38;        ///< BG3X.
+constexpr uint32_t kIoBg3Y = 0x3C;        ///< BG3Y.
+constexpr uint32_t kIoWin0h = 0x40;       ///< WIN0H.
+constexpr uint32_t kIoWin1h = 0x42;       ///< WIN1H.
+constexpr uint32_t kIoBldcnt = 0x50;      ///< BLDCNT.
+constexpr uint32_t kIoBldalpha = 0x52;    ///< BLDALPHA.
+constexpr uint32_t kIoBldy = 0x54;        ///< BLDY.
+constexpr uint32_t kBgcntStride = 2;      ///< Bytes between two layers' BGnCNT.
+constexpr uint32_t kOffsetStride = 4;     ///< Bytes between two layers' HOFS.
+constexpr uint32_t kHalfOffset = 2;       ///< Bytes from a register's low half to its high half (or the next).
+constexpr uint16_t kBgcntMosaicBit = 0x40;   ///< BGnCNT bit 6 (the compositor's mosaic is global).
+constexpr uint16_t kBldcntMask = 0x3FFF;  ///< BLDCNT's bits.
+constexpr uint16_t kWeightMask = 0x1F;    ///< BLDALPHA / BLDY weight bits.
+constexpr int kEvbShift = 8;              ///< BLDALPHA evb.
+constexpr int kAffineRefBits = 28;        ///< BGnX / BGnY: 28-bit signed.
+constexpr int kAffineRefSignShift = 32 - kAffineRefBits;   ///< Sign-extends a 28-bit value: (v << 4) >> 4.
+constexpr uint32_t kLowHalfMask = 0xFFFFu;   ///< A word's low half.
 ///@}
 
 /// Transform of one affine layer (BG2 or BG3).
@@ -115,9 +159,17 @@ struct Registers
    uint8_t evb;                      ///< BLDALPHA second weight.
    uint8_t evy;                      ///< BLDY.
    uint8_t mosaic;                   ///< Mosaic block size (0 / 1: off).
+   uint8_t mosaic_layers;            ///< T1: per-layer mosaic's layers (0: every layer, the whole-screen post step).
    uint8_t win_rect[kNumWindows][kRectEdges];   ///< WINnH / WINnV: x0, y0, x1, y1.
    uint8_t win_mask[kWindowRegions];            ///< WININ / WINOUT: in0, in1, outside, obj.
    const uint16_t* win_lines;                   ///< N2: window 0's edges per scanline, or nullptr (the rectangle).
+   const void* line_table;                      ///< BF: the scanline table, or nullptr.
+   uint8_t line_offset;                         ///< BF: its register's I/O offset.
+   bool line_word;                              ///< BF: 32-bit entries.
+   bool win_wrap[kNumWindows];                  ///< BF: window n's edges came from a line write (hardware rules).
+   const uint16_t* irq_table;                   ///< T1: the second scanline table, or nullptr.
+   uint8_t irq_count;                           ///< T1: its registers.
+   uint8_t irq_offsets[video::kMaxLineTargets]; ///< T1: their I/O offsets.
 };
 
 /// OAM: 128 entries of attr0, attr1, attr2 and an interleaved affine
@@ -129,12 +181,16 @@ struct Oam
 
 Registers g_pending{};                 ///< Registers as last written.
 Registers g_live{};                    ///< Registers the compositor uses.
+const Registers* g_line = &g_live;     ///< BF: the registers of the scanline being composed (g_live, or a copy with
+                                       ///< the line's table entry written).
 Oam g_oam_pending{};                   ///< OAM as last written.
 Oam g_oam_live{};                      ///< OAM the compositor uses.
 uint8_t g_vram[kVramBytes];            ///< BG VRAM in GBA byte layout (little-endian), P-19.
 uint8_t g_obj_vram[kObjVramBytes];     ///< OBJ VRAM in GBA byte layout.
 video::Color g_bg_palette[kPaletteColors];    ///< BG palette.
 video::Color g_obj_palette[kPaletteColors];   ///< OBJ palette.
+/// FX2 (M5): the frame present() composed last (black before the first).
+uint16_t g_shown[kFramePixels] = {};
 
 /// Reads a 16-bit VRAM value (wraps inside BG VRAM).
 /// @param offset  byte offset
@@ -189,14 +245,21 @@ bool bg_exists(int mode, int bg)
 /// @return BG palette entry 1-255, or 0 when transparent
 int text_bg_pixel(int bg, int x, int y)
 {
-   const uint16_t cnt = g_live.bgcnt[bg];
+   const uint16_t cnt = g_line->bgcnt[bg];
    const uint32_t size = (cnt >> kBgcntSizeShift) & kBgcntSizeMask;
    const int width = (size & 1) ? kTextBgLargePixels : kTextBgPixels;
    const int height = (size & kScreenSizeTall) ? kTextBgLargePixels : kTextBgPixels;
 
+   // T1: a per-layer mosaic takes the block's top-left screen pixel
+   const int m = g_line->mosaic;
+   if (g_line->mosaic_layers != 0 && m > 1 && (g_line->mosaic_layers & (1 << bg)) != 0)
+   {
+      x -= x % m;
+      y -= y % m;
+   }
    // Map sizes are powers of two: the scrolled position wraps with a mask.
-   const int sx = (x + g_live.hofs[bg]) & (width - 1);
-   const int sy = (y + g_live.vofs[bg]) & (height - 1);
+   const int sx = (x + g_line->hofs[bg]) & (width - 1);
+   const int sy = (y + g_line->vofs[bg]) & (height - 1);
 
    const uint16_t cell = vram_u16(cell_offset(cnt, sx >> kTileShift, sy >> kTileShift));
    const uint32_t tile = cell & kMapTileMask;
@@ -221,19 +284,20 @@ int text_bg_pixel(int bg, int x, int y)
 }
 
 /// Palette index of one affine BG pixel.
-/// @param bg  layer 2 or 3
-/// @param x   screen x
-/// @param y   screen y
+/// @param bg     layer 2 or 3
+/// @param x      screen x
+/// @param ref_x  the line's internal reference x (the frame's BGnX plus pb per line before; BF: or a line's write)
+/// @param ref_y  the line's internal reference y
 /// @return BG palette entry 1-255, or 0 when transparent / outside the map
-int affine_bg_pixel(int bg, int x, int y)
+int affine_bg_pixel(int bg, int x, int32_t ref_x, int32_t ref_y)
 {
-   const uint16_t cnt = g_live.bgcnt[bg];
-   const Affine& a = g_live.affine[bg - kFirstAffineBg];
+   const uint16_t cnt = g_line->bgcnt[bg];
+   const Affine& a = g_line->affine[bg - kFirstAffineBg];
    const int size = kAffineBgMinPixels << ((cnt >> kBgcntSizeShift) & kBgcntSizeMask);
 
    // Texture position in Q8, truncated to whole pixels.
-   int tx = (a.x + a.pa * x + a.pb * y) >> kQ8Shift;
-   int ty = (a.y + a.pc * x + a.pd * y) >> kQ8Shift;
+   int tx = (ref_x + a.pa * x) >> kQ8Shift;
+   int ty = (ref_y + a.pc * x) >> kQ8Shift;
    if (cnt & kBgcntWrap)
    {   // wrap
       tx &= size - 1;
@@ -282,7 +346,72 @@ struct ObjLine
    uint8_t window[video::kScreenWidth];     ///< 1 if inside the OBJ window.
 };
 
-/// Renders every sprite's pixels on one scanline. Lower OAM entries win.
+/// FX2 (M5): which sprites the OBJ unit draws on a line within its cycle budget (mGBA's model): OAM order, every
+/// listed entry stepped over costs kObjEntryCycles per index, and each sprite on the line its own cycles; the unit
+/// stops once the budget is spent (a sprite is drawn whole or not at all).
+/// @param y      scanline
+/// @param drawn  receives one flag per OAM entry
+void obj_line_budget(int y, bool (&drawn)[video::kNumObjs])
+{
+   int remaining = (g_live.dispcnt & kDispcntHblankFree) != 0 ? kObjLineCyclesHblankFree : kObjLineCycles;
+   int last = 0;
+   for (int i = 0; i < video::kNumObjs; ++i)
+   {
+      drawn[i] = false;
+   }
+   for (int i = 0; i < video::kNumObjs; ++i)
+   {
+      const uint16_t a0 = g_oam_live.words[i * kOamEntryHalfwords + kOamAttr0];
+      const uint16_t a1 = g_oam_live.words[i * kOamEntryHalfwords + kOamAttr1];
+      const bool affine = (a0 & kObjAffineFlag) != 0;
+      const auto shape = static_cast<video::ObjShape>((a0 >> kObjShapeShift) & kObjShapeMask);
+      if ((!affine && (a0 & kObjDisable)) || shape >= video::NUM_OBJ_SHAPES)
+      {
+         continue;   // not listed
+      }
+      const uint8_t size = static_cast<uint8_t>(a1 >> kObjSizeShift);
+      const bool dbl = affine && (a0 & kObjDoubleSize);
+      const int w = video::obj_width(shape, size) * (dbl ? kDoubleSize : 1);
+      const int h = video::obj_height(shape, size) * (dbl ? kDoubleSize : 1);
+      const int raw_x = a1 & kObjXMask;
+      const int x = raw_x >= kObjXNegative ? raw_x - kObjXWrap : raw_x;
+      int cycles = 0;
+      if (affine)
+      {
+         cycles = kAffineObjCycles + w * kAffineObjPixelCycles + (x < 0 ? x : 0);
+      }
+      else
+      {
+         if (x + w < 0)
+         {
+            continue;   // wholly left of the screen: not listed
+         }
+         cycles = w - kNormalObjCredit + (x < 0 ? x >> kNormalObjLeftShift : 0);
+      }
+      const int raw_y = a0 & kObjYMask;
+      if ((raw_y >= video::kScreenHeight && raw_y + h < kObjLinesTotal) ||
+          (raw_x >= video::kScreenWidth && raw_x + w < kObjXWrap))
+      {
+         continue;   // below or right of the screen without wrapping back: not listed
+      }
+      remaining -= kObjEntryCycles * (i - last);
+      last = i;
+      if (remaining <= 0)
+      {
+         break;   // the budget is spent: this sprite and every later one are dropped
+      }
+      const int top = raw_y + h > kObjYWrap ? raw_y - kObjYWrap : raw_y;
+      if (y < top || y >= top + h)
+      {
+         continue;
+      }
+      drawn[i] = true;
+      remaining -= cycles;
+   }
+}
+
+/// Renders every sprite's pixels on one scanline. Lower OAM entries win. FX2: only the sprites the line's OBJ
+/// budget lets the unit draw (obj_line_budget()).
 /// @param y     scanline
 /// @param line  receives the line
 void render_obj_line(int y, ObjLine& line)
@@ -298,8 +427,14 @@ void render_obj_line(int y, ObjLine& line)
    {
       return;
    }
+   bool drawn[video::kNumObjs];
+   obj_line_budget(y, drawn);
    for (int i = video::kNumObjs - 1; i >= 0; --i)
    {   // back to front: lower entries overwrite
+      if (!drawn[i])
+      {
+         continue;   // FX2: past the line's budget, or not on it
+      }
       const uint16_t a0 = g_oam_live.words[i * kOamEntryHalfwords + kOamAttr0];
       const uint16_t a1 = g_oam_live.words[i * kOamEntryHalfwords + kOamAttr1];
       const uint16_t a2 = g_oam_live.words[i * kOamEntryHalfwords + kOamAttr2];
@@ -413,7 +548,8 @@ void render_obj_line(int y, ObjLine& line)
 /// @return the mask; every bit when no window is enabled
 uint8_t window_mask(int x, int y, bool in_obj)
 {
-   const uint16_t d = g_live.dispcnt;
+   const Registers& g = *g_line;
+   const uint16_t d = g.dispcnt;
    if (!(d & (kDispcntWin0 | kDispcntWin1 | kDispcntObjWin)))
    {
       return video::kLayerAll;
@@ -424,31 +560,35 @@ uint8_t window_mask(int x, int y, bool in_obj)
       {
          continue;
       }
-      const uint8_t* r = g_live.win_rect[w];
-      if (w == 0 && g_live.win_lines != nullptr)
+      const uint8_t* r = g.win_rect[w];
+      if (w == 0 && g.win_lines != nullptr)
       {
          // N2: this scanline's edges (the hardware's rule: a right edge past the screen, or left of the left edge,
          // is the screen's right edge)
-         const uint16_t e = g_live.win_lines[y];
+         const uint16_t e = g.win_lines[y];
          const int x0 = e >> video::kWindowLineShift;
          const int raw = e & kWindowEdgeMask;
          const int x1 = raw > video::kScreenWidth || raw < x0 ? video::kScreenWidth : raw;
          if (x >= x0 && x < x1 && y >= r[kRectY0] && y < r[kRectY1])
          {
-            return g_live.win_mask[w];
+            return g.win_mask[w];
          }
          continue;
       }
-      if (x >= r[kRectX0] && x < r[kRectX1] && y >= r[kRectY0] && y < r[kRectY1])
+      // BF: edges a scanline table wrote, as the hardware reads them (line_write() clamps them): a right edge left
+      // of the left edge wraps around the screen
+      const bool in_x = g.win_wrap[w] && r[kRectX1] < r[kRectX0] ? (x >= r[kRectX0] || x < r[kRectX1])
+                                                                  : (x >= r[kRectX0] && x < r[kRectX1]);
+      if (in_x && y >= r[kRectY0] && y < r[kRectY1])
       {
-         return g_live.win_mask[w];
+         return g.win_mask[w];
       }
    }
    if ((d & kDispcntObjWin) && in_obj)
    {
-      return g_live.win_mask[kMaskObj];
+      return g.win_mask[kMaskObj];
    }
-   return g_live.win_mask[kMaskOutside];
+   return g.win_mask[kMaskOutside];
 }
 
 /// One channel of a BGR555 color.
@@ -498,6 +638,132 @@ uint16_t blend_brightness(uint16_t c, int evy, bool white)
    return out;
 }
 
+/// BF: a 28-bit signed affine reference value.
+/// @param v  the register's bits
+/// @return the value
+int32_t affine_ref(uint32_t v)
+{
+   return static_cast<int32_t>(v << kAffineRefSignShift) >> kAffineRefSignShift;
+}
+
+/// BF: one halfword written to a register of a line's copy, as the hardware takes it.
+/// @param r       the registers
+/// @param offset  the I/O offset
+/// @param value   the halfword
+/// @param[in,out] ref_x  the affine layers' internal reference x (restarted by a BGnX write)
+/// @param[in,out] ref_y  the same for y
+void io_write(Registers& r, uint32_t offset, uint16_t value, int32_t* ref_x, int32_t* ref_y)
+{
+   if (offset >= kIoBgcnt0 && offset < kIoHofs0)
+   {
+      r.bgcnt[(offset - kIoBgcnt0) / kBgcntStride] = static_cast<uint16_t>(value & ~kBgcntMosaicBit);
+      return;
+   }
+   if (offset >= kIoHofs0 && offset < kIoHofs0 + kOffsetStride * video::kNumBgs)
+   {
+      const uint32_t bg = (offset - kIoHofs0) / kOffsetStride;
+      if ((offset - kIoHofs0) % kOffsetStride == 0)
+      {
+         r.hofs[bg] = static_cast<int16_t>(value);
+      }
+      else
+      {
+         r.vofs[bg] = static_cast<int16_t>(value);
+      }
+      return;
+   }
+   const uint32_t refs[] = {kIoBg2X, kIoBg2Y, kIoBg3X, kIoBg3Y};   // two per affine layer: x, y
+   constexpr int kRefsPerLayer = 2;
+   for (int i = 0; i < static_cast<int>(sizeof(refs) / sizeof(refs[0])); ++i)
+   {
+      if (offset != refs[i] && offset != refs[i] + kHalfOffset)
+      {
+         continue;
+      }
+      const int layer = i / kRefsPerLayer;
+      const bool is_x = (i % kRefsPerLayer) == 0;
+      Affine& a = r.affine[layer];
+      int32_t& field = is_x ? a.x : a.y;
+      const uint32_t bits = static_cast<uint32_t>(field);
+      const uint32_t merged = offset == refs[i] ? ((bits & ~kLowHalfMask) | value)
+                                                : ((bits & kLowHalfMask) | (uint32_t{value} << kHalfwordBits));
+      field = affine_ref(merged);
+      // a write restarts the layer's internal reference from the register
+      (is_x ? ref_x : ref_y)[layer] = field;
+      return;
+   }
+   if (offset == kIoWin0h || offset == kIoWin1h)
+   {
+      const int w = offset == kIoWin0h ? 0 : 1;
+      int left = value >> video::kWindowLineShift;
+      int right = value & kWindowEdgeMask;
+      // the hardware's reading: a left edge past the screen and past the right edge starts at 0; a right edge past
+      // the screen is the screen's edge (and so is a left edge past it then)
+      if (left > video::kScreenWidth && left > right)
+      {
+         left = 0;
+      }
+      if (right > video::kScreenWidth)
+      {
+         right = video::kScreenWidth;
+         if (left > video::kScreenWidth)
+         {
+            left = video::kScreenWidth;
+         }
+      }
+      r.win_rect[w][kRectX0] = static_cast<uint8_t>(left);
+      r.win_rect[w][kRectX1] = static_cast<uint8_t>(right);
+      r.win_wrap[w] = true;
+      return;
+   }
+   if (offset == kIoBldcnt)
+   {
+      r.bldcnt = static_cast<uint16_t>(value & kBldcntMask);
+   }
+   else if (offset == kIoBldalpha)
+   {
+      r.eva = static_cast<uint8_t>(value & kWeightMask);
+      r.evb = static_cast<uint8_t>((value >> kEvbShift) & kWeightMask);
+   }
+   else if (offset == kIoBldy)
+   {
+      r.evy = static_cast<uint8_t>(value & kWeightMask);
+   }
+}
+
+/// BF: a line's scanline table entry written to a copy of the registers.
+/// @param r  the line's registers (a copy of the live ones)
+/// @param y  the line
+/// @param[in,out] ref_x  affine internal references x
+/// @param[in,out] ref_y  affine internal references y
+void line_write(Registers& r, int y, int32_t* ref_x, int32_t* ref_y)
+{
+   if (r.line_word)
+   {
+      const uint32_t v = static_cast<const uint32_t*>(r.line_table)[y];
+      io_write(r, r.line_offset, static_cast<uint16_t>(v), ref_x, ref_y);
+      io_write(r, r.line_offset + kHalfOffset, static_cast<uint16_t>(v >> kHalfwordBits), ref_x, ref_y);
+   }
+   else
+   {
+      io_write(r, r.line_offset, static_cast<const uint16_t*>(r.line_table)[y], ref_x, ref_y);
+   }
+}
+
+/// T1: a line's second-table entry written to each of its registers.
+/// @param r  the line's registers (a copy of the live ones)
+/// @param y  the line
+/// @param[in,out] ref_x  affine internal references x
+/// @param[in,out] ref_y  affine internal references y
+void line_write_irq(Registers& r, int y, int32_t* ref_x, int32_t* ref_y)
+{
+   const uint16_t v = r.irq_table[y];
+   for (int i = 0; i < r.irq_count; ++i)
+   {
+      io_write(r, r.irq_offsets[i], v, ref_x, ref_y);
+   }
+}
+
 } // namespace
 
 void reset()
@@ -536,6 +802,17 @@ void latch()
    g_oam_live = g_oam_pending;
 }
 
+const uint16_t* present()
+{
+   compose(g_shown);
+   return g_shown;
+}
+
+const uint16_t* shown()
+{
+   return g_shown;
+}
+
 void compose(uint16_t* frame)
 {
    if (g_live.dispcnt & kDispcntForcedBlank)
@@ -548,36 +825,63 @@ void compose(uint16_t* frame)
    }
    const int mode = g_live.dispcnt & kDispcntModeMask;
    ENGINE_ASSERT(mode <= kModeAffine);
-   // Background draw order: priority 0 first, ties broken by lower BG number.
-   int order[video::kNumBgs];
-   int prio_of[video::kNumBgs];
-   int count = 0;
-   for (int prio = 0; prio < kNumPriorities; ++prio)
-   {
-      for (int bg = 0; bg < video::kNumBgs; ++bg)
-      {
-         if (!(g_live.dispcnt & (kDispcntBg0 << bg)) || !bg_exists(mode, bg) ||
-             (g_live.bgcnt[bg] & kPriorityMask) != prio)
-         {
-            continue;
-         }
-         prio_of[count] = prio;
-         order[count++] = bg;
-      }
-   }
-   const auto blend_mode = static_cast<video::BlendMode>((g_live.bldcnt >> kBldcntModeShift) & kBldcntModeMask);
-   const uint8_t first_mask = static_cast<uint8_t>(g_live.bldcnt & kLayerAll);
-   const uint8_t second_mask = static_cast<uint8_t>((g_live.bldcnt >> kBldcntSecondShift) & kLayerAll);
-
-   // Weights above 16 count as 16, as on the GBA.
-   const int eva = g_live.eva > kBlendMax ? kBlendMax : g_live.eva;
-   const int evb = g_live.evb > kBlendMax ? kBlendMax : g_live.evb;
-   const int evy = g_live.evy > kBlendMax ? kBlendMax : g_live.evy;
    const uint16_t backdrop = g_bg_palette[0];
+
+   // Affine layers' internal reference points: the frame's BGnX / BGnY, plus pb / pd after each line (BF: a line's
+   // write of BGnX / BGnY restarts them from the value written).
+   int32_t ref_x[kNumAffineBgs];
+   int32_t ref_y[kNumAffineBgs];
+   for (int i = 0; i < kNumAffineBgs; ++i)
+   {
+      ref_x[i] = g_live.affine[i].x;
+      ref_y[i] = g_live.affine[i].y;
+   }
+   Registers line_regs;   // BF: the line's registers when a scanline table is set
 
    ObjLine obj;
    for (int y = 0; y < video::kScreenHeight; ++y)
    {
+      g_line = &g_live;
+      if (g_live.line_table != nullptr || g_live.irq_table != nullptr)
+      {
+         line_regs = g_live;
+         if (g_live.line_table != nullptr)
+         {
+            line_write(line_regs, y, ref_x, ref_y);
+         }
+         if (g_live.irq_table != nullptr)
+         {
+            line_write_irq(line_regs, y, ref_x, ref_y);   // T1: the second table
+         }
+         g_line = &line_regs;
+      }
+      const Registers& g = *g_line;
+
+      // Background draw order: priority 0 first, ties broken by lower BG number.
+      int order[video::kNumBgs];
+      int prio_of[video::kNumBgs];
+      int count = 0;
+      for (int prio = 0; prio < kNumPriorities; ++prio)
+      {
+         for (int bg = 0; bg < video::kNumBgs; ++bg)
+         {
+            if (!(g.dispcnt & (kDispcntBg0 << bg)) || !bg_exists(mode, bg) || (g.bgcnt[bg] & kPriorityMask) != prio)
+            {
+               continue;
+            }
+            prio_of[count] = prio;
+            order[count++] = bg;
+         }
+      }
+      const auto blend_mode = static_cast<video::BlendMode>((g.bldcnt >> kBldcntModeShift) & kBldcntModeMask);
+      const uint8_t first_mask = static_cast<uint8_t>(g.bldcnt & kLayerAll);
+      const uint8_t second_mask = static_cast<uint8_t>((g.bldcnt >> kBldcntSecondShift) & kLayerAll);
+
+      // Weights above 16 count as 16, as on the GBA.
+      const int eva = g.eva > kBlendMax ? kBlendMax : g.eva;
+      const int evb = g.evb > kBlendMax ? kBlendMax : g.evb;
+      const int evy = g.evy > kBlendMax ? kBlendMax : g.evy;
+
       render_obj_line(y, obj);
       for (int x = 0; x < video::kScreenWidth; ++x)
       {
@@ -616,7 +920,9 @@ void compose(uint16_t* frame)
             {
                continue;
             }
-            const int index = is_text_bg(mode, bg) ? text_bg_pixel(bg, x, y) : affine_bg_pixel(bg, x, y);
+            const int index = is_text_bg(mode, bg) ? text_bg_pixel(bg, x, y)
+                                                   : affine_bg_pixel(bg, x, ref_x[bg - kFirstAffineBg],
+                                                                     ref_y[bg - kFirstAffineBg]);
             if (index == 0)
             {
                continue;
@@ -651,11 +957,17 @@ void compose(uint16_t* frame)
          }
          frame[y * video::kScreenWidth + x] = out;
       }
+      for (int i = 0; i < kNumAffineBgs; ++i)
+      {   // the internal reference moves by pb / pd after each line
+         ref_x[i] += g.affine[i].pb;
+         ref_y[i] += g.affine[i].pd;
+      }
    }
+   g_line = &g_live;
    // Mosaic (D-17 transitions): blocks take their top-left pixel. The GBA's
    // per-layer mosaic is aligned the same way for backgrounds.
    const int m = g_live.mosaic;
-   if (m > 1)
+   if (m > 1 && g_live.mosaic_layers == 0)   // T1: a per-layer mosaic was applied per pixel
    {
       for (int y = 0; y < video::kScreenHeight; ++y)
       {
@@ -874,6 +1186,12 @@ void set_mosaic(uint8_t size)
    g_pending.mosaic = size > kMosaicMax ? uint8_t{kMosaicMax} : size;
 }
 
+void set_mosaic_layers(uint8_t layers)
+{
+   const auto bgs = static_cast<uint8_t>(layers & ((1 << kNumBgs) - 1));
+   g_pending.mosaic_layers = (layers & kLayerAll) == kLayerAll ? uint8_t{0} : static_cast<uint8_t>(bgs | kLayerObj);
+}
+
 void set_window_rect(uint8_t win, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
 {
    ENGINE_ASSERT(win < kNumWindows && x0 <= x1 && y0 <= y1 && x1 <= kScreenWidth && y1 <= kScreenHeight);
@@ -894,7 +1212,35 @@ void set_window_masks(uint8_t in0, uint8_t in1, uint8_t outside, uint8_t obj)
 
 void set_window_lines(const uint16_t* lines)
 {
+   ENGINE_ASSERT(lines == nullptr || g_pending.line_table == nullptr);   // BF: one HBlank transfer at a time
    g_pending.win_lines = lines;
+}
+
+void set_line_effect(LineRegister reg, LineWidth width, const void* table)
+{
+   ENGINE_ASSERT(reg < LineRegister::NUM_LINE_REGISTERS && width < LineWidth::NUM_LINE_WIDTHS);
+   ENGINE_ASSERT(width == LineWidth::Half || line_word_allowed(reg));
+   ENGINE_ASSERT(table == nullptr || g_pending.win_lines == nullptr);   // one HBlank transfer at a time
+   g_pending.line_table = table;
+   g_pending.line_offset = static_cast<uint8_t>(line_register_offset(reg));
+   g_pending.line_word = width == LineWidth::Word;
+}
+
+void set_line_effect_irq(const LineRegister* regs, uint8_t count, const uint16_t* table)
+{
+   g_pending.irq_table = table;
+   g_pending.irq_count = 0;
+   if (table == nullptr)
+   {
+      return;
+   }
+   ENGINE_ASSERT(count >= 1 && count <= kMaxLineTargets);
+   for (uint8_t i = 0; i < count; ++i)
+   {
+      ENGINE_ASSERT(regs[i] < LineRegister::NUM_LINE_REGISTERS);
+      g_pending.irq_offsets[i] = static_cast<uint8_t>(line_register_offset(regs[i]));
+   }
+   g_pending.irq_count = count;
 }
 
 void set_windows(bool win0, bool win1, bool obj_win)

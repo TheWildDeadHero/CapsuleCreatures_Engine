@@ -334,6 +334,181 @@ void WindowsMaskLayersAndEffects()
    CHECK(pixel(100, 100) == kRed && pixel(50, 50) == kGrey);
 }
 
+/// @name FX2 (M5): the per-line OBJ budget and the frame composed at the end of the game's frame
+///@{
+constexpr int kBigSize = 3;             ///< Size 3 of a square: 64 x 64.
+constexpr int kBigTiles = 64;           ///< Its 8 x 8 tiles (1D mapping).
+constexpr int kStacked = 19;            ///< Normal 64-wide sprites the 1210-cycle budget draws on one line ...
+constexpr int16_t kLoneX = 120;         ///< ... so a 20th, on its own columns, ...
+constexpr int16_t kLoneY = 40;          ///< ... and lower, is dropped where it shares their lines.
+constexpr int kAffineFits = 5;          ///< Affine double-size 64 x 64 sprites (8 + 2 x 128 cycles) a line draws.
+constexpr int16_t kAffineFirstX = 48;   ///< Their boxes' columns: the first's left edge ...
+constexpr int16_t kAffineStepX = 32;    ///< ... and the step.
+constexpr int16_t kAffineLastX = -32;   ///< The sixth's box: left of the screen ...
+constexpr int16_t kAffineLastY = 60;    ///< ... and lower.
+constexpr int16_t kQ8Identity = 256;    ///< 1.0 in the affine parameters (Q8).
+constexpr int kAffineProbeX = 10;       ///< A column only the sixth's picture covers ...
+constexpr int kAffineSharedRow = 100;   ///< ... on a row the first five's boxes share ...
+constexpr int kAffineOwnRow = 140;      ///< ... and on one below them.
+constexpr int kLoneOwnRow = 64;         ///< The first row below the stack.
+constexpr int kTableLine = 5;           ///< The scanline table's line written during the frame.
+constexpr int16_t kTableScroll = 8;     ///< Its BG0 x scroll: the second tile column shows at x 0.
+
+/// 64 solid tiles of colour 1 in OBJ VRAM (one 64 x 64 sprite), OBJ bank 1 colour 1 green.
+void load_big_sprite_tiles()
+{
+   uint32_t t[kBigTiles * 8];
+   for (uint32_t& r : t)
+   {
+      r = 0x11111111u;
+   }
+   video::load_obj_tiles(0, t, kBigTiles);
+   const video::Color pal[2] = {0, kGreen};
+   video::load_obj_palette(16, pal, 2);   // OBJ bank 1
+}
+
+/// A 64 x 64 sprite description.
+/// @param x  left edge
+/// @param y  top edge
+/// @return it
+video::ObjDesc big_obj(int16_t x, int16_t y)
+{
+   video::ObjDesc d = Obj8(x, y);
+   d.size = kBigSize;
+   return d;
+}
+
+/// The GBA's OBJ unit draws a line's sprites in OAM order until the line's 1210 cycles are spent (a normal sprite:
+/// its width - 2, plus 2 per OAM entry stepped): a sprite past the budget is not drawn on that line.
+void obj_line_budget_drops_late_sprites()
+{
+   SolidBg0(kRed, 1);
+   load_big_sprite_tiles();
+   video::set_obj_layer(true);
+   for (int i = 0; i < kStacked; ++i)
+   {
+      video::set_obj(static_cast<uint8_t>(i), video::make_obj(big_obj(0, 0)));
+   }
+   video::set_obj(kStacked, video::make_obj(big_obj(kLoneX, kLoneY)));
+   Show();
+   CHECK(pixel(0, 0) == kGreen);                // the stack is drawn
+   CHECK(pixel(kLoneX, kLoneY) == kRed);        // the 20th shares lines 40-63 with it: past the budget
+   CHECK(pixel(kLoneX, kLoneOwnRow) == kGreen);  // below the stack it has the line to itself
+   video::set_obj(kStacked - 1, video::kObjHidden);   // one fewer: the budget reaches the 20th
+   Show();
+   CHECK(pixel(kLoneX, kLoneY) == kGreen);
+}
+
+/// Affine sprites cost 8 + 2 cycles per pixel of their box: five double-size 64 x 64 ones fit a line, a sixth on the
+/// same lines does not.
+void obj_line_budget_affine()
+{
+   SolidBg0(kRed, 1);
+   load_big_sprite_tiles();
+   video::set_obj_layer(true);
+   for (int i = 0; i < kAffineFits; ++i)
+   {
+      video::ObjDesc d = big_obj(static_cast<int16_t>(kAffineFirstX + i * kAffineStepX), 0);
+      d.affine = true;
+      d.double_size = true;
+      video::set_obj(static_cast<uint8_t>(i), video::make_obj(d));
+   }
+   video::ObjDesc last = big_obj(kAffineLastX, kAffineLastY);   // its picture: columns 0-63, rows 92-155
+   last.affine = true;
+   last.double_size = true;
+   video::set_obj(kAffineFits, video::make_obj(last));
+   video::set_obj_affine(0, kQ8Identity, 0, 0, kQ8Identity);   // the 64 x 64 picture in the middle of its 128 box
+   Show();
+   CHECK(pixel(kAffineProbeX, kAffineSharedRow) == kRed);    // the first five's boxes span rows 0-127
+   CHECK(pixel(kAffineProbeX, kAffineOwnRow) == kGreen);     // below them the sixth has the line to itself
+   video::set_obj(kAffineFits - 1, video::kObjHidden);        // four before it: it fits
+   Show();
+   CHECK(pixel(kAffineProbeX, kAffineSharedRow) == kGreen);
+}
+
+/// present(): the latched frame is composed when the game's frame has run, so a scanline table written after the
+/// latch shows in it (the GBA's HBlank transfer reads the table while the frame is drawn), while registers written
+/// after the latch wait for the next one.
+void present_reads_tables_written_during_the_frame()
+{
+   soft::reset();
+   const video::Color pal[3] = {kGrey, kRed, kBlue};
+   video::load_bg_palette(0, pal, 3);
+   uint32_t tiles[2][8];
+   for (uint32_t& r : tiles[0])
+   {
+      r = 0x11111111u;
+   }
+   for (uint32_t& r : tiles[1])
+   {
+      r = 0x22222222u;
+   }
+   video::load_bg_tiles(0, 1, tiles[0], 2);
+   video::configure_bg(0, true, 0, 0, 31, false, 0);
+   for (int y = 0; y < 32; ++y)
+   {
+      video::write_map_cell(0, 0, y, video::map_cell(1, 0));
+      video::write_map_cell(0, 1, y, video::map_cell(2, 0));
+   }
+   video::set_mode(0);
+   static uint16_t table[video::kLineEntries] = {};
+   video::set_line_effect(video::LineRegister::Bg0Hofs, video::LineWidth::Half, table);
+   soft::latch();
+   table[kTableLine] = kTableScroll;    // the game's frame writes the table the display reads
+   video::set_bg_scroll(0, 0, 1);       // and a register: it waits for the next latch
+   const uint16_t* f = soft::present();
+   CHECK(f[kTableLine * video::kScreenWidth] == kBlue);       // the table's write shows in this frame
+   CHECK(f[(kTableLine + 1) * video::kScreenWidth] == kRed);  // the other lines keep their scroll
+   CHECK(soft::shown() == f && soft::shown()[0] == kRed);    // no y scroll yet: row 0 is still row 0
+   video::set_line_effect(video::LineRegister::Bg0Hofs, video::LineWidth::Half, nullptr);
+}
+///@}
+
+/// @name FX3 (M5): the OBJ window's colour effects do not depend on OAM order
+///@{
+constexpr int16_t kObjWinX = 60;     ///< The window-mode sprite and the sprite under it ...
+constexpr int16_t kObjWinY = 30;     ///< ... share this 8 x 8 square.
+constexpr int16_t kOutsideX = 90;    ///< A second sprite, outside the OBJ window.
+constexpr uint8_t kDarkenFull = 16;  ///< BLDY 16: a darkened pixel is black.
+constexpr uint8_t kFirstEntry = 0;   ///< OAM entries of the test: the first ...
+constexpr uint8_t kSecondEntry = 1;  ///< ... the second ...
+constexpr uint8_t kThirdEntry = 2;   ///< ... and the third.
+constexpr uint8_t kBg0Bit = 0x01;    ///< Blend / window mask bit of BG0.
+
+/// The OBJ window decides each pixel's colour effects when the line is composed: a sprite's pixel inside it takes the
+/// OBJ window's effects whether the window-mode sprite has a higher or a lower OAM number than the sprite (the
+/// hardware's window logic reads the finished line's window flags; mGBA's software renderer instead bakes the
+/// darken / brighten palette into sprites drawn before the window-mode sprite, an emulator artifact the Encore and
+/// Flatter shots show, see FX3's REVIEW.md).
+void obj_window_effects_do_not_depend_on_oam_order()
+{
+   for (int window_first = 0; window_first < 2; ++window_first)
+   {
+      SolidBg0(kRed, 1);
+      LoadHalfTile();
+      video::set_obj_layer(true);
+      video::ObjDesc win = Obj8(kObjWinX, kObjWinY);
+      win.mode = video::ObjMode::Window;
+      const uint8_t win_entry = window_first != 0 ? kFirstEntry : kSecondEntry;
+      const uint8_t obj_entry = window_first != 0 ? kSecondEntry : kFirstEntry;
+      video::set_obj(win_entry, video::make_obj(win));
+      video::set_obj(obj_entry, video::make_obj(Obj8(kObjWinX, kObjWinY)));
+      video::set_obj(kThirdEntry, video::make_obj(Obj8(kOutsideX, kObjWinY)));
+      // outside: every layer with effects; inside the OBJ window: every layer, no effects (the Encore set-up)
+      video::set_window_masks(0, 0, video::kLayerAll, static_cast<uint8_t>(video::kLayerAll & ~video::kWindowEffects));
+      video::set_windows(false, false, true);
+      video::set_blend(video::BlendMode::Darken, static_cast<uint8_t>(kBg0Bit | video::kLayerObj), 0);
+      video::set_blend_brightness(kDarkenFull);
+      Show();
+      CHECK(pixel(kObjWinX, kObjWinY) == kGreen);   // inside the OBJ window: not darkened, either order
+      CHECK(pixel(kOutsideX, kObjWinY) == 0);       // outside: the sprite is darkened to black
+      CHECK(pixel(kObjWinX - 1, kObjWinY) == 0);    // the layer outside too
+   }
+   video::set_blend(video::BlendMode::Off, 0, 0);
+   video::set_windows(false, false, false);
+}
+///@}
+
 int main()
 {
    ForcedBlankUntilFirstFrame();
@@ -347,6 +522,10 @@ int main()
    AffineBackgroundIdentityAndWrap();
    AlphaBrightnessAndSemiTransparent();
    WindowsMaskLayersAndEffects();
+   obj_line_budget_drops_late_sprites();
+   obj_line_budget_affine();
+   present_reads_tables_written_during_the_frame();
+   obj_window_effects_do_not_depend_on_oam_order();
    std::printf("soft video tests: %d checks, %d failures\n", g_checks, g_failures);
    return g_failures == 0 ? 0 : 1;
 }

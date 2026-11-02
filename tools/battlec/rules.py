@@ -18,10 +18,10 @@ from .progression import DEFAULT_LEVEL_MAX, DEFAULT_RANK_MAX, MAX_LEVEL_MAX, MAX
 from .stats import is_damaging
 from .turn import ESCAPE_ATTEMPTS_MAX, MAX_BATTLERS
 
-## Rules keys that moved to the stages (E6a) and where they went.
+## Rules keys that moved to the stages and where they went.
 MOVED_TO_STAGES = {"stat_stages": "each stat stage's \"table\"", "accuracy_stages": "the accuracy stage's \"table\"",
                    "crit_odds": "the crit stage's \"table\" (odds)"}
-## Rule default: highest stat (neutral, D-22 decision 8: no cap below the 16 bits a stat is stored in).
+## Rule default: highest stat (neutral, : no cap below the 16 bits a stat is stored in).
 DEFAULT_STAT_CAP = U16_MAX
 ## The per-stat record role feeding each per-stat input of the stat formulas (ruleset_compiler.STAT_INPUTS):
 ## genes, training and awakening values (check_formula_ranges() bounds each input by its role's width).
@@ -87,7 +87,7 @@ def check_formula_ranges(ruleset: Mapping[str, Any], rs_name: str, rules: Mappin
 
 register_keys({
    "rules": {"stat_cap", "level_max", "rank_max", "self_hit", "fallback_move",
-             # B2: whether eggs may battle (tools/battlec/nursery.py reads it)
+             # Whether eggs may battle (tools/battlec/nursery.py reads it)
              "allow_eggs"},
    "self_hit": {"power", "category"},
 })
@@ -105,12 +105,12 @@ def compile_rules(r: Json, category_entries: Sequence[Json], categories: Sequenc
    """
    for old in ("confusion", "protect_chain"):
       if old in r:
-         raise ManifestError(f"{where}: rules.{old} is gone (E5): confusion and protection are volatile records "
+         raise ManifestError(f"{where}: rules.{old} is gone: confusion and protection are volatile records "
                              f"(\"volatiles\": duration, chain {{den, cap}}, ...) and rules.self_hit {{power, "
                              f"category}} is the self-hit's")
    for old, now in MOVED_TO_STAGES.items():
       if old in r:
-         raise ManifestError(f"{where}: rules.{old} is gone (E6a): the stages hold their tables (\"stages\": "
+         raise ManifestError(f"{where}: rules.{old} is gone: the stages hold their tables (\"stages\": "
                              f"{now}, with the stage's \"range\")")
    check_keys(r, "rules", f"{where}: rules")
    cat_names = n["categories"]

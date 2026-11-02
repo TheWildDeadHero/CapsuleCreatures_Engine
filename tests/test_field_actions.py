@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""!Tests of the field actions and their mechanisms in the compilers (D-27 section 3, package F2): the structure's
+"""!Tests of the field actions and their mechanisms in the compilers: the structure's
 field_actions (tools/battlec/field.py: records, requirements as growth rules with knows.MOVE, passive words and the
 game references, the Python mirror), the world's object kinds, map tags, flight points, a map's darkness, tags and
 escape point and a vehicle class that dismounts (tools/map_compiler.py, tools/object_compiler.py), and the script
@@ -64,7 +64,7 @@ def with_actions(actions: list[JsonDict]) -> Callable[[JsonDict], None]:
 
 
 def scripts(text: str, actions: list[JsonDict] | None = None) -> sc.Compiler:
-   """!Compiles the fixture's scripts manifest with another source text (its world's F2 data loaded).
+   """!Compiles the fixture's scripts manifest with another source text (its world's field actions data loaded).
    @param text     field.cscript's text
    @param actions  replacement field action records (compile_field_action_records() form), or None
    @return the compiler (run)
@@ -118,7 +118,7 @@ class BattleSideTests(unittest.TestCase):
       self.assertIn("rules::member_passive(in)", cpp)
 
    def test_member_passive_form(self) -> None:
-      """C8 (D-27 review): the Python mirror reads a member's passive from its form, as rules::member_passive() does
+      """field effect review: the Python mirror reads a member's passive from its form, as rules::member_passive() does
       (growth::species_view()): the Starter's Glimmet given a form with another passive."""
       from battlec.field import member_passive
       c = bc.compile_battle(STARTER)
@@ -179,7 +179,7 @@ class BattleSideTests(unittest.TestCase):
       self.assertNotIn("NUM_FIELD_ACTIONS", bc.emit_ids("battle.json", none))
 
    def test_starter(self) -> None:
-      """The Starter's three actions (D-27 decision 3): wade, clear, light, each asking."""
+      """The Starter's three actions: wade, clear, light, each asking."""
       c = bc.compile_battle(STARTER)
       acts = c["field"]["actions"]["actions"]
       self.assertEqual([(a["name"], a["target"], a["target_name"], a["ask"]) for a in acts],
@@ -193,7 +193,7 @@ class BattleSideTests(unittest.TestCase):
 
 
 class WorldTests(unittest.TestCase):
-   """!The world's and the maps' F2 keys in the map compiler."""
+   """!The world's and the maps' field actions keys in the map compiler."""
 
    def setUp(self) -> None:
       """No edits yet (compile() reads the map test world's files)."""
@@ -251,7 +251,7 @@ class WorldTests(unittest.TestCase):
 
 
 class ScriptSideTests(unittest.TestCase):
-   """!The script compiler's side of F2."""
+   """!The script compiler's side of the field actions."""
 
    def test_fixture(self) -> None:
       """Targets resolved against the world, the asking wrappers, the references and the flight point."""
@@ -263,8 +263,8 @@ class ScriptSideTests(unittest.TestCase):
                        [(ids["field_action_ask_paddle"], 1, 1, sc.ACTION_ASKS), (ids["do_shove"], 2, 1, 0),
                         (ids["field_action_ask_lamp"], 3, 0, sc.ACTION_ASKS), (ids["do_rope"], 0, 0, 0)])
       self.assertEqual([(kd, n) for _i, kd, n in r["field_action_refs"]], [(0, "flag.badge_one"), (1, "var.story")])
-      self.assertEqual(r["f2_vars"]["member"], comp.var_ids["field_action_member"])
-      self.assertEqual(r["f2_vars"]["escape"], [sc.NO_VAR] * len(sc.ESCAPE_VARS))   # no escape point here
+      self.assertEqual(r["field_action_vars"]["member"], comp.var_ids["field_action_member"])
+      self.assertEqual(r["field_action_vars"]["escape"], [sc.NO_VAR] * len(sc.ESCAPE_VARS))   # no escape point here
       self.assertEqual([fp[-1] for fp in r["flight_points"]], ["plain"])
       cpp = comp.emit_cpp("scripts.json")
       self.assertIn("kFieldActions, kFieldActionRefs, kFlightPoints,", cpp)
@@ -299,7 +299,7 @@ class ScriptSideTests(unittest.TestCase):
                                                 op["End"]]))
       esc = comp.var_ids["escaped"]
       self.assertEqual(code["run_away"], bytes([op["Escape"], 0, esc & 0xFF, esc >> 8, op["End"]]))
-      self.assertEqual(r["f2_vars"]["escape"], [comp.var_ids[n] for n in sc.ESCAPE_VARS])
+      self.assertEqual(r["field_action_vars"]["escape"], [comp.var_ids[n] for n in sc.ESCAPE_VARS])
       self.assertEqual([fp[-1] for fp in r["flight_points"]], ["home", "town_gate"])
       # field_action available on the field fixture
       comp = scripts(NEEDS + "var v : u8;\nscript s { field_action available lamp -> var(v); }\n")

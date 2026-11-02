@@ -129,6 +129,13 @@ void set_mode(uint8_t slot, hal::video::ObjMode mode);
 /// Advances animations one frame and writes every slot's OAM entry.
 void update();
 
+/// T1 (M5): moves the slots' OAM entries to first ... first + kSlots - 1 (0 by default and after reset()), so a
+/// scene's own sprites drawn over the slots can take the entries before them (the hardware draws lower entries in
+/// front: the reference games sort a battle transition's sprites ahead of the field's objects). The entries left
+/// are hidden; the next update() writes the new ones. The matrices stay 0 ... kAffineSlots - 1.
+/// @param first  the first entry (first + kSlots <= hal::video::kNumObjs)
+void set_first_entry(uint8_t first);
+
 /// UC (D-33): puts every loaded slot's tiles back into OBJ memory (a streamed slot: the frame it shows) and hides
 /// every OAM entry, after a full-screen scene used the sprite memory; the slots' state (sprite, position, animation,
 /// order) is as it was, and the next update() writes their entries again. Palettes are the caller's

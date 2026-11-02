@@ -1,0 +1,28 @@
+{
+  "schema": "capsule.script-bank/1",
+  "manifests": ["sandbox_vm_ext.json"],
+  "script": [
+    "label:Loop",
+    ["slide", 0, 48],
+    ["slide", 1, -48],
+    ["pause", 20],
+    ["call", "Together"],
+    ["pause", 20],
+    ["slide", 1, 48],
+    ["slide", 0, -48],
+    ["pause", 40],
+    ["addbyte", {"kind": "variable", "id": 0, "offset": 0}, 1],
+    ["jumpifbyte", 3, {"kind": "variable", "id": 0, "offset": 0}, 3, "Loop"],
+    ["call", "Wide"],
+    ["goto", "Loop"],
+    "label:Together",
+    ["slide_both", 24],
+    ["slide_both", -24],
+    ["return"],
+    "label:Wide",
+    ["slide_both", 40],
+    ["slide_both", -40],
+    ["addbyte", {"kind": "variable", "id": 0, "offset": 0}, 253],
+    ["return"]
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "capsule.vm-ext/1",
+  "vm": "battle",
+  "name": "sandbox",
+  "notes": "The battle script machine sandbox's command set (D-39): control flow, waits and a lap counter are aliases of the engine's generic steps; only the two commands that talk to the squares' controllers are native.",
+  "owner": "sandbox",
+  "tier": 0,
+  "space": {"first": 0, "last": 7},
+  "refs": {},
+  "dispatch": {
+    "form": "fragment",
+    "symbol": "kTable",
+    "count": 8,
+    "resolver": "resolve_ref",
+    "native_prefix": "cmd_"
+  },
+  "ops": [
+    {"id": 0, "name": "goto", "kind": "alias", "operands": [{"name": "target", "type": "code"}],
+     "expands": [{"op": "jump", "args": {"target": "target"}}]},
+    {"id": 1, "name": "slide", "kind": "native", "symbol": "cmd_slide", "waits": true,
+     "operands": [{"name": "square", "type": "u8"}, {"name": "pixels", "type": "s8"}],
+     "reason": "Sends a controller command to the square's endpoint (the channel's buffers): presentation, not script state."},
+    {"id": 2, "name": "slide_both", "kind": "native", "symbol": "cmd_slide_both", "waits": true,
+     "operands": [{"name": "pixels", "type": "s8"}],
+     "reason": "Sends a controller command to both endpoints in one command (the channel's buffers)."},
+    {"id": 3, "name": "pause", "kind": "alias", "waits": true, "operands": [{"name": "frames", "type": "u16"}],
+     "expands": [{"op": "pause", "args": {"frames": "frames"}}]},
+    {"id": 4, "name": "call", "kind": "alias", "operands": [{"name": "target", "type": "code"}],
+     "expands": [{"op": "call", "args": {"target": "target"}}]},
+    {"id": 5, "name": "return", "kind": "alias",
+     "expands": [{"op": "return", "args": {}}]},
+    {"id": 6, "name": "addbyte", "kind": "alias",
+     "operands": [{"name": "var", "type": "ref"}, {"name": "value", "type": "u8"}],
+     "expands": [{"op": "modify", "alu": "add", "width": 1, "args": {"ref": "var", "value": "value"}}]},
+    {"id": 7, "name": "jumpifbyte", "kind": "alias",
+     "operands": [{"name": "compare", "type": "u8"}, {"name": "var", "type": "ref"}, {"name": "value", "type": "u8"},
+                  {"name": "target", "type": "code"}],
+     "expands": [{"op": "jump_if", "width": 1,
+                  "args": {"compare": "compare", "ref": "var", "value": "value", "target": "target"}}]}
+  ]
+}

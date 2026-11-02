@@ -1,4 +1,4 @@
-"""!AI profiles (D-26 section 1, G1): battle.json `ai_profiles` and a party's `ai` (capsule/battle/data/ai.h).
+"""!AI profiles: battle.json `ai_profiles` and a party's `ai` (capsule/battle/data/ai.h).
 
 A profile is {"name", "default": bool, "rules": [rule, ...], "switching": [rule, ...], "items": []}:
   - rules (scoring, in order; every rule runs for every usable move and target):
@@ -11,7 +11,7 @@ A profile is {"name", "default": bool, "rules": [rule, ...], "switching": [rule,
   - switching (in order, after scoring; the first that says so switches to the first replacement that may come
     in): {"rule": "below", "score": n} the best move's score is below n, {"rule": "hook"} the ai_score hook of the
     battler's owners with move none (value 0 in) ends above the best move's score;
-  - items (G3, in order, after switching; the first that says so uses the item on the battler as the turn's Item
+  - items (in order, after switching; the first that says so uses the item on the battler as the turn's Item
     action, one of the party's `items` left): {"rule": "below_hp", "item": NAME, "percent": n} the battler's HP is
     below n percent of its maximum, {"rule": "hook", "item": NAME, "margin": n} the item's own ai_score handler
     (holder = the battler, move none, value 0 in) ends above the best move's score + n (block: never).
@@ -32,12 +32,12 @@ I16_MIN = -I16_MAX - 1
 RULES = ["noise", "damage", "avoid_useless", "status", "status_move", "save_resources", "pipeline", "hook"]
 ## Switching rules (manifest names), their AiRuleKind ids following RULES.
 SWITCH_RULES = ["below", "hook"]
-## Item-use rules (manifest names, G3), their AiRuleKind ids following SWITCH_RULES.
+## Item-use rules (manifest names), their AiRuleKind ids following SWITCH_RULES.
 ITEM_RULES = ["below_hp", "hook"]
 ## The rule key naming an item rule's item (its id is the rule's arg2).
 ITEM_KEY = "item"
 ## A rule's arguments: name -> (AiRuleData field "arg" / "arg2", lowest, highest, default; None: optional, no
-## default). The defaults are the engine's former built-in scorer's numbers (D-18). A damage weight stays a byte
+## default). The defaults are the engine's former built-in scorer's numbers. A damage weight stays a byte
 ## (the score of a hit, x100 percent, x the weight, keeps to 32 bits).
 RULE_ARGS: dict[str, dict[str, tuple[str, int, int, int | None]]] = {
    "noise": {"max": ("arg", 1, I16_MAX, 16)},
@@ -70,8 +70,8 @@ MAX_AI_RULES = 16
 DEFAULT_PROFILE = {"name": "default", "rules": [{"rule": "noise"}, {"rule": "status_move"}]}
 ## The pipeline a pipeline rule runs (ruleset_compiler.PIPELINES).
 AI_PIPELINE = "ai_score"
-## The former party AI flags (capsule::battle::AiFlag before G1) and the rules each stood for, in the scorer's order
-## (tools/battle_ai.py turns a party's flags into a profile).
+## The former party AI flags (capsule::battle::AiFlag from an older version) and the rules each stood for, in the
+## scorer's order (tools/battle_ai.py turns a party's flags into a profile).
 FLAG_RULES = {"damage": ["damage"], "avoid_useless": ["avoid_useless"], "status": ["status"],
               "save_resources": ["save_resources"]}
 ## The rules every former flag set had (noise first, a status move's score after the status rule).
@@ -79,7 +79,7 @@ ALWAYS_RULES = ("noise", "status_move")
 ## The scorer's former order of every rule a flag set can have.
 FLAG_ORDER = ["noise", "damage", "avoid_useless", "status", "status_move", "save_resources"]
 ## What a party's former flag list says now.
-MIGRATION = "party AI flags are a profile now (D-26 section 1): run tools/battle_ai.py BATTLE.json"
+MIGRATION = "party AI flags are a profile now: run tools/battle_ai.py BATTLE.json"
 
 register_keys({
    "ai_profile": {"name", "default", "rules", "switching", "items"},
@@ -133,7 +133,7 @@ def compile_rule(r: Json, kinds: Sequence[str], args: Mapping[str, Mapping[str, 
 
 
 def item_rule(r: Json, items: Sequence[str], first: int, where: str) -> tuple[int, int, int]:
-   """!One item-use rule (G3) as AiRuleData: its number, and the item it names as arg2.
+   """!One item-use rule as AiRuleData: its number, and the item it names as arg2.
    @param r      the rule
    @param items  the battle's item names (ids from 1)
    @param first  the AiRuleKind id of ITEM_RULES[0]
@@ -153,7 +153,7 @@ def compile_ai_profiles(entries: Json, where: str, pipelines: Sequence[str],
    @param entries    battle.json ai_profiles (None: DEFAULT_PROFILE)
    @param where      location
    @param pipelines  the pipelines the ruleset declares (a pipeline rule needs AI_PIPELINE among them)
-   @param items      the battle's item names (item rules name them; G3)
+   @param items      the battle's item names (item rules name them)
    @return {"profiles": [{"name", "rules": [(kind, arg, arg2)], "switching": [...], "items": [...]}], "names",
            "default"}
    """
@@ -242,7 +242,7 @@ def emit_ai(profiles: Mapping[str, Any]) -> list[str]:
 
 def check_ai_items(profiles: Mapping[str, Any], item_infos: Sequence[Mapping[str, Any] | None],
                    hooks: Sequence[set[str]], item_names: Sequence[str], where: str) -> None:
-   """!The items the item-use rules name (G3): each is used in battle (use battle or both, with use_battle logic);
+   """!The items the item-use rules name: each is used in battle (use battle or both, with use_battle logic);
    a hook rule's item has an ai_score handler of its own.
    @param profiles    compile_ai_profiles() result
    @param item_infos  per item id: its bag and use fields (battlec/inventory.py item_fields(); [0]: None)

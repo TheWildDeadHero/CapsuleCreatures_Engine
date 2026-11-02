@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""!Battle bench scenarios (D-23 section 3.3): validate a `capsule.bench/1` scenario, build the bench for a game's
+"""!Battle bench scenarios: validate a `capsule.bench/1` scenario, build the bench for a game's
 battle manifest, run it and parse what it writes. The command line and the importable API the studio's logic editor
 uses (its core/bench.py).
 
@@ -16,28 +16,28 @@ Scenario (`capsule.bench/1`, JSON; names are the battle manifest's):
   - format: a format name (default the first); seed: the battle seed (required); no_escape: true forbids running;
   - field: {weather: name or null, weather_turns: n};
   - parties: 1-6 [{side, controller: "human" | "ai" (default ai), flags: ["unowned", "no_escape"], rank,
-    ai: an AI profile (G1; default: the data party's, else the battle's default profile), bag: {item name: n}
-    (G3: the bag its Item actions use), data: a party of the data, or members: [member, ...]}]. A member:
+    ai: an AI profile (default: the data party's, else the battle's default profile), bag: {item name: n}
+    (the bag its Item actions use), data: a party of the data, or members: [member, ...]}]. A member:
     {species, level, seed (default the goldens' record seed), moves: [name or null, ...] (full move pools),
     resources: {resource name: n (a battler resource) or [n per move slot] (a move resource)} (persisted resources
     only), passive_slot, trait, item, hp, status, status_counter, experience} (record values, before the battle
-    starts; "pp" is refused: D-25);
+    starts; "pp" is refused: );
   - pokes: [{party, member, hp, status, status_counter, status_aux (the status's counter and scratch), counters:
     {volatile name: n} (that volatile's counter), item, volatiles: [names], stages: {stage name: a value in
     that stage's range}, resources: {resource name: n or [n per move slot]} (clamped to the pool's maximum)}]
     (battler values, right after the battle starts; check_names() checks them against a compiled manifest, the
     bench does too);
   - choices: per turn, the last repeating: "first" | "run" | {"move": slot or name, "target": position} |
-    {"switch": member} | {"item": name, "target": position, "member": n, "slot": n} (G3: the Item action on a
+    {"switch": member} | {"item": name, "target": position, "member": n, "slot": n} (the Item action on a
     battler's position, a member of the party or a move slot of it), or a list of those, one per field position;
     none: the first usable move throughout; the battles have empty storage boxes (a recruit into a full party);
   - answers: effect requests in order: {"learn_move": slot} | {"switch_target": member} | {"choice": option};
   - stop: "end" (default) | {"turns": n} | {"steps": n}; step_limit (default 20000);
   - trace: {rng, vm, events: true / false}.
 
-Output: JSON lines with "t" = bench, line (a transcript line in the WP-2 golden format), rng, vm, event, request,
-trapped (C5: {turn, battler} when a human battler's turn choice comes while try_switch hooks trap it, is_trapped()),
-note, stop, error (see apps/battle_bench/output.h).
+Output: JSON lines with "t" = bench, line (a transcript line in the first content golden format), rng, vm, event,
+request, trapped ({turn, battler} when a human battler's turn choice comes while try_switch hooks trap it,
+is_trapped()), note, stop, error (see apps/battle_bench/output.h).
 
 Usage:
   bench_scenario.py validate SCENARIO...                      checks the scenarios' shape (names: the bench checks)
@@ -104,16 +104,16 @@ U32_MAX = 0xFFFFFFFF
 MAX_PARTIES = 6
 ## Values any stage can take (capsule::battle::kStageLimit; each stage's own range is the manifest's).
 STAGE_RANGE = (-rc.STAGE_LIMIT, rc.STAGE_LIMIT)
-## A scenario's switch for the effect logic's texts in the transcript (E13b; X1: the studio's key).
+## A scenario's switch for the effect logic's texts in the transcript (the studio's key).
 OWNER_TEXTS_KEY = "owner_texts"
-## The record kind of a trapped battler's turn choice (C5: apps/battle_bench/main.cpp, is_trapped(); the studio's).
+## The record kind of a trapped battler's turn choice (apps/battle_bench/main.cpp, is_trapped(); the studio's).
 TRAPPED_RECORD = "trapped"
 ## Keys of a scenario.
 SCENARIO_KEYS = {"schema", "name", "description", "expect", "rng", "format", "seed", "no_escape", "field", "parties",
                  "pokes", "choices", "answers", "stop", "step_limit", "trace", OWNER_TEXTS_KEY}
 ## Keys of a party.
 PARTY_KEYS = {"side", "controller", "data", "members", "flags", "rank", "ai", "bag"}
-## Keys of an item choice (G3).
+## Keys of an item choice.
 ITEM_CHOICE_KEYS = {"item", "target", "member", "slot"}
 ## Keys of a record member.
 MEMBER_KEYS = {"species", "level", "seed", "moves", "resources", "passive_slot", "trait", "item", "hp", "status",
@@ -121,9 +121,9 @@ MEMBER_KEYS = {"species", "level", "seed", "moves", "resources", "passive_slot",
 ## Keys of a battler poke.
 POKE_KEYS = {"party", "member", "hp", "status", "status_counter", "status_aux", "counters", "item", "volatiles",
              "stages", "resources"}
-## Keys that are gone, with what replaced them (D-25: PP is a resource).
-RETIRED_MEMBER_KEYS = {"pp": "PP is a resource now (D-25): \"resources\": {\"pp\": [n per move slot]}"}
-## Poke keys that are gone (C1: the engine's bench keeps only the generic forms), with what replaced them.
+## Keys that are gone, with what replaced them (PP is a resource).
+RETIRED_MEMBER_KEYS = {"pp": "PP is a resource now: \"resources\": {\"pp\": [n per move slot]}"}
+## Poke keys that are gone (the engine's bench keeps only the generic forms), with what replaced them.
 RETIRED_POKE_KEYS = {"status_turns": "status_counter", "escalation": "status_aux"}
 ## A party's controllers (the first is the default).
 CONTROLLERS = ("ai", "human")
@@ -255,7 +255,7 @@ def _choice(problems: list[str], where: str, v: Any) -> None:
    if v in ("first", "run"):
       return
    if isinstance(v, dict) and "item" in v:
-      # G3: the Item action
+      # The Item action
       if set(v) - ITEM_CHOICE_KEYS:
          problems.append(f'{where}: an item choice has {", ".join(sorted(ITEM_CHOICE_KEYS))}')
       _name(problems, f"{where}.item", v["item"])
@@ -345,9 +345,9 @@ def _party(problems: list[str], where: str, p: Any) -> None:
    if "rank" in p:
       _int(problems, f"{where}.rank", p["rank"], 0, ec.U8_MAX)
    if "ai" in p:
-      _name(problems, f"{where}.ai", p["ai"])   # G1: an AI profile (the bench checks the name)
+      _name(problems, f"{where}.ai", p["ai"])   # an AI profile (the bench checks the name)
    if "bag" in p:
-      # G3: {item name: count}
+      # {item name: count}
       if not isinstance(p["bag"], dict):
          problems.append(f"{where}.bag: an object of item name -> count")
       else:
@@ -495,7 +495,7 @@ def validate(scenario: Any) -> list[str]:
       _int(problems, "seed", scenario["seed"], 0, U32_MAX)
    if "no_escape" in scenario and not isinstance(scenario["no_escape"], bool):
       problems.append("no_escape: true or false")
-   # E13b: the transcript also shows owner texts and condition changes
+   # The transcript also shows owner texts and condition changes
    if OWNER_TEXTS_KEY in scenario and not isinstance(scenario[OWNER_TEXTS_KEY], bool):
       problems.append(f"{OWNER_TEXTS_KEY}: true or false")
    fld = scenario.get("field", {})
@@ -703,7 +703,7 @@ def _step(cmd: Sequence[str], what: str, progress: Callable[[str], None] | None,
       if proc.wait() != 0:
          raise BenchError(f"{what} failed:\n" + "".join(log)[-LOG_TAIL:])
    finally:
-      # the step's output pipe is closed once its reader is done (no unclosed file, E11)
+      # the step's output pipe is closed once its reader is done (no unclosed file)
       reader.join(READER_JOIN)
       assert proc.stdout is not None
       proc.stdout.close()
@@ -778,7 +778,7 @@ class Result:
       return [r for r in self.records if r.get("t") == kind]
 
    def transcript(self) -> str:
-      """!The transcript in the WP-2 golden format (every "line" record, one per line).
+      """!The transcript in the first content golden format (every "line" record, one per line).
       @return its text
       """
       return "".join(r["text"] + "\n" for r in self.of("line"))

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for tools/effect_compiler.py (D-23 section 1): the `.ceffect` language and its AST round trips, the canonical
+"""Tests for tools/effect_compiler.py: the `.ceffect` language and its AST round trips, the canonical
 formatter, every diagnostic, the budget and termination checks, the bytecode (golden listing), the pure backend
 (evaluate_pure against the generated C++) and the command line.
 
@@ -38,7 +38,7 @@ def load_json(name: str) -> dict[str, Any]:
    return json.loads((DATA / name).read_text(encoding="utf-8"))
 
 
-## The language examples' names (tests/data/effects/examples_structure.json: invented, E11).
+## The language examples' names (tests/data/effects/examples_structure.json: invented).
 EXAMPLES = load_json("examples_structure.json")
 VM = load_json("vm_structure.json")
 
@@ -140,8 +140,8 @@ class RoundTripTests(unittest.TestCase):
       text = ec.format(ec.parse((DATA / "examples.ceffect").read_text(encoding="utf-8")))
       self.assertEqual(text, golden("examples.canonical.ceffect", text))
 
-   def test_d23_ast_example(self) -> None:
-      """The AST of D-23 section 1.6's example."""
+   def test_design_ast_example(self) -> None:
+      """The AST of 's example."""
       ast = ec.parse('passive "Crackle" { on damaging_hit when move.has(contact) and other.alive '
                      '{ chance 1/3 { inflict other Numb quiet; } } }')
       want = {"owner": {"kind": "passive", "name": "Crackle"},
@@ -229,7 +229,7 @@ def big_structure() -> dict[str, Any]:
    s["statuses"].extend(f"S{i}" for i in range(300))   # ids above 255
    s["tags"].extend(f"t{i}" for i in range(16))      # 17 tags
    del s["species_fields"]                           # a list the structure does not declare
-   # a stored custom role and an unstored one (E13a: computed on read; C5: effect logic may not write it)
+   # a stored custom role and an unstored one (computed on read; effect logic may not write it)
    s["roles"] = [{"name": "score", "id": 0x80}, {"name": "marked", "id": 0x81, "stored": False}]
    return s
 
@@ -276,19 +276,19 @@ DIAGNOSTICS = [
    ("per-foe", 'passive "Crackle" { on residual per_foe { } }'),
    ("no-result", 'passive "Crackle" { on residual { block; } }'),
    ("pure", 'passive "Quick Paddle" { point speed { text skip; } }'),
-   # G1: ai_score handlers are pure; absorb only marks a hit a before_damage handler takes
+   # ai_score handlers are pure; absorb only marks a hit a before_damage handler takes
    ("pure-hook", 'passive "Quick Paddle" { on ai_score { text skip; } }'),
    ("absorb-context", 'passive "Quick Paddle" { on damaging_hit { absorb; } }'),
    ("recruit-context", 'passive "Quick Paddle" { on damaging_hit { recruit other 1; } }'),
    # F1: the encounter primitives belong to the encounter hooks, a re-pick to encounter_made, operands in range
    ("encounter-context", 'passive "Quick Paddle" { on switch_in { encounter_rate 1 2; } }'),
-   # F3: the step effect read outside a steps handler
+   # The step effect read outside a steps handler
    ("steps-context", 'passive "Quick Paddle" { on switch_in { if field.step_effect == 0 { fail; } } }'),
    ("reroll-context", 'passive "Quick Paddle" { on encounter { encounter_reroll; } }'),
    ("encounter-arg", 'passive "Quick Paddle" { on encounter { encounter_rate 300 1; } }'),
-   ("field-effect-amount", 'passive "Quick Paddle" { on encounter { field_effect start ward 0; } }'),   # C8
-   ("encounter-target", 'passive "Quick Paddle" { on encounter { target.role(score) = 1; } }'),   # C8
-   # B1: the combine hook's reads, subjects and primitives outside it; an input that is not one; an unstored role
+   ("field-effect-amount", 'passive "Quick Paddle" { on encounter { field_effect start ward 0; } }'),   # field effects
+   ("encounter-target", 'passive "Quick Paddle" { on encounter { target.role(score) = 1; } }'),   # field effects
+   # The combine hook's reads, subjects and primitives outside it; an input that is not one; an unstored role
    ("combine-context", 'passive "Quick Paddle" { on switch_in { inherit score from input.0; } }'),
    ("unknown-input", 'global "g" { on combine { let x = input.nobody.level; } }'),
    ("inherit-role", 'global "g" { on combine { inherit marked from input.0; } }'),
@@ -325,14 +325,14 @@ class DiagnosticTests(unittest.TestCase):
       self.assertEqual({c for c, _s in DIAGNOSTICS}, set(ec.MESSAGES))
 
    def test_unstored_role_reads(self) -> None:
-      """An unstored role is read like any role; a stored one is written (C5: only the write of an unstored one is
+      """An unstored role is read like any role; a stored one is written (only the write of an unstored one is
       refused, the engine's role_set would drop it)."""
       unit = ec.Unit([("t.ceffect", 'move "Soar" { use { let m = user.role(marked); user.role(score) = m + 1; } }')],
                      big_structure())
       self.assertTrue(unit.ok(), [str(d) for d in unit.diagnostics])
 
    def test_none_word(self) -> None:
-      """C5: `none` is the none value of the kind it is compared with (a move: 65535, a type: 255); it is not a local's
+      """`none` is the none value of the kind it is compared with (a move: 65535, a type: 255); it is not a local's
       name."""
       unit = ec.Unit([("t.ceffect", 'move "Soar" { use { if user.targeted_by == none or user.type(0) != none '
                                     '{ fail; } } }')], big_structure())
@@ -342,7 +342,7 @@ class DiagnosticTests(unittest.TestCase):
       self.assertEqual((ec.NONE_VALUES["move"], ec.NONE_VALUES["type"]), (ec.U16_MAX, ec.U8_MAX))
 
    def test_try_switch_per_foe(self) -> None:
-      """C5: try_switch takes the per_foe mark (a foe's trap: kHandlerPerFoe); other hooks but switch_in do not."""
+      """try_switch takes the per_foe mark (a foe's trap: kHandlerPerFoe); other hooks but switch_in do not."""
       unit = ec.Unit([("t.ceffect", 'passive "Crackle" { on try_switch per_foe { block; } }')], big_structure())
       self.assertTrue(unit.ok(), [str(d) for d in unit.diagnostics])
       self.assertIn("try_switch", ec.PER_FOE_HOOKS)
@@ -356,7 +356,7 @@ class DiagnosticTests(unittest.TestCase):
 
    def test_condition_texts_and_turns(self) -> None:
       """A condition's own texts resolve before the structure's (a status text is a kConditionText id); a condition
-      statement without turns gives the condition's own; a file a manifest lists must exist (E5)."""
+      statement without turns gives the condition's own; a file a manifest lists must exist."""
       structure = {**big_structure(), "statuses": [{"name": "Scorch", "texts": {"skip": 0x8002}}],
                    "weathers": [{"name": "Drizzle", "turns": 5}]}
       unit = ec.Unit([("t.ceffect", 'status "Scorch" { on before_move { text skip; stop; } }\n'
@@ -482,7 +482,7 @@ class BytecodeTests(unittest.TestCase):
       self.assertEqual(text, golden("examples.disasm", text))
 
    def test_odds(self) -> None:
-      """!odds(n, m[, by, on]) (E9): n, m and two battlers (user and target by default), then Odds; it draws."""
+      """!odds(n, m[, by, on]): n, m and two battlers (user and target by default), then Odds; it draws."""
       unit = compile_text('global "g" { on before_damage { modify set odds(1, 2) + odds(1, 2, holder, other); } }')
       self.assertEqual(codes(unit), [])
       names = [name for _at, name, _v in ec.instructions(unit.bank().code)]
@@ -535,7 +535,7 @@ class BytecodeTests(unittest.TestCase):
 
 
 class BattleFormTests(unittest.TestCase):
-   """The forms the battle integration added (E4b): ruleset points, say at / about / value, stage quiet."""
+   """The forms the battle integration added: ruleset points, say at / about / value, stage quiet."""
 
    def test_structure_points(self) -> None:
       """A structure's "points" replace the default catalog (ids are their order, ranges their values')."""
@@ -566,7 +566,7 @@ class BattleFormTests(unittest.TestCase):
       self.assertIn(("Stage", [ec.SUBJ_USER, stage | ec.STAGE_QUIET]), ops)
 
    def test_new_refs(self) -> None:
-      """`acted` and `locked` are host reads after the VM's own refs (C5: player_side; F1: the field effect refs
+      """`acted` and `locked` are host reads after the VM's own refs (player_side; F1: the field effect refs
       appended last)."""
       self.assertEqual(ec.REFS[-14:], ["acted", "locked", "resource", "resource_max", "move_cost", "targeted_by",
                                        "delayed_turns", "human", "unowned", "gene", "player_side", "absorbed",
@@ -637,7 +637,7 @@ int main()
 
 
 class PrimitiveTests(unittest.TestCase):
-   """E13b: silent stages, reset_stages, delay with the land phase, reward, end_battle, the try_switch / redirect
+   """silent stages, reset_stages, delay with the land phase, reward, end_battle, the try_switch / redirect
    hooks, the new battler refs, typed damage_hp counting before_damage."""
 
    def ops(self, unit: ec.Unit) -> list[tuple[str, list[int]]]:
@@ -816,7 +816,7 @@ class CommandLineTests(unittest.TestCase):
 
 
 class BattleGapsTests(unittest.TestCase):
-   """G1 (D-26 section 1): call exclusions, delayed hits, the decoy mark, the AI's pure ai_score hook."""
+   """call exclusions, delayed hits, the decoy mark, the AI's pure ai_score hook."""
 
    def test_use_move_unless(self) -> None:
       """`use_move WHO MOVE unless FLAG` round-trips and emits CallMove with the flag; without it UseMove stays."""

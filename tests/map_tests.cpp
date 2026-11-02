@@ -24,7 +24,7 @@
 /// area) warps back from (1,1). Step hooks: every_step (1), even (2), four
 /// (4, phase 1).
 ///
-/// Field rules (A1, A2): map small (running not allowed, custom levels in
+/// Field rules: map small (running not allowed, custom levels in
 /// its top rows) and the world's custom elevations and swim class; see
 /// field_rules().
 #include "capsule/asset/asset.h"
@@ -525,7 +525,7 @@ void animation()
    CHECK(changed);
 }
 
-/// The map of the fixed-placement tileset (I2).
+/// The map of the fixed-placement tileset.
 /// @param name  "map:FIXED_A" or "map:FIXED_B"
 /// @return it
 const map::Map& fixed_map(const char* name)
@@ -533,7 +533,7 @@ const map::Map& fixed_map(const char* name)
    return *map::find(asset::key_v1(name));
 }
 
-/// I2: a map of a fixed-placement tileset: its tiles at their VRAM numbers, raw tilemap entries (flips kept), its
+/// A map of a fixed-placement tileset: its tiles at their VRAM numbers, raw tilemap entries (flips kept), its
 /// palette banks as placed, the animation's fixed phase (first change after period - phase frames).
 void fixed_tiles()
 {
@@ -563,7 +563,7 @@ void fixed_tiles()
    map::leave();
 }
 
-/// I2: a behavior's walls block leaving its cell through them and entering it through them (fixed_a's fence on
+/// A behavior's walls block leaving its cell through them and entering it through them (fixed_a's fence on
 /// the east side of 2,4).
 void walls()
 {
@@ -578,7 +578,7 @@ void walls()
    map::leave();
 }
 
-/// I2: field::shift_map() shows another map under a moving walker: position, the cell left and the camera move by
+/// Field::shift_map() shows another map under a moving walker: position, the cell left and the camera move by
 /// the shift, the step carries on, and an animation both maps run keeps its frame (map::enter(keep_animations)).
 void shift()
 {
@@ -705,7 +705,7 @@ void behaviors()
    step(field::DIR_UP);
    step(field::DIR_UP);
    CHECK(field::walker().x == 14 && field::walker().y == 0 && field::walker().elevation == 3);
-   // Grass counts encounter steps. (1,5) always starts an encounter (D-12): the walker
+   // Grass counts encounter steps. (1,5) always starts an encounter: the walker
    // waits until it is taken; (2,5) never does.
    field::place(0, 5, field::DIR_RIGHT);
    step(field::DIR_RIGHT);
@@ -1185,7 +1185,7 @@ void ow_go(uint8_t dir)
    }
 }
 
-/// RPG Maker XP-style eventing and the runner (D-17): Autorun, Player
+/// RPG Maker XP-style eventing and the runner: Autorun, Player
 /// Touch, Event Touch, Custom routes, self switches and pages, Parallel
 /// scripts, screen effects and the timer, banners, warps with
 /// transitions and the first-visit location preview.
@@ -1317,7 +1317,7 @@ void eventing()
       previewed = previewed || overworld::previewing();
    }
    CHECK(previewed && map::current() == &map::kWorld.maps[MAP_GARDEN] && overworld::banner_shown());
-   // Its name is field text ("{hero} Garden", D-22 decision 6): the banner shows the name slot's text and is
+   // Its name is field text ("{hero} Garden"): the banner shows the name slot's text and is
    // sized by cells ("Mo Garden": 9 cells and the padding), not by codes.
    const auto banner_row = [](int row, char* out, int cells)
    {
@@ -1373,7 +1373,7 @@ void run_script(script::ScriptId id)
    }
 }
 
-/// Field rules from the world manifest (A1, A2): custom elevations (level 12
+/// Field rules from the world manifest: custom elevations (level 12
 /// meets only itself, overpass 9 meets ramp 5 and keeps the mover's level),
 /// vehicle classes (swim walks 2 pixels a frame and cannot run, set from a
 /// script), terrain per class and a map that forbids running (map small:
@@ -1390,7 +1390,7 @@ void field_rules()
    CHECK(map::elevation(4).priority == 1 && map::elevation(5).priority == 2);
    CHECK(map::may_enter(0, 3) && !map::may_enter(15, 3) && map::may_enter(15, 0) && !map::may_enter(0, 12));
    CHECK(map::arrival_level(5, 9) == 5 && map::arrival_level(5, 6) == 6 && map::placed_level(9) == 0);
-   CHECK(map::kWorld.vehicle_class_count == 4);   // foot, swim, (F2) paddle and (I3) trek
+   CHECK(map::kWorld.vehicle_class_count == 4);   // foot, swim, paddle and trek
    const map::VehicleClass& swim = map::vehicle_class(1);
    CHECK(swim.walk_speed == 2 && swim.run_speed == 2 && swim.first_animation == 12 &&
          (swim.flags & map::kVehicleCanRun) == 0);
@@ -1454,7 +1454,7 @@ void field_rules()
 }
 
 
-/// @name F2 (D-27 section 3) stand-ins
+/// @name field actions stand-ins
 ///@{
 uint16_t g_action_script = field::kNoScript;   ///< What test_action_rules() answers.
 field::ActionFace g_face{};                    ///< What it was last asked about.
@@ -1498,7 +1498,7 @@ uint16_t blend_mode()
    return static_cast<uint16_t>((hal::soft::pending_bldcnt() >> kBlendModeShift) & kBlendModeMask);
 }
 
-/// F2 (D-27 section 3), the field's and the overworld's side: the compiled world (object kind, darkness, tags,
+/// The field actions, the field's and the overworld's side: the compiled world (object kind, darkness, tags,
 /// escape point, a class that dismounts), A on water and on an object of a kind asks the attached dispatcher (not
 /// when the walker can enter the cell, not without one), the paddle class stepping off onto land, a dark map's
 /// window and blend, `darkness`, the escape point recorded by a warp out of an escape_point map and `escape`, and
@@ -1570,11 +1570,11 @@ void field_actions()
    CHECK(overworld::run_script(static_cast<uint16_t>(ids::SCRIPT_GO_DARK), field::kNoObject));
    run_overworld();
    CHECK(overworld::darkness() == 3);
-   // C8: the levels are the world's (tests/data/maps world.json darkness_levels): level 3 is a 16-pixel half box,
+   // The levels are the world's (tests/data/maps world.json darkness_levels): level 3 is a 16-pixel half box,
    // brightness 16; level 2 (map small's own) 32 and 12
    overworld::update({});
    CHECK(hal::soft::pending_evy() == 16 && hal::soft::pending_window_width(0) == 32);
-   // C8: a script-set level is kept (the map-lifetime map_darkness): a game started again on the map (a load) keeps
+   // A script-set level is kept (the map-lifetime map_darkness): a game started again on the map (a load) keeps
    // it; another map clears it, and coming back shows the map's own level
    CHECK(script::var(script::VarId{script::kBank.darkness_var}) == 3 + 1);
    overworld::start(MAP_SMALL, -8, -6, field::DIR_RIGHT);
@@ -1602,14 +1602,14 @@ void field_actions()
    overworld::warp(MAP_TOWN, 2, 0, field::DIR_DOWN, 0);
    run_overworld();
    CHECK(map::index_of(*map::current()) == MAP_TOWN);
-   // C8: the escape point keeps the map's asset key (not its index)
+   // The escape point keeps the map's asset key (not its index)
    CHECK(script::actions::escape_point(m, x, y, facing) && m == map::key_of(MAP_FIELD) && x == 2 &&
          y == 3 && facing == field::DIR_DOWN);
    CHECK(overworld::run_script(static_cast<uint16_t>(ids::SCRIPT_RUN_AWAY), field::kNoObject));
    run_overworld();
    CHECK(map::index_of(*map::current()) == MAP_FIELD && field::walker().x == 2 && field::walker().y == 3);
    CHECK(script::var(ids::VAR_ESCAPED) == 1);
-   // C8: a recorded map the world does not have (a save from a build with another map list) is no escape point
+   // A recorded map the world does not have (a save from a build with another map list) is no escape point
    overworld::warp(MAP_TOWN, 2, 0, field::DIR_DOWN, 0);
    run_overworld();
    script::actions::record_escape(AssetKey{0x12345678u}, 2, 3, field::DIR_DOWN);
@@ -1630,7 +1630,7 @@ void field_actions()
    overworld::reset();
 }
 
-/// I3 (map crowd): spawning by the view, the reference movement types, a counter, door / arrow / none / dynamic
+/// Map crowd: spawning by the view, the reference movement types, a counter, door / arrow / none / dynamic
 /// warps, a vehicle class that turns in 8 frames, bumps and keeps moving, and step animations (sprite:STEPPER).
 void reference_motion()
 {
@@ -1803,12 +1803,12 @@ void reference_motion()
 /// Runs every check.
 /// @return 0 when all pass
 
-constexpr int kInPlaceCheckFrames = 20;   ///< I4: frames past one step's time at walking speed (16).
+constexpr int kInPlaceCheckFrames = 20;   ///< frames past one step's time at walking speed (16).
 
-/// I4 (D-29): template changes on the shown map (a cell, a movement and its facing) hold for its spawns until the next
+/// Template changes on the shown map (a cell, a movement and its facing) hold for its spawns until the next
 /// map; an object's sprite hides where it stands (it stays active); a route walks in place for one step's time and
 /// turns back to its page's facing.
-void i4_field()
+void shown_map_template_changes()
 {
    using namespace world_ids;
    script::clear_all();
@@ -1834,10 +1834,10 @@ void i4_field()
    CHECK(guard->facing == field::DIR_DOWN && !field::routes_busy());
 }
 
-/// C12 (map crowd): a script's move of a template (set_template_cell(), the reference games' edited template copy)
+/// Map crowd: a script's move of a template (set_template_cell(), the reference games' edited template copy)
 /// decides spawning by the view as it decides the spawn cell: moved into the view it spawns there, moved out it
 /// stays off; its spawn cell (home) centres its range and keeps it spawned until both it and its cell leave the view.
-void c12_view_override()
+void template_move_view()
 {
    using namespace world_ids;
    constexpr int kStartX = 2;         // the walker's cell (a free row): far0's compiled cell (20,1) is out of the view
@@ -1908,8 +1908,8 @@ int main()
    walls();
    shift();
    reference_motion();
-   i4_field();
-   c12_view_override();
+   shown_map_template_changes();
+   template_move_view();
    std::printf("map tests: %d checks, %d failures\n", g_checks, g_failures);
    return g_failures == 0 ? 0 : 1;
 }

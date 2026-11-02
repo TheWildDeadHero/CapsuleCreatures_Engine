@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""!Ruleset formulas and pipelines (P-13, P-14, P-18): restricted integer
+"""!Ruleset formulas and pipelines (P-14, P-18): restricted integer
 expressions with interval analysis, a Python evaluator and C++ code
 generation.
 
@@ -23,20 +23,20 @@ A ruleset (`capsule.ruleset/2`) gives the arithmetic of a game's battles:
 are engine functions with fixed inputs. Any other formula is a named formula:
 it declares its "args" (names with ranges in "inputs") and pipelines call it
 like a function; each call's arguments must lie inside those ranges. The
-battle manifest's resources (D-25, tools/battlec/resources.py) name named
+battle manifest's resources (tools/battlec/resources.py) name named
 formulas too: a move resource's max (base, raises), regen and cost amounts
-(value, max). The former pp_max slot (E6c) is refused (RETIRED_SLOTS): it is
+(value, max). The former pp_max slot is refused (RETIRED_SLOTS): it is
 a move resource's max formula now.
 
-**Stat formulas** (D-20 C) are named freely (lower-case identifiers); each
+**Stat formulas** (C) are named freely (lower-case identifiers); each
 stat of the battle manifest names the one that computes it. They all take
 the inputs STAT_INPUTS. The battle compiler emits rules::stat(index, ...),
 which calls the stat's formula (emit_stat_dispatch()).
 
-**Pipelines** (D-20 D: PIPELINES lists them with their engine inputs and
+**Pipelines** (D: PIPELINES lists them with their engine inputs and
 outputs) are straight-line step lists the battle compiler emits as C++
 (rules::damage, self_hit, speed, accuracy, crit, effect_odds, ai_score, recruit_odds; capsule/battle/pipeline.h;
-effect_odds, ai_score (G1: an AI profile's pipeline rule) and recruit_odds (G3: one recruit check's odds) are
+effect_odds, ai_score (an AI profile's pipeline rule) and recruit_odds (one recruit check's odds) are
 optional: OPTIONAL_PIPELINES gives a ruleset without them the plain odds, a score of 0 and odds that never
 recruit):
   - {"let": var, "expr": text, "range": [lo, hi]}: computes var (range
@@ -49,8 +49,7 @@ recruit):
     span at most DRAW_SPAN, 65536).
 Pipeline expressions read the pipeline's inputs, earlier variables,
 constants (STAT_CAP and LEVEL_MAX come from the battle rules), named
-formulas and the helpers HELPERS (the battle's stages and type chart, D-22
-A6 / A7):
+formulas and the helpers HELPERS (the battle's stages and type chart):
   - stage_scale(id, v, stage): v scaled by stage `id` (the inputs
     offense_stage_id, defense_stage_id, speed_stage_id) at `stage` (clamped
     to the stage's range): its table, its formula or x1;
@@ -75,7 +74,7 @@ Expression language (integers only, P-6):
     and variables, parentheses;
   - + - * / % and unary -; / and % truncate toward zero, as in C++;
   - comparisons < <= > >= == != (1 or 0), && and || (1 or 0), ! (1 or 0);
-  - bit operators (E13a) on int32 two's complement values: & | ^, unary ~
+  - bit operators on int32 two's complement values: & | ^, unary ~
     (= -v - 1), << and >> (>> is arithmetic: it rounds toward minus
     infinity, as C++20 defines it); a shift amount must lie in
     [0, SHIFT_MAX] (31) and a << result inside int32 (both checked by the
@@ -129,7 +128,7 @@ FORMULA_SLOTS = {
 }
 ## Formula slots that are gone, with what replaced them (refused with this migration message).
 RETIRED_SLOTS = {
-   "pp_max": ("the pp_max slot is gone (D-25): a move resource's \"max\" names a formula of (base, raises); declare "
+   "pp_max": ("the pp_max slot is gone: a move resource's \"max\" names a formula of (base, raises); declare "
               "it as a named formula, e.g. \"pp_max\": {\"args\": [\"pp_base\", \"pp_ups\"], \"expr\": ..., "
               "\"range\": ...} (tools/battle_resources.py migrates a battle)"),
 }
@@ -139,7 +138,7 @@ STAT_INPUTS = ["base", "gene", "training", "awaken", "level", "trait_pct"]
 STAT_FORMULA_NAME = re.compile(r"[a-z][a-z0-9_]*")
 ## A constant's name.
 CONSTANT_NAME = re.compile(r"[A-Z][A-Z0-9_]*")
-## A ruleset input's name: an identifier (no dot; E13a dotted names are a caller's own inputs).
+## A ruleset input's name: an identifier (no dot; record fields dotted names are a caller's own inputs).
 INPUT_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 ## Prefix of a stat formula's generated C++ function.
 STAT_FUNCTION_PREFIX = "stat_formula_"
@@ -153,11 +152,11 @@ GROWTH_INPUTS = ["n"]
 INT32 = (-(1 << 31), (1 << 31) - 1)
 ## Largest shift amount of << and >> (int32: a shift by 32 or more, or by a negative amount, is undefined in C++).
 SHIFT_MAX = 31
-## The bit operators (E13a): bitwise and, or, exclusive or (unary ~ is the tree's "inv" node).
+## The bit operators: bitwise and, or, exclusive or (unary ~ is the tree's "inv" node).
 BIT_OPS = ("&", "|", "^")
-## The shift operators (E13a).
+## The shift operators.
 SHIFT_OPS = ("<<", ">>")
-## The unary operators and the tree node each makes (Parser.unary(); E13a: ~ is "inv"; X1: the studio's list).
+## The unary operators and the tree node each makes (Parser.unary(); ~ is "inv"; the studio's list).
 UNARY_OPERATORS = {"-": "neg", "!": "not", "~": "inv"}
 ## Functions and their argument counts.
 FUNCTIONS = {"min": 2, "max": 2, "clamp": 3, "abs": 1, "isqrt": 1, "isqrt_ceil": 1, "if": 3}
@@ -214,12 +213,12 @@ Q8_SHIFT = 8
 U16_MAX = 0xFFFF
 ## A draw's bits (rng::below() scales a 16-bit draw).
 DRAW_BITS = 16
-## Values a roll may span (rng::below() scales a 16-bit draw to any span up to 65536; G3: a recruit check's odds
+## Values a roll may span (rng::below() scales a 16-bit draw to any span up to 65536; a recruit check's odds
 ## are n in 65536).
 DRAW_SPAN = 1 << DRAW_BITS
 ## Range of a 0/1 value.
 BOOL_RANGE = (0, 1)
-## Range of a 16-bit signed value (an AI score the ai_score pipeline sees and adds; G1).
+## Range of a 16-bit signed value (an AI score the ai_score pipeline sees and adds).
 INT16_RANGE = (-0x8000, 0x7FFF)
 ## Highest percent (a move's accuracy).
 PERCENT_MAX = 100
@@ -231,29 +230,29 @@ POINT_VALUE_RANGE = (0, U16_MAX)
 MAX_POINTS = 16
 ## Most sources of one point (kMaxPointSources).
 MAX_POINT_SOURCES = 8
-## Point sources in capsule::battle::PointSource order (E13b: the move's own handlers, each side condition on a
+## Point sources in capsule::battle::PointSource order (the move's own handlers, each side condition on a
 ## battler's side and each volatile it has).
 POINT_SOURCES = ["user.passive", "user.item", "user.status", "target.passive", "target.item", "target.status",
                  "weather", "move", "user.side", "target.side", "user.volatile", "target.volatile"]
 ## Sources a point may name without a battler (they mean the holder's).
 HOLDER_SOURCES = ["passive", "item", "status", "side", "volatile"]
-## The point the engine runs on a move's type before the chart and same-type checks of its hits (E13b;
+## The point the engine runs on a move's type before the chart and same-type checks of its hits (
 ## capsule::battle::Rules::move_type_point): a ruleset that declares a point of this name lets handlers change a
 ## move's type (a value that names no type keeps the move's own).
 MOVE_TYPE_POINT = "move_type"
 ## Point holders (self is the user: pipelines of one battler).
 HOLDERS = ["user", "target", "self"]
 
-## B1: the combination pipelines' value input (the method's expression, clamped into it by the engine) and the
+## The combination pipelines' value input (the method's expression, clamped into it by the engine) and the
 ## highest fee.
 COMBINE_VALUE_MAX = (1 << 24) - 1
-## B1: the most combination methods (capsule::combine::kMaxMethods; the pipelines' method input).
+## The most combination methods (capsule::combine::kMaxMethods; the pipelines' method input).
 MAX_COMBINE_METHODS = 16
-## B1: the most records one combination takes on any platform (build_settings max_combine_inputs).
+## The most records one combination takes on any platform (build_settings max_combine_inputs).
 MAX_COMBINE_COUNT = 8
-## B1: the fewest records one combination takes.
+## The fewest records one combination takes.
 PAIR_COUNT = 2
-## B2: the most nursery slots on any platform (build_settings max_nursery_slots; capsule::combine::kMaxNurserySlots).
+## The most nursery slots on any platform (build_settings max_nursery_slots; capsule::combine::kMaxNurserySlots).
 MAX_NURSERY_SLOTS = 8
 ## Pipelines the engine runs: their inputs (fields of the inputs struct, capsule/battle/pipeline.h) and outputs
 ## with the range the engine stores them in. A pipeline with several outputs returns battle::ChanceResult
@@ -272,36 +271,36 @@ PIPELINES = {
                 "struct": "AccuracyInputs"},
    "crit": {"inputs": ["crit_stage", "move_crit_stage"],
             "outputs": {"crit": BOOL_RANGE, "chance": (0, U16_MAX), "out_of": (0, U16_MAX)}, "struct": "CritInputs"},
-   # E9: the odds of a secondary effect or a status (effect logic odds()); optional (OPTIONAL_PIPELINES)
+   # The odds of a secondary effect or a status (effect logic odds()); optional (OPTIONAL_PIPELINES)
    "effect_odds": {"inputs": ["effect_chance", "effect_out_of", "user_stat", "target_stat", "user_level",
                               "target_level"],
                    "outputs": {"hit": BOOL_RANGE, "chance": (0, U16_MAX), "out_of": (0, U16_MAX)},
                    "struct": "EffectOddsInputs"},
-   # G1: what an AI profile's pipeline rule adds to a move's score (capsule/battle/data/ai.h); optional
+   # What an AI profile's pipeline rule adds to a move's score (capsule/battle/data/ai.h); optional
    "ai_score": {"inputs": ["so_far", "damage", "ko", "damaging", "move_accuracy", "move_statuses", "user_hp",
                            "user_max_hp", "target_hp", "target_max_hp", "turn"],
                 "outputs": {"score": INT16_RANGE}, "struct": "AiScoreInputs"},
-   # G3 (D-26 section 3): the odds of one recruit check (effect `recruit`; structure recruit.checks draws, each
+   # The odds of one recruit check (effect `recruit`; structure recruit.checks draws, each
    # chance in out_of; sure: no draw, it succeeds); optional
    "recruit_odds": {"inputs": ["target_hp", "target_max_hp", "recruit_rate", "bonus", "status_bonus", "target_level",
                                "user_level", "turn"],
                     "outputs": {"sure": BOOL_RANGE, "chance": (0, DRAW_SPAN), "out_of": (1, DRAW_SPAN)},
                     "struct": "RecruitOddsInputs"},
-   # F1 (D-27 section 1): an encounter roll's trigger odds and its creature's level, run out of battle on the lead
+   # F1: an encounter roll's trigger odds and its creature's level, run out of battle on the lead
    # (capsule/battle/encounter_lead.h); optional, and pure arithmetic ("no_points": point steps are refused)
    "encounter_rate": {"inputs": ["rate_n", "rate_m", "rate_scale", "lead_level", "method"],
                       "outputs": {"sure": BOOL_RANGE, "chance": (0, DRAW_SPAN), "out_of": (1, DRAW_SPAN)},
                       "struct": "EncounterRateInputs", "no_points": True},
    "encounter_level": {"inputs": ["min_level", "max_level", "lead_level", "level_bias", "method"],
                        "outputs": {"level": (0, BYTE_MAX)}, "struct": "EncounterLevelInputs", "no_points": True},
-   # B1 (D-28 section 1): a combination method's odds (0: the inputs are incompatible; an immediate method allows
+   # A combination method's odds (0: the inputs are incompatible; an immediate method allows
    # anything above 0) and its fee, run out of battle over the inputs (value: the method's own expression over
    # them, tools/battlec/combine.py); optional, pure arithmetic
    "combine_odds": {"inputs": ["method", "count", "level_min", "level_max", "level_avg", "same_species", "value"],
                     "outputs": {"odds": (0, U16_MAX)}, "struct": "CombineOddsInputs", "no_points": True},
    "combine_fee": {"inputs": ["method", "count", "level_min", "level_max", "level_avg", "result_level", "value"],
                    "outputs": {"fee": (0, COMBINE_VALUE_MAX)}, "struct": "CombineFeeInputs", "no_points": True},
-   # B2 (D-28 section 2): the nursery's experience per step of a held record (its level when it was left there) and
+   # The nursery's experience per step of a held record (its level when it was left there) and
    # what taking one back costs (levels_gained since it was left); optional, pure arithmetic
    "nursery_gain": {"inputs": ["level", "slot"], "outputs": {"gain": (0, U16_MAX)}, "struct": "NurseryGainInputs",
                     "no_points": True},
@@ -323,9 +322,9 @@ OPTIONAL_PIPELINES = {
       {"roll": "r", "span": "if(chance < out_of, out_of, 0)"},
       {"let": "hit", "expr": "chance >= out_of || r < chance"},
    ],
-   # G1: a ruleset without it adds nothing to an AI score
+   # A ruleset without it adds nothing to an AI score
    "ai_score": [{"let": "score", "expr": "0"}],
-   # G3: a ruleset without it never recruits (a battle with a recruit section needs one: battlec/recruit.py)
+   # A ruleset without it never recruits (a battle with a recruit section needs one: battlec/recruit.py)
    "recruit_odds": [{"let": "sure", "expr": "0"}, {"let": "chance", "expr": "0"}, {"let": "out_of", "expr": "1"}],
    # F1: the table's odds times the hooks' scale, and a level drawn between the lowest and highest exactly as the
    # tables draw one on their own (rng::between(): one draw of the span). The odds keep the scale's 8 fraction
@@ -337,10 +336,10 @@ OPTIONAL_PIPELINES = {
                       {"let": "out_of", "expr": f"if(rate_m <= {1 << Q8_SHIFT}, rate_m << {Q8_SHIFT}, rate_m)",
                        "range": [1, DRAW_SPAN]}],
    "encounter_level": [{"roll": "r", "span": "max_level - min_level + 1"}, {"let": "level", "expr": "min_level + r"}],
-   # B1: the method's own value as the odds (within 0..65535) and as the fee
+   # The method's own value as the odds (within 0..65535) and as the fee
    "combine_odds": [{"let": "odds", "expr": f"min(value, {U16_MAX})"}],
    "combine_fee": [{"let": "fee", "expr": "value"}],
-   # B2: one experience point per step, and no fee
+   # One experience point per step, and no fee
    "nursery_gain": [{"let": "gain", "expr": "1"}],
    "nursery_fee": [{"let": "fee", "expr": "0"}],
 }
@@ -354,7 +353,7 @@ NEUTRAL_STAT_CAP = U16_MAX
 ## Highest level of the neutral battle (levels are stored in 8 bits).
 NEUTRAL_LEVEL_MAX = 0xFF
 ## A neutral battle for checking a ruleset on its own (main()): the engine's caps and input ranges (no game's
-## numbers, D-22 decision 8), x1 stages (one stat stage shared by every stat, accuracy, evasion, a crit stage that
+## numbers), x1 stages (one stat stage shared by every stat, accuracy, evasion, a crit stage that
 ## never hits) and a x1 type chart.
 ## "stages" entries: {kind: stat | accuracy | evasion | crit, range: (lo, hi), table: [(num, den)] or None,
 ## odds: [(n, m)] or None, formula: a named formula or None}; "chart": {combine, factors (Q8 of the scaling
@@ -1467,7 +1466,7 @@ def pipeline_inputs(battle: Mapping[str, Any]) -> dict[str, dict[str, Range]]:
       "ai_score": {"so_far": INT16_RANGE, "damage": (0, U16_MAX), "ko": BOOL_RANGE, "damaging": BOOL_RANGE,
                    "move_accuracy": (0, PERCENT_MAX), "move_statuses": (0, BYTE_MAX), "user_hp": (0, stats[1]),
                    "user_max_hp": stats, "target_hp": (0, stats[1]), "target_max_hp": stats, "turn": (0, U16_MAX)},
-      # G3: the battle narrows recruit_rate to its species field's range and status_bonus to its table's
+      # The battle narrows recruit_rate to its species field's range and status_bonus to its table's
       "recruit_odds": {"target_hp": (0, stats[1]), "target_max_hp": stats, "recruit_rate": (0, BYTE_MAX),
                        "bonus": (0, BYTE_MAX), "status_bonus": (0, BYTE_MAX), "target_level": level,
                        "user_level": level, "turn": (0, U16_MAX)},
@@ -1476,14 +1475,14 @@ def pipeline_inputs(battle: Mapping[str, Any]) -> dict[str, dict[str, Range]]:
                          "lead_level": (0, level[1]), "method": (0, MAX_ENCOUNTER_METHOD)},
       "encounter_level": {"min_level": level, "max_level": level, "lead_level": (0, level[1]),
                           "level_bias": (0, BYTE_MAX), "method": (0, MAX_ENCOUNTER_METHOD)},
-      # B1: the combination pipelines (levels of the inputs given; value clamped by the engine)
+      # The combination pipelines (levels of the inputs given; value clamped by the engine)
       "combine_odds": {"method": (0, MAX_COMBINE_METHODS - 1), "count": (PAIR_COUNT, MAX_COMBINE_COUNT),
                        "level_min": level, "level_max": level, "level_avg": level, "same_species": BOOL_RANGE,
                        "value": (0, COMBINE_VALUE_MAX)},
       "combine_fee": {"method": (0, MAX_COMBINE_METHODS - 1), "count": (PAIR_COUNT, MAX_COMBINE_COUNT),
                       "level_min": level, "level_max": level, "level_avg": level, "result_level": level,
                       "value": (0, COMBINE_VALUE_MAX)},
-      # B2: the nursery pipelines (a held record's level, its slot; the levels it gained, the records held)
+      # The nursery pipelines (a held record's level, its slot; the levels it gained, the records held)
       "nursery_gain": {"level": level, "slot": (0, MAX_NURSERY_SLOTS - 1)},
       "nursery_fee": {"levels_gained": (0, level[1]), "level": level, "count": (0, MAX_NURSERY_SLOTS)},
    }

@@ -1,11 +1,11 @@
 /// @file
-/// UC (D-33): the screen framework on the software video model: the task list's order, the fade's calls (the
+/// The screen framework on the software video model: the task list's order, the fade's calls (the
 /// reference games' normal fade: 0 -> 16 in 23 calls, BG and OBJ halves on alternate calls, the blend an arithmetic
 /// shift), sprite animation commands (frames, jumps, loops), the draw order and the tile allocator, the layers'
 /// addressing, fills and copies, the stack's frame timing (open fade, hand-over, setup, in fade, close, the field's
 /// four return steps) and the return to the field: the map's view, tiles, camera and edited cells, the field sprite's
-/// tiles and the palettes as they were, without entering the map again; U6's one-layer setup, mode change and
-/// in-place sheet tiles; UM's screen arena: zeroed, value-initialised, aligned blocks, last in first out, stale leases,
+/// tiles and the palettes as they were, without entering the map again; the screens' one-layer setup, mode change and
+/// in-place sheet tiles; the screen arena's screen arena: zeroed, value-initialised, aligned blocks, last in first out, stale leases,
 /// scoped blocks, and its ties to the stack (a screen's blocks go back on its pop or replace(), a parent keeps or gives
 /// back its own around a child, the field's block stays).
 #include "capsule/asset/asset.h"
@@ -296,11 +296,11 @@ void layers()
          hal::soft::peek16(video::Region::BgVram, video::kCharBlockBytes + 19 * 32) == 0x2222);
 }
 
-// ---- U6: one layer's template, the mode, a sheet's tiles in place ----
+// ---- One layer's template, the mode, a sheet's tiles in place ----
 
 constexpr screen::layers::LayerTemplate kAffineLayer = {2, 2, 6, 2, 1, 2, 0};   ///< A 64 x 64 8bpp map.
 
-void u6_additions()
+void layer_template_and_mode()
 {
    fresh();
    namespace l = screen::layers;
@@ -324,13 +324,13 @@ void u6_additions()
    CHECK(hal::soft::peek16(video::Region::ObjVram, 3 * 32) == 0x3333 && sp::sheet_start(kSheetTag) == 0);
 }
 
-// ---- U3: a sheet's tiles taken without loading (the reference games' reserved tiles) ----
+// ---- A sheet's tiles taken without loading (the reference games' reserved tiles) ----
 
 constexpr uint16_t kReservedTag = 101;     ///< The reserved sheet's tag.
 constexpr uint16_t kReservedTiles = 16;    ///< Its tiles.
 constexpr uint16_t kAfterTag = 102;        ///< A sheet loaded after it.
 
-void u3_additions()
+void reserved_sheet_tiles()
 {
    fresh();
    // reserved first: tiles 0-15 taken, nothing written; the next sheet goes past them (first fit)
@@ -387,10 +387,10 @@ bool test_setup(uint8_t& state, uint8_t, bool resumed)
 
 void test_leave(bool) { ++g_leaves; }
 
-bool g_close_in_main = false;   ///< C13a: the child's main calls close_now() once.
-int g_closing_vblanks = 0;      ///< C13a: the child's vertical blank functions after its close_now().
+bool g_close_in_main = false;   ///< the child's main calls close_now() once.
+int g_closing_vblanks = 0;      ///< the child's vertical blank functions after its close_now().
 
-/// C13a: the child's main: close_now() when asked (a task's SetMainCallback2).
+/// The child's main: close_now() when asked (a task's SetMainCallback2).
 void child_main()
 {
    if (g_close_in_main)
@@ -400,7 +400,7 @@ void child_main()
    }
 }
 
-/// C13a: the child's vertical blank function: counts the ones that run after its close_now().
+/// The child's vertical blank function: counts the ones that run after its close_now().
 void child_vblank()
 {
    if (screen::phase() == screen::Phase::Closing)
@@ -409,7 +409,7 @@ void child_vblank()
    }
 }
 
-/// C13a: the child's frame: tasks, then its main (where it closes).
+/// The child's frame: tasks, then its main (where it closes).
 constexpr screen::Step kChildSteps[] = {screen::Step::Tasks, screen::Step::Main};
 
 constexpr screen::layers::LayerTemplate kOverMap[] = {{1, 0, 28, 1, 0, 0, 0}};   ///< The map's block and BG1 ring.
@@ -443,7 +443,7 @@ void stack_and_return()
    const map::MetatileId edit[map::kMaxLayers] = {1, 1, 1, 1};
    CHECK(map::set_cell(2, 1, map::cell_at(*field, 2, 1), edit));
    map::redraw();
-   // C13a (R9 M4): the shown field's rings take no tiles; its tile block does
+   // The shown field's rings take no tiles; its tile block does
    CHECK(!screen::layers::tiles_clear_of_maps(29 * video::kScreenBlockBytes + 64, 32));
    CHECK(screen::layers::tiles_clear_of_maps(0, 32) && hal::vram::tiles_allowed(0, 32));
    const asset::Sprite* walker = asset::sprite(asset::key_v1("sprite:SCREEN_WALKER"));
@@ -482,7 +482,7 @@ void stack_and_return()
    run_frame();
    CHECK(g_setup_calls == 2 && g_setup_frames[1] == 25 && screen::phase() == screen::Phase::Running);
    CHECK(hal::soft::peek16(video::Region::BgVram, 28 * video::kScreenBlockBytes) == 0x0003);   // drawn over
-   // C13a (R9 M4): the map suspended, the screen's own BG1 map (screen block 28, 64 x 32 cells: 28-29) is in use
+   // The map suspended, the screen's own BG1 map (screen block 28, 64 x 32 cells: 28-29) is in use
    CHECK(!screen::layers::tiles_clear_of_maps(29 * video::kScreenBlockBytes, 4) &&
          screen::layers::tiles_clear_of_maps(30 * video::kScreenBlockBytes, 4));
 
@@ -492,7 +492,7 @@ void stack_and_return()
    CHECK(g_leaves == 1 && g_setup_calls == 3 && screen::depth() == 2);
    run_frame();
    CHECK(screen::phase() == screen::Phase::Running && g_setup_calls == 4);
-   // C13a: close_now() in the child's frame (its main): its frame's steps go on (its vertical blank function runs)
+   // close_now() in the child's frame (its main): its frame's steps go on (its vertical blank function runs)
    // and it leaves at that frame's end; the parent's resumed setup makes its first call the next frame
    g_close_in_main = true;
    g_closing_vblanks = 0;
@@ -568,7 +568,7 @@ void stack_and_return()
    CHECK(gfx::palette::bank_coef(0) == 0);
 }
 
-// ---- UM: the screen arena ----
+// ---- The screen arena ----
 
 namespace arena = screen::arena;
 
@@ -697,7 +697,7 @@ void arena_stack()
    CHECK(screen::push_now(kArenaChild));
    run_frame();   // the parent leaves (true) and the child's setup takes its block above the parent's
    CHECK(g_child.taken() && g_parent.taken() && arena::used() == parent_end + sizeof(ChildState));
-   screen::close_now();   // C13a: between frames: it leaves at once
+   screen::close_now();   // between frames: it leaves at once
    CHECK(screen::phase() == screen::Phase::Left);
    run_frame();   // popped: its block went back; the parent resumes with its own
    CHECK(!g_child.taken() && g_parent.taken() && arena::used() == parent_end && screen::depth() == 1);
@@ -717,7 +717,7 @@ void arena_stack()
    run_frame();   // no out fade: it leaves
    run_frame();   // popped, the replacement's setup
    CHECK(!g_parent.taken() && g_child.taken() && arena::used() == field_end + sizeof(ChildState));
-   // C13a: replace_now(): no out fade; it leaves at once (between frames), the replacement's setup the next frame
+   // replace_now(): no out fade; it leaves at once (between frames), the replacement's setup the next frame
    screen::replace_now(kArenaChild);
    CHECK(screen::phase() == screen::Phase::Left);   // its block goes back at the pop
    run_frame();
@@ -741,8 +741,8 @@ int main()
    fades();
    sprites();
    layers();
-   u6_additions();
-   u3_additions();
+   layer_template_and_mode();
+   reserved_sheet_tiles();
    stack_and_return();
    arena_blocks();
    arena_stack();

@@ -1,0 +1,9 @@
+{
+ "schema": "capsule.texts/1",
+ "language": "fr",
+ "texts": {
+  "text:FIELD_OPTIONS.HELLO": {
+   "text": "BA"
+  }
+ }
+}

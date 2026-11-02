@@ -56,6 +56,7 @@ struct Order
    uint8_t entry[kSlots];        ///< The OAM entry each slot was written to.
 };
 Order g_order;   ///< The draw order.
+uint8_t g_first_entry = 0;   ///< T1: the OAM entry of the draw order's first slot (set_first_entry()).
 
 /// Bits the priority is shifted by above the sub-priority in a sort key.
 constexpr int kPriorityKeyShift = 8;
@@ -200,8 +201,9 @@ void reset()
    {
       g_slots[n] = Slot{};
       g_slots[n].scale = kQ8One;
-      video::set_obj(static_cast<uint8_t>(n), video::kObjHidden);
+      video::set_obj(static_cast<uint8_t>(g_first_entry + n), video::kObjHidden);
    }
+   g_first_entry = 0;   // T1: entry n is slot n's again
    set_sorted(false);   // DS1: OAM entry n is slot n again
    video::set_obj_layer(true);
 }
@@ -428,8 +430,22 @@ void update()
    {
       const uint8_t n = g_order.sorted ? g_order.slots[k] : static_cast<uint8_t>(k);
       g_order.entry[n] = static_cast<uint8_t>(k);
-      video::set_obj(static_cast<uint8_t>(k), attrs[n]);
+      video::set_obj(static_cast<uint8_t>(g_first_entry + k), attrs[n]);
    }
+}
+
+void set_first_entry(uint8_t first)
+{
+   ENGINE_ASSERT(first + kSlots <= video::kNumObjs);
+   if (first == g_first_entry)
+   {
+      return;
+   }
+   for (int k = 0; k < kSlots; ++k)
+   {
+      video::set_obj(static_cast<uint8_t>(g_first_entry + k), video::kObjHidden);   // the entries left
+   }
+   g_first_entry = first;
 }
 
 void reupload()

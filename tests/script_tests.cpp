@@ -141,7 +141,7 @@ void tick()
    }
 }
 
-/// I4: message modes (ignored).
+/// Message modes (ignored).
 /// @param flags  the kMessage... bits
 void message_mode(uint8_t flags)
 {
@@ -184,7 +184,7 @@ struct World
    char log[256];     ///< Calls, as text.
    int walking;       ///< Frames the current walk keeps going.
    bool missing;      ///< Object 9 does not exist.
-   bool blocked;      ///< C8: path_clear() says a step is blocked.
+   bool blocked;      ///< path_clear() says a step is blocked.
    uint32_t self;     ///< Self switches (bit obj * 4 + letter).
 };
 World g_world{};   ///< The test world.
@@ -232,7 +232,7 @@ bool move(uint8_t obj, uint8_t dir, uint16_t steps)
    g_world.walking = 3;
    return true;
 }
-/// C8: records the check of a walk.
+/// Records the check of a walk.
 /// @param obj    object
 /// @param dir    direction
 /// @param steps  cells
@@ -443,7 +443,7 @@ void set_vehicle(uint8_t vehicle)
    std::snprintf(b, sizeof b, "vehicle %u;", static_cast<unsigned>(vehicle));
    log(b);
 }
-/// Records a darkness level (F2).
+/// Records a darkness level.
 /// @param level  the level
 void set_darkness(uint8_t level)
 {
@@ -451,7 +451,7 @@ void set_darkness(uint8_t level)
    std::snprintf(b, sizeof b, "darkness %u;", static_cast<unsigned>(level));
    log(b);
 }
-/// Records an escape (F2): the stub warps only when the bank holds a recorded escape point.
+/// Records an escape: the stub warps only when the bank holds a recorded escape point.
 /// @param transition  the transition
 /// @return whether it warped
 bool escape(uint8_t transition)
@@ -473,7 +473,7 @@ bool escape(uint8_t transition)
    return true;
 }
 
-/// @name I4 stubs: each records its call
+/// @name script port stubs: each records its call
 ///@{
 
 /// Records a lock.
@@ -595,7 +595,7 @@ void set_warp(WarpSlot slot, AssetKey map, int32_t x, int32_t y)
                  static_cast<int>(x), static_cast<int>(y));
    log(b);
 }
-/// DS1: records an override set's apply or clear.
+/// Records an override set's apply or clear.
 /// @param set    the set
 /// @param apply  applied
 void override_set(uint16_t set, bool apply)
@@ -742,7 +742,7 @@ constexpr int kStubItems = 16;        ///< Item ids the items stub counts.
 constexpr int kBagPolls = 2;          ///< bag_poll() calls before the stub's bag menu answers.
 constexpr int32_t kBagChoice = 5;     ///< The item the stub's bag menu answers.
 constexpr uint8_t kStubTime = 2;      ///< The stub's time of day.
-int32_t g_items[kStubItems] = {};     ///< Counts per item id (G2).
+int32_t g_items[kStubItems] = {};     ///< Counts per item id.
 int g_bag_polls = 0;                  ///< bag_poll() calls since bag_open().
 } // namespace
 
@@ -857,7 +857,7 @@ bool mart_poll()
 
 namespace
 {
-constexpr int32_t kStubMembers = 3;   ///< Party members the boxes stub may deposit (G3).
+constexpr int32_t kStubMembers = 3;   ///< Party members the boxes stub may deposit.
 constexpr int kBoxPolls = 1;          ///< poll() calls before the stub's boxes menu answers.
 constexpr int32_t kBoxChoice = 2;     ///< The box (+ 1) the stub's boxes menu answers.
 int32_t g_boxed = 0;                  ///< Records the stub holds.
@@ -925,7 +925,7 @@ int32_t poll()
 
 } // namespace capsule::script::boxes
 
-/// The growth port's stub (G4: the statement `transform(<member>) -> var(v)`).
+/// The growth port's stub (the statement `transform(<member>) -> var(v)`).
 namespace capsule::script::growth
 {
 
@@ -957,7 +957,7 @@ int16_t transform_poll()
 
 } // namespace capsule::script::growth
 
-/// The combine port's stub (B1: the statements `combine open|run|preview|status|fee NAME ... -> var(v)`).
+/// The combine port's stub (the statements `combine open|run|preview|status|fee NAME ... -> var(v)`).
 namespace capsule::script::combine
 {
 
@@ -1042,7 +1042,7 @@ int32_t query(CombineOp kind, uint8_t method, const uint8_t* slots, uint8_t coun
 
 } // namespace capsule::script::combine
 
-/// The nursery port's stub (B2: the statement `nursery name <member> -> var(v)`, the only one a script bank without a
+/// The nursery port's stub (the statement `nursery name <member> -> var(v)`, the only one a script bank without a
 /// nursery may use).
 namespace capsule::script::nursery
 {
@@ -1353,7 +1353,7 @@ void test_objects()
    CHECK(std::strcmp(g_world.log, "move P 1 1;face 3 3;hide 3;show 5;move 9 0 0;") == 0);
 }
 
-/// C8: `move ... checked`: the world's check first; a clear path walks (waits, ok = 1), a blocked one does not move
+/// `move ... checked`: the world's check first; a clear path walks (waits, ok = 1), a blocked one does not move
 /// (ok = 0, no wait).
 void test_checked_move()
 {
@@ -1371,7 +1371,7 @@ void test_checked_move()
    CHECK(!script::running(c) && std::strcmp(g_world.log, "clear P 1 2;") == 0 && script::var(VAR_WALK_OK) == 0);
 }
 
-/// Eventing commands (D-17): routes, self switches, queries, variable ops,
+/// Eventing commands: routes, self switches, queries, variable ops,
 /// entry, screen effects and the warp, against the recording world.
 void test_eventing()
 {
@@ -1394,7 +1394,7 @@ void test_eventing()
    CHECK(std::strstr(g_world.log, " 1 2 0 6;") != nullptr);   // x 1, y 2, down, box
 }
 
-/// F2 (D-27 section 3): `darkness`, the world's flight points (`flight record` sets the implicit flag, `flight
+/// `darkness`, the world's flight points (`flight record` sets the implicit flag, `flight
 /// visit` warps with its transition, `flight menu` lists the recorded ones and warps to the one picked) and
 /// `escape` (nothing recorded: no warp, 0; recorded: the warp, 1), against the recording world.
 void test_f2()
@@ -1418,14 +1418,14 @@ void test_f2()
    CHECK(script::var(VAR_OUT) == 1 && script::var(VAR_ANSWER) == 0);
    // a recorded escape point: the warp, 1
    g_world = World{};
-   // C8: the map's asset key in both halves of the key (a key over 2^31 included)
+   // The map's asset key in both halves of the key (a key over 2^31 included)
    act::record_escape(AssetKey{0xC0DE1234u}, 5, -6, 1);
-   script::start(c, SCRIPT_F2_ESCAPE);
+   script::start(c, SCRIPT_FIELD_ACTION_ESCAPE);
    run(c, 50);
    CHECK(std::strcmp(g_world.log, "escape C0DE1234 5 -6 1;") == 0 && script::var(VAR_ANSWER) == 1);
 }
 
-/// Field placeholders (D-22 decision 6): the bank's table, placeholder_text()
+/// Field placeholders: the bank's table, placeholder_text()
 /// for each binding, name slots (cut, cleared by clear_all(), saved), and the
 /// message bytes the port gets (FD 80+ placeholders, FA, FB, terms expanded).
 void test_placeholders()
@@ -1481,7 +1481,7 @@ void test_placeholders()
    script::stop(c);
 }
 
-/// role_get / role_set (D-22 decision 2): custom and engine roles by name, ID and constant, through the port.
+/// role_get / role_set: custom and engine roles by name, ID and constant, through the port.
 void test_records()
 {
    script::clear_all();
@@ -1505,7 +1505,7 @@ void test_records()
    CHECK(ROLE_RIBBONS == 129 && ROLE_GENDER == 0x80 && ROLE_LEVEL == 5);
 }
 
-/// The bag statements (G2): give / take / count through the items port, the bag menu waits, the time of day.
+/// The bag statements: give / take / count through the items port, the bag menu waits, the time of day.
 void test_bag()
 {
    script::clear_all();
@@ -1517,7 +1517,7 @@ void test_bag()
    CHECK(script::var(VAR_V16) == kStubTime && script::var(VAR_MET) == kBagChoice);
 }
 
-/// The box statements (G3) through the stub boxes port: a deposit, the count, a withdrawal of slot var(v8) = 1 (the
+/// The box statements through the stub boxes port: a deposit, the count, a withdrawal of slot var(v8) = 1 (the
 /// stub holds one record, at slot 0: it fails), a deposit the stub refuses, the boxes menu after one poll.
 void test_boxes()
 {
@@ -1530,7 +1530,7 @@ void test_boxes()
    CHECK(g_boxed == 1 && script::var(VAR_MET) == kBoxChoice);
 }
 
-/// The transform statement (G4) through the stub growth port: member 1 changes, member 0 is stopped; each waits
+/// The transform statement through the stub growth port: member 1 changes, member 0 is stopped; each waits
 /// one poll.
 void test_transform()
 {
@@ -1542,7 +1542,7 @@ void test_transform()
    CHECK(script::var(VAR_ANSWER) == script::growth::kTransformStopped);
 }
 
-/// The combine statements (B1) through the stub combine port: the queries' operands (kind, method, members), run's
+/// The combine statements through the stub combine port: the queries' operands (kind, method, members), run's
 /// members (one an operand read from a variable) and the waits of run and open.
 void test_combine()
 {
@@ -1560,7 +1560,7 @@ void test_combine()
    CHECK(script::var(VAR_ANSWER) == cp::kCombineDone && script::var(VAR_OUT) == cp::kCombineBack);
 }
 
-/// F1 (D-27 section 2): the timed field effects of tests/data/battle_stats3 (ward by steps, refused while it runs;
+/// F1: the timed field effects of tests/data/battle_stats3 (ward by steps, refused while it runs;
 /// glow by minutes, added up, not saved; lure by steps, started over): their implicit variables and expiry scripts,
 /// the statements, the stack rules, steps, minutes and the expiry reports.
 void test_field_effects()
@@ -1622,7 +1622,7 @@ void paged_entry(int index, text::Code* out)
    out[3] = text::kCodeEnd;
 }
 
-/// C6 (review4 finding 12): a list longer than a menu goes page by page (script::kMaxChoices - 1 entries and "More..."),
+/// review4 finding 12: a list longer than a menu goes page by page (script::kMaxChoices - 1 entries and "More..."),
 /// the last page wraps to the first, Back answers kBack; a short list shows whole.
 void test_paged_menu()
 {
@@ -1651,17 +1651,17 @@ void test_paged_menu()
 }
 
 
-/// I4 (D-29): the statements imported event scripts need, against the recording world: locks, a message that does
+/// The statements imported event scripts need, against the recording world: locks, a message that does
 /// not wait, a route waited for by kObjectLast, removal, visibility, templates, doors, weather, fades, metatiles,
 /// the respawn point, the dynamic warp, sound, marts, the busy state; a loose call that recurses past the stack goes
-/// on as a jump; the map scripts I4 added (on_resume: every entry; on_warp_into: the first whose condition holds).
-void test_i4()
+/// on as a jump; the map scripts script port added (on_resume: every entry; on_warp_into: the first whose condition holds).
+void test_port_statements()
 {
    script::clear_all();
    g_world = World{};
    g_port = Port{};
    script::Context c{};
-   script::start(c, SCRIPT_I4);
+   script::start(c, SCRIPT_PORTS);
    run(c, 200);
    CHECK(!script::running(c));
    char want[256];
@@ -1676,7 +1676,7 @@ void test_i4()
    }
    CHECK(script::var(VAR_OUT) == 7);    // the loose call returned
    CHECK(script::var(VAR_V8) == 30);    // the loop went on as jumps once the stack was full
-   // the map scripts I4 added
+   // the map scripts script port added
    script::set_var(VAR_V8, 0);
    script::set_var(VAR_ANSWER, 0);
    CHECK(script::run_map_scripts(asset::key_v1("map:TOWN"), script::TriggerKind::OnResume));
@@ -1711,7 +1711,7 @@ int main()
    test_field_effects();
    test_f2();
    test_paged_menu();
-   test_i4();
+   test_port_statements();
    std::printf("script tests: %d checks, %d failures\n", g_checks, g_failures);
    return g_failures == 0 ? 0 : 1;
 }

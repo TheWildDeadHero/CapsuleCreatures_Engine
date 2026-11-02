@@ -12,7 +12,8 @@ import text_encoder
 from .common import PAIR, Json, ManifestError, Texts
 
 ## Engine message keys at their message ids (capsule::battle::Msg names the ones the engine says itself, with these
-## values; the optional ones keep their ids, C4: the classic-shaped keys stay for the manifests that give them).
+## values; the optional ones keep their ids, the battle messages: the classic-shaped keys stay for the manifests that
+## give them).
 MESSAGES = [
    "appeared", "party_challenge", "send_out", "party_sends", "come_back", "used_move", "missed", "no_effect",
    "super_effective", "not_very_effective", "critical", "hit_count", "fainted", "stat_up", "stat_up2",
@@ -23,9 +24,9 @@ MESSAGES = [
    "out_of_creatures",
    "no_usable_move", "blocked",
 ]
-## Engine messages the engine never says itself (C1: only effect logic's `say`, the chart's and tiers' messages and
+## Engine messages the engine never says itself (only effect logic's `say`, the chart's and tiers' messages and
 ## condition texts name them, so they are a game's choice): a manifest may leave them out, and then cannot name
-## them (BattleData::messages holds nullptr: no text). The engine's Msg does not name them (C4); a battle may also
+## them (BattleData::messages holds nullptr: no text). The engine's Msg does not name them; a battle may also
 ## declare messages of its own (game_messages()).
 OPTIONAL_MESSAGES = ("super_effective", "not_very_effective", "hit_count", "confused", "confusion_hit",
                      "confusion_end", "became_confused", "already_confused", "flinched", "protected",
@@ -41,7 +42,7 @@ MAX_MESSAGES = 255
 MESSAGE_KEY = re.compile(r"[a-z][a-z0-9_]*\Z")
 ## Message keys that are gone, with what replaced them (refused with this migration message).
 RETIRED_MESSAGES = {
-   "no_pp": "the message no_pp is no_usable_move now (D-25: a move is usable when its cost can be paid; "
+   "no_pp": "the message no_pp is no_usable_move now (a move is usable when its cost can be paid; "
             "tools/battle_resources.py migrates a battle)",
 }
 ## Concepts of the terms section and their neutral defaults (the one form; the many form follows plural_of()).
@@ -151,7 +152,7 @@ def compile_terms(src: Json, where: str) -> dict[str, dict[str, str]]:
 
 
 def game_messages(msgs: Json) -> list[str]:
-   """!The messages a manifest declares itself (C4): its keys that are not engine message keys (MESSAGES) nor
+   """!The messages a manifest declares itself: its keys that are not engine message keys (MESSAGES) nor
    retired ones, in the manifest's order. Effect logic (`say`), the chart and the condition records name them as
    they name the optional engine messages; the table holds them after MESSAGES.
    @param msgs  the manifest's messages {key: text}
@@ -180,7 +181,7 @@ def compile_messages(msgs: Json, where: str, enc: Texts,
    @param msgs   {key: text}
    @param where  location
    @param enc    this compile's text encoders (with terms)
-   @param extra  more placeholders some messages may use ({key: names}; G3: the recruit moments' {value}), or None
+   @param extra  more placeholders some messages may use ({key: names}; the recruit moments' {value}), or None
    @return encoded messages (None: an optional message left out)
    """
    extra = extra or {}

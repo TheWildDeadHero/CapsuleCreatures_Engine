@@ -1,0 +1,12 @@
+{
+ "schema": "capsule.texts/1",
+ "language": "en",
+ "texts": {
+  "text:FIELD_OPTIONS.HELLO": {
+   "text": "AB"
+  },
+  "text:FIELD_OPTIONS.ONLY_EN": {
+   "text": "A"
+  }
+ }
+}

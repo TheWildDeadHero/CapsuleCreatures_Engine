@@ -30,6 +30,8 @@ emulator, a flash cart and the desktop. Changes in each release are in
 | <a href="docs/DATA_FORMATS.md">Data and manifest formats</a> | sprite frames, worlds, tilesets and maps, encounters, field rules and actions, map events, objects, eventing, locations |
 | <a href="docs/BATTLE.md">Battle</a> | the battle engine, creature records, battle data and rulesets, the Starter sample and its rules, the bag, item use, the save image, growth |
 | <a href="docs/SCRIPTS.md">Scripts and sequences</a> | the script language, flags and variables; the sequence player |
+| <a href="docs/ANIM_SCRIPT.md">Animation scripts</a> | the animation bank format, its generic and game commands, frames, writing and converting banks |
+| <a href="docs/VM_EXT.md">VM extension manifests</a> | `capsule.vm-ext/1`: a game's own opcodes as aliases of generic steps or named natives, what is generated, the checks |
 | <a href="docs/AUDIO.md">Audio</a> | sound output per target and the audio renderer |
 | <a href="docs/APPS.md">Samples, sandboxes and test apps</a> | the Starter battle, the map, sequence and battle sandboxes, the test apps |
 | <a href="docs/TOOLS_AND_CI.md">Tools and CI</a> | the battle bench, using the engine as a subproject, the checks and CI jobs |

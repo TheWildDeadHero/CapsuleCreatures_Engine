@@ -1,0 +1,90 @@
+# BF (D-38): the animation player's test bank (tests/anim_tests.cpp; tools/anim_bank.py assembles it).
+.opcode 0x40 mark "s"          # the test's command: logs (frame, value, argument 0)
+.opcode 0x50 missing ""        # declared here, absent from the test's command table
+.symbol template square 0
+.symbol template spinner 1
+.symbol task count_down 0
+.symbol sound_task beep 0
+
+.script delays
+   mark 1
+   delay 0
+   mark 2
+   delay 3
+   mark 3
+   load_gfx 7
+   mark 4
+   end
+
+.script visual
+   create_sprite T:square 5 [10, 20]
+   create_task K:count_down 2 [3]
+   mark 1
+   wait_visual
+   mark 2
+   create_sound_task S:beep 1 [2]
+   wait_sound
+   mark 3
+   end
+
+.script control
+   set_arg 0 5
+   call sub
+   mark 9
+   jump_if_arg_eq 0 6 yes
+   mark -1
+   end
+yes:
+   mark 6
+   end
+sub:
+   set_arg 0 6
+   return
+
+.script args_keep
+   create_task K:count_down 2 [1, 2, 3]
+   create_task K:count_down 2 [4]
+   wait_visual
+   end
+
+.script runaway
+spin:
+   jump spin
+
+.script deep
+   call d1
+   end
+d1:
+   call d2
+   return
+d2:
+   call d3
+   return
+d3:
+   call d4
+   return
+d4:
+   call d5
+   return
+d5:
+   return
+
+.script bad_opcode
+   missing
+   end
+
+.script registers
+   set_blend 1 0 0x3f 8 8
+   bg_show 1 1
+   bg_scroll 1 -3 4
+   play_se 12 -64
+   unload_gfx 7
+   nop
+   mark 1
+   blend_off
+   end
+
+.script affine_sprite
+   create_sprite T:spinner 0 []
+   wait_visual
+   end
