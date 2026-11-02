@@ -49,5 +49,15 @@ foreach(lang C CXX)
    set(CMAKE_${lang}_LINKER_LAUNCHER   bash ${_capsule_root}/tools/dreamcast/kos-run.sh)
 endforeach()
 
+# Static libraries too: KallistiOS's archiver wrappers (kos-ar, kos-ranlib) read KOS_AR / KOS_RANLIB from the
+# environment, and the variables imported above only live while CMake configures. CMake has no archiver launcher,
+# so the archive rules themselves run through kos-run.sh (otherwise the wrapper runs an empty command at build time).
+set(_kos_run "bash \"${_capsule_root}/tools/dreamcast/kos-run.sh\"")
+foreach(lang C CXX)
+   set(CMAKE_${lang}_ARCHIVE_CREATE "${_kos_run} <CMAKE_AR> qc <TARGET> <LINK_FLAGS> <OBJECTS>")
+   set(CMAKE_${lang}_ARCHIVE_APPEND "${_kos_run} <CMAKE_AR> q <TARGET> <LINK_FLAGS> <OBJECTS>")
+   set(CMAKE_${lang}_ARCHIVE_FINISH "${_kos_run} <CMAKE_RANLIB> <TARGET>")
+endforeach()
+
 set(CMAKE_EXECUTABLE_SUFFIX .elf)
 find_program(CAPSULE_MKDCDISC mkdcdisc HINTS $ENV{DC_TOOLS_BASE})
