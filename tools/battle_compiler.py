@@ -5,6 +5,10 @@ the creature record layout (capsule::monster::kLayout).
 
     battle_compiler.py <battle.json> <out.cpp> [--ids <out.h>] [--depfile <out.d>]
                        [--code-page <page.json>] [--platform <name>] [--scripts <scripts.json>]
+                       [--usage <usage/GAME/battle.json>]
+
+--usage writes a usage record (capsule.usage/1, tools/usage.py): the battle data's parts (battle.feature) and the
+instructions its effect programs emit (effect.op).
 
 Texts (names, messages) are encoded with the game's code page
 (tools/text_encoder.py; --code-page, default the engine's ASCII page);
@@ -246,6 +250,7 @@ import effect_compiler as ec  # noqa: E402
 import ruleset_compiler as rc  # noqa: E402
 import sequence_compiler as seqc  # noqa: E402, F401
 import text_encoder  # noqa: E402
+import usage  # noqa: E402
 from sequence_compiler import asset_key  # noqa: E402, F401
 
 # The sections live in tools/battlec; every public name stays reachable as battle_compiler.<name>.
@@ -443,6 +448,14 @@ EXIT_USAGE = 2
 OPTION_WORDS = 2
 ## Positional command-line arguments (battle.json and out.cpp).
 POSITIONAL_ARGS = 2
+## This compiler's name in usage records.
+USAGE_SOURCE = "battle"
+## Parts of compiled battle data a usage record counts (battle.feature: entries).
+BATTLE_COUNTED = ("types", "moves", "species", "items", "passives", "statuses", "weathers", "volatiles",
+                  "side_conditions", "field_conditions", "formats", "parties", "traits", "growth", "effects",
+                  "delayed_hits")
+## Sections of compiled battle data a usage record notes when present (battle.feature: 1).
+BATTLE_SECTIONS = ("inventory", "ai", "recruit", "storage", "transform", "field", "combine")
 
 
 def load_battle(path: str | Path, sources: Sources | None = None,
@@ -758,6 +771,21 @@ def field_placeholders(scripts: str | Path | None, codepage: text_encoder.CodePa
    return dict(fp.codes)
 
 
+def battle_usage(c: Mapping[str, Any]) -> dict[str, dict[str, int]]:
+   """!What compiled battle data uses (a usage record's categories, tools/usage.py).
+   @param c  compile_battle()'s result
+   @return {"battle.feature": part -> entries (BATTLE_COUNTED) or 1 (BATTLE_SECTIONS present)}
+   """
+   used: dict[str, dict[str, int]] = {}
+   for key in BATTLE_COUNTED:
+      if c.get(key):
+         usage.count(used, "battle.feature", key, len(c[key]))
+   for key in BATTLE_SECTIONS:
+      if c.get(key):
+         usage.count(used, "battle.feature", key)
+   return used
+
+
 def main(argv: Sequence[str]) -> int:
    """!Command-line entry point; see the module docstring.
    @param argv  sys.argv
@@ -770,7 +798,7 @@ def main(argv: Sequence[str]) -> int:
       print(f"error: {e}", file=sys.stderr)
       return 1
    opts = {}
-   for flag in ("--depfile", "--ids", "--platform", "--scripts"):
+   for flag in ("--depfile", "--ids", "--platform", "--scripts", "--usage"):
       if flag in args:
          i = args.index(flag)
          if i + 1 >= len(args):
@@ -784,7 +812,9 @@ def main(argv: Sequence[str]) -> int:
    src, dst = Path(args[0]), Path(args[1])
    deps = []
    try:
-      c = compile_battle(src, deps, codepage=codepage, platform=opts.get("--platform"), scripts=opts.get("--scripts"))
+      with usage.collecting() as shared:   # the effect programs' instructions
+         c = compile_battle(src, deps, codepage=codepage, platform=opts.get("--platform"),
+                            scripts=opts.get("--scripts"))
       ids = emit_ids(src.name, c) if "--ids" in opts else None
    except (ManifestError, KeyError, TypeError, ValueError) as e:
       print(f"{src}: error: {e}", file=sys.stderr)
@@ -792,6 +822,10 @@ def main(argv: Sequence[str]) -> int:
    write_if_changed(dst, emit(src.name, c))
    if ids is not None:
       write_if_changed(Path(opts["--ids"]), ids)
+   if "--usage" in opts:
+      usage_path = Path(opts["--usage"])
+      usage.write_record(usage_path, usage.game_of(usage_path), USAGE_SOURCE,
+                         usage.merge_records([battle_usage(c), shared.used]))
    if "--depfile" in opts:
       def esc(p: Path) -> str:
          """!A path as a Make depfile writes it (forward slashes, spaces escaped)."""

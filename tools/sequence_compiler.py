@@ -3,7 +3,7 @@
 
     sequence_compiler.py <manifest.json> <out.inc> [--symbol kName]
                         [--max-tracks 8] [--max-sprites 16] [--max-affine 4]
-                        [--code-page <page.json>]
+                        [--code-page <page.json>] [--usage <usage/GAME/seq_NAME.json>]
 
 One format for title screens, cutscenes and credits. Follows the general
 manifest rule (P-1): editor data stripped, unknown keys rejected, names
@@ -13,7 +13,8 @@ and $item outside for_each. The emitted .inc static_asserts the slot/track
 counts it uses against the build's limits. Text comes from text assets; the
 game's code page (--code-page, tools/text_encoder.py) is only checked here:
 text on bg3 needs a font of at most 96 glyphs (BG3's character block shares
-its upper tiles with the screen blocks).
+its upper tiles with the screen blocks). --usage writes a usage record
+(capsule.usage/1, tools/usage.py): the engine ops the sequence emits (seq.op).
 """
 from __future__ import annotations
 
@@ -28,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 import text_encoder
+import usage
 
 ## Key names in GBA KEYINPUT bit order.
 KEYS = ["A", "B", "SELECT", "START", "RIGHT", "LEFT", "UP", "DOWN", "R", "L"]
@@ -56,6 +58,8 @@ OPS = ["end", "wait", "wait_for", "fade", "video_mode", "bg_load", "bg_show", "b
        "if", "repeat", "for_each", "next", "goto"]
 ## Op name -> number.
 OP = {name: i for i, name in enumerate(OPS)}
+## This compiler's name in usage records.
+USAGE_SOURCE = "sequence"
 
 ## Manifest ops -> accepted keys (some are sugar for engine ops).
 OP_KEYS = {
@@ -919,6 +923,15 @@ class Compiler:
       cmd, stage, combo = self.blobs()
       return len(cmd) + len(stage) + len(combo) + TRACK_ENTRY_BYTES * len(self.tracks)
 
+   def usage(self) -> dict[str, dict[str, int]]:
+      """!The engine ops the sequence emits (a usage record's categories, tools/usage.py).
+      @return {"seq.op": op name -> commands}
+      """
+      ops: dict[str, int] = {}
+      for op, _a, _b, _c in self.cmds:
+         ops[OPS[op]] = ops.get(OPS[op], 0) + 1
+      return {"seq.op": ops}
+
    def emit_inc(self, symbol: str) -> str:
       """!Generates the .inc with the tables, exit/condition/list ids and
       debug names.
@@ -1008,6 +1021,9 @@ def main(argv: list[str]) -> int:
    dst = Path(argv[OUTPUT_ARGUMENT])
    dst.parent.mkdir(parents=True, exist_ok=True)
    dst.write_text(out, encoding="utf-8", newline="\n")
+   if "--usage" in argv:
+      usage_path = Path(argv[argv.index("--usage") + 1])
+      usage.write_record(usage_path, usage.game_of(usage_path), USAGE_SOURCE, comp.usage())
    print(f"{argv[1]}: {len(comp.stage_recs)} stages, {len(comp.cmds)} cmds, {comp.rom_bytes()} B ROM")
    return 0
 

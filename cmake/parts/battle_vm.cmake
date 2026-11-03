@@ -17,13 +17,22 @@ target_sources(capsule_engine PRIVATE ${CAPSULE_BATTLE_VM_SOURCES})
 # @param namespace  the C++ namespace of kBank, kBankSize and the kLabel... ids
 # @param out_cpp    the generated source
 # @param out_ids    the generated header
+# @param USAGE      (optional) the bank's usage record (capsule.vm-usage/1, D-36; capsule_usage_add() it to a game)
 # @param ARGN       further files the source names (its VM extension manifests, D-39)
 function(capsule_script_bank source namespace out_cpp out_ids)
+   cmake_parse_arguments(PARSE_ARGV 4 arg "" "USAGE" "")
+   set(outputs ${out_cpp} ${out_ids})
+   set(usage_args)
+   if(arg_USAGE)
+      list(APPEND outputs ${arg_USAGE})
+      set(usage_args --usage ${arg_USAGE} --bank-name ${namespace})
+   endif()
    add_custom_command(
-      OUTPUT  ${out_cpp} ${out_ids}
+      OUTPUT  ${outputs}
       COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/script_bank.py asm ${source}
-            --cpp ${out_cpp} --ids ${out_ids} --symbol kBank --namespace ${namespace}
-      DEPENDS ${CAPSULE_ROOT}/tools/script_bank.py ${CAPSULE_ROOT}/tools/vm_ext.py ${source} ${ARGN}
+            --cpp ${out_cpp} --ids ${out_ids} --symbol kBank --namespace ${namespace} ${usage_args}
+      DEPENDS ${CAPSULE_ROOT}/tools/script_bank.py ${CAPSULE_ROOT}/tools/vm_ext.py ${source}
+            ${arg_UNPARSED_ARGUMENTS}
       COMMENT "Assembling script bank ${namespace}")
 endfunction()
 
@@ -64,9 +73,12 @@ if(NOT CAPSULE_PLATFORM STREQUAL "headless" AND CAPSULE_ENGINE_TESTS AND CAPSULE
    # The sandbox (simple shapes): a script slides two squares through the channel.
    capsule_game(${CAPSULE_ROOT}/apps/sandbox_battle_vm)
    set(sandbox_vm_gen ${CMAKE_CURRENT_BINARY_DIR}/generated/sandbox_battle_vm)   # capsule_game()'s gen folder
+   capsule_usage_dir(sandbox_vm_usage sandbox_battle_vm)
    capsule_script_bank(${CAPSULE_ROOT}/apps/sandbox_battle_vm/data/sandbox_bank.json sandbox_bank
                        ${sandbox_vm_gen}/sandbox_bank.cpp ${sandbox_vm_gen}/sandbox_bank_ids.h
-                       ${CAPSULE_ROOT}/apps/sandbox_battle_vm/data/sandbox_vm_ext.json)
+                       ${CAPSULE_ROOT}/apps/sandbox_battle_vm/data/sandbox_vm_ext.json
+                       USAGE ${sandbox_vm_usage}/bank_sandbox_bank.json)
+   capsule_usage_add(capsule_sandbox_battle_vm ${sandbox_vm_usage}/bank_sandbox_bank.json)
    # D-39: the command table generated from the sandbox's manifest (aliases + its two natives)
    capsule_vm_dispatch(OUT ${sandbox_vm_gen}/sandbox_dispatch.inc
                        MANIFESTS ${CAPSULE_ROOT}/apps/sandbox_battle_vm/data/sandbox_vm_ext.json)
