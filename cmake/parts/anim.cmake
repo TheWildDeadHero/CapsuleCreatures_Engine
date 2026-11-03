@@ -10,15 +10,22 @@ set(CAPSULE_ANIM_SOURCES
    ${CAPSULE_ROOT}/src/anim/player.cpp)
 target_sources(capsule_engine PRIVATE ${CAPSULE_ANIM_SOURCES})
 
-# capsule_anim_bank(<canim> <symbol> <out.cpp> [INDEXED]): a .canim text assembled into a C++ source defining
-# <symbol> (the bank's bytes) and <symbol>_size (tools/anim_bank.py; a game's banks, the tests' and the sandbox's).
+# capsule_anim_bank(<canim> <symbol> <out.cpp> [INDEXED] [USAGE <record>]): a .canim text assembled into a C++
+# source defining <symbol> (the bank's bytes) and <symbol>_size (tools/anim_bank.py; a game's banks, the tests' and
+# the sandbox's); USAGE writes the bank's usage record (capsule.vm-usage/1, D-36; capsule_usage_add() it to a game).
 function(capsule_anim_bank canim symbol out)
+   cmake_parse_arguments(PARSE_ARGV 3 arg "INDEXED" "USAGE" "")
    set(flags)
-   if("INDEXED" IN_LIST ARGN)
+   if(arg_INDEXED)
       set(flags --indexed)
    endif()
+   set(outputs ${out})
+   if(arg_USAGE)
+      list(APPEND outputs ${arg_USAGE})
+      list(APPEND flags --usage ${arg_USAGE})
+   endif()
    add_custom_command(
-      OUTPUT  ${out}
+      OUTPUT  ${outputs}
       COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/anim_bank.py assemble ${canim} ${out} ${flags} --cpp ${symbol}
       DEPENDS ${CAPSULE_ROOT}/tools/anim_bank.py ${canim}
       COMMENT "Assembling animation bank ${symbol}"
@@ -101,7 +108,10 @@ endif()
 if(NOT CAPSULE_PLATFORM STREQUAL "headless" AND CAPSULE_ENGINE_TESTS AND CAPSULE_TEST_APPS)
    # The scene kit's sandbox (simple shapes): affine animation, scanline effects, palette blends, a script.
    capsule_game(${CAPSULE_ROOT}/apps/sandbox_anim)
+   capsule_usage_dir(sandbox_anim_usage sandbox_anim)
    capsule_anim_bank(${CAPSULE_ROOT}/apps/sandbox_anim/data/shapes.canim kShapesBank
-                     ${CMAKE_CURRENT_BINARY_DIR}/generated/sandbox_anim/shapes_bank.cpp INDEXED)
+                     ${CMAKE_CURRENT_BINARY_DIR}/generated/sandbox_anim/shapes_bank.cpp INDEXED
+                     USAGE ${sandbox_anim_usage}/bank_shapes.json)
+   capsule_usage_add(capsule_sandbox_anim ${sandbox_anim_usage}/bank_shapes.json)
    target_sources(capsule_sandbox_anim PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated/sandbox_anim/shapes_bank.cpp)
 endif()

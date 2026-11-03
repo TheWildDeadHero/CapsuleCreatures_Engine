@@ -31,6 +31,8 @@ from __future__ import annotations
 import struct
 from collections.abc import Callable, Sequence
 
+import usage
+
 ## Step opcodes in capsule::route::RouteOp order.
 OPS = ["End", "Move", "Random", "Toward", "Away", "Forward", "Backward", "Jump", "Wait", "Face", "TurnRight",
        "TurnLeft", "TurnAround", "TurnRandom", "FaceToward", "FaceAway", "Flag", "Speed", "Frequency", "Option",
@@ -39,6 +41,8 @@ OPS = ["End", "Move", "Random", "Toward", "Away", "Forward", "Backward", "Jump",
        "InPlace", "FaceOriginal", "Game"]
 ## Opcode name -> number.
 OP = {n: i for i, n in enumerate(OPS)}
+## The usage category of the steps a compile emits (tools/usage.py, noted while a compiler collects).
+USAGE_CATEGORY = "route.op"
 ## Directions in field::Direction order.
 DIRECTIONS = ["down", "up", "left", "right"]
 ## Route flag bits.
@@ -224,9 +228,11 @@ def compile_route(steps: Sequence[Sequence[str]], repeat: bool, skip: bool, flag
       moves = moves or b[0] in (OP["Move"], OP["Random"], OP["Toward"], OP["Away"], OP["Forward"],
                                 OP["Backward"], OP["Jump"], OP["Wait"], OP["InPlace"])
       out += b
+      usage.note(USAGE_CATEGORY, OPS[b[0]])
    if repeat and not moves:
       raise RouteError("a repeating route needs a step that takes time (a move, jump or wait)")
    out.append(OP["End"])
+   usage.note(USAGE_CATEGORY, "End")
    if len(out) > MAX_BYTES:
       raise RouteError(f"route is {len(out)} bytes; at most {MAX_BYTES}")
    return bytes(out)

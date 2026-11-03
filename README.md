@@ -32,6 +32,7 @@ emulator, a flash cart and the desktop. Changes in each release are in
 | <a href="docs/SCRIPTS.md">Scripts and sequences</a> | the script language, flags and variables; the sequence player |
 | <a href="docs/ANIM_SCRIPT.md">Animation scripts</a> | the animation bank format, its generic and game commands, frames, writing and converting banks |
 | <a href="docs/VM_EXT.md">VM extension manifests</a> | `capsule.vm-ext/1`: a game's own opcodes as aliases of generic steps or named natives, what is generated, the checks |
+| <a href="docs/USAGE.md">Usage reports</a> | what a game's build uses: each compiler's record, the merged report per game, the GBA link compared against it |
 | <a href="docs/AUDIO.md">Audio</a> | sound output per target and the audio renderer |
 | <a href="docs/APPS.md">Samples, sandboxes and test apps</a> | the Starter battle, the map, sequence and battle sandboxes, the test apps |
 | <a href="docs/TOOLS_AND_CI.md">Tools and CI</a> | the battle bench, using the engine as a subproject, the checks and CI jobs |

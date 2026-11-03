@@ -25,7 +25,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "audio"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import format as audio_format  # noqa: E402
+import usage  # noqa: E402
 from sequence_compiler import asset_key  # noqa: E402
+
+## This compiler's name in usage records.
+USAGE_SOURCE = "audio"
 
 ## Voices past a window's start that stay readable (keymap bytes and drum keys index up to 255).
 WINDOW_REACH = 256
@@ -360,6 +364,28 @@ def compile_manifest(manifest: Path, out: Path, parts: int = 0, part_bytes: int 
    return read
 
 
+def audio_usage(manifest: Path) -> dict[str, dict[str, int]]:
+   """!What an audio manifest uses (a usage record's categories, tools/usage.py).
+   @param manifest  audio.json
+   @return {"audio.kind": manifest section -> entries; "audio.voice": voice kind -> voices; "audio.command":
+           sequencer command -> uses in the songs}
+   @throws audio_format.FormatError for a bad manifest
+   """
+   aset = audio_format.load(manifest)
+   used: dict[str, dict[str, int]] = {}
+   for section, entries in aset.doc.items():
+      if isinstance(entries, list) and entries:
+         usage.count(used, "audio.kind", section, len(entries))
+   for bank in aset.doc.get("voice_banks", []):
+      for voice in bank.get("voices", []):
+         usage.count(used, "audio.voice", str(voice.get("kind", "none")))
+   for song in aset.songs.values():
+      for command in audio_format.decode(song.data):
+         if command.text:
+            usage.count(used, "audio.command", command.text.split()[0])
+   return used
+
+
 def main(argv: list[str]) -> int:
    """!Command line.
    @param argv  arguments
@@ -371,9 +397,12 @@ def main(argv: list[str]) -> int:
    ap.add_argument("--parts", type=int, default=0, help="part files for samples and songs")
    ap.add_argument("--part-bytes", type=int, default=DEFAULT_PART_BYTES)
    ap.add_argument("--depfile", type=Path)
+   ap.add_argument("--usage", type=Path, help="a usage record (capsule.usage/1, tools/usage.py)")
    args = ap.parse_args(argv)
    try:
       read = compile_manifest(args.manifest, args.out, args.parts, args.part_bytes)
+      if args.usage is not None:
+         usage.write_record(args.usage, usage.game_of(args.usage), USAGE_SOURCE, audio_usage(args.manifest))
    except audio_format.FormatError as e:
       print(f"error: {e}", file=sys.stderr)
       return 1

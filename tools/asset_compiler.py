@@ -3,6 +3,7 @@
 
     asset_compiler.py <manifest.json> <out.cpp> [--depfile <out.d>] [--code-page <page.json>]
                       [--scripts <scripts.json>] [--fit-report <fit.json>] [--language <code>]
+                      [--usage <usage/GAME/assets.json>]
 
 Assets are drawn from simple shapes (rectangles, circles, rings, ellipses,
 polygons, gradients, stripes, checkers, dots); sprite frames can also be PNG
@@ -108,6 +109,7 @@ import bitmap  # noqa: E402
 import manifest_paths  # noqa: E402
 import screen_assets  # noqa: E402
 import text_encoder  # noqa: E402
+import usage  # noqa: E402
 from sequence_compiler import BLUE_SHIFT, GREEN_SHIFT, U32_MASK  # noqa: E402
 from sequence_compiler import ManifestError as SequenceManifestError  # noqa: E402
 from sequence_compiler import asset_key  # noqa: E402
@@ -1830,6 +1832,24 @@ def compile_grid_sprite(a: JsonDict, named: Mapping[str, Any], where: str, base:
 ## UC: the screen graphics kinds' asset::Kind numbers.
 SCREEN_KINDS = {"tiles": screen_assets.KIND_TILES, "tilemap": screen_assets.KIND_TILEMAP,
                 "palette": screen_assets.KIND_PALETTE}
+## Every asset::Kind number -> its manifest name (a usage record's asset.kind).
+KIND_NAMES = {KIND_BACKGROUND: "background", KIND_SPRITE: "sprite", KIND_TEXT: "text", KIND_LIST: "list",
+              KIND_FONT: "font", KIND_DOOR: "door", KIND_TEXT_BOX: "text_box",
+              **{number: name for name, number in SCREEN_KINDS.items()}}
+## This compiler's name in usage records.
+USAGE_SOURCE = "assets"
+
+
+def kind_usage(entries: Iterable[tuple[str, int, int, str]]) -> dict[str, dict[str, int]]:
+   """!The asset kinds a table holds (a usage record's categories, tools/usage.py).
+   @param entries  compile_manifest()'s entries (key, kind, index, name)
+   @return {"asset.kind": kind name -> assets}
+   """
+   kinds: dict[str, int] = {}
+   for _key, kind, _index, _name in entries:
+      name = KIND_NAMES.get(kind, str(kind))
+      kinds[name] = kinds.get(name, 0) + 1
+   return {"asset.kind": kinds}
 
 
 def shapes_canvas(w: int, h: int, fill: int, shapes: list[Any], highest: int, where: str) -> list[list[int]]:
@@ -2180,6 +2200,14 @@ def main(argv: list[str]) -> int:
          return EXIT_USAGE
       scripts = Path(args[i + 1])
       del args[i:i + OPTION_WITH_VALUE]
+   usage_path = None
+   if "--usage" in args:   # D-36: a usage record (tools/usage.py)
+      i = args.index("--usage")
+      if i + 1 >= len(args):
+         print(__doc__)
+         return EXIT_USAGE
+      usage_path = Path(args[i + 1])
+      del args[i:i + OPTION_WITH_VALUE]
    try:
       codepage = text_encoder.option(args)
    except text_encoder.TextError as e:
@@ -2219,6 +2247,8 @@ def main(argv: list[str]) -> int:
    dst.parent.mkdir(parents=True, exist_ok=True)
    if not dst.exists() or dst.read_bytes() != text.encode("utf-8"):
       dst.write_text(text, encoding="utf-8", newline="\n")
+   if usage_path is not None:
+      usage.write_record(usage_path, usage.game_of(usage_path), USAGE_SOURCE, kind_usage(entries))
    if depfile is not None:
       def esc(p: str | PathLike[str]) -> str:
          """!A path as make writes it: forward slashes, spaces escaped.

@@ -4,6 +4,11 @@ map tables (capsule::map::kWorld).
 
     map_compiler.py <world.json> <out.cpp> [--depfile <out.d>] [--debug-names] [--ids <out.h>]
                     [--world-ids <world_ids.h>] [--scripts <scripts.json>] [--code-page <page.json>]
+                    [--usage <usage/GAME/world.json>]
+
+--usage writes a usage record (capsule.usage/1, tools/usage.py): the world's event kinds (map.event), objects,
+pages and routes (map.object), encounter methods (map.encounter), the route steps (route.op) and the features its
+maps use (map.feature: tile animations, doors, step hooks, override sets, ...).
 
 --code-page names the game's code page (tools/text_encoder.py), used for
 location names, the scripts the events name and the location previews;
@@ -207,9 +212,13 @@ import event_compiler as evc  # noqa: E402
 import object_compiler as obc  # noqa: E402
 import location_compiler as lc  # noqa: E402
 import text_encoder  # noqa: E402
+import usage  # noqa: E402
 from sequence_compiler import ManifestError as SequenceManifestError  # noqa: E402
 from sequence_compiler import asset_key  # noqa: E402
 from sequence_compiler import BLUE_SHIFT as SEQUENCE_BLUE_SHIFT, GREEN_SHIFT as SEQUENCE_GREEN_SHIFT  # noqa: E402
+
+## This compiler's name in usage records.
+USAGE_SOURCE = "world"
 
 ## Metatiles per chunk side (C-03a).
 CHUNK = 8
@@ -2442,6 +2451,41 @@ def map_trailer(mp: Mapping[str, Any]) -> str:
    return "".join(", " + text for text, _used in fields[:last + 1])
 
 
+def world_usage(world: Mapping[str, Any]) -> dict[str, dict[str, int]]:
+   """!What a compiled world uses (a usage record's categories, tools/usage.py).
+   @param world  compile_world()'s result
+   @return {"map.map": maps, chunks; "map.event": event kind -> events; "map.object": objects, pages, routes;
+           "map.encounter": method -> 1; "map.feature": feature -> count}
+   """
+   used: dict[str, dict[str, int]] = {}
+   maps = world.get("maps", [])
+   usage.count(used, "map.map", "maps", len(maps))
+   usage.count(used, "map.map", "chunks", sum(len(m["chunks"]) for m in maps))
+   events = world.get("events", {})
+   for per_map in events.get("events", {}).values():
+      for e in per_map["events"]:   # each event without its bucket's chunk and order (event_compiler)
+         usage.count(used, "map.event", evc.KINDS[e[evc.BUCKET_KIND - evc.BUCKET_LOCAL]])
+   for per_map in events.get("objects", {}).values():
+      for key, name in (("objects", "object"), ("pages", "page"), ("routes", "route")):
+         if per_map[key]:
+            usage.count(used, "map.object", name, len(per_map[key]))
+   for method in world.get("encounters", {}).get("methods", []):
+      usage.count(used, "map.encounter", method["name"])
+   features = {"tile_animation": sum(len(m.get("anims", [])) for m in maps),
+               "dark_map": sum(1 for m in maps if m.get("darkness")),
+               "door": sum(len(d) for d in world.get("doors", {}).values()),
+               "step_hook": len(events.get("hooks", [])),
+               "override_set": len(world.get("override_sets", [])),
+               "interaction": len(world.get("interactions", [])),
+               "vehicle_class": len(world.get("vehicles", [])),
+               "location": len(world.get("locations", {}).get("locations", [])) if world.get("locations") else 0,
+               "draw_order": 0 if world.get("draw_order") is None else 1}
+   for name, n in features.items():
+      if n:
+         usage.count(used, "map.feature", name, n)
+   return used
+
+
 def main(argv: Sequence[str]) -> int:
    """!Command-line entry point; see the module docstring.
    @param argv  sys.argv
@@ -2488,13 +2532,22 @@ def main(argv: Sequence[str]) -> int:
          return EXIT_USAGE
       depfile = Path(args[i + 1])
       del args[i:i + OPTION_WORDS]
+   usage_path = None
+   if "--usage" in args:
+      i = args.index("--usage")
+      if i + 1 >= len(args):
+         print(__doc__)
+         return EXIT_USAGE
+      usage_path = Path(args[i + 1])
+      del args[i:i + OPTION_WORDS]
    if len(args) != POSITIONAL_ARGS:
       print(__doc__)
       return EXIT_USAGE
    src, dst = Path(args[0]), Path(args[1])
    deps = []
    try:
-      world = compile_world(src, deps, scripts_path=scripts_path, codepage=codepage)
+      with usage.collecting() as shared:   # the objects' route steps
+         world = compile_world(src, deps, scripts_path=scripts_path, codepage=codepage)
    except (ManifestError, ac.ManifestError, SequenceManifestError) as e:
       print(f"{src}: error: {e}", file=sys.stderr)
       return 1
@@ -2514,6 +2567,9 @@ def main(argv: Sequence[str]) -> int:
       out.parent.mkdir(parents=True, exist_ok=True)
       if not out.exists() or out.read_bytes() != content.encode("utf-8"):
          out.write_text(content, encoding="utf-8", newline="\n")
+   if usage_path is not None:
+      usage.write_record(usage_path, usage.game_of(usage_path), USAGE_SOURCE,
+                         usage.merge_records([world_usage(world), shared.used]))
    if depfile is not None:
       def esc(p: Path) -> str:
          """!A path as a Make depfile writes it (forward slashes, spaces escaped)."""

@@ -181,19 +181,29 @@ else()
 endif()
 
 # Sequence manifests (title flows, cutscenes, credits) compile to ROM tables.
-# An optional fourth argument names the game's code page (checked: text on bg3).
+# capsule_sequence(<manifest> <symbol> <out> [<code page>] [USAGE <record>]): the code page checks text on bg3;
+# USAGE writes the sequence's usage record (tools/usage.py).
 function(capsule_sequence manifest symbol out)
+   cmake_parse_arguments(PARSE_ARGV 3 arg "" "USAGE" "")
    set(page_args)
    set(page_depends)
-   if(ARGC GREATER 3)
-      set(page_args --code-page ${ARGV3})
-      set(page_depends ${ARGV3})
+   if(arg_UNPARSED_ARGUMENTS)
+      list(GET arg_UNPARSED_ARGUMENTS 0 page)
+      set(page_args --code-page ${page})
+      set(page_depends ${page})
+   endif()
+   set(outputs ${out})
+   set(usage_args)
+   if(arg_USAGE)
+      list(APPEND outputs ${arg_USAGE})
+      set(usage_args --usage ${arg_USAGE})
    endif()
    add_custom_command(
-      OUTPUT  ${out}
+      OUTPUT  ${outputs}
       COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/sequence_compiler.py
-            ${manifest} ${out} --symbol ${symbol} ${page_args}
-      DEPENDS ${CAPSULE_ROOT}/tools/sequence_compiler.py ${CAPSULE_TEXT_DEPENDS} ${manifest} ${page_depends}
+            ${manifest} ${out} --symbol ${symbol} ${page_args} ${usage_args}
+      DEPENDS ${CAPSULE_ROOT}/tools/sequence_compiler.py ${CAPSULE_ROOT}/tools/usage.py ${CAPSULE_TEXT_DEPENDS}
+            ${manifest} ${page_depends}
       COMMENT "Compiling sequence ${manifest} as ${symbol}")
 endfunction()
 
@@ -313,6 +323,7 @@ endif()
 # Record transfer v2 (include/capsule/monster/transfer.h): its source and capsule_transfer_table(), which
 # capsule_game() uses for every game with battle data; its tests are added at the end (capsule_transfer_tests()).
 include(cmake/parts/transfer.cmake)
+include(cmake/usage.cmake)   # D-36 usage reports: capsule_usage_dir(), capsule_usage_add(), capsule_usage_report()
 
 # Apps are laid out like games (layers): the engine (this library), a
 # reference manifest and data.
@@ -322,10 +333,11 @@ include(cmake/parts/transfer.cmake)
 #   apps/<app>/data/                   the app's assets (capsule.assets/1)
 #   apps/<app>/src/                    its scene code
 # capsule_game(<dir>) builds capsule_<name>: a desktop executable; on GBA
-# capsule_<name>.elf + header-fixed .gba + linker map; on Dreamcast
+# capsule_<name>.elf + header-fixed .gba + linker map + symbol listing (.nm); on Dreamcast
 # capsule_<name>.elf + selfboot .cdi when mkdcdisc is installed. Generated
 # files go to generated/<name>/ (asset table as assets.cpp, each sequence as
-# seq_<file name>.inc). Not built headless.
+# seq_<file name>.inc); each compiler's usage record to usage/<name>/ in the build folder and the merged usage
+# report to usage/<name>.json (target capsule_<name>_usage, cmake/usage.cmake). Not built headless.
 # Text: "text": {"language": "en", "code_pages": {"en": "<page>.codepage.json"},
 # "fonts": {"en": "<font>.txt" or [base font, extra glyph files...]}} (paths
 # relative to the app). With a language, every compiler gets its code page and
@@ -396,6 +408,8 @@ function(capsule_game dir)
    set(target capsule_${name})
    # Generated files of the game, in the binary folder of the directory that builds it.
    set(gen ${CMAKE_CURRENT_BINARY_DIR}/generated/${name})
+   # D-36: each compiler's usage record (cmake/usage.cmake); the report is merged at the end of the caller's folder
+   capsule_usage_dir(usage ${name})
 
    set(sources)
    string(JSON n LENGTH "${json}" sources)
@@ -407,6 +421,9 @@ function(capsule_game dir)
    add_executable(${target} ${sources})
    target_link_libraries(${target} PRIVATE capsule_engine)
    target_include_directories(${target} PRIVATE ${gen})
+   set_property(TARGET ${target} PROPERTY CAPSULE_USAGE_RECORDS)
+   # (EVAL: a deferred call's arguments are expanded when it runs, so the names are put in now)
+   cmake_language(EVAL CODE "cmake_language(DEFER CALL capsule_usage_report [[${target}]] [[${name}]])")
    if(CAPSULE_PLATFORM STREQUAL "desktop" AND WIN32 AND NOT CAPSULE_WINDOWS_CONSOLE)
       # the GUI subsystem; MinGW's start-up code still calls the game's plain main()
       target_link_options(${target} PRIVATE $<$<NOT:$<CONFIG:Debug>>:-mwindows>)
@@ -479,6 +496,7 @@ function(capsule_game dir)
       foreach(i RANGE ${last})
          string(JSON lib GET "${json}" libraries ${i})
          target_link_libraries(${target} PRIVATE capsule_${lib})
+         set_property(TARGET ${target} APPEND PROPERTY CAPSULE_USAGE_LIBRARIES ${lib})
       endforeach()
    endif()
 
@@ -495,14 +513,16 @@ function(capsule_game dir)
    capsule_project_get(assets "${json}" assets)
    if(assets)
       add_custom_command(
-         OUTPUT  ${gen}/assets.cpp
+         OUTPUT  ${gen}/assets.cpp ${usage}/assets.json
          COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/asset_compiler.py ${dir}/${assets} ${gen}/assets.cpp
-               --depfile ${gen}/assets.d ${page_args} ${field_args}
+               --depfile ${gen}/assets.d ${page_args} ${field_args} --usage ${usage}/assets.json
          DEPENDS ${CAPSULE_ROOT}/tools/asset_compiler.py ${CAPSULE_ROOT}/tools/sequence_compiler.py
+               ${CAPSULE_ROOT}/tools/usage.py
                ${CAPSULE_ROOT}/tools/bitmap.py ${CAPSULE_TEXT_DEPENDS} ${dir}/${assets} ${page} ${field_depends}
          DEPFILE ${gen}/assets.d   # image frames the manifest reads
          COMMENT "Compiling assets of ${name}")
       target_sources(${target} PRIVATE ${gen}/assets.cpp)
+      capsule_usage_add(${target} ${usage}/assets.json)
    endif()
 
    # Maps: a capsule.world/1 manifest with its tilesets, maps and encounter tables (C-03).
@@ -519,11 +539,12 @@ function(capsule_game dir)
          list(APPEND world_args --scripts ${dir}/${world_scripts})
       endif()
       add_custom_command(
-         OUTPUT  ${gen}/world.cpp ${gen}/encounter_ids.h ${gen}/world_ids.h
+         OUTPUT  ${gen}/world.cpp ${gen}/encounter_ids.h ${gen}/world_ids.h ${usage}/world.json
          COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/map_compiler.py ${dir}/${world} ${gen}/world.cpp
                --depfile ${gen}/world.d --ids ${gen}/encounter_ids.h --world-ids ${gen}/world_ids.h ${world_args}
-               ${page_args}
+               ${page_args} --usage ${usage}/world.json
          DEPENDS ${CAPSULE_ROOT}/tools/map_compiler.py ${CAPSULE_ROOT}/tools/encounter_compiler.py
+               ${CAPSULE_ROOT}/tools/usage.py
                ${CAPSULE_ROOT}/tools/event_compiler.py ${CAPSULE_ROOT}/tools/object_compiler.py
                ${CAPSULE_ROOT}/tools/route_compiler.py ${CAPSULE_ROOT}/tools/location_compiler.py
                ${CAPSULE_ROOT}/tools/script_compiler.py
@@ -533,6 +554,7 @@ function(capsule_game dir)
          DEPFILE ${gen}/world.d   # tilesets, maps, sheet images and encounter files the world reads
          COMMENT "Compiling maps of ${name}")
       target_sources(${target} PRIVATE ${gen}/world.cpp ${gen}/encounter_ids.h ${gen}/world_ids.h)
+      capsule_usage_add(${target} ${usage}/world.json)
    endif()
 
    # Battle data: a capsule.battle/1 manifest with its structure manifest and ruleset (C-08),
@@ -541,15 +563,17 @@ function(capsule_game dir)
    capsule_project_get(battle "${json}" battle)
    if(battle)
       add_custom_command(
-         OUTPUT  ${gen}/battle.cpp ${gen}/battle_ids.h
+         OUTPUT  ${gen}/battle.cpp ${gen}/battle_ids.h ${usage}/battle.json
          COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/battle_compiler.py ${dir}/${battle} ${gen}/battle.cpp
                --ids ${gen}/battle_ids.h --depfile ${gen}/battle.d --platform ${CAPSULE_PLATFORM} ${page_args}
-               ${field_args}
-         DEPENDS ${CAPSULE_BATTLE_COMPILER_DEPENDS} ${CAPSULE_TEXT_DEPENDS} ${dir}/${battle} ${page} ${field_depends}
+               ${field_args} --usage ${usage}/battle.json
+         DEPENDS ${CAPSULE_BATTLE_COMPILER_DEPENDS} ${CAPSULE_ROOT}/tools/usage.py ${CAPSULE_TEXT_DEPENDS}
+               ${dir}/${battle} ${page} ${field_depends}
          DEPFILE ${gen}/battle.d   # the structure manifest and the ruleset the manifest names
          COMMENT "Compiling battle data of ${name}")
       capsule_transfer_table(${dir}/${battle} ${gen}/transfer.cpp)
       target_sources(${target} PRIVATE ${gen}/battle.cpp ${gen}/battle_ids.h ${gen}/transfer.cpp)
+      capsule_usage_add(${target} ${usage}/battle.json)
       # The engine save image's sizes (bag, party, boxes, script banks) against this platform's budget
       # (tools/save_layout.py; the build fails when the image is over it, or when the medium keeps fewer than two
       # copies unless project.json opts in with "save": {"single_copy": true}; the GBA's SRAM is its own medium)
@@ -599,15 +623,18 @@ function(capsule_game dir)
          list(APPEND script_args --debug-names)
       endif()
       add_custom_command(
-         OUTPUT  ${gen}/scripts.cpp ${gen}/script_ids.h
+         OUTPUT  ${gen}/scripts.cpp ${gen}/script_ids.h ${usage}/scripts.json
          COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/script_compiler.py ${dir}/${scripts}
                ${gen}/scripts.cpp --ids ${gen}/script_ids.h --depfile ${gen}/scripts.d ${script_args} ${page_args}
+               --usage ${usage}/scripts.json
          DEPENDS ${CAPSULE_ROOT}/tools/script_compiler.py ${CAPSULE_ROOT}/tools/route_compiler.py
+               ${CAPSULE_ROOT}/tools/usage.py
                ${CAPSULE_ROOT}/tools/asset_compiler.py
                ${CAPSULE_ROOT}/tools/sequence_compiler.py ${CAPSULE_TEXT_DEPENDS} ${dir}/${scripts} ${page}
          DEPFILE ${gen}/scripts.d   # the sources the manifest names
          COMMENT "Compiling scripts of ${name}")
       target_sources(${target} PRIVATE ${gen}/scripts.cpp ${gen}/script_ids.h)
+      capsule_usage_add(${target} ${usage}/scripts.json)
    endif()
 
    string(JSON n ERROR_VARIABLE err LENGTH "${json}" sequences)
@@ -618,8 +645,10 @@ function(capsule_game dir)
          string(JSON seq GET "${json}" sequences ${symbol})
          get_filename_component(seq_path ${dir}/${seq} ABSOLUTE)
          get_filename_component(seq_name ${seq_path} NAME_WE)
-         capsule_sequence(${seq_path} ${symbol} ${gen}/seq_${seq_name}.inc ${page})
+         capsule_sequence(${seq_path} ${symbol} ${gen}/seq_${seq_name}.inc ${page}
+                          USAGE ${usage}/seq_${seq_name}.json)
          target_sources(${target} PRIVATE ${gen}/seq_${seq_name}.inc)
+         capsule_usage_add(${target} ${usage}/seq_${seq_name}.json)
       endforeach()
    endif()
 
@@ -635,6 +664,11 @@ function(capsule_game dir)
       add_custom_command(TARGET ${target} POST_BUILD
          COMMAND ${CMAKE_COMMAND} -DNM=${CMAKE_NM} -DELF=$<TARGET_FILE:${target}>
                  -DRESERVE=${CAPSULE_GBA_STACK_RESERVE} -P ${CAPSULE_ROOT}/cmake/gba_memory_report.cmake
+         VERBATIM)
+      # D-36: the sized symbols beside the map, for `tools/usage.py linkmap usage/<name>.json <listing>`
+      add_custom_command(TARGET ${target} POST_BUILD
+         COMMAND ${CMAKE_COMMAND} -DNM=${CMAKE_NM} -DELF=$<TARGET_FILE:${target}>
+                 -DOUT=$<TARGET_FILE_DIR:${target}>/${target}.nm -P ${CAPSULE_ROOT}/cmake/nm_listing.cmake
          VERBATIM)
       set(rom $<TARGET_FILE_DIR:${target}>/${target}.gba)
       add_custom_command(TARGET ${target} POST_BUILD
@@ -988,6 +1022,8 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_text_route_tools.py)
    add_test(NAME generated_snapshot_tests
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_generated_snapshot.py)
+   # D-36: usage records, reports and the link comparison (tools/usage.py), each compiler's --usage
+   add_test(NAME usage_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage.py)
    # RP: the sample projects (apps/*/sample.json) stay copyable: paths out of an app lead only to the files
    # its shared templates list, and its libraries are ones every game may link (docs/APPS.md, Sample projects).
    add_test(NAME sample_project_tests

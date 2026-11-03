@@ -90,6 +90,7 @@ from typing import Any, NamedTuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ruleset_compiler as rc  # noqa: E402
+import usage  # noqa: E402
 from script_compiler import Diagnostic, ScriptError, Token, VISITED, VISITING, parse_int, unescape  # noqa: E402
 
 ## AST schema (one owner, or a whole file).
@@ -264,6 +265,8 @@ OPS = [
 ]
 ## Opcode number by name.
 OP = {name: i for i, (name, _operands, _pops, _pushes) in enumerate(OPS)}
+## The usage category of the instructions a compile emits (tools/usage.py, noted while a compiler collects).
+USAGE_CATEGORY = "effect.op"
 ## Ops that end the run (no fall-through).
 TERMINAL_OPS = {"End", "Ret", "Stop", "Fail", "Immune", "Block"}
 ## Opcodes the compiler never emits (they exist for hand-written code and future use).
@@ -2259,6 +2262,7 @@ class Asm:
       @return None
       """
       self.code.append(OP[op])
+      usage.note(USAGE_CATEGORY, op)
       values = list(operands)
       for kind in OPS[OP[op]][1]:
          size = OPERAND_BYTES[kind]

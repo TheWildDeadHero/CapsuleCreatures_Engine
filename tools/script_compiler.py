@@ -4,6 +4,7 @@ script bank (capsule::script::kBank, B-1, B-2, B-4).
 
     script_compiler.py <scripts.json> <out.cpp> [--ids <script_ids.h>]
                        [--depfile <out.d>] [--debug-names] [--code-page <page.json>]
+                       [--usage <usage/GAME/scripts.json>]
 
 The manifest names the sources and the build settings:
 
@@ -23,6 +24,10 @@ Every path is relative to the manifest. `assets` (optional) lets the
 compiler check `text:` references; `world` (optional) checks map names.
 Inline texts are encoded with the game's code page (tools/text_encoder.py;
 --code-page, default the engine's ASCII page).
+
+--usage writes a usage record (capsule.usage/1, tools/usage.py): the opcodes the
+compile emitted, the natives its scripts call and the move routes' steps
+(script.op, script.native, route.op).
 
 Field placeholders (optional): names the game's field texts
 may use, each bound to a name slot, a variable, a term or a party record
@@ -196,7 +201,10 @@ from sequence_compiler import HEX_BASE, INT16_MAX, INT16_MIN, U16_MASK, U32_MASK
 import route_compiler as rc  # noqa: E402
 import save_shape  # noqa: E402
 import text_encoder  # noqa: E402
+import usage  # noqa: E402
 
+## This compiler's name in usage records.
+USAGE_SOURCE = "script"
 ## Opcode numbers; order must match capsule::script::Op.
 OPS = ["End", "Return", "Goto", "Call", "CallTable", "IfFlagClear", "IfFlagSet", "IfCompare",
        "SetFlag", "ClearFlag", "SetVar", "AddVar", "SubVar", "Random", "Message", "WaitButton",
@@ -2251,10 +2259,14 @@ class Parser:
 class Emitter:
    """!Bytecode of one script, with labels and fixups."""
 
-   def __init__(self) -> None:
-      """!Creates an empty script."""
+   def __init__(self, counts: dict[str, int] | None = None) -> None:
+      """!Creates an empty script.
+      @param counts  opcode name -> times emitted, counted on (a usage record's script.op), or None
+      """
       ## Bytes.
       self.code = bytearray()
+      ## Opcode name -> times emitted (shared by a compile's scripts), or None.
+      self.counts = counts
       ## Label name -> offset.
       self.labels = {}
       ## (position of a 16-bit operand, label name, node) to patch.
@@ -2284,6 +2296,20 @@ class Emitter:
       @return None
       """
       self.code.append(OP[name])
+      if self.counts is not None:
+         self.counts[name] = self.counts.get(name, 0) + 1
+
+   def replace_op(self, pos: int, name: str) -> None:
+      """!Turns the opcode at @p pos into another (its count moves with it).
+      @param pos   the opcode's offset
+      @param name  the new opcode
+      @return None
+      """
+      if self.counts is not None:
+         old = OPS[self.code[pos]]
+         self.counts[old] -= 1
+         self.counts[name] = self.counts.get(name, 0) + 1
+      self.code[pos] = OP[name]
 
    def u8(self, v: int) -> None:
       """!Emits a byte.
@@ -2403,6 +2429,10 @@ class Compiler:
       self.upper_names = {}
       ## Names referenced (for unused warnings).
       self.used = set()
+      ## Opcode name -> times emitted (the usage record's script.op).
+      self.op_counts = {}   # type: dict[str, int]
+      ## Native name -> calls compiled (the usage record's script.native).
+      self.native_calls = {}   # type: dict[str, int]
       ## Compiled results.
       self.result = None
       ## The manifest's field placeholders (read_manifest()), or None before.
@@ -3155,6 +3185,7 @@ class Compiler:
          else:
             nid = self.native_ids[s["name"]]
             self.used.add(("native", s["name"]))
+            self.native_calls[s["name"]] = self.native_calls.get(s["name"], 0) + 1
          if len(s["args"]) != len(nat["params"]):
             self.err(f"{s['name']} takes {len(nat['params'])} argument(s), not {len(s['args'])}", s)
          if s["result"] is not None and not nat["returns"]:
@@ -3784,7 +3815,7 @@ class Compiler:
       @param node  declaration node
       @return (bytes, calls, waits_directly, uses_self_switches); the scripts it jumps to are in self.jumps
       """
-      e = Emitter()
+      e = Emitter(self.op_counts)
       ctx = {"calls": set(), "waits": False, "loose": set()}
       self.uses_self = False
       jumps = set()
@@ -3794,7 +3825,7 @@ class Compiler:
       for pos, label, n in e.fixups:
          if label not in e.labels and pos in e.goto_sites and label in self.scripts:
             # A goto to another script: a Jump (its frame takes the other script; nothing returns here)
-            e.code[pos - 1] = OP["Jump"]
+            e.replace_op(pos - 1, "Jump")
             struct.pack_into("<H", e.code, pos, self.script_ids[label])
             self.used.add(("script", label))
             jumps.add(label)
@@ -3901,6 +3932,13 @@ class Compiler:
             self.err(f"script {n} calls {depth[n]} deep; the VM stack holds {self.stack_depth} "
                      f"(stack_depth)", self.scripts[n])
       return depth
+
+   def usage(self) -> dict[str, dict[str, int]]:
+      """!What the compile used (a usage record's categories, tools/usage.py): the opcodes it emitted and the
+      natives its scripts call.
+      @return {"script.op": name -> count, "script.native": name -> calls}
+      """
+      return {"script.op": {k: v for k, v in self.op_counts.items() if v}, "script.native": dict(self.native_calls)}
 
    def run(self) -> Compiler:
       """!Compiles everything.
@@ -4018,7 +4056,7 @@ class Compiler:
                         f"natives); it must run to its end at once", t)
             if t["kind"] in CONDITION_KINDS:
                on_frame += 1 if t["kind"] == "on_frame" else 0
-               e = Emitter()
+               e = Emitter(self.op_counts)
                false = e.new_label()
                self.jump(e, t["cond"], false, False)
                e.op("TriggerTrue")
@@ -4678,7 +4716,8 @@ def main(argv: list[str]) -> int:
 
    manifest, out = args[0], args[1]
    try:
-      comp = compile_file(manifest, codepage=codepage)
+      with usage.collecting() as shared:   # the route steps the scripts' move routes emit
+         comp = compile_file(manifest, codepage=codepage)
    except (OSError, ValueError) as e:
       print(f"{manifest}: error: {e}", file=sys.stderr)
       return 1
@@ -4702,6 +4741,10 @@ def main(argv: list[str]) -> int:
       Path(depfile).write_text(f"{Path(out).as_posix()}: "
                                + " ".join(Path(p).as_posix().replace(" ", "\\ ") for p in comp.deps) + "\n",
                                encoding="utf-8", newline="\n")
+   usage_path = option("--usage")
+   if usage_path:   # D-36 usage record (tools/usage.py): the game is the record's folder
+      usage.write_record(usage_path, usage.game_of(usage_path), USAGE_SOURCE,
+                         usage.merge_records([comp.usage(), shared.used]))
    r = comp.result
    print(f"{manifest}: {r['script_count']} scripts, {len(r['flag_names'])} flags, {len(r['vars'])} variables, "
          f"{len(r['code'])} B code, {comp.save_bytes()} B save")
