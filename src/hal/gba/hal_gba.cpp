@@ -23,6 +23,8 @@
 #include <gba_systemcalls.h>
 #include <gba_video.h>
 
+#include <cstdlib>   // abort(), replaced below (D-42)
+
 namespace
 {
 
@@ -1051,3 +1053,13 @@ Source classify(const void* p, Source)
 }
 
 }   // namespace capsule::hal::video
+
+/// D-42: the C library's abort(), replaced. GCC calls abort() where Thumb code on the ARM7TDMI has no trap
+/// instruction (__builtin_trap() and the paths it isolates, such as a proven null dereference); newlib's own abort()
+/// raises a signal, which links the signal handlers, malloc, the reentrancy structure and stdio's FILE table (about
+/// 0.9 KB of IWRAM a program never uses otherwise). This one halts with the assertion screen. (Its C linkage comes from
+/// the declaration in the C library's stdlib.h.)
+[[noreturn]] void abort()
+{
+   capsule::hal::system::assert_failed("abort()", __FILE__, __LINE__);
+}

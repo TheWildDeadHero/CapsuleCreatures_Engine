@@ -100,7 +100,7 @@ struct State
    uint32_t sets_on;                      ///< DS1: the applied ones (bit k = set sets_first + k).
    bool suspended;                        ///< UC: suspend() took the map's video memory (resume() gives it back).
 };
-State g{};   ///< The shown map.
+CAPSULE_EWRAM_BSS State g{};   ///< The shown map (D-42: EWRAM, the main loop's).
 
 /// Tiles per ring side (32: one screen block).
 constexpr int kRingTiles = kRingMetatiles * kMetatileTiles;

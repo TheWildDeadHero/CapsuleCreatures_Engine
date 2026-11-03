@@ -164,7 +164,7 @@ struct State
    uint8_t darkness;                             ///< F2: the shown map's darkness level (0: lit).
    bool dark_shown;                              ///< F2: the darkness's window and blend are set.
 };
-State g{};   ///< The runner.
+CAPSULE_EWRAM_BSS State g{};   ///< The runner (D-42: EWRAM, the main loop's).
 /// The location preview's player (about 1 KB, used only while a preview
 /// plays): EWRAM, as battle::presenter_view keeps its own.
 CAPSULE_EWRAM_BSS seq::Player g_preview;
