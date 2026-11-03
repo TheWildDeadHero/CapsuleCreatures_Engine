@@ -273,7 +273,8 @@ def covers(budget_owner: str, symbol: Symbol) -> bool:
 
 def short_name(shown: str) -> str:
    """!A demangled name without anonymous namespaces and without a function's parameter list.
-   @param shown  c++filt's text (`capsule::audio::detail::(anonymous namespace)::mix_pcm(Channel&, ...)`)
+   @param shown  c++filt's text of a symbol: its scopes (anonymous namespaces among them), its name and, for a
+                 function, its parameter list
    @return e.g. `capsule::audio::detail::mix_pcm`
    """
    text = shown.replace(SHOWN_ANONYMOUS, "")
