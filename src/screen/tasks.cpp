@@ -3,13 +3,14 @@
 #include "capsule/screen/tasks.h"
 
 #include "capsule/core/assert.h"
+#include "capsule/core/memory.h"
 
 namespace capsule::screen::tasks
 {
 namespace
 {
 
-Task g_tasks[kMaxTasks];   ///< The list's entries.
+CAPSULE_EWRAM_BSS Task g_tasks[kMaxTasks];   ///< The list's entries (D-42: EWRAM, the main loop's).
 
 /// The task that runs first.
 /// @return its entry, or kNoTask when none is active

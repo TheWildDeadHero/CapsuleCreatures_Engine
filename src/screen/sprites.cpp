@@ -3,6 +3,7 @@
 #include "capsule/screen/sprites.h"
 
 #include "capsule/core/assert.h"
+#include "capsule/core/memory.h"
 #include "capsule/gfx/palette.h"
 #include "capsule/hal/vram_queue.h"
 
@@ -38,10 +39,11 @@ constexpr int16_t kOffRight = 64;                     ///< A free entry's x past
 /// Words of one queued piece (the queue's largest must-land request).
 constexpr uint32_t kPieceWords = hal::vram::kMaxMustLandBytes / video::kWordBytes;
 
-Sprite g_sprites[kMaxSprites];        ///< The sprites.
-uint8_t g_order[kMaxSprites];         ///< The draw order (kept from frame to frame).
-uint32_t g_tiles[kMapWords];          ///< Allocated tiles (bit per tile).
-Sheet g_sheets[kSheets];              ///< Tagged ranges.
+// D-42: the main loop alone reads these (the frame's OAM is built into the HAL's shadow): EWRAM
+CAPSULE_EWRAM_BSS Sprite g_sprites[kMaxSprites];   ///< The sprites.
+CAPSULE_EWRAM_BSS uint8_t g_order[kMaxSprites];    ///< The draw order (kept from frame to frame).
+CAPSULE_EWRAM_BSS uint32_t g_tiles[kMapWords];     ///< Allocated tiles (bit per tile).
+CAPSULE_EWRAM_BSS Sheet g_sheets[kSheets];         ///< Tagged ranges.
 uint16_t g_palette_tags[kBanks];      ///< Each bank's tag, or kNoTag.
 uint8_t g_reserved_banks = 0;          ///< Banks below this are never given to a tag (reserve_palettes()).
 int16_t g_offset_x = 0;               ///< set_offset() x.

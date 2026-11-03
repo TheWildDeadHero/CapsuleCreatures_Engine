@@ -231,7 +231,7 @@ constexpr State initial_state()
    return s;
 }
 
-constinit State g = initial_state();   ///< The field.
+CAPSULE_EWRAM_DATA constinit State g = initial_state();   ///< The field (D-42: EWRAM, the main loop's).
 constinit ActionRules g_action_rules = nullptr;   ///< F2: the field actions' dispatcher (set_action_rules()).
 constinit StepRule g_step_rule = nullptr;   ///< N2: the game's step rule for the walker (set_step_rule()).
 

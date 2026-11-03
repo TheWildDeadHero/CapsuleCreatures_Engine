@@ -1,11 +1,16 @@
 /// @file
 /// Placement of large static buffers and of hot code (A-3).
 ///
-/// On the GBA, zero-initialised statics go to the 32 KB IWRAM by default.
+/// On the GBA, statics go to the 32 KB IWRAM by default.
 /// Buffers that are large and not speed-critical (map ring mirrors, staging
 /// buffers, battle state, sequence players) belong in the 256 KB EWRAM
 /// instead; CAPSULE_EWRAM_BSS puts them there (devkitARM's ".sbss" section,
-/// cleared at start-up like .bss). On other targets it does nothing.
+/// cleared at start-up like .bss). A static with initial values that are not
+/// all zero uses CAPSULE_EWRAM_DATA instead (D-42; devkitARM's ".ewram"
+/// section, copied from the cartridge at start-up like .data). On other
+/// targets both do nothing. IWRAM keeps what the DMA or an interrupt reads
+/// and small hot state; state the main loop alone reads (the screens'
+/// sprites and tasks, the field, the map) belongs in EWRAM.
 ///
 /// Data in EWRAM is slower to copy (16-bit bus, 2 wait states): pass
 /// hal::video::Source::Ewram for it to the VRAM upload queue. Buffers the DMA
@@ -30,6 +35,8 @@
 #if defined(CAPSULE_PLATFORM_GBA)
 /// Places a zero-initialised static in EWRAM (GBA); nothing elsewhere.
 #define CAPSULE_EWRAM_BSS __attribute__((section(".sbss")))
+/// Places a static with initial values in EWRAM (GBA; copied there at start-up); nothing elsewhere.
+#define CAPSULE_EWRAM_DATA __attribute__((section(".ewram")))
 /// Runs a function from IWRAM as ARM code (GBA); nothing elsewhere.
 #define CAPSULE_IWRAM_CODE __attribute__((section(".iwram"), long_call, noinline, target("arm")))
 /// Compiles a function as ARM code in ROM (GBA); nothing elsewhere.
@@ -37,6 +44,8 @@
 #else
 /// Places a zero-initialised static in EWRAM (GBA); nothing elsewhere.
 #define CAPSULE_EWRAM_BSS
+/// Places a static with initial values in EWRAM (GBA; copied there at start-up); nothing elsewhere.
+#define CAPSULE_EWRAM_DATA
 /// Runs a function from IWRAM as ARM code (GBA); nothing elsewhere.
 #define CAPSULE_IWRAM_CODE
 /// Compiles a function as ARM code in ROM (GBA); nothing elsewhere.

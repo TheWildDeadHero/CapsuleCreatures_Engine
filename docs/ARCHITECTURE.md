@@ -160,7 +160,11 @@ Memory placement on the GBA (32 KB IWRAM, 256 KB EWRAM):
   the palette manager's loaded colors, the map ring mirrors.
 - IWRAM (the default): what the DMA or the VBlank interrupt reads every
   frame (OAM shadow, register shadow, visible palettes, the VRAM queue rings)
-  and small hot state.
+  and small hot state. State only the main loop reads (the screens' sprites
+  and tasks, the overworld, the map, the field, the sprite slots) is in EWRAM
+  (D-42); a static with initial values goes there with `CAPSULE_EWRAM_DATA`.
+- The C library: the GBA HAL replaces `abort()` (GCC calls it for a trap in
+  Thumb code), so newlib's signal, malloc and stdio state are not linked.
 - IWRAM code (`CAPSULE_IWRAM_CODE`, ARM, never inlined): only the VBlank work
   that runs every frame: the VRAM queue's `flush()` / `land()` and the GBA
   HAL's `commit_registers()` (about 1.2 KB together). Check a function's size

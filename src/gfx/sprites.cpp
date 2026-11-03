@@ -3,6 +3,7 @@
 #include "capsule/gfx/sprites.h"
 
 #include "capsule/core/assert.h"
+#include "capsule/core/memory.h"
 #include "capsule/core/trig.h"
 #include "capsule/gfx/palette.h"
 #include "capsule/hal/vram_queue.h"
@@ -46,7 +47,7 @@ struct Slot
    uint8_t sub;                  ///< DS1: sub-priority among sprites of equal priority (0 front).
    int16_t top;                  ///< DS1: top edge on screen as last written (the sort's tie-break).
 };
-Slot g_slots[kSlots];   ///< The slots.
+CAPSULE_EWRAM_BSS Slot g_slots[kSlots];   ///< The slots (D-42: EWRAM, the main loop's).
 
 /// DS1: the sorted draw order (an order of the slots, front first; kept from frame to frame).
 struct Order
