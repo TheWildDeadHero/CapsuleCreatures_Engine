@@ -6,7 +6,15 @@ reference/project.json (capsule.project/1).
 
     "build": {"vram_must_land_slots": 32, "vram_streaming_slots": 64,
               "vram_budget_cycles": 67392, "gba_waitcnt": "0x4014",
-              "screen_arena_bytes": 32768}
+              "screen_arena_bytes": 32768,
+              "memory_budgets": {"iwram": 30720, "ewram": 262144,
+                                 "owners": {"capsule::audio": {"iwram_code": 16384}}}}
+
+"memory_budgets" (D-42) is the one key that is no compile definition: GBA
+region budgets in bytes, for the whole program and per owner (a namespace
+such as capsule::audio or pocket::battle; an owner budget covers every
+namespace below it). tools/usage.py memory checks a GBA link against them;
+--memory-budgets prints them as JSON.
 
 Every key is optional; an absent key keeps the engine's default. This module
 is the one authority on the keys, their ranges and the C++ definitions they
@@ -23,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from collections.abc import Mapping
 from os import PathLike
@@ -66,6 +75,18 @@ ARENA_MIN_BYTES = 1024
 ARENA_MAX_BYTES = 192 * 1024
 ## UM: the screen arena's default (32 KB): an engine game's few screens; a game with deep screen chains sets its own.
 ARENA_DEFAULT_BYTES = 32 * 1024
+## D-42: the "build" key of the GBA memory budgets (an object; no compile definition).
+MEMORY_BUDGETS_KEY = "memory_budgets"
+## D-42: the memory budgets' key of the per-owner budgets.
+OWNERS_KEY = "owners"
+## D-42: GBA IWRAM bytes (gba_cart.ld's iwram region).
+IWRAM_BYTES = 32 * 1024
+## D-42: GBA EWRAM bytes (gba_cart.ld's ewram region).
+EWRAM_BYTES = 256 * 1024
+## D-42: the regions a budget may name, with the most bytes each can hold ("iwram" is code and data together).
+BUDGET_REGIONS = {"iwram": IWRAM_BYTES, "iwram_code": IWRAM_BYTES, "iwram_data": IWRAM_BYTES, "ewram": EWRAM_BYTES}
+## D-42: an owner's name: C++ namespaces joined with "::" (capsule::audio, pocket::battle).
+OWNER_NAME = re.compile(r"^[A-Za-z_]\w*(::[A-Za-z_]\w*)*$")
 
 
 class SettingsError(Exception):
@@ -264,11 +285,68 @@ def parse(build: Any, overrides: Mapping[str, object] | None = None) -> dict[str
    merged.update(overrides or {})
    out = {}
    for key, raw in merged.items():
+      if key == MEMORY_BUDGETS_KEY:   # checked here, but no compile definition (memory_budgets())
+         parse_memory_budgets(raw)
+         continue
       s = BY_KEY.get(key)
       if s is None:
-         raise SettingsError(f"unknown build setting {key!r} (known: {', '.join(BY_KEY)})")
+         raise SettingsError(f"unknown build setting {key!r} (known: {', '.join([*BY_KEY, MEMORY_BUDGETS_KEY])})")
       out[key] = s.parse(raw)
    return out
+
+
+def parse_budget_regions(raw: Any, where: str) -> dict[str, int]:
+   """!Checks one set of region budgets.
+   @param raw    {region: bytes} (BUDGET_REGIONS names; decimal or 0x strings accepted)
+   @param where  what the set belongs to, for errors
+   @return {region: int}
+   @throws SettingsError for an unknown region or a value out of range
+   """
+   if not isinstance(raw, dict):
+      raise SettingsError(f"{where} must be an object of region budgets ({', '.join(BUDGET_REGIONS)})")
+   out = {}
+   for region, value in raw.items():
+      most = BUDGET_REGIONS.get(region)
+      if most is None:
+         raise SettingsError(f"{where}: unknown region {region!r} (regions: {', '.join(BUDGET_REGIONS)})")
+      # The same checks as a setting's: a whole number in range, given as a number or a decimal / 0x string.
+      out[region] = Setting(f"{where}.{region}", "", 0, 0, most, where).parse(value)
+   return out
+
+
+def parse_memory_budgets(raw: Any) -> dict[str, Any]:
+   """!Checks the "memory_budgets" object (D-42).
+   @param raw  {region: bytes, ..., "owners": {owner: {region: bytes}}}, or None
+   @return {"regions": {region: int}, "owners": {owner: {region: int}}} (empty when none are given)
+   @throws SettingsError for a bad region, owner or value
+   """
+   if raw is None:
+      return {"regions": {}, "owners": {}}
+   if not isinstance(raw, dict):
+      raise SettingsError(f"{MEMORY_BUDGETS_KEY} must be an object")
+   regions = {k: v for k, v in raw.items() if k != OWNERS_KEY}
+   owners_raw = raw.get(OWNERS_KEY, {})
+   if not isinstance(owners_raw, dict):
+      raise SettingsError(f"{MEMORY_BUDGETS_KEY}.{OWNERS_KEY} must be an object of owner -> region budgets")
+   owners = {}
+   for owner, budgets in owners_raw.items():
+      if not OWNER_NAME.match(owner):
+         raise SettingsError(f"{MEMORY_BUDGETS_KEY}: owner {owner!r} is not a namespace (such as capsule::audio)")
+      owners[owner] = parse_budget_regions(budgets, f"{MEMORY_BUDGETS_KEY}.{OWNERS_KEY}.{owner}")
+   return {"regions": parse_budget_regions(regions, MEMORY_BUDGETS_KEY), "owners": owners}
+
+
+def memory_budgets(build: Any) -> dict[str, Any]:
+   """!The memory budgets of a "build" object.
+   @param build  the object from project.json, or None
+   @return parse_memory_budgets()'s object
+   @throws SettingsError when "build" or the budgets are bad
+   """
+   if build is None:
+      build = {}
+   if not isinstance(build, dict):
+      raise SettingsError('"build" must be an object')
+   return parse_memory_budgets(build.get(MEMORY_BUDGETS_KEY))
 
 
 def effective(values: Mapping[str, int]) -> dict[str, int]:
@@ -303,6 +381,21 @@ def load(project_path: str | PathLike[str], overrides: Mapping[str, object] | No
    return parse(data.get("build"), overrides)
 
 
+def load_memory_budgets(project_path: str | PathLike[str]) -> dict[str, Any]:
+   """!Reads a project manifest's memory budgets (D-42).
+   @param project_path  reference/project.json
+   @return memory_budgets()'s object
+   @throws SettingsError when the manifest or a budget is bad
+   """
+   try:
+      data = json.loads(Path(project_path).read_text(encoding="utf-8"))
+   except (OSError, ValueError) as e:
+      raise SettingsError(f"cannot read {project_path}: {e}") from e
+   if not isinstance(data, dict):
+      raise SettingsError(f"{project_path} is not a JSON object")
+   return memory_budgets(data.get("build"))
+
+
 def main(argv: list[str] | None = None) -> int:
    """!Command line.
    @param argv  arguments, or None for sys.argv
@@ -312,6 +405,7 @@ def main(argv: list[str] | None = None) -> int:
    p.add_argument("project", help="reference/project.json")
    p.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="override a setting")
    p.add_argument("--cmake", action="store_true", help="print compile definitions as a CMake list")
+   p.add_argument("--memory-budgets", action="store_true", help="print the GBA memory budgets as JSON (D-42)")
    args = p.parse_args(argv)
    overrides = {}
    for item in args.set:
@@ -327,6 +421,13 @@ def main(argv: list[str] | None = None) -> int:
       return 1
    if args.cmake:
       sys.stdout.write(";".join(definitions(values)))
+   elif args.memory_budgets:
+      try:
+         budgets = load_memory_budgets(args.project)
+      except SettingsError as e:
+         print(f"{args.project}: build settings: {e}", file=sys.stderr)
+         return 1
+      print(json.dumps(budgets, indent=1))
    else:
       for key, value in effective(values).items():
          mark = "" if key in values else "  (default)"

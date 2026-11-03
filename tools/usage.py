@@ -14,6 +14,8 @@ The VM bank tools' records (capsule.vm-usage/1, tools/vm_ext.py) are read too: a
     usage.py merge RECORD... --game NAME --out REPORT.json [--platform P] [--libraries L...] [--hal SOURCE...]
     usage.py show REPORT.json [--json]
     usage.py linkmap REPORT.json MAP|NM [--json] [--out FILE]
+    usage.py memory NM [--project project.json] [--stack-reserve BYTES] [--game NAME] [--out FILE] [--json] [--check]
+                       [--demangler C++FILT]
 
 `merge` writes the game's **usage report** (capsule.usage-report/1): every category summed over the records, the
 records it read, the engine libraries the project links, the platform and its HAL sources, and per engine module
@@ -21,7 +23,10 @@ records it read, the engine libraries the project links, the platform and its HA
 (the GBA build's capsule_<game>.map) or a symbol listing (its capsule_<game>.nm, `nm -S --defined-only`: exact under
 link-time optimization, where the map loses most symbols), sums the bytes each engine module links (by the symbols'
 mangled namespaces) and lists the modules that link code while the report says nothing uses them
-(capsule.usage-linkmap/1). Generated files are written with LF line ends and only when their bytes change.
+(capsule.usage-linkmap/1). `memory` reads a GBA program's listing and prints what each owner (its first two
+namespaces) holds in IWRAM and EWRAM, checked against the regions and the game's budgets (tools/usage_memory.py,
+capsule.usage-memory/1); with --check it fails when one is passed, naming the largest contributors. Generated files
+are written with LF line ends and only when their bytes change.
 """
 from __future__ import annotations
 
@@ -46,6 +51,11 @@ LINKMAP_SCHEMA = "capsule.usage-linkmap/1"
 VM_MAIN_TABLE = "main"
 ## The prefix of the categories made from VM bank records.
 VM_CATEGORY = "vm"
+## The tools' folder (memory_command() imports its siblings from it; the compilers that import this module need not).
+TOOLS = Path(__file__).resolve().parent
+## The memory command's default stack reserve (tools/usage_memory.py DEFAULT_STACK_RESERVE; CMake's
+## CAPSULE_GBA_STACK_RESERVE).
+DEFAULT_STACK_RESERVE = 2048
 ## The engine's source folder (each sub folder is one engine module).
 ENGINE_SOURCES = Path(__file__).resolve().parent.parent / "src"
 ## Category prefix -> the engine module that runs what the category lists (the longest matching prefix wins).
@@ -609,6 +619,31 @@ def merge_records(records: Iterable[Mapping[str, Mapping[str, int]]]) -> dict[st
    return out
 
 
+def memory_command(args: argparse.Namespace) -> int:
+   """!The `memory` command (tools/usage_memory.py).
+   @param args  its arguments
+   @return 1 with --check when a region or a budget is passed, else 0
+   @throws UsageError when the budgets are bad; OSError when a file cannot be read or written
+   """
+   if str(TOOLS) not in sys.path:
+      sys.path.insert(0, str(TOOLS))
+   import build_settings
+   import usage_memory
+   budgets = None
+   if args.project is not None:
+      try:
+         budgets = build_settings.load_memory_budgets(args.project)
+      except build_settings.SettingsError as e:
+         raise UsageError(f"{args.project}: {e}") from None
+   text = args.listing.read_text(encoding="utf-8", errors="replace")
+   result = usage_memory.report(text, budgets, args.stack_reserve, args.game, args.demangler)
+   if args.out is not None:
+      args.out.parent.mkdir(parents=True, exist_ok=True)
+      write_if_changed(args.out, as_json(result))
+   sys.stdout.write(as_json(result) if args.json else usage_memory.report_text(result))
+   return 1 if args.check and result["over"] else 0
+
+
 def main(argv: Sequence[str]) -> int:
    """!Command line; see the module docstring.
    @param argv  the arguments (without the program)
@@ -631,6 +666,16 @@ def main(argv: Sequence[str]) -> int:
    lm.add_argument("map", type=Path)
    lm.add_argument("--json", action="store_true")
    lm.add_argument("--out", type=Path)
+   me = sub.add_parser("memory", help="a GBA program's RAM by owner, checked against its regions and budgets")
+   me.add_argument("listing", type=Path, help="the program's `nm -S --defined-only` listing (capsule_<game>.nm)")
+   me.add_argument("--project", type=Path, help="the game's reference/project.json (its build memory_budgets)")
+   me.add_argument("--stack-reserve", type=int, default=DEFAULT_STACK_RESERVE,
+                   help="IWRAM bytes kept for the stack (CAPSULE_GBA_STACK_RESERVE)")
+   me.add_argument("--game", default="")
+   me.add_argument("--out", type=Path, help="write the report (capsule.usage-memory/1) here")
+   me.add_argument("--json", action="store_true")
+   me.add_argument("--check", action="store_true", help="exit 1 when a region or a budget is passed")
+   me.add_argument("--demangler", help="a c++filt for readable names")
    try:
       args = ap.parse_args(list(argv))
    except SystemExit as e:
@@ -642,6 +687,8 @@ def main(argv: Sequence[str]) -> int:
       elif args.command == "show":
          report = read_report(args.report)
          sys.stdout.write(as_json(report) if args.json else summary(report))
+      elif args.command == "memory":
+         return memory_command(args)
       else:
          report = read_report(args.report)
          result = compare(report, read_linked(args.map.read_text(encoding="utf-8", errors="replace")))
