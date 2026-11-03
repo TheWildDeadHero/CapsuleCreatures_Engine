@@ -145,6 +145,7 @@ non-empty CMake cache variable of the same name overrides every game's value
 | `vram_budget_cycles` | `CAPSULE_VRAM_BUDGET_CYCLES` | 83,776 − 16,384 | cycles of each VBlank for the queue; the rest is kept for register and OAM copies and, later, the audio mix |
 | `gba_waitcnt` | `CAPSULE_GBA_WAITCNT` | `0x4014` | GBA ROM wait states (prefetch on, 3/1, as commercial GBA games set them); flashcarts that need slower ROM access override it |
 | `screen_arena_bytes` | `CAPSULE_SCREEN_ARENA_BYTES` | 32,768 | the screen arena (`capsule/screen/arena.h`, EWRAM on the GBA): the most the screens open at once borrow (a multiple of 4, 1 KB–192 KB); an unused arena links no storage |
+| `memory_budgets` | – | none | GBA memory budgets in bytes (an object, no compile definition): `iwram`, `iwram_code`, `iwram_data`, `ewram` for the program, and the same per owner under `owners` (a namespace such as `capsule::audio`, covering every namespace below it); checked after every GBA link (docs/USAGE.md, GBA memory by owner) |
 
 `CAPSULE_EWRAM_BSS` (`capsule/core/memory.h`) places a large static buffer in
 the GBA's EWRAM instead of IWRAM; data there is queued with
@@ -179,6 +180,12 @@ Memory placement on the GBA (32 KB IWRAM, 256 KB EWRAM):
   prints both regions' use (`cmake/gba_memory_report.cmake`).
   `-DCAPSULE_GBA_MEMORY_CHECKS=OFF` keeps only the report, to measure a
   program that does not fit.
+- Memory by owner (D-42): the GBA link runs through `tools/gba_link.py`,
+  which prints what each namespace holds in IWRAM and EWRAM and writes
+  `usage/<game>.memory.json`. A program that does not fit is measured by a
+  second link beside it (`<program>.does_not_fit.elf`, never a ROM) that names
+  the largest contributors, so no cache setting has to change to find them;
+  with the checks on, a game's `memory_budgets` fail the build the same way.
 
 **Seeding (A-4).** `system::init()` seeds the gameplay and cosmetic streams
 from the platform's entropy. The first key press of the session mixes in fresh

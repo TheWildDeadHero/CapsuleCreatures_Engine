@@ -661,6 +661,23 @@ function(capsule_game dir)
                              ${CAPSULE_ROOT}/cmake/gba_memory.ld)
          set_property(TARGET ${target} APPEND PROPERTY LINK_DEPENDS ${CAPSULE_ROOT}/cmake/gba_memory.ld)
       endif()
+      # D-42: the link runs through tools/gba_link.py. It prints the program's memory by owner and writes
+      # usage/<name>.memory.json; with the memory checks on, a passed budget ("build": {"memory_budgets"}) fails
+      # the build, and a program that does not fit is measured by a second link that names what holds the memory.
+      string(REGEX MATCH "\\.exe$" exe "${CMAKE_NM}")   # the toolchain's c++filt beside its nm
+      string(REGEX REPLACE "nm(\\.exe)?$" "c++filt${exe}" demangler "${CMAKE_NM}")
+      set(launcher ${Python3_EXECUTABLE} ${CAPSULE_ROOT}/tools/gba_link.py --nm ${CMAKE_NM} --project ${manifest}
+          --stack-reserve ${CAPSULE_GBA_STACK_RESERVE} --game ${name}
+          --out ${CMAKE_BINARY_DIR}/usage/${name}.memory.json --memory-script ${CAPSULE_ROOT}/cmake/gba_memory.ld)
+      if(EXISTS "${demangler}")
+         list(APPEND launcher --demangler ${demangler})
+      endif()
+      if(CAPSULE_GBA_MEMORY_CHECKS)
+         list(APPEND launcher --check)
+      endif()
+      list(APPEND launcher --)
+      set_target_properties(${target} PROPERTIES C_LINKER_LAUNCHER "${launcher}" CXX_LINKER_LAUNCHER "${launcher}")
+      set_property(TARGET ${target} APPEND PROPERTY LINK_DEPENDS ${manifest})
       add_custom_command(TARGET ${target} POST_BUILD
          COMMAND ${CMAKE_COMMAND} -DNM=${CMAKE_NM} -DELF=$<TARGET_FILE:${target}>
                  -DRESERVE=${CAPSULE_GBA_STACK_RESERVE} -P ${CAPSULE_ROOT}/cmake/gba_memory_report.cmake
@@ -1024,6 +1041,8 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_generated_snapshot.py)
    # D-36: usage records, reports and the link comparison (tools/usage.py), each compiler's --usage
    add_test(NAME usage_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage.py)
+   # D-42: the GBA memory by owner, the memory budgets and the link launcher (tools/usage_memory.py, gba_link.py)
+   add_test(NAME usage_memory_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage_memory.py)
    # RP: the sample projects (apps/*/sample.json) stay copyable: paths out of an app lead only to the files
    # its shared templates list, and its libraries are ones every game may link (docs/APPS.md, Sample projects).
    add_test(NAME sample_project_tests

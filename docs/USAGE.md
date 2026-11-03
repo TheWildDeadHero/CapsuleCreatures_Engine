@@ -14,6 +14,7 @@ Nothing here changes what a game builds: the generated sources are the same with
 | `usage/<game>/<compiler>.json` | one record per compiler run (`capsule.usage/1`), or per VM bank (`capsule.vm-usage/1`) |
 | `usage/<game>.json` | the merged report (`capsule.usage-report/1`), target `capsule_<game>_usage` (part of the default build) |
 | `capsule_<game>.map`, `capsule_<game>.nm` | GBA only: the linker map and the sized symbol listing beside the ROM |
+| `usage/<game>.memory.json` | GBA only: the program's memory by owner (`capsule.usage-memory/1`), written at every link |
 
 `capsule_game()` passes `--usage` to every compiler it runs and merges the records at the end of the calling folder,
 so a caller that compiles more for a game after `capsule_game()` (its audio table, its VM banks) adds its records with
@@ -65,3 +66,36 @@ largest first (`capsule.usage-linkmap/1`). Prefer the `.nm` listing: with link-t
 the map keeps only global symbols, so most code there falls back to the merged objects it came from.
 
 The studio has the same as `capsule-studio usage REPORT [--link FILE] [--json]`.
+
+## GBA memory by owner
+
+    python3 tools/usage.py memory capsule_<game>.nm [--project reference/project.json] [--stack-reserve BYTES]
+                                  [--game NAME] [--out FILE] [--json] [--check] [--demangler arm-none-eabi-c++filt]
+
+`memory` reads the sized symbol listing and sums each **owner**'s bytes in four columns: IWRAM code, IWRAM data,
+EWRAM and ROM. An owner is a symbol's first two namespaces from its mangled name (`capsule::audio`, `pocket::battle`,
+a game's own namespace); the engine's namespaces of another module count as that module (`capsule::rng` is
+`capsule::core`), a linker veneer counts as its target's, and names outside every namespace (C code, the C library,
+code in the global anonymous namespace) are `(global)`. The regions' totals come from the linker's `__iheap_start`
+and `__sbss_end__` when the listing has them.
+
+The checks: IWRAM (code and data) against 32 KB less the stack reserve, EWRAM against 256 KB, then the game's
+budgets, the `"memory_budgets"` object of its `"build"` settings (`tools/build_settings.py`):
+
+```json
+"build": {"memory_budgets": {"iwram": 30720, "ewram": 262144,
+                             "owners": {"capsule::audio": {"iwram_code": 16384},
+                                        "pocket": {"ewram": 32768}}}}
+```
+
+Regions: `iwram` (code and data), `iwram_code`, `iwram_data`, `ewram`. An owner budget may name a namespace at any
+depth and covers every symbol below it. Each failed check names the owners that hold the most of its region and their
+largest symbols (demangled with `--demangler`). `--check` exits 1 when one fails.
+
+**At every GBA link.** `capsule_game()` links GBA programs through `tools/gba_link.py` (the target's linker
+launcher). After a link that succeeds it prints the table and writes `usage/<game>.memory.json`; with
+`CAPSULE_GBA_MEMORY_CHECKS` on, a passed budget fails the build and removes the program, so the next build links and
+checks it again. When the link fails because the program does not fit, the launcher links once more beside it,
+without `cmake/gba_memory.ld` and with `--noinhibit-exec`, into `capsule_<game>.does_not_fit.elf` (and its `.map`),
+prints that program's table with the largest contributors and exits with the first link's failure. That program is
+for measuring only; no ROM is made from it.
