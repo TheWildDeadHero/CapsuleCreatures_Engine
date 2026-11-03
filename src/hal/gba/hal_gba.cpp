@@ -1058,7 +1058,7 @@ Source classify(const void* p, Source)
 /// instruction (__builtin_trap() and the paths it isolates, such as a proven null dereference); newlib's own abort()
 /// raises a signal, which links the signal handlers, malloc, the reentrancy structure and stdio's FILE table (about
 /// 0.9 KB of IWRAM a program never uses otherwise). This one halts with the assertion screen. (Its C linkage comes from
-/// <cstdlib>'s declaration.)
+/// the declaration in the C library's stdlib.h.)
 [[noreturn]] void abort()
 {
    capsule::hal::system::assert_failed("abort()", __FILE__, __LINE__);
