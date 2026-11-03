@@ -34,9 +34,10 @@ function(capsule_audio_table manifest out)
    cmake_parse_arguments(arg "" "PARTS;USAGE" "" ${ARGN})
    set(outputs ${out})
    set(part_args)
+   set(usage_args)
    if(arg_USAGE)   # D-36: the table's usage record (tools/usage.py)
       list(APPEND outputs ${arg_USAGE})
-      list(APPEND part_args --usage ${arg_USAGE})
+      set(usage_args --usage ${arg_USAGE})
    endif()
    if(arg_PARTS)
       get_filename_component(dir ${out} DIRECTORY)
@@ -51,7 +52,7 @@ function(capsule_audio_table manifest out)
    file(MAKE_DIRECTORY ${out_dir})
    add_custom_command(
       OUTPUT  ${outputs}
-      COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/audio_compiler.py ${manifest} ${out} ${part_args}
+      COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/audio_compiler.py ${manifest} ${out} ${part_args} ${usage_args}
             --depfile ${out}.d
       DEPENDS ${CAPSULE_AUDIO_COMPILER_DEPENDS} ${CAPSULE_ROOT}/tools/usage.py ${manifest}
       DEPFILE ${out}.d   # the samples and songs the manifest names
