@@ -54,6 +54,7 @@ add_executable(capsule_doors_overrides_tests
    src/overworld/overworld.cpp
    src/script/script.cpp
    src/script/script_dispatch_all.cpp
+   src/script/script_battle_none.cpp
    src/script/field_actions.cpp
    src/script/script_port_defaults.cpp
    ${CAPSULE_SCRIPT_ITEMS_SOURCES}

@@ -1,10 +1,10 @@
 /// @file
 /// The field script VM's module dispatch (D-36 package 2, step B; engine-internal). The ops of the engine's
-/// gameplay modules (the bag, the boxes, party roles, growth, combination and the nursery) run through a table
-/// instead of the VM's own switch, and so do the waits they set. Each game links its own table, written by
-/// `tools/script_vm.py dispatch` from its scripts' usage record with only the ops they use: a module no script
-/// reaches is then not linked. src/script/script_dispatch_all.cpp is the table with every op (the default, used
-/// by programs without a generated one). src/script/script_vm.json names the ops ("module", "handler") and the
+/// gameplay modules (the bag, the boxes, party roles, growth, combination, the nursery and, since C1, battles) run
+/// through a table instead of the VM's own switch, and so do the waits they set. Each game links its own table,
+/// written by `tools/script_vm.py dispatch` from its scripts' usage record with only the ops they use: a module no
+/// script reaches is then not linked. src/script/script_dispatch_all.cpp is the table with every op (the default,
+/// used by programs without a generated one). src/script/script_vm.json names the ops ("module", "handler") and the
 /// waits ("polls").
 #pragma once
 
@@ -56,6 +56,8 @@ Outcome op_boxes_open(Context& c, Op op, const uint8_t* p, const uint8_t* base);
 Outcome op_transform(Context& c, Op op, const uint8_t* p, const uint8_t* base);     ///< Transform.
 Outcome op_combine(Context& c, Op op, const uint8_t* p, const uint8_t* base);       ///< Combine.
 Outcome op_nursery(Context& c, Op op, const uint8_t* p, const uint8_t* base);       ///< Nursery.
+Outcome op_encounter(Context& c, Op op, const uint8_t* p, const uint8_t* base);     ///< Encounter (C1).
+Outcome op_battle(Context& c, Op op, const uint8_t* p, const uint8_t* base);        ///< Battle (C1).
 ///@}
 
 /// @name The module waits (src/script/script.cpp)
@@ -67,6 +69,11 @@ bool poll_boxes(Context& c);       ///< Wait::Boxes.
 bool poll_transform(Context& c);   ///< Wait::Transform.
 bool poll_combine(Context& c);     ///< Wait::Combine.
 bool poll_nursery(Context& c);     ///< Wait::Nursery.
+bool poll_battle(Context& c);      ///< Wait::Battle (C1).
 ///@}
+
+/// The encounter record's current side's object (C1: kObjectEncounter, kFaceEncounter; src/script/script.cpp).
+/// @return its local ID, or kNoSelf
+uint8_t encounter_object();
 
 }   // namespace capsule::script::detail

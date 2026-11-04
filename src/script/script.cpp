@@ -6,9 +6,11 @@
 #include "capsule/core/assert.h"
 #include "capsule/core/clock.h"
 #include "capsule/core/endian.h"
+#include "capsule/core/memory.h"
 #include "capsule/core/random.h"
 #include "capsule/core/saturate.h"
 #include "capsule/map/map.h"
+#include "capsule/script/battle_port.h"
 #include "capsule/script/combine_port.h"
 #include "capsule/script/field_actions.h"
 #include "capsule/script/field_effects.h"
@@ -16,6 +18,9 @@
 #include "capsule/script/nursery_port.h"
 #include "capsule/script/port.h"
 #include "script_dispatch.h"
+
+#include <cstring>
+#include <iterator>
 
 namespace capsule::script
 {
@@ -376,6 +381,10 @@ uint8_t object_of(const Context& c, int32_t v)
    if (v == kObjectSelected)
    {
       return c.self != kNoSelf ? c.self : kObjectPlayer;   // the selected object (the walker without one)
+   }
+   if (v == kObjectEncounter)
+   {
+      return detail::encounter_object();   // C1: the encounter record's current side's object
    }
    return local_of(v);
 }
@@ -911,7 +920,10 @@ Outcome execute(Context& c)
       }
       else
       {
-         const uint8_t other = face == kFacePlayer ? kObjectPlayer : c.self;
+         // towards the walker, the context's own object or (C1) the encounter's object
+         const uint8_t other = face == kFacePlayer ? kObjectPlayer
+                             : face == kFaceEncounter ? detail::encounter_object()
+                                                      : c.self;
          if (other != kNoSelf && other != obj)
          {
             world::face_toward(obj, other);
@@ -1271,6 +1283,8 @@ Outcome execute(Context& c)
    case Op::Transform:
    case Op::Combine:
    case Op::Nursery:
+   case Op::Encounter:
+   case Op::Battle:
       return run_module(c, op, p, base);
    case Op::NUM_OPS:
       break;
@@ -1424,6 +1438,7 @@ bool still_waiting(Context& c)
    case Wait::Transform:
    case Wait::Combine:
    case Wait::Nursery:
+   case Wait::Battle:
       if (poll_module(c))
       {
          return true;
@@ -1880,6 +1895,381 @@ bool poll_mart([[maybe_unused]] Context& c)
    if (items::mart_poll())
    {
       return true;
+   }
+   return false;
+}
+
+namespace
+{
+
+/// @name The encounter record (D-36 package 2 C1: Op::Encounter, Op::Battle)
+///@{
+
+/// Texts a side of the encounter record holds (intro, defeat, cannot battle).
+constexpr int kEncounterTexts = 3;
+/// Bytes of a stored text reference (its tag and its 32-bit value, as the bytecode has it).
+constexpr int kTextRefBytes = 1 + kU32Bytes;
+/// Sides of the encounter record (A and B).
+constexpr int kEncounterSides = 2;
+
+/// One side of the encounter record.
+struct EncounterSide
+{
+   uint8_t text[kEncounterTexts][kTextRefBytes];   ///< The texts' references (by kEncounterHas... bit order).
+   uint16_t party;                                 ///< The game's party number (battles::kNoParty: empty).
+   uint16_t beaten;                                ///< Its beaten flag, or kEncounterNoFlag.
+   uint16_t after;                                 ///< Its after-script, or kNoScriptId.
+   uint8_t object;                                 ///< Its map object (local ID), or kNoSelf.
+   uint8_t parts;                                  ///< Which texts it has (kEncounterHas... bits).
+};
+
+/// The encounter record (session state: a party battle's set-up, as the scripts fill it).
+struct EncounterRecord
+{
+   EncounterSide sides[kEncounterSides];   ///< Sides A and B.
+   Frame back;                             ///< Where Continue goes on (the instruction after the last Set).
+   bool has_back;                          ///< A Set gave the return point.
+   uint8_t bits;                           ///< The mode bits (kEncounterPair ...).
+   uint8_t mode;                           ///< The game's own mode number (opaque to the engine).
+   uint8_t current;                        ///< The current side (kEncounterSideA / B).
+};
+
+/// The encounter record (EWRAM: IWRAM is the stack's).
+CAPSULE_EWRAM_BSS EncounterRecord g_encounter;
+
+/// An empty side.
+/// @return it
+constexpr EncounterSide empty_side()
+{
+   EncounterSide s{};
+   s.party = battles::kNoParty;
+   s.beaten = kEncounterNoFlag;
+   s.after = kNoScriptId;
+   s.object = kNoSelf;
+   return s;
+}
+
+/// The current side.
+/// @return it
+EncounterSide& current_side()
+{
+   return g_encounter.sides[g_encounter.current < kEncounterSides ? g_encounter.current : kEncounterSideA];
+}
+
+/// A side's texts by index: their kEncounterHas... bits.
+constexpr uint8_t kEncounterTextBits[kEncounterTexts] = {kEncounterHasIntro, kEncounterHasDefeat, kEncounterHasCannot};
+
+/// The index of a text in a side (its kEncounterHas... bit's position in kEncounterTextBits).
+/// @param bit  kEncounterHasIntro, kEncounterHasDefeat or kEncounterHasCannot
+/// @return the index, or kEncounterTexts for another value
+int text_index(uint8_t bit)
+{
+   for (int i = 0; i < kEncounterTexts; ++i)
+   {
+      if (kEncounterTextBits[i] == bit)
+      {
+         return i;
+      }
+   }
+   return kEncounterTexts;
+}
+
+/// Reads Encounter Set's operands into a side and the record.
+/// @param c  the context
+/// @param p  the position after the side byte; moved past the operands
+/// @param s  the side
+void read_side(Context& c, const uint8_t*& p, EncounterSide& s)
+{
+   s = empty_side();
+   s.party = static_cast<uint16_t>(operand(p));
+   s.object = object_of(c, operand(p));
+   s.beaten = load_le16(p);
+   p += kU16Bytes;
+   s.parts = *p++;
+   // the texts the parts name, in bit order, as references copied from the bytecode
+   for (const uint8_t bit : kEncounterTextBits)
+   {
+      if ((s.parts & bit) != 0)
+      {
+         std::memcpy(s.text[text_index(bit)], p, kTextRefBytes);
+         p += kTextRefBytes;
+      }
+   }
+   if ((s.parts & kEncounterHasAfter) != 0)
+   {
+      s.after = load_le16(p);
+      p += kU16Bytes;
+   }
+}
+
+/// Moves a frame to the record's return point, or ends the script without one.
+/// @param c  the context
+/// @param f  the running frame
+/// @return what happened
+Outcome go_back(Context& c, Frame& f)
+{
+   if (!g_encounter.has_back)
+   {
+      c.depth = 0;   // nothing to go on with (the imported game's fallback is the game's own)
+      return Outcome::Ended;
+   }
+   f = g_encounter.back;
+   return Outcome::Continue;
+}
+
+///@}
+
+}   // namespace
+
+/// The encounter record's current side's object (kObjectEncounter, kFaceEncounter).
+/// @return its local ID, or kNoSelf
+uint8_t encounter_object()
+{
+   return current_side().object;
+}
+
+}   // namespace detail
+
+namespace battles
+{
+
+Side encounter_side(uint8_t side)
+{
+   const detail::EncounterSide& s = detail::g_encounter.sides[side < detail::kEncounterSides ? side : kEncounterSideA];
+   return Side{s.party, s.object};
+}
+
+uint8_t encounter_current_side()
+{
+   return detail::g_encounter.current;
+}
+
+uint8_t encounter_bits()
+{
+   return detail::g_encounter.bits;
+}
+
+uint8_t encounter_mode()
+{
+   return detail::g_encounter.mode;
+}
+
+}   // namespace battles
+
+namespace detail
+{
+
+/// Encounter (C1): the encounter record.
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_encounter(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   const auto kind = static_cast<EncounterOp>(*p++);
+   switch (kind)
+   {
+   case EncounterOp::Clear:
+      advance(f, p, base);
+      g_encounter = EncounterRecord{};
+      for (EncounterSide& s : g_encounter.sides)
+      {
+         s = empty_side();
+      }
+      return Outcome::Continue;
+   case EncounterOp::Set:
+   {
+      const uint8_t side = *p++;
+      const uint8_t index = side == kEncounterSideCurrent ? g_encounter.current : side;
+      ENGINE_ASSERT(index < kEncounterSides);
+      EncounterSide& s = g_encounter.sides[index < kEncounterSides ? index : kEncounterSideA];
+      read_side(c, p, s);
+      uint16_t then = kNoScriptId;
+      if ((s.parts & kEncounterHasThen) != 0)
+      {
+         then = load_le16(p);
+         p += kU16Bytes;
+      }
+      g_encounter.bits = *p++;
+      g_encounter.mode = *p++;
+      advance(f, p, base);
+      // the instruction after the Set is where Continue goes on
+      g_encounter.back = f;
+      g_encounter.has_back = true;
+      if (then != kNoScriptId)
+      {
+         ENGINE_ASSERT(then < bank().script_count);
+         f = Frame{then, 0};   // the frame goes on in the then-script (a jump)
+      }
+      return Outcome::Continue;
+   }
+   case EncounterOp::Select:
+   {
+      const int32_t side = operand(p);
+      advance(f, p, base);
+      g_encounter.current = side == kEncounterSideB ? kEncounterSideB : kEncounterSideA;
+      return Outcome::Continue;
+   }
+   case EncounterOp::Get:
+   {
+      const auto field = static_cast<EncounterField>(*p++);
+      const uint16_t v = load_le16(p);
+      p += kU16Bytes;
+      advance(f, p, base);
+      const EncounterSide& s = current_side();
+      int32_t value = 0;
+      switch (field)
+      {
+      case EncounterField::Party:
+         value = s.party;
+         break;
+      case EncounterField::Object:
+         value = s.object;
+         break;
+      case EncounterField::Beaten:
+         value = s.beaten != kEncounterNoFlag && flag(FlagId{s.beaten}) ? 1 : 0;
+         break;
+      case EncounterField::Bits:
+         value = g_encounter.bits;
+         break;
+      case EncounterField::Side:
+         value = g_encounter.current;
+         break;
+      case EncounterField::Mode:
+         value = g_encounter.mode;
+         break;
+      case EncounterField::Sides:
+         for (const EncounterSide& each : g_encounter.sides)
+         {
+            value += each.party != battles::kNoParty ? 1 : 0;
+         }
+         break;
+      case EncounterField::NUM_ENCOUNTER_FIELDS:
+         break;
+      }
+      set_var(VarId{v}, value);
+      return Outcome::Continue;
+   }
+   case EncounterOp::Text:
+   {
+      const uint8_t which = *p++;
+      advance(f, p, base);
+      const EncounterSide& s = current_side();
+      const int i = text_index(which);
+      if (i >= kEncounterTexts || (s.parts & which) == 0)
+      {
+         return Outcome::Continue;   // the side has no such text: nothing to type
+      }
+      const uint8_t* ref = s.text[i];
+      port::message(text_ref(ref));
+      c.wait = Wait::Typing;
+      return Outcome::Waiting;
+   }
+   case EncounterOp::Music:
+   {
+      advance(f, p, base);
+      const int32_t music = (g_encounter.bits & kEncounterNoMusic) != 0
+                               ? battles::kNoMusic
+                               : battles::encounter_music(current_side().party);
+      if (music != battles::kNoMusic)
+      {
+         const int32_t args[] = {music, 0};   // the song, not kept as the map's
+         audio::play(SoundOp::Bgm, args, static_cast<uint8_t>(std::size(args)));
+      }
+      return Outcome::Continue;
+   }
+   case EncounterOp::Mark:
+      advance(f, p, base);
+      for (const EncounterSide& s : g_encounter.sides)
+      {
+         if (s.party != battles::kNoParty && s.beaten != kEncounterNoFlag)
+         {
+            set_flag(FlagId{s.beaten}, true);
+         }
+      }
+      return Outcome::Continue;
+   case EncounterOp::Continue:
+      return go_back(c, f);
+   case EncounterOp::After:
+   {
+      const uint16_t after = current_side().after;
+      advance(f, p, base);
+      if (after == kNoScriptId)
+      {
+         return Outcome::Continue;   // no after-script: the next instruction runs
+      }
+      ENGINE_ASSERT(after < bank().script_count);
+      f = Frame{after, 0};
+      return Outcome::Continue;
+   }
+   case EncounterOp::NUM_ENCOUNTER_OPS:
+      break;
+   }
+   ENGINE_ASSERT(false && "bad encounter op");
+   c.depth = 0;
+   return Outcome::Ended;
+}
+
+/// Battle (C1): a battle through the game's battle port; waits for its outcome.
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_battle(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   battles::Request r{};
+   r.kind = static_cast<BattleKind>(*p++);
+   if (r.kind == BattleKind::Unowned)
+   {
+      r.species = operand(p);
+      r.level = operand(p);
+      r.item = operand(p);
+   }
+   else if (r.kind == BattleKind::Scripted)
+   {
+      r.number = operand(p);
+   }
+   else
+   {
+      // a party battle takes the encounter record's sides
+      const EncounterSide& a = g_encounter.sides[kEncounterSideA];
+      const EncounterSide& b = g_encounter.sides[kEncounterSideB];
+      r.bits = g_encounter.bits;
+      r.a = battles::Side{a.party, a.object};
+      r.b = battles::Side{b.party, b.object};
+   }
+   c.result_var = load_le16(p);
+   p += kU16Bytes;
+   advance(f, p, base);
+   if (!battles::start(r))
+   {
+      // no battle could start: it counts as won at once
+      if (c.result_var != kNoVar)
+      {
+         set_var(VarId{c.result_var}, static_cast<int32_t>(battle::Outcome::Victory));
+      }
+      return Outcome::Continue;
+   }
+   c.wait = Wait::Battle;
+   return Outcome::Waiting;
+}
+
+/// Wait::Battle (C1: a module wait, polled through the game's dispatch table).
+/// @param c  the context
+/// @return true while the battle runs (the result variable is written when it ends)
+bool poll_battle(Context& c)
+{
+   if (battles::busy())
+   {
+      return true;
+   }
+   if (c.result_var != kNoVar)
+   {
+      set_var(VarId{c.result_var}, static_cast<int32_t>(battles::outcome()));
    }
    return false;
 }

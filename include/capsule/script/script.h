@@ -77,6 +77,7 @@ enum class Wait : uint8_t
    Sound,         ///< I4: a sound effect, fanfare or cry.
    Mart,          ///< I4: a mart list.
    State,         ///< I4: the game is busy (game::state_busy()).
+   Battle,        ///< C1: a battle through the battle port.
    NUM_WAITS      ///< Number of waits.
 };
 

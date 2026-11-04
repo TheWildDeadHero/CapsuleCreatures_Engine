@@ -146,6 +146,25 @@ result waits, the method's odds over them, the result into the party),
 `nursery name <member> -> var(v);` (waits; v = 1 when named). With eggs the
 implicit variable egg_member (u8, map) holds the party slot of the egg that
 hatched, and the structure's eggs.hatch_script names the script run for it.
+D-36 package 2 C1, encounters with parties and battles (capsule/script/battle_port.h):
+`encounter clear;` empties the encounter record;
+`encounter set a|b|current <party> <obj> [beaten flag(f)] [intro <text>]
+[defeat <text>] [cannot <text>] [after <script>] [then <script>] [pair]
+[rematch] [no_music] [mode <n>];` fills a side, remembers the statement
+after it as the return point and, with then, goes on in that script at once
+(mode: the game's own number, 0-255);
+`encounter select a|b|<side>;` picks the current side;
+`encounter get party|object|beaten|bits|side|sides|mode -> var(v);`;
+`encounter text intro|defeat|cannot;` types the current side's text;
+`encounter music;` plays its party's encounter music (none with
+no_music); `encounter mark;` sets the sides' beaten flags;
+`encounter continue;` goes on at the return point and `encounter after;` in
+the current side's after-script (without one, the next statement runs). The object word
+`encounter` is the current side's object (`face player encounter;`).
+`battle party|rematch [-> var(v)];`, `battle unowned <species> <level>
+[<item>] [-> var(v)];` and `battle scripted <number> [-> var(v)];` start a
+battle through the game's battle port and wait; v = its
+capsule::battle::Outcome (1 won, 2 lost, 3 drew, 4 ran, 5 recruited).
 `role_get(<slot>, <role>[, <element>]) -> var(v);` and
 `role_set(<slot>, <role>[, <element>], <value>);` (a party record's role:
 slot and element are operands, the role a role name or ID, element 0 when
@@ -155,7 +174,7 @@ commands (B-21) `move <obj> down|up|left|right [<steps>];` (waits until it
 stands; `... [<steps>] checked [-> var(ok)];` walks only when the
 field's movement rules allow every step: terrain, elevation, the walker's
 vehicle class, ledges, objects; else nothing moves, ok = 0),
-`face <obj> down|up|left|right|player|self|opposite_player;` (
+`face <obj> down|up|left|right|player|self|opposite_player|encounter;` (
 opposite_player turns it opposite the walker's facing, not towards it),
 `hide <obj>;`, `show <obj>;`
 with <obj> = `self` (the object whose talk or sight started the script),
@@ -314,6 +333,51 @@ NURSERY_ANYWHERE = ("name",)
 NURSERY_WORD = "nursery"
 ## The word before a withdraw's money variable.
 PAY_WORD = "pay"
+
+# --- Encounters with parties and battles (D-36 package 2 C1, capsule/script/battle_port.h) ---
+## The statement word of the encounter record.
+ENCOUNTER_WORD = "encounter"
+## `encounter KIND ...` kinds in capsule::script::EncounterOp order.
+ENCOUNTER_KINDS = VM.words("EncounterOp")
+## `encounter get FIELD -> var(v);` fields in capsule::script::EncounterField order.
+ENCOUNTER_FIELDS = VM.words("EncounterField")
+## Encounter Set's side words and their side bytes.
+ENCOUNTER_SIDES = {"a": VM.constants["kEncounterSideA"], "b": VM.constants["kEncounterSideB"],
+                   "current": VM.constants["kEncounterSideCurrent"]}
+## Encounter select's side words and their values.
+ENCOUNTER_SELECT = {"a": VM.constants["kEncounterSideA"], "b": VM.constants["kEncounterSideB"]}
+## The texts of a side: their words and kEncounterHas... bits (also Encounter Text's byte), in the bits' order.
+ENCOUNTER_TEXTS = {"intro": VM.constants["kEncounterHasIntro"], "defeat": VM.constants["kEncounterHasDefeat"],
+                   "cannot": VM.constants["kEncounterHasCannot"]}
+## Encounter Set's parts bit of its after-script.
+ENCOUNTER_HAS_AFTER = VM.constants["kEncounterHasAfter"]
+## The word before an Encounter Set's after-script.
+ENCOUNTER_AFTER_WORD = "after"
+## Encounter Set's parts bit of its then-script.
+ENCOUNTER_HAS_THEN = VM.constants["kEncounterHasThen"]
+## The word before an Encounter Set's then-script (where it goes on at once).
+ENCOUNTER_THEN_WORD = "then"
+## The word before an Encounter Set's beaten flag.
+ENCOUNTER_BEATEN_WORD = "beaten"
+## Encounter Set's mode words and their bits.
+ENCOUNTER_BITS = {"pair": VM.constants["kEncounterPair"], "rematch": VM.constants["kEncounterRematch"],
+                  "no_music": VM.constants["kEncounterNoMusic"]}
+## Encounter Set without a beaten flag.
+ENCOUNTER_NO_FLAG = VM.constants["kEncounterNoFlag"]
+## The encounter kinds that go on elsewhere (no statement after them runs).
+ENCOUNTER_LEAVING = ("continue",)
+## The word before an Encounter Set's mode number (the game's own, 0-255).
+ENCOUNTER_MODE_WORD = "mode"
+## Largest Encounter Set mode number (a byte).
+ENCOUNTER_MAX_MODE = 255
+## The statement word of battles.
+BATTLE_WORD = "battle"
+## Operands of an unowned battle: species, level, held item (the item may be left out: none).
+BATTLE_UNOWNED_OPERANDS = 3
+## An unowned battle's held item when the statement names none.
+BATTLE_NO_ITEM = 0
+## `battle KIND ...` kinds in capsule::script::BattleKind order.
+BATTLE_KINDS = VM.words("BattleKind")
 ## Tokens ahead of `darkness` where a name operand's ';' stands (`darkness NAME;`).
 OPERAND_END_AHEAD = 2
 ## Most darkness levels of a world (capsule::map::kMaxDarkness; the world's darkness_levels say how many).
@@ -362,7 +426,8 @@ MAX_OBJECT = 63
 FACE_PLAYER, FACE_SELF, FACE_OPPOSITE_PLAYER = (VM.constants[k] for k in ("kFacePlayer", "kFaceSelf",
                                                                            "kFaceOppositePlayer"))
 ## The face words beyond the directions and their ObjectFace targets.
-FACE_WORDS = {"player": FACE_PLAYER, "self": FACE_SELF, "opposite_player": FACE_OPPOSITE_PLAYER}
+FACE_WORDS = {"player": FACE_PLAYER, "self": FACE_SELF, "opposite_player": FACE_OPPOSITE_PLAYER,
+              "encounter": VM.constants["kFaceEncounter"]}
 ## Warp / Place facing byte: keep the current facing (kKeepFacing).
 KEEP_FACING = VM.constants["kKeepFacing"]
 ## Scroll direction byte: back to the player.
@@ -376,7 +441,8 @@ OBJECT_CAMERA, OBJECT_LAST = VM.constants["kObjectCamera"], VM.constants["kObjec
 ## capsule::script::kObjectSelected).
 OBJECT_SELECTED = VM.constants["kObjectSelected"]
 ## Object words of object_ref() besides self and player (not keywords: scripts may still name things so).
-OBJECT_WORDS = {"camera": OBJECT_CAMERA, "last": OBJECT_LAST, "selected": OBJECT_SELECTED}
+OBJECT_WORDS = {"camera": OBJECT_CAMERA, "last": OBJECT_LAST, "selected": OBJECT_SELECTED,
+                "encounter": VM.constants["kObjectEncounter"]}
 ## The scripts manifest's "vm" object: key -> {value: capsule::script::kVm... bit} (the first value of each key
 ## is the engine's own behaviour, bit 0).
 VM_OPTIONS = {"resume": {"same_frame": 0, "next_frame": 1},
@@ -1574,6 +1640,59 @@ class Parser:
          return Node("constname", t, name=t.text)
       raise self.error(f"expected a value (number, constant, var(...), yes / no), found {t.text!r}")
 
+   def encounter_statement(self, t: Token) -> Node:
+      """!Parses an encounter statement (D-36 package 2 C1): `encounter clear|music|mark|continue|after;`,
+      `encounter set a|b|current <party> <object> [beaten flag(F)] [intro|defeat|cannot <text>]
+      [after <script>] [then <script>] [pair] [rematch] [no_music] [mode <n>];`,
+      `encounter select a|b|<side>;`,
+      `encounter get <field> -> var(v);` and `encounter text intro|defeat|cannot;`.
+      @param t  the statement's first token (the encounter word)
+      @return its node
+      """
+      self.take()
+      kind = self.take().text
+      node = Node("encounter", t, kind=kind)
+      if kind == "set":
+         side = self.direction(tuple(ENCOUNTER_SIDES))
+         node.update(side=side, party=self.operand(), obj=self.object_ref(), beaten=None, texts={},
+                     after=None, then=None, bits=set(), mode=0)
+         while not self.at(";"):
+            w = self.peek()
+            if self.accept(ENCOUNTER_BEATEN_WORD):
+               node["beaten"] = self.flag_ref().text
+            elif w.text in ENCOUNTER_TEXTS:
+               self.take()
+               node["texts"][w.text] = self.text_ref()
+            elif self.accept(ENCOUNTER_AFTER_WORD):
+               node["after"] = self.name("a script name").text
+            elif self.accept(ENCOUNTER_THEN_WORD):
+               node["then"] = self.name("a script name").text
+            elif self.accept(ENCOUNTER_MODE_WORD):
+               node["mode"], _ = self.number()
+            elif w.text in ENCOUNTER_BITS:
+               self.take()
+               node["bits"].add(w.text)
+            else:
+               words = [ENCOUNTER_BEATEN_WORD, *ENCOUNTER_TEXTS, ENCOUNTER_AFTER_WORD, ENCOUNTER_THEN_WORD,
+                        ENCOUNTER_MODE_WORD, *ENCOUNTER_BITS]
+               raise self.error(f"encounter set: expected {', '.join(words)}, found {w.text!r}", w)
+      elif kind == "select":
+         w = self.peek()
+         if w.text in ENCOUNTER_SELECT:
+            self.take()
+            node["side"] = Node("num", w, value=ENCOUNTER_SELECT[w.text])
+         else:
+            node["side"] = self.operand()
+      elif kind == "get":
+         node["field"] = self.direction(tuple(ENCOUNTER_FIELDS))
+         if not self.accept("->"):
+            raise self.error(f"encounter get {node['field']} needs -> var(v)", t)
+         node["result"] = self.var_ref().text
+      elif kind == "text":
+         node["which"] = self.direction(tuple(ENCOUNTER_TEXTS))
+      self.expect(";")
+      return node
+
    def object_ref(self) -> Node:
       """!Parses a map object: self, player or an operand.
       @return its node (num for self / player, marked with 'obj')
@@ -1725,6 +1844,22 @@ class Parser:
          n = self.var_ref()
          self.expect(";")
          return Node("field_action", t, kind=kind, name=name, result=n.text)
+      if self.at(ENCOUNTER_WORD) and nxt.text in ENCOUNTER_KINDS:
+         return self.encounter_statement(t)
+      if self.at(BATTLE_WORD) and nxt.text in BATTLE_KINDS:
+         # battle party|rematch | unowned <species> <level> [<item>] | scripted <number>  [-> var(v)];
+         self.take()
+         kind = self.take().text
+         args = []
+         if kind == "unowned":
+            args = [self.operand(), self.operand()]
+            if not self.at("->") and not self.at(";"):
+               args.append(self.operand())
+         elif kind == "scripted":
+            args = [self.operand()]
+         result = self.var_ref().text if self.accept("->") else None
+         self.expect(";")
+         return Node("battle", t, kind=kind, args=args, result=result)
       if self.at(NURSERY_WORD) and nxt.text in NURSERY_KINDS:
          # Nursery KIND [<operand>] [pay var(money)] -> var(v);
          self.take()
@@ -3561,6 +3696,21 @@ class Compiler:
          e.u8(index)
          e.u16(self.var_id(s["result"], s))
          return True
+      if k == "encounter":
+         return self.encounter_emit(e, s, ctx)
+      if k == "battle":
+         # A battle through the game's battle port (capsule/script/battle_port.h); waits for its outcome
+         e.op("Battle")
+         e.u8(BATTLE_KINDS.index(s["kind"]))
+         args = list(s["args"])
+         if s["kind"] == "unowned" and len(args) < BATTLE_UNOWNED_OPERANDS:
+            args.append(Node("num", Token("number", str(BATTLE_NO_ITEM), s["line"], s["col"]),
+                             value=BATTLE_NO_ITEM))
+         for a in args:
+            self.emit_operand(e, a)
+         e.u16(self.var_id(s["result"], s) if s["result"] is not None else NO_VAR)
+         ctx["waits"] = True
+         return True
       if k == "nursery":
          # The battle manifest's nursery (capsule/script/nursery_port.h); the nickname prompt anywhere
          if s["kind"] not in NURSERY_ANYWHERE and not self.eggs["nursery"]:
@@ -3761,6 +3911,59 @@ class Compiler:
       else:
          iid = names.index(item["name"]) + 1   # item ids count from 1 (0: no item)
       self.emit_operand(e, Node("num", Token("number", str(iid), s["line"], s["col"]), value=iid))
+
+   def encounter_emit(self, e: Emitter, s: Node, ctx: dict[str, Any]) -> bool:
+      """!Emits an encounter statement (D-36 package 2 C1; Op::Encounter).
+      @param e    emitter
+      @param s    the statement
+      @param ctx  compile context ("waits" for text, "loose" gains an after-script: a jump)
+      @return true when control continues after it
+      """
+      kind = s["kind"]
+      e.op("Encounter")
+      e.u8(ENCOUNTER_KINDS.index(kind))
+      if kind == "set":
+         e.u8(ENCOUNTER_SIDES[s["side"]])
+         self.emit_operand(e, s["party"])
+         v = self.value(s["obj"])
+         if v is not None:
+            self.check_object(v, s["obj"], s)
+         self.emit_operand(e, s["obj"])
+         e.u16(self.flag_id(s["beaten"], s) if s["beaten"] is not None else ENCOUNTER_NO_FLAG)
+         parts = 0
+         for word, bit in ENCOUNTER_TEXTS.items():
+            parts |= bit if word in s["texts"] else 0
+         parts |= ENCOUNTER_HAS_AFTER if s["after"] is not None else 0
+         parts |= ENCOUNTER_HAS_THEN if s["then"] is not None else 0
+         e.u8(parts)
+         for word in ENCOUNTER_TEXTS:   # in the bits' order
+            if word in s["texts"]:
+               self.emit_text(e, s["texts"][word])
+         for target in (s["after"], s["then"]):
+            if target is None:
+               continue
+            if self.scripts.get(target) is None:
+               self.err(f"unknown script {target!r}", s)
+            else:
+               self.used.add(("script", target))
+               ctx["loose"].add(target)   # After and then go on there in the same frame (a jump)
+            e.u16(self.script_ids.get(target, 0))
+         bits = 0
+         for word in s["bits"]:
+            bits |= ENCOUNTER_BITS[word]
+         e.u8(bits)
+         if not 0 <= s["mode"] <= ENCOUNTER_MAX_MODE:
+            self.err(f"encounter set: mode {s['mode']} is outside 0-{ENCOUNTER_MAX_MODE}", s)
+         e.u8(s["mode"] & ENCOUNTER_MAX_MODE)
+      elif kind == "select":
+         self.emit_operand(e, s["side"])
+      elif kind == "get":
+         e.u8(ENCOUNTER_FIELDS.index(s["field"]))
+         e.u16(self.var_id(s["result"], s))
+      elif kind == "text":
+         e.u8(ENCOUNTER_TEXTS[s["which"]])
+         ctx["waits"] = True
+      return kind not in ENCOUNTER_LEAVING
 
    def role_ref(self, s: Node) -> tuple[int, tuple[int, int] | None]:
       """!The role a role statement names: a role name, a constant, or a role ID.
