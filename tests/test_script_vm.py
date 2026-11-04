@@ -20,7 +20,7 @@ import vm_ext  # noqa: E402
 
 ## Opcodes the bytecode has numbered so far, by name: the first, the start of the imported block and the last
 ## (renumbering any of them would change every bank).
-PINNED = {"End": 0, "Native": 20, "Nursery": 65, "Jump": 66, "Override": 86}
+PINNED = {"End": 0, "Native": 20, "Nursery": 65, "Jump": 66, "Override": 86, "Battle": 88}
 
 
 class Table(unittest.TestCase):
@@ -41,7 +41,7 @@ class Table(unittest.TestCase):
       """The compiler's opcode list, kind words and constants come from the manifest."""
       t = script_vm.table()
       self.assertIs(sc.OPS, t.ops)
-      self.assertEqual(sc.OP["Override"], len(t.ops) - 1)
+      self.assertEqual(sc.OP["Battle"], len(t.ops) - 1)
       self.assertEqual(sc.TRANSITIONS, t.words("Transition"))
       self.assertEqual(sc.SOUND_KINDS, t.word_values("SoundOp", "operands"))
       self.assertEqual(sc.OBJECT_PLAYER, t.constants["kObjectPlayer"])

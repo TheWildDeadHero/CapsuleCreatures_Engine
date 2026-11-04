@@ -88,6 +88,8 @@
 /// | CallLoose | id16 | I4: calls a script that may recurse; with the stack full (Bank::stack_depth) it goes on as a Jump, as the imported game's own VM does |
 /// | WaitState | — | I4: waits while the game is busy (game::state_busy(): a special the game runs over frames) |
 /// | Override | apply8 (1 apply, 0 clear), set16 | DS1: a cell override set of the world (index into map::kWorld.override_sets; world::override_set()) |
+/// | Encounter | kind8 (EncounterOp), then by kind: Set: side8, operand (party), operand (object), flag16 (or kEncounterNoFlag), parts8 (kEncounterHas... bits), the texts and script16s (after, then) the bits name, bits8 (kEncounter... mode bits), mode8 (the game's own number); Select: operand (side); Get: field8 (EncounterField), var16; Text: which8 (kEncounterHasIntro / Defeat / Cannot); Clear / Music / Mark / Continue / After: nothing | C1: Clear empties the record; Set fills a side, remembers the instruction after it as the return point and, with a then-script, goes on there; Select picks the current side; Get reads the record into a variable; Text types the current side's text (waits until typed); Music plays the current party's encounter music (battle port); Mark sets the filled sides' beaten flags; Continue goes on at the return point (else ends); After goes on in the current side's after-script (without one, the next instruction) |
+/// | Battle | kind8 (BattleKind), [Unowned: operand species, operand level, operand item], [Scripted: operand number], var16 (or kNoVar) | C1: the battle (capsule/script/battle_port.h; Party / Rematch take the encounter record's sides); waits until it ends; var = its capsule::battle::Outcome |
 #pragma once
 
 #include <cstdint>
@@ -186,6 +188,8 @@ enum class Op : uint8_t
    CallLoose,   ///< A call that becomes a jump on a full stack.
    WaitState,   ///< Wait while the game is busy.
    Override,   ///< DS1: apply or clear a cell override set.
+   Encounter,   ///< The encounter record: its sides (parties), texts, beaten flags and where the script goes on (D-36 package 2 C1).
+   Battle,   ///< Start a battle through the game's battle port and wait for its outcome (D-36 package 2 C1).
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -392,6 +396,44 @@ enum class NurseryOp : uint8_t
    NUM_NURSERY_OPS   ///< Number of kinds.
 };
 
+/// Encounter op kinds (C1; tools/script_compiler.py ENCOUNTER_KINDS).
+enum class EncounterOp : uint8_t
+{
+   Clear,   ///< Empty the record (both sides, the mode bits, the return point).
+   Set,   ///< Fill a side: party, object, beaten flag, texts, after-script, mode bits, the game's mode number; the return point; then go on in its then-script.
+   Select,   ///< The current side (operand: 0 A, 1 B).
+   Get,   ///< var = a field of the record (EncounterField).
+   Text,   ///< Type one of the current side's texts (waits until typed).
+   Music,   ///< The current party's encounter music (none with kEncounterNoMusic).
+   Mark,   ///< Set the filled sides' beaten flags.
+   Continue,   ///< Go on at the return point (end the script without one).
+   After,   ///< Go on in the current side's after-script (without one, the next statement runs).
+   NUM_ENCOUNTER_OPS   ///< Number of encounter op kinds.
+};
+
+/// Encounter get fields (C1; tools/script_compiler.py ENCOUNTER_FIELDS).
+enum class EncounterField : uint8_t
+{
+   Party,   ///< The current side's party (the game's number).
+   Object,   ///< The current side's map object (local ID, kNoSelf without one).
+   Beaten,   ///< 1 when the current side's beaten flag is set.
+   Bits,   ///< The mode bits (kEncounterPair / Rematch / NoMusic).
+   Side,   ///< The current side (0 A, 1 B).
+   Sides,   ///< How many sides are filled.
+   Mode,   ///< The game's mode number (the last Set's `mode`).
+   NUM_ENCOUNTER_FIELDS   ///< Number of encounter fields.
+};
+
+/// Battle op kinds (C1; capsule/script/battle_port.h; tools/script_compiler.py BATTLE_KINDS).
+enum class BattleKind : uint8_t
+{
+   Party,   ///< The encounter record's parties.
+   Rematch,   ///< The encounter record's parties, a rematch.
+   Unowned,   ///< An unowned battler: species, level, held item.
+   Scripted,   ///< A battle the game numbers itself (special set-ups).
+   NUM_BATTLE_KINDS   ///< Number of battle kinds.
+};
+
 /// @name Operand and text-reference tags
 ///@{
 inline constexpr uint8_t kOpConst8 = 0;   ///< 1-byte unsigned constant.
@@ -425,6 +467,20 @@ inline constexpr uint8_t kMessageNoWait = 1;   ///< I4: MessageEx: the script go
 inline constexpr uint8_t kMessageInstant = 2;   ///< I4: MessageEx: typed at once.
 inline constexpr uint8_t kMessageAutoScroll = 4;   ///< I4: MessageEx: scrolls on without a button.
 inline constexpr uint8_t kFadeSwap = 1;   ///< I4: Fade flags: keep the palettes the scene changes meanwhile.
+inline constexpr uint8_t kObjectEncounter = 249;   ///< C1: object operand: the encounter record's current side's object.
+inline constexpr uint8_t kFaceEncounter = 7;   ///< C1: ObjectFace: towards the encounter record's current side's object.
+inline constexpr uint8_t kEncounterSideA = 0;   ///< C1: Encounter Set: side A.
+inline constexpr uint8_t kEncounterSideB = 1;   ///< C1: Encounter Set: side B.
+inline constexpr uint8_t kEncounterSideCurrent = 2;   ///< C1: Encounter Set: the current side.
+inline constexpr uint16_t kEncounterNoFlag = 0xFFFF;   ///< C1: Encounter Set: no beaten flag.
+inline constexpr uint8_t kEncounterHasIntro = 1;   ///< C1: Encounter Set parts / Text: the intro text.
+inline constexpr uint8_t kEncounterHasDefeat = 2;   ///< C1: Encounter Set parts / Text: the defeat text.
+inline constexpr uint8_t kEncounterHasCannot = 4;   ///< C1: Encounter Set parts / Text: the cannot-battle text.
+inline constexpr uint8_t kEncounterHasAfter = 8;   ///< C1: Encounter Set parts: the after-script.
+inline constexpr uint8_t kEncounterHasThen = 16;   ///< C1: Encounter Set parts: a script to go on in at once (the return point stays after the Set).
+inline constexpr uint8_t kEncounterPair = 1;   ///< C1: Encounter mode bit: a pair battle (two battlers a side).
+inline constexpr uint8_t kEncounterRematch = 2;   ///< C1: Encounter mode bit: a rematch.
+inline constexpr uint8_t kEncounterNoMusic = 4;   ///< C1: Encounter mode bit: no encounter music.
 ///@}
 
 /// @name Limits

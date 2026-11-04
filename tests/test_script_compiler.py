@@ -62,8 +62,9 @@ class Fixture(unittest.TestCase):
       comp = sc.compile_file(ROOT / "tests" / "data" / "scripts" / "scripts.json")
       self.assertEqual(errors(comp), [])
       r = comp.result
-      # F2: + the world's two flight point flags; C10: the session bank (empty) last
-      self.assertEqual(r["flag_first"], [0, 3, 4, 5, 6, 6])
+      # F2: + the world's two flight point flags; C10: the session bank (empty) last; C1: two more permanent
+      # flags (the encounter test's beaten flags)
+      self.assertEqual(r["flag_first"], [0, 5, 6, 7, 8, 8])
       self.assertIn("field.on_frame.1", r["names"])
       self.assertEqual(r["name_bytes"], 6)   # the fixture's name slot {hero}: a length byte and 5 codes
       self.assertEqual(comp.save_bytes(), sum(r["flag_bytes"]) + sum(r["var_bytes"]) + r["name_bytes"])
@@ -206,6 +207,36 @@ class Language(unittest.TestCase):
       self.assertEqual(comp.vehicle_names, ["foot", "swim", "paddle", "trek"])
       self.assertEqual(errors(comp), [])
 
+   def test_encounter(self) -> None:
+      """D-36 package 2 C1: encounter statements and battles compile to Encounter / Battle (capsule/script/ops.h)."""
+      op, k = sc.OP, sc.ENCOUNTER_KINDS
+      comp = compile_text('flag f; script s { encounter set b 300 self beaten flag(f) intro "Hi" then t rematch; }'
+                          " script t { }")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      c = comp.result["code"][o:o + n]
+      parts = sc.ENCOUNTER_TEXTS["intro"] | sc.ENCOUNTER_HAS_THEN
+      text_bytes = 1 + 4   # a text reference: its tag and 32-bit value
+      self.assertEqual(c[:10], bytes([op["Encounter"], k.index("set"), sc.ENCOUNTER_SIDES["b"], sc.OPND_CONST16,
+                                      300 & 0xFF, 300 >> 8, sc.OPND_CONST8, sc.OBJECT_SELF, 0, 0]))
+      self.assertEqual(c[10], parts)
+      self.assertEqual(c[11], sc.TEXT_INLINE)
+      at = 11 + text_bytes
+      self.assertEqual(struct.unpack_from("<H", c, at)[0], 1)   # script t's ID (s is 0)
+      self.assertEqual(c[at + 2:], bytes([sc.ENCOUNTER_BITS["rematch"], 0, op["End"]]))   # bits, mode 0
+      self.assertEqual(self.code("encounter get beaten -> var(v); encounter text defeat; encounter continue;"),
+                       bytes([op["Encounter"], k.index("get"), sc.ENCOUNTER_FIELDS.index("beaten"), 0, 0,
+                              op["Encounter"], k.index("text"), sc.ENCOUNTER_TEXTS["defeat"],
+                              op["Encounter"], k.index("continue")]))   # continue leaves: no End after it
+      self.assertEqual(self.code("face player encounter; encounter select b;"),
+                       bytes([op["ObjectFace"], sc.OPND_CONST8, sc.OBJECT_PLAYER, sc.FACE_WORDS["encounter"],
+                              op["Encounter"], k.index("select"), sc.OPND_CONST8, sc.ENCOUNTER_SIDES["b"],
+                              op["End"]]))
+      b = sc.BATTLE_KINDS
+      self.assertEqual(self.code("battle unowned 25 5 -> var(v); battle party;"),
+                       bytes([op["Battle"], b.index("unowned"), sc.OPND_CONST8, 25, sc.OPND_CONST8, 5, sc.OPND_CONST8,
+                              sc.BATTLE_NO_ITEM, 0, 0, op["Battle"], b.index("party"), 0xFF, 0xFF, op["End"]]))
+
 
 class Checks(unittest.TestCase):
    """Build errors and warnings."""
@@ -225,6 +256,12 @@ class Checks(unittest.TestCase):
       self.assert_error("script a { call b; } script b { call c; } script c { call a; }",
                        "recursion: a -> b -> c -> a")
       self.assert_error("var v : u8; script a { call var(v) of [b]; } script b { call a; }", "recursion")
+
+   def test_encounter_checks(self) -> None:
+      """An encounter's after / then script must exist, and a wrong word names what may come."""
+      self.assert_error("script s { encounter set a 1 self after nowhere; }", "unknown script 'nowhere'")
+      self.assert_error("script s { encounter set a 1 self loud; }", "expected beaten")
+      self.assert_error("var v : u8; script s { encounter get party; }", "needs -> var(v)")
 
    def test_depth(self) -> None:
       """A chain deeper than stack_depth is an error."""

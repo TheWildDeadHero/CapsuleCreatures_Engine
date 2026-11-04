@@ -733,6 +733,26 @@
    "doc": "DS1: apply or clear a cell override set.",
    "bytes": "apply8 (1 apply, 0 clear), set16",
    "does": "DS1: a cell override set of the world (index into map::kWorld.override_sets; world::override_set())"
+  },
+  {
+   "id": 87,
+   "name": "Encounter",
+   "kind": "generic",
+   "doc": "The encounter record: its sides (parties), texts, beaten flags and where the script goes on (D-36 package 2 C1).",
+   "bytes": "kind8 (EncounterOp), then by kind: Set: side8, operand (party), operand (object), flag16 (or kEncounterNoFlag), parts8 (kEncounterHas... bits), the texts and script16s (after, then) the bits name, bits8 (kEncounter... mode bits), mode8 (the game's own number); Select: operand (side); Get: field8 (EncounterField), var16; Text: which8 (kEncounterHasIntro / Defeat / Cannot); Clear / Music / Mark / Continue / After: nothing",
+   "does": "C1: Clear empties the record; Set fills a side, remembers the instruction after it as the return point and, with a then-script, goes on there; Select picks the current side; Get reads the record into a variable; Text types the current side's text (waits until typed); Music plays the current party's encounter music (battle port); Mark sets the filled sides' beaten flags; Continue goes on at the return point (else ends); After goes on in the current side's after-script (without one, the next instruction)",
+   "module": "battle",
+   "handler": "op_encounter"
+  },
+  {
+   "id": 88,
+   "name": "Battle",
+   "kind": "generic",
+   "doc": "Start a battle through the game's battle port and wait for its outcome (D-36 package 2 C1).",
+   "bytes": "kind8 (BattleKind), [Unowned: operand species, operand level, operand item], [Scripted: operand number], var16 (or kNoVar)",
+   "does": "C1: the battle (capsule/script/battle_port.h; Party / Rematch take the encounter record's sides); waits until it ends; var = its capsule::battle::Outcome",
+   "module": "battle",
+   "handler": "op_battle"
   }
  ],
  "enums": [
@@ -1454,6 +1474,145 @@
     "name": "NUM_NURSERY_OPS",
     "doc": "Number of kinds."
    }
+  },
+  {
+   "name": "EncounterOp",
+   "type": "uint8_t",
+   "doc": [
+    "Encounter op kinds (C1; tools/script_compiler.py ENCOUNTER_KINDS)."
+   ],
+   "values": [
+    {
+     "name": "Clear",
+     "doc": "Empty the record (both sides, the mode bits, the return point).",
+     "word": "clear"
+    },
+    {
+     "name": "Set",
+     "doc": "Fill a side: party, object, beaten flag, texts, after-script, mode bits, the game's mode number; the return point; then go on in its then-script.",
+     "word": "set"
+    },
+    {
+     "name": "Select",
+     "doc": "The current side (operand: 0 A, 1 B).",
+     "word": "select"
+    },
+    {
+     "name": "Get",
+     "doc": "var = a field of the record (EncounterField).",
+     "word": "get"
+    },
+    {
+     "name": "Text",
+     "doc": "Type one of the current side's texts (waits until typed).",
+     "word": "text"
+    },
+    {
+     "name": "Music",
+     "doc": "The current party's encounter music (none with kEncounterNoMusic).",
+     "word": "music"
+    },
+    {
+     "name": "Mark",
+     "doc": "Set the filled sides' beaten flags.",
+     "word": "mark"
+    },
+    {
+     "name": "Continue",
+     "doc": "Go on at the return point (end the script without one).",
+     "word": "continue"
+    },
+    {
+     "name": "After",
+     "doc": "Go on in the current side's after-script (without one, the next statement runs).",
+     "word": "after"
+    }
+   ],
+   "count": {
+    "name": "NUM_ENCOUNTER_OPS",
+    "doc": "Number of encounter op kinds."
+   }
+  },
+  {
+   "name": "EncounterField",
+   "type": "uint8_t",
+   "doc": [
+    "Encounter get fields (C1; tools/script_compiler.py ENCOUNTER_FIELDS)."
+   ],
+   "values": [
+    {
+     "name": "Party",
+     "doc": "The current side's party (the game's number).",
+     "word": "party"
+    },
+    {
+     "name": "Object",
+     "doc": "The current side's map object (local ID, kNoSelf without one).",
+     "word": "object"
+    },
+    {
+     "name": "Beaten",
+     "doc": "1 when the current side's beaten flag is set.",
+     "word": "beaten"
+    },
+    {
+     "name": "Bits",
+     "doc": "The mode bits (kEncounterPair / Rematch / NoMusic).",
+     "word": "bits"
+    },
+    {
+     "name": "Side",
+     "doc": "The current side (0 A, 1 B).",
+     "word": "side"
+    },
+    {
+     "name": "Sides",
+     "doc": "How many sides are filled.",
+     "word": "sides"
+    },
+    {
+     "name": "Mode",
+     "doc": "The game's mode number (the last Set's `mode`).",
+     "word": "mode"
+    }
+   ],
+   "count": {
+    "name": "NUM_ENCOUNTER_FIELDS",
+    "doc": "Number of encounter fields."
+   }
+  },
+  {
+   "name": "BattleKind",
+   "type": "uint8_t",
+   "doc": [
+    "Battle op kinds (C1; capsule/script/battle_port.h; tools/script_compiler.py BATTLE_KINDS)."
+   ],
+   "values": [
+    {
+     "name": "Party",
+     "doc": "The encounter record's parties.",
+     "word": "party"
+    },
+    {
+     "name": "Rematch",
+     "doc": "The encounter record's parties, a rematch.",
+     "word": "rematch"
+    },
+    {
+     "name": "Unowned",
+     "doc": "An unowned battler: species, level, held item.",
+     "word": "unowned"
+    },
+    {
+     "name": "Scripted",
+     "doc": "A battle the game numbers itself (special set-ups).",
+     "word": "scripted"
+    }
+   ],
+   "count": {
+    "name": "NUM_BATTLE_KINDS",
+    "doc": "Number of battle kinds."
+   }
   }
  ],
  "constants": [
@@ -1633,6 +1792,90 @@
      "type": "uint8_t",
      "value": "1",
      "doc": "I4: Fade flags: keep the palettes the scene changes meanwhile."
+    },
+    {
+     "name": "kObjectEncounter",
+     "type": "uint8_t",
+     "value": "249",
+     "doc": "C1: object operand: the encounter record's current side's object."
+    },
+    {
+     "name": "kFaceEncounter",
+     "type": "uint8_t",
+     "value": "7",
+     "doc": "C1: ObjectFace: towards the encounter record's current side's object."
+    },
+    {
+     "name": "kEncounterSideA",
+     "type": "uint8_t",
+     "value": "0",
+     "doc": "C1: Encounter Set: side A."
+    },
+    {
+     "name": "kEncounterSideB",
+     "type": "uint8_t",
+     "value": "1",
+     "doc": "C1: Encounter Set: side B."
+    },
+    {
+     "name": "kEncounterSideCurrent",
+     "type": "uint8_t",
+     "value": "2",
+     "doc": "C1: Encounter Set: the current side."
+    },
+    {
+     "name": "kEncounterNoFlag",
+     "type": "uint16_t",
+     "value": "0xFFFF",
+     "doc": "C1: Encounter Set: no beaten flag."
+    },
+    {
+     "name": "kEncounterHasIntro",
+     "type": "uint8_t",
+     "value": "1",
+     "doc": "C1: Encounter Set parts / Text: the intro text."
+    },
+    {
+     "name": "kEncounterHasDefeat",
+     "type": "uint8_t",
+     "value": "2",
+     "doc": "C1: Encounter Set parts / Text: the defeat text."
+    },
+    {
+     "name": "kEncounterHasCannot",
+     "type": "uint8_t",
+     "value": "4",
+     "doc": "C1: Encounter Set parts / Text: the cannot-battle text."
+    },
+    {
+     "name": "kEncounterHasAfter",
+     "type": "uint8_t",
+     "value": "8",
+     "doc": "C1: Encounter Set parts: the after-script."
+    },
+    {
+     "name": "kEncounterHasThen",
+     "type": "uint8_t",
+     "value": "16",
+     "doc": "C1: Encounter Set parts: a script to go on in at once (the return point stays after the Set)."
+    },
+    {
+     "name": "kEncounterPair",
+     "type": "uint8_t",
+     "value": "1",
+     "doc": "C1: Encounter mode bit: a pair battle (two battlers a side)."
+    },
+    {
+     "name": "kEncounterRematch",
+     "type": "uint8_t",
+     "value": "2",
+     "doc": "C1: Encounter mode bit: a rematch."
+    },
+    {
+     "name": "kEncounterNoMusic",
+     "type": "uint8_t",
+     "value": "4",
+     "doc": "C1: Encounter mode bit: no encounter music."
     }
    ]
   },
@@ -1729,6 +1972,13 @@
    "symbol": "poll_nursery",
    "ops": [
     "Nursery"
+   ]
+  },
+  {
+   "wait": "Battle",
+   "symbol": "poll_battle",
+   "ops": [
+    "Battle"
    ]
   }
  ]

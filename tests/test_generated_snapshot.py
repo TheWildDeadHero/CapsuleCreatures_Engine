@@ -1120,6 +1120,16 @@ RELEASE_CHANGES = {name: RELEASE_RENAME for name in ("sandbox_map/battle.cpp", "
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in RELEASE_CHANGES.items()})
 
+## Why the script outputs changed for trainer encounters (D-36 package 2 C1: Encounter 87 / Battle 88).
+ENCOUNTER_CHANGES = {"test_script.cpp": ("The encounter test scripts fight, fight_start, fight_after, lone_battle "
+                                         "and the flags f_beaten_a / f_beaten_b"),
+                     "test_script_ids.h": ("SCRIPT_FIGHT, SCRIPT_FIGHT_START, SCRIPT_FIGHT_AFTER, SCRIPT_LONE_BATTLE, "
+                                           "FLAG_F_BEATEN_A, FLAG_F_BEATEN_B"),
+                     "sandbox_map/scripts.cpp": ("rival_battle through the encounter record and a party battle "
+                                                 "(the engine's default battle port: won at once)")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in ENCOUNTER_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

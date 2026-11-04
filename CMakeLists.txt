@@ -263,6 +263,7 @@ add_library(capsule_engine STATIC
    src/overworld/locations_empty.cpp
    src/script/script.cpp
    src/script/script_dispatch_all.cpp
+   src/script/script_battle_none.cpp
    src/script/field_effects.cpp
    src/script/field_actions.cpp
    src/script/step_effects.cpp
@@ -896,6 +897,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
       src/overworld/overworld.cpp
       src/script/script.cpp
       src/script/script_dispatch_all.cpp
+      src/script/script_battle_none.cpp
       src/script/field_actions.cpp
       src/script/script_port_defaults.cpp
       ${CAPSULE_SCRIPT_ITEMS_SOURCES}
@@ -995,6 +997,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
       ${CAPSULE_TEST_RNG_SOURCES}
       src/script/script.cpp
       src/script/script_dispatch_all.cpp
+      src/script/script_battle_none.cpp
       src/script/field_effects.cpp
       src/script/field_actions.cpp
       ${CAPSULE_GENERATED_DIR}/test_script.cpp

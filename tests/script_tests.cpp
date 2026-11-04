@@ -5,6 +5,7 @@
 #include "capsule/asset/asset.h"
 #include "capsule/core/clock.h"
 #include "capsule/core/random.h"
+#include "capsule/script/battle_port.h"
 #include "capsule/script/combine_port.h"
 #include "capsule/script/nursery_port.h"
 #include "capsule/script/field_actions.h"
@@ -632,6 +633,45 @@ bool playing(SoundWait kind)
 }
 
 } // namespace capsule::script::audio
+
+/// D-36 package 2 C1: the battle port's stub (records each request; a battle runs kBattlePolls frames and is won).
+namespace capsule::script::battles
+{
+
+/// Frames a stub battle runs.
+constexpr int kBattlePolls = 2;
+/// The stub's encounter music for every party.
+constexpr int32_t kStubMusic = 42;
+
+Request g_battle_last{};   ///< The last request.
+int g_battle_starts = 0;   ///< Battles started.
+int g_battle_left = 0;     ///< Frames the running battle has left.
+
+bool start(const Request& r)
+{
+   g_battle_last = r;
+   ++g_battle_starts;
+   g_battle_left = kBattlePolls;
+   return true;
+}
+
+bool busy()
+{
+   return g_battle_left-- > 0;
+}
+
+battle::Outcome outcome()
+{
+   return battle::Outcome::Victory;
+}
+
+int32_t encounter_music(uint16_t party)
+{
+   (void)party;
+   return kStubMusic;
+}
+
+} // namespace capsule::script::battles
 
 namespace
 {
@@ -1560,6 +1600,40 @@ void test_combine()
    CHECK(script::var(VAR_ANSWER) == cp::kCombineDone && script::var(VAR_OUT) == cp::kCombineBack);
 }
 
+/// D-36 package 2 C1: an encounter (sides A and B, their texts, the encounter music, the player facing the side's
+/// object, a party battle through the stub port, the beaten flags, the after-script), the same party once beaten
+/// (Continue: back after its Set), and the unowned and scripted battles.
+void test_encounter()
+{
+   namespace bp = script::battles;
+   script::clear_all();
+   g_world = World{};
+   bp::g_battle_starts = 0;
+   script::Context c{};
+   script::start(c, SCRIPT_FIGHT, 7);
+   run(c);
+   CHECK(bp::g_battle_starts == 1 && bp::g_battle_last.kind == script::BattleKind::Party);
+   CHECK(bp::g_battle_last.a.party == 12 && bp::g_battle_last.a.object == 7);
+   CHECK(bp::g_battle_last.b.party == 13 && bp::g_battle_last.b.object == 3);
+   CHECK(bp::g_battle_last.bits == 0);   // side B's Set gave no mode bits (the last Set's bits stand)
+   CHECK(std::strcmp(g_port.last, "Hey!") == 0 && script::var(VAR_V16) == 3);
+   CHECK(std::strcmp(g_world.log, "sound 0 2 42;toward P 7;") == 0);
+   CHECK(script::var(VAR_ANSWER) == static_cast<int32_t>(battle::Outcome::Victory));
+   CHECK(script::flag(FLAG_F_BEATEN_A) && script::flag(FLAG_F_BEATEN_B) && script::var(VAR_BAG_OK) == 2);
+   CHECK(script::var(VAR_OUT) == 7);   // the after-script ran, not the statement after the Set
+   CHECK(script::var(VAR_WALK_OK) == 0);   // the game's mode number: side B's Set (mode 0) was the last
+   // Beaten: Continue goes on after the Set, no battle
+   script::start(c, SCRIPT_FIGHT, 7);
+   run(c);
+   CHECK(bp::g_battle_starts == 1 && script::var(VAR_OUT) == 99);
+   // Unowned and scripted battles
+   script::start(c, SCRIPT_LONE_BATTLE);
+   const int frames = run(c);
+   CHECK(frames == 2 * (bp::kBattlePolls + 1));   // each battle: its starting frame, then one per poll
+   CHECK(bp::g_battle_starts == 3 && bp::g_battle_last.kind == script::BattleKind::Scripted);
+   CHECK(bp::g_battle_last.number == 3);
+}
+
 /// F1: the timed field effects of tests/data/battle_stats3 (ward by steps, refused while it runs;
 /// glow by minutes, added up, not saved; lure by steps, started over): their implicit variables and expiry scripts,
 /// the statements, the stack rules, steps, minutes and the expiry reports.
@@ -1708,6 +1782,7 @@ int main()
    test_boxes();
    test_transform();
    test_combine();
+   test_encounter();
    test_field_effects();
    test_f2();
    test_paged_menu();

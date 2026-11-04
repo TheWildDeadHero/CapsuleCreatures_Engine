@@ -95,6 +95,8 @@ const OpHandler kModuleOps[kOpCount] = {
    nullptr,          // 84 CallLoose
    nullptr,          // 85 WaitState
    nullptr,          // 86 Override
+   op_encounter,     // 87 Encounter
+   op_battle,        // 88 Battle
 };
 
 /// The module waits by wait kind (nullptr: not a module wait, or one no op of the table sets).
@@ -112,6 +114,7 @@ constexpr std::array<WaitPoll, kWaitCount> make_polls()
    polls[static_cast<int>(Wait::Transform)] = poll_transform;
    polls[static_cast<int>(Wait::Combine)] = poll_combine;
    polls[static_cast<int>(Wait::Nursery)] = poll_nursery;
+   polls[static_cast<int>(Wait::Battle)] = poll_battle;
    return polls;
 }
 

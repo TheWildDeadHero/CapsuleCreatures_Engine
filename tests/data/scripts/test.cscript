@@ -243,3 +243,37 @@ map_scripts town {
     on_warp_into var(v8) == 0 -> port_warp_into;
     on_warp_into var(v8) == 0 -> port_other;
 }
+
+// D-36 package 2 C1: the encounter record and battles through the battle port (tests/script_tests.cpp
+// test_encounter: a stub port that records each request and runs for kBattlePolls frames)
+flag f_beaten_a;
+flag f_beaten_b;
+script fight {
+    encounter clear;
+    encounter set a 12 self beaten flag(f_beaten_a) intro "Hey!" defeat "Lost..." after fight_after
+        then fight_start pair mode 1;
+    var(out) = 99;
+}
+script fight_start {
+    encounter get beaten -> var(v8);
+    if var(v8) != 0 { encounter continue; }
+    encounter set b 13 3 beaten flag(f_beaten_b) intro "Me too!";
+    encounter select b;
+    encounter text intro;
+    encounter get object -> var(v16);
+    encounter select a;
+    encounter text intro;
+    encounter music;
+    face player encounter;
+    battle party -> var(answer);
+    encounter mark;
+    encounter get sides -> var(bag_ok);
+    encounter get mode -> var(walk_ok);
+    encounter after;
+    var(out) = 1;
+}
+script fight_after { var(out) = 7; }
+script lone_battle {
+    battle unowned 25 5 -> var(answer);
+    battle scripted 3;
+}

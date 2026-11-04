@@ -66,12 +66,18 @@ script sentry_talk {
     close_msg;
 }
 
+// D-36 package 2 C1: the encounter record and a battle. The sandbox has no battle port, so the engine's
+// default one counts the battle as won at once.
 script rival_battle {
-    msgbox "You walked into my sight!\nLet's battle!";
+    encounter clear;
+    encounter set a 1 self beaten flag(beat_rival) intro "You walked into my sight!\nLet's battle!";
+    encounter text intro;
+    wait_button;
     close_msg;
+    battle party;
+    encounter mark;
     msgbox "(No battles in the map\nsandbox: you win.)";
     close_msg;
-    set flag(beat_rival);
 }
 
 script rival_after {
