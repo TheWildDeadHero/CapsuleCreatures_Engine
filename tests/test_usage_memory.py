@@ -217,6 +217,9 @@ class Budgets(unittest.TestCase):
       self.assertEqual(build_settings.memory_budgets(build),
                        {"regions": {"iwram": 0x7800}, "owners": {"capsule::audio": {"iwram_code": 16384}}})
       self.assertEqual(build_settings.memory_budgets({}), {"regions": {}, "owners": {}})
+      outside = build_settings.memory_budgets({"memory_budgets": {"owners": {um.GLOBAL_OWNER: {"iwram": 4096}}}})
+      self.assertEqual(outside["owners"], {um.GLOBAL_OWNER: {"iwram": 4096}})
+      self.assertEqual(build_settings.GLOBAL_OWNER, um.GLOBAL_OWNER)
 
    def test_refused(self) -> None:
       """Unknown regions, owners that are no namespace, values past the region and non-objects are refused."""
