@@ -20,7 +20,9 @@
 /// go through a general cursor with the same arithmetic, a lane at a time.
 ///
 /// The per-sample loops run as ARM code from IWRAM on the GBA (CAPSULE_IWRAM_CODE); mix() itself, the per-channel
-/// dispatch, the envelope and the general forward cursors (never used with the engine's own state) run from ROM.
+/// dispatch, the envelope and the general forward cursors (never used with the engine's own state) run from ROM. The
+/// reverse loops, which few sounds use, run as ARM code from ROM too (CAPSULE_ARM_CODE; D-42: about 4 KB of IWRAM
+/// for a slower loop only while a reversed sample plays).
 /// The optional high-quality desktop mode
 /// (CAPSULE_AUDIO_HQ) renders the same channels from the same frame-start state at 4x the samples with 16-bit sums
 /// and clamping, handing them to hal::audio::hq_block(); the 8-bit ring and every state stay as without it.
@@ -457,13 +459,14 @@ template <bool kDpcm, bool kReverse>
    ch.count = c.count;
 }
 
-// The copies of the mix loop (IWRAM ARM code on the GBA): the cursor ones (DPCM, reverse), then forward PCM.
+// The copies of the mix loop (ARM code on the GBA): the cursor ones (reverse: from ROM, D-42), then forward PCM and
+// DPCM (from IWRAM).
 
 /// PCM reverse.
 /// @param ch     the channel
 /// @param out    the segment's first right-side word
 /// @param words  ring words per side
-CAPSULE_IWRAM_CODE void mix_pcm_reverse(Channel& ch, uint32_t* out, uint32_t words)
+CAPSULE_ARM_CODE void mix_pcm_reverse(Channel& ch, uint32_t* out, uint32_t words)
 {
    mix_cursor<false, true>(ch, out, words);
 }
@@ -472,7 +475,7 @@ CAPSULE_IWRAM_CODE void mix_pcm_reverse(Channel& ch, uint32_t* out, uint32_t wor
 /// @param ch     the channel
 /// @param out    the segment's first right-side word
 /// @param words  ring words per side
-CAPSULE_IWRAM_CODE void mix_dpcm_reverse(Channel& ch, uint32_t* out, uint32_t words)
+CAPSULE_ARM_CODE void mix_dpcm_reverse(Channel& ch, uint32_t* out, uint32_t words)
 {
    mix_cursor<true, true>(ch, out, words);
 }
