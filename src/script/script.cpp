@@ -2155,6 +2155,7 @@ Outcome op_encounter(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const
    case EncounterOp::Text:
    {
       const uint8_t which = *p++;
+      const uint8_t flags = *p++;   // kMessage... bits, as MessageEx's
       advance(f, p, base);
       const EncounterSide& s = current_side();
       const int i = text_index(which);
@@ -2163,7 +2164,13 @@ Outcome op_encounter(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const
          return Outcome::Continue;   // the side has no such text: nothing to type
       }
       const uint8_t* ref = s.text[i];
+      port::message_mode(flags);
       port::message(text_ref(ref));
+      port::message_mode(0);
+      if ((flags & kMessageNoWait) != 0)
+      {
+         return Outcome::Continue;   // the script goes on while it types (a later wait_msg waits)
+      }
       c.wait = Wait::Typing;
       return Outcome::Waiting;
    }

@@ -155,7 +155,9 @@ after it as the return point and, with then, goes on in that script at once
 (mode: the game's own number, 0-255);
 `encounter select a|b|<side>;` picks the current side;
 `encounter get party|object|beaten|bits|side|sides|mode -> var(v);`;
-`encounter text intro|defeat|cannot;` types the current side's text;
+`encounter text intro|defeat|cannot [nowait] [instant] [autoscroll];` types
+the current side's text (with nowait the script goes on while it types, as
+`msg ... nowait;`);
 `encounter music;` plays its party's encounter music (none with
 no_music); `encounter mark;` sets the sides' beaten flags;
 `encounter continue;` goes on at the return point and `encounter after;` in
@@ -1645,7 +1647,7 @@ class Parser:
       `encounter set a|b|current <party> <object> [beaten flag(F)] [intro|defeat|cannot <text>]
       [after <script>] [then <script>] [pair] [rematch] [no_music] [mode <n>];`,
       `encounter select a|b|<side>;`,
-      `encounter get <field> -> var(v);` and `encounter text intro|defeat|cannot;`.
+      `encounter get <field> -> var(v);` and `encounter text intro|defeat|cannot [msg modifiers];`.
       @param t  the statement's first token (the encounter word)
       @return its node
       """
@@ -1690,6 +1692,9 @@ class Parser:
          node["result"] = self.var_ref().text
       elif kind == "text":
          node["which"] = self.direction(tuple(ENCOUNTER_TEXTS))
+         node["flags"] = 0
+         while self.peek().kind == "name" and self.peek().text in MSG_FLAGS:
+            node["flags"] |= MSG_FLAGS[self.take().text]   # msg modifiers
       self.expect(";")
       return node
 
@@ -3962,7 +3967,9 @@ class Compiler:
          e.u16(self.var_id(s["result"], s))
       elif kind == "text":
          e.u8(ENCOUNTER_TEXTS[s["which"]])
-         ctx["waits"] = True
+         e.u8(s["flags"])
+         if not s["flags"] & MSG_FLAGS["nowait"]:
+            ctx["waits"] = True
       return kind not in ENCOUNTER_LEAVING
 
    def role_ref(self, s: Node) -> tuple[int, tuple[int, int] | None]:

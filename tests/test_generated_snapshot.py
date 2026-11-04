@@ -1130,6 +1130,12 @@ ENCOUNTER_CHANGES = {"test_script.cpp": ("The encounter test scripts fight, figh
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in ENCOUNTER_CHANGES.items()})
 
+## Why the script outputs changed again: Encounter Text gained a flags byte (MessageEx's kMessage... bits).
+ENCOUNTER_TEXT_FLAGS = "Encounter Text's flags byte after its text byte (0: waits until typed)"
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in {"test_script.cpp": ENCOUNTER_TEXT_FLAGS,
+                                           "sandbox_map/scripts.cpp": ENCOUNTER_TEXT_FLAGS}.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"
