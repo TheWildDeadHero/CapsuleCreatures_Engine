@@ -226,8 +226,12 @@ class Language(unittest.TestCase):
       self.assertEqual(c[at + 2:], bytes([sc.ENCOUNTER_BITS["rematch"], 0, op["End"]]))   # bits, mode 0
       self.assertEqual(self.code("encounter get beaten -> var(v); encounter text defeat; encounter continue;"),
                        bytes([op["Encounter"], k.index("get"), sc.ENCOUNTER_FIELDS.index("beaten"), 0, 0,
-                              op["Encounter"], k.index("text"), sc.ENCOUNTER_TEXTS["defeat"],
+                              op["Encounter"], k.index("text"), sc.ENCOUNTER_TEXTS["defeat"], 0,
                               op["Encounter"], k.index("continue")]))   # continue leaves: no End after it
+      # msg modifiers: the flags byte (MessageEx's bits)
+      self.assertEqual(self.code("encounter text intro nowait instant;"),
+                       bytes([op["Encounter"], k.index("text"), sc.ENCOUNTER_TEXTS["intro"],
+                              sc.MSG_FLAGS["nowait"] | sc.MSG_FLAGS["instant"], op["End"]]))
       self.assertEqual(self.code("face player encounter; encounter select b;"),
                        bytes([op["ObjectFace"], sc.OPND_CONST8, sc.OBJECT_PLAYER, sc.FACE_WORDS["encounter"],
                               op["Encounter"], k.index("select"), sc.OPND_CONST8, sc.ENCOUNTER_SIDES["b"],

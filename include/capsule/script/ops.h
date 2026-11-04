@@ -88,7 +88,7 @@
 /// | CallLoose | id16 | I4: calls a script that may recurse; with the stack full (Bank::stack_depth) it goes on as a Jump, as the imported game's own VM does |
 /// | WaitState | — | I4: waits while the game is busy (game::state_busy(): a special the game runs over frames) |
 /// | Override | apply8 (1 apply, 0 clear), set16 | DS1: a cell override set of the world (index into map::kWorld.override_sets; world::override_set()) |
-/// | Encounter | kind8 (EncounterOp), then by kind: Set: side8, operand (party), operand (object), flag16 (or kEncounterNoFlag), parts8 (kEncounterHas... bits), the texts and script16s (after, then) the bits name, bits8 (kEncounter... mode bits), mode8 (the game's own number); Select: operand (side); Get: field8 (EncounterField), var16; Text: which8 (kEncounterHasIntro / Defeat / Cannot); Clear / Music / Mark / Continue / After: nothing | C1: Clear empties the record; Set fills a side, remembers the instruction after it as the return point and, with a then-script, goes on there; Select picks the current side; Get reads the record into a variable; Text types the current side's text (waits until typed); Music plays the current party's encounter music (battle port); Mark sets the filled sides' beaten flags; Continue goes on at the return point (else ends); After goes on in the current side's after-script (without one, the next instruction) |
+/// | Encounter | kind8 (EncounterOp), then by kind: Set: side8, operand (party), operand (object), flag16 (or kEncounterNoFlag), parts8 (kEncounterHas... bits), the texts and script16s (after, then) the bits name, bits8 (kEncounter... mode bits), mode8 (the game's own number); Select: operand (side); Get: field8 (EncounterField), var16; Text: which8 (kEncounterHasIntro / Defeat / Cannot), flags8 (kMessage... bits, as MessageEx); Clear / Music / Mark / Continue / After: nothing | C1: Clear empties the record; Set fills a side, remembers the instruction after it as the return point and, with a then-script, goes on there; Select picks the current side; Get reads the record into a variable; Text types the current side's text (waits until typed unless kMessageNoWait); Music plays the current party's encounter music (battle port); Mark sets the filled sides' beaten flags; Continue goes on at the return point (else ends); After goes on in the current side's after-script (without one, the next instruction) |
 /// | Battle | kind8 (BattleKind), [Unowned: operand species, operand level, operand item], [Scripted: operand number], var16 (or kNoVar) | C1: the battle (capsule/script/battle_port.h; Party / Rematch take the encounter record's sides); waits until it ends; var = its capsule::battle::Outcome |
 #pragma once
 
@@ -403,7 +403,7 @@ enum class EncounterOp : uint8_t
    Set,   ///< Fill a side: party, object, beaten flag, texts, after-script, mode bits, the game's mode number; the return point; then go on in its then-script.
    Select,   ///< The current side (operand: 0 A, 1 B).
    Get,   ///< var = a field of the record (EncounterField).
-   Text,   ///< Type one of the current side's texts (waits until typed).
+   Text,   ///< Type one of the current side's texts (waits until typed unless kMessageNoWait).
    Music,   ///< The current party's encounter music (none with kEncounterNoMusic).
    Mark,   ///< Set the filled sides' beaten flags.
    Continue,   ///< Go on at the return point (end the script without one).

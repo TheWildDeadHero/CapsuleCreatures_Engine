@@ -739,8 +739,8 @@
    "name": "Encounter",
    "kind": "generic",
    "doc": "The encounter record: its sides (parties), texts, beaten flags and where the script goes on (D-36 package 2 C1).",
-   "bytes": "kind8 (EncounterOp), then by kind: Set: side8, operand (party), operand (object), flag16 (or kEncounterNoFlag), parts8 (kEncounterHas... bits), the texts and script16s (after, then) the bits name, bits8 (kEncounter... mode bits), mode8 (the game's own number); Select: operand (side); Get: field8 (EncounterField), var16; Text: which8 (kEncounterHasIntro / Defeat / Cannot); Clear / Music / Mark / Continue / After: nothing",
-   "does": "C1: Clear empties the record; Set fills a side, remembers the instruction after it as the return point and, with a then-script, goes on there; Select picks the current side; Get reads the record into a variable; Text types the current side's text (waits until typed); Music plays the current party's encounter music (battle port); Mark sets the filled sides' beaten flags; Continue goes on at the return point (else ends); After goes on in the current side's after-script (without one, the next instruction)",
+   "bytes": "kind8 (EncounterOp), then by kind: Set: side8, operand (party), operand (object), flag16 (or kEncounterNoFlag), parts8 (kEncounterHas... bits), the texts and script16s (after, then) the bits name, bits8 (kEncounter... mode bits), mode8 (the game's own number); Select: operand (side); Get: field8 (EncounterField), var16; Text: which8 (kEncounterHasIntro / Defeat / Cannot), flags8 (kMessage... bits, as MessageEx); Clear / Music / Mark / Continue / After: nothing",
+   "does": "C1: Clear empties the record; Set fills a side, remembers the instruction after it as the return point and, with a then-script, goes on there; Select picks the current side; Get reads the record into a variable; Text types the current side's text (waits until typed unless kMessageNoWait); Music plays the current party's encounter music (battle port); Mark sets the filled sides' beaten flags; Continue goes on at the return point (else ends); After goes on in the current side's after-script (without one, the next instruction)",
    "module": "battle",
    "handler": "op_encounter"
   },
@@ -1504,7 +1504,7 @@
     },
     {
      "name": "Text",
-     "doc": "Type one of the current side's texts (waits until typed).",
+     "doc": "Type one of the current side's texts (waits until typed unless kMessageNoWait).",
      "word": "text"
     },
     {
