@@ -31,6 +31,7 @@ are written with LF line ends and only when their bytes change.
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import re
 import sys
@@ -101,8 +102,12 @@ LINKED_SECTIONS = re.compile(r"^\.(text|rodata|data|bss|iwram|ewram|sbss|sdata)\
 MAP_LINE = re.compile(r"^ (?P<section>\.\S+)?\s+0x(?P<addr>[0-9a-fA-F]+)\s+0x(?P<size>[0-9a-fA-F]+)\s+(?P<file>\S.*)$")
 ## A symbol line of a GNU ld map: an address and a name, under its input section.
 MAP_SYMBOL = re.compile(r"^\s{2,}0x(?P<addr>[0-9a-fA-F]+)\s+(?P<name>[^\s0][^=]*)$")
-## The engine's namespace in a mangled name: `N7capsule` and the length of the next name (`_ZN7capsule6script...`).
-ENGINE_NAMESPACE = re.compile(r"N7capsule(?P<length>\d+)")
+## Where a mangled name starts in a symbol or a section name (`.text._ZN7capsule6script...`).
+MANGLED_START = "_Z"
+## The engine's outermost namespace.
+ENGINE_SCOPE = "capsule"
+## Where a symbol's module is among its scopes (`capsule::<module>::...`).
+MODULE_SCOPE = 1
 ## Engine namespaces that live in a module of another name.
 NAMESPACE_MODULES = {"rng": "core", "clock": "core", "rules": "battle", "video": "gfx"}
 ## The largest items a link map comparison lists per module.
@@ -434,12 +439,16 @@ def symbol_module(name: str, modules: Iterable[str]) -> str | None:
    @param modules  the engine's modules
    @return the module, or None when the name holds no known engine namespace
    """
-   m = ENGINE_NAMESPACE.search(name)
-   if m is None:
+   start = name.find(MANGLED_START)   # past a section prefix such as `.text.`
+   if start < 0:
       return None
-   length = int(m["length"])
-   namespace = name[m.end():m.end() + length]
-   namespace = NAMESPACE_MODULES.get(namespace, namespace)
+   # The symbol's own scopes (tools/usage_memory.py), not any engine namespace in it: a game function taking a
+   # capsule::ui::Keys& names capsule::ui only in its parameters
+   memory = sibling("usage_memory")
+   scopes = memory.namespace_path(memory.target_of(name[start:]))
+   if len(scopes) <= MODULE_SCOPE or scopes[0] != ENGINE_SCOPE:
+      return None
+   namespace = NAMESPACE_MODULES.get(scopes[MODULE_SCOPE], scopes[MODULE_SCOPE])
    return namespace if namespace in modules else None
 
 
@@ -619,16 +628,25 @@ def merge_records(records: Iterable[Mapping[str, Mapping[str, int]]]) -> dict[st
    return out
 
 
+def sibling(name: str) -> Any:
+   """!Imports one of the tools beside this one (the compilers that import this module need not have their folder on
+   the path).
+   @param name  the module's name
+   @return the module
+   """
+   if str(TOOLS) not in sys.path:
+      sys.path.insert(0, str(TOOLS))
+   return importlib.import_module(name)
+
+
 def memory_command(args: argparse.Namespace) -> int:
    """!The `memory` command (tools/usage_memory.py).
    @param args  its arguments
    @return 1 with --check when a region or a budget is passed, else 0
    @throws UsageError when the budgets are bad; OSError when a file cannot be read or written
    """
-   if str(TOOLS) not in sys.path:
-      sys.path.insert(0, str(TOOLS))
-   import build_settings
-   import usage_memory
+   build_settings = sibling("build_settings")
+   usage_memory = sibling("usage_memory")
    budgets = None
    if args.project is not None:
       try:

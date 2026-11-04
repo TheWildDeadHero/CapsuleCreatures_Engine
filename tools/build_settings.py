@@ -12,9 +12,9 @@ reference/project.json (capsule.project/1).
 
 "memory_budgets" (D-42) is the one key that is no compile definition: GBA
 region budgets in bytes, for the whole program and per owner (a namespace
-such as capsule::audio or pocket::battle; an owner budget covers every
-namespace below it). tools/usage.py memory checks a GBA link against them;
---memory-budgets prints them as JSON.
+such as capsule::audio or pocket::battle, or "(global)" for what is in no
+namespace; an owner budget covers every namespace below it). tools/usage.py
+memory checks a GBA link against them; --memory-budgets prints them as JSON.
 
 Every key is optional; an absent key keeps the engine's default. This module
 is the one authority on the keys, their ranges and the C++ definitions they
@@ -87,6 +87,8 @@ EWRAM_BYTES = 256 * 1024
 BUDGET_REGIONS = {"iwram": IWRAM_BYTES, "iwram_code": IWRAM_BYTES, "iwram_data": IWRAM_BYTES, "ewram": EWRAM_BYTES}
 ## D-42: an owner's name: C++ namespaces joined with "::" (capsule::audio, pocket::battle).
 OWNER_NAME = re.compile(r"^[A-Za-z_]\w*(::[A-Za-z_]\w*)*$")
+## D-42: the owner of everything outside a namespace (C code, the C library; tools/usage_memory.py GLOBAL_OWNER).
+GLOBAL_OWNER = "(global)"
 
 
 class SettingsError(Exception):
@@ -330,8 +332,9 @@ def parse_memory_budgets(raw: Any) -> dict[str, Any]:
       raise SettingsError(f"{MEMORY_BUDGETS_KEY}.{OWNERS_KEY} must be an object of owner -> region budgets")
    owners = {}
    for owner, budgets in owners_raw.items():
-      if not OWNER_NAME.match(owner):
-         raise SettingsError(f"{MEMORY_BUDGETS_KEY}: owner {owner!r} is not a namespace (such as capsule::audio)")
+      if owner != GLOBAL_OWNER and not OWNER_NAME.match(owner):
+         raise SettingsError(f"{MEMORY_BUDGETS_KEY}: owner {owner!r} is not a namespace (such as capsule::audio) "
+                             f"or {GLOBAL_OWNER}")
       owners[owner] = parse_budget_regions(budgets, f"{MEMORY_BUDGETS_KEY}.{OWNERS_KEY}.{owner}")
    return {"regions": parse_budget_regions(regions, MEMORY_BUDGETS_KEY), "owners": owners}
 

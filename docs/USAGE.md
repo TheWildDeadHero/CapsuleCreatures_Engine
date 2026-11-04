@@ -89,7 +89,7 @@ budgets, the `"memory_budgets"` object of its `"build"` settings (`tools/build_s
 ```
 
 Regions: `iwram` (code and data), `iwram_code`, `iwram_data`, `ewram`. An owner budget may name a namespace at any
-depth and covers every symbol below it. Each failed check names the owners that hold the most of its region and their
+depth and covers every symbol below it; `(global)` covers what is in no namespace. Each failed check names the owners that hold the most of its region and their
 largest symbols (demangled with `--demangler`). `--check` exits 1 when one fails.
 
 **At every GBA link.** `capsule_game()` links GBA programs through `tools/gba_link.py` (the target's linker

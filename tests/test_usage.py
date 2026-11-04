@@ -167,6 +167,18 @@ class LinkTests(unittest.TestCase):
                        {"script": 0x30, "seq": 0x10, usage.OTHER_MODULE: 0x20})
       self.assertEqual(usage.compare(self.report(), linked)["unused_linked"], ["seq"])
 
+   def test_own_namespace(self) -> None:
+      """!A symbol counts for its own namespace, not for an engine namespace named only in its parameters; section
+      names, local entities and veneers too."""
+      names = usage.engine_modules()
+      # mygame::bag::adjust(short&, capsule::ui::Keys const&): the game's, although it names capsule::ui
+      self.assertIsNone(usage.symbol_module("_ZN6mygame3bag6adjustERsRKN7capsule2ui4KeysE", names))
+      self.assertEqual(usage.symbol_module(".text._ZN7capsule6script4stepEv", names), "script")
+      self.assertEqual(usage.symbol_module("_ZZN7capsule3seq4stepEvE5cache", names), "seq")
+      self.assertEqual(usage.symbol_module("_ZN7capsule3rng4nextEv", names), "core")
+      self.assertEqual(usage.symbol_module("___ZN7capsule3seq4stepEv_from_arm", names), "seq")
+      self.assertIsNone(usage.symbol_module("memcpy", names))
+
    def test_inputs(self) -> None:
       """!Archive members and runtime objects of src/ find their modules; object suffixes are stripped."""
       index = usage.source_modules()
