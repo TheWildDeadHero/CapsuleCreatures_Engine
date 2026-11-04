@@ -15,9 +15,13 @@
 #include "capsule/script/growth_port.h"
 #include "capsule/script/nursery_port.h"
 #include "capsule/script/port.h"
+#include "script_dispatch.h"
 
 namespace capsule::script
 {
+
+using detail::Outcome;
+
 namespace
 {
 
@@ -376,14 +380,43 @@ uint8_t object_of(const Context& c, int32_t v)
    return local_of(v);
 }
 
-/// What one call to execute() ended with.
-enum class Outcome : uint8_t
+/// Moves a frame's pc past the instruction read up to p (most instructions continue after themselves).
+/// @param f     the frame
+/// @param p     the position after the instruction
+/// @param base  the running script's first byte
+void advance(Frame& f, const uint8_t* p, const uint8_t* base)
 {
-   Continue,   ///< More instructions.
-   Waiting,    ///< The context waits.
-   Ended,      ///< The context has no more frames.
-   True,       ///< TriggerTrue (conditions).
-};
+   f.pc = static_cast<uint16_t>(p - base);
+}
+
+/// Runs a module op through the game's dispatch table (D-36 package 2; script_dispatch.h): an op the game's scripts
+/// never use has no handler there, so its module is not linked.
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome run_module(Context& c, Op op, const uint8_t* p, const uint8_t* base)
+{
+   const detail::OpHandler run = detail::kModuleOps[static_cast<uint8_t>(op)];
+   if (run == nullptr)
+   {
+      ENGINE_ASSERT(false && "a module op the game's dispatch table leaves out");
+      c.depth = 0;
+      return Outcome::Ended;
+   }
+   return run(c, op, p, base);
+}
+
+/// Polls a module wait through the game's dispatch table.
+/// @param c  the context
+/// @return true while it still waits
+bool poll_module(Context& c)
+{
+   const detail::WaitPoll poll = detail::kModulePolls[static_cast<uint8_t>(c.wait)];
+   ENGINE_ASSERT(poll != nullptr);   // only an op of the table sets its wait
+   return poll != nullptr && poll(c);
+}
 
 /// Calls a script from a context.
 /// @param c  the context
@@ -596,16 +629,6 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
    case Op::WaitSound:
       c.result_var = *p++;   // the SoundWait kind
       return wait(Wait::Sound);
-   case Op::Mart:
-   {
-      const uint8_t kind = *p++;
-      const uint16_t n = load_le16(p);
-      p += kU16Bytes;
-      const uint8_t* items = p;
-      p += kU16Bytes * n;
-      items::mart_open(kind, items, n);
-      return wait(Wait::Mart);
-   }
    case Op::WaitState:
       return wait(Wait::State);
    default:
@@ -1076,70 +1099,6 @@ Outcome execute(Context& c)
       world::set_vehicle(*p++);
       next();
       return Outcome::Continue;
-   case Op::RoleGet:
-   {
-      const VarId v{load_le16(p)};
-      p += kU16Bytes;
-      const uint8_t slot = byte_index(operand(p));
-      const uint8_t role = *p++;
-      const uint8_t element = byte_index(operand(p));
-      next();
-      set_var(v, party::role_get(slot, role, element));   // clamps to the variable's range
-      return Outcome::Continue;
-   }
-   case Op::RoleSet:
-   {
-      const uint8_t slot = byte_index(operand(p));
-      const uint8_t role = *p++;
-      const uint8_t element = byte_index(operand(p));
-      const int32_t value = operand(p);
-      next();
-      party::role_set(slot, role, element, value);
-      return Outcome::Continue;
-   }
-   case Op::ItemGive:
-   case Op::ItemTake:
-   {
-      // The bag through the items port (all or nothing); the result variable gets 1 when it worked
-      const uint16_t v = load_le16(p);
-      p += kU16Bytes;
-      const int32_t item = operand(p);
-      const int32_t n = operand(p);
-      next();
-      const auto id = static_cast<uint16_t>(clamp_to<int32_t>(item, 0, kMaxItemId));
-      const bool ok = op == Op::ItemGive ? items::give(id, n) : items::take(id, n);
-      if (v != kNoVar)
-      {
-         set_var(VarId{v}, ok ? 1 : 0);
-      }
-      return Outcome::Continue;
-   }
-   case Op::ItemCount:
-   {
-      const VarId v{load_le16(p)};
-      p += kU16Bytes;
-      const int32_t item = operand(p);
-      next();
-      set_var(v, items::count(static_cast<uint16_t>(clamp_to<int32_t>(item, 0, kMaxItemId))));
-      return Outcome::Continue;
-   }
-   case Op::BagOpen:
-      c.result_var = load_le16(p);
-      p += kU16Bytes;
-      next();
-      items::bag_open();
-      c.wait = Wait::Bag;
-      return Outcome::Waiting;
-   case Op::Shop:
-   {
-      const uint8_t shop = *p++;
-      const VarId money{load_le16(p)};
-      p += kU16Bytes;
-      next();
-      items::shop_open(shop, money);
-      c.wait = Wait::Shop;
-      return Outcome::Waiting;
-   }
    case Op::TimeOfDay:
    {
       const VarId v{load_le16(p)};
@@ -1147,48 +1106,6 @@ Outcome execute(Context& c)
       next();
       set_var(v, clock::time_of_day());
       return Outcome::Continue;
-   }
-   case Op::BoxCount:
-   {
-      // The storage boxes through the boxes port
-      const VarId v{load_le16(p)};
-      p += kU16Bytes;
-      next();
-      set_var(v, boxes::count());
-      return Outcome::Continue;
-   }
-   case Op::BoxDeposit:
-   case Op::BoxWithdraw:
-   {
-      const uint16_t v = load_le16(p);
-      p += kU16Bytes;
-      const int32_t at = operand(p);
-      next();
-      const bool ok = op == Op::BoxDeposit ? boxes::deposit(at) : boxes::withdraw(at);
-      if (v != kNoVar)
-      {
-         set_var(VarId{v}, ok ? 1 : 0);
-      }
-      return Outcome::Continue;
-   }
-   case Op::BoxesOpen:
-      c.result_var = load_le16(p);
-      p += kU16Bytes;
-      next();
-      boxes::open();
-      c.wait = Wait::Boxes;
-      return Outcome::Waiting;
-   case Op::Transform:
-   {
-      // A party member's transformation (the script trigger's rules) through the growth port; waits
-      c.result_var = load_le16(p);
-      p += kU16Bytes;
-      const int32_t slot = operand(p);
-      next();
-      // a slot past the party is refused by the port (nothing changes)
-      growth::transform_open(static_cast<uint8_t>(clamp_to<int32_t>(slot, 0, monster::kMaxPartySize)));
-      c.wait = Wait::Transform;
-      return Outcome::Waiting;
    }
    case Op::FieldEffect:
    {
@@ -1285,92 +1202,6 @@ Outcome execute(Context& c)
       set_var(VarId{v}, member == actions::kNoMember ? 0 : int32_t{member} + 1);
       return Outcome::Continue;
    }
-   case Op::Combine:
-   {
-      // A combination method through the combine port (Open / Run wait; the queries answer at once)
-      const auto kind = static_cast<CombineOp>(*p++);
-      const uint8_t method = *p++;
-      uint8_t slots[kMaxCombineMembers] = {};
-      uint8_t count = 0;
-      if (kind != CombineOp::Open)
-      {
-         const uint8_t given = *p++;
-         for (uint8_t k = 0; k < given; ++k)
-         {
-            const int32_t slot = operand(p);
-            if (count < kMaxCombineMembers)
-            {
-               // a slot past the party is refused by the port
-               slots[count++] = static_cast<uint8_t>(clamp_to<int32_t>(slot, 0, monster::kMaxPartySize));
-            }
-         }
-      }
-      const uint16_t v = load_le16(p);
-      p += kU16Bytes;
-      next();
-      if (kind == CombineOp::Open || kind == CombineOp::Run)
-      {
-         c.result_var = v;
-         if (kind == CombineOp::Open)
-         {
-            combine::open(method);
-         }
-         else
-         {
-            combine::run(method, slots, count);
-         }
-         c.wait = Wait::Combine;
-         return Outcome::Waiting;
-      }
-      set_var(VarId{v}, combine::query(kind, method, slots, count));
-      return Outcome::Continue;
-   }
-   case Op::Nursery:
-   {
-      // The nursery and the nickname prompt through the nursery port (Pick / Name wait; the rest answer at once)
-      const auto kind = static_cast<NurseryOp>(*p++);
-      const bool has_arg = kind == NurseryOp::Deposit || kind == NurseryOp::Withdraw || kind == NurseryOp::Levels ||
-                           kind == NurseryOp::Fee || kind == NurseryOp::Name;
-      const int32_t arg = has_arg ? operand(p) : 0;
-      uint16_t money = kNoVar;
-      if (kind == NurseryOp::Withdraw)
-      {
-         money = load_le16(p);
-         p += kU16Bytes;
-      }
-      const uint16_t v = load_le16(p);
-      p += kU16Bytes;
-      next();
-      if (kind == NurseryOp::Pick || kind == NurseryOp::Name)
-      {
-         c.result_var = v;
-         if (kind == NurseryOp::Pick)
-         {
-            nursery::pick_open();
-         }
-         else
-         {
-            nursery::name_open(static_cast<uint8_t>(clamp_to<int32_t>(arg, 0, monster::kMaxPartySize)));
-         }
-         c.wait = Wait::Nursery;
-         return Outcome::Waiting;
-      }
-      if (kind == NurseryOp::Withdraw)
-      {
-         // a negative money value takes no fee (no money variable)
-         const int32_t have = money != kNoVar ? var(VarId{money}) : -1;
-         int32_t paid = 0;
-         const int32_t r = nursery::withdraw(arg, have, paid);
-         if (money != kNoVar && paid > 0)
-         {
-            set_var(VarId{money}, have - paid);
-         }
-         set_var(VarId{v}, r);
-         return Outcome::Continue;
-      }
-      set_var(VarId{v}, nursery::query(kind, arg));
-      return Outcome::Continue;
-   }
    case Op::ObjectMoveChecked:
    {
       // The walk by the movement rules: every step allowed, or nothing moves
@@ -1421,10 +1252,26 @@ Outcome execute(Context& c)
    case Op::SetWarp:
    case Op::Sound:
    case Op::WaitSound:
-   case Op::Mart:
    case Op::WaitState:
    case Op::Override:
       return execute_port(c, op, p, base);
+   // D-36 package 2: the ops of the bag, boxes, party roles, growth, combination and nursery modules
+   case Op::RoleGet:
+   case Op::RoleSet:
+   case Op::ItemGive:
+   case Op::ItemTake:
+   case Op::ItemCount:
+   case Op::BagOpen:
+   case Op::Shop:
+   case Op::Mart:
+   case Op::BoxCount:
+   case Op::BoxDeposit:
+   case Op::BoxWithdraw:
+   case Op::BoxesOpen:
+   case Op::Transform:
+   case Op::Combine:
+   case Op::Nursery:
+      return run_module(c, op, p, base);
    case Op::NUM_OPS:
       break;
    }
@@ -1526,32 +1373,6 @@ bool still_waiting(Context& c)
          return true;
       }
       break;
-   case Wait::Bag:
-   {
-      const int32_t item = items::bag_poll();
-      if (item < 0)
-      {
-         return true;
-      }
-      set_var(VarId{c.result_var}, item);
-      break;
-   }
-   case Wait::Shop:
-      if (items::shop_poll())
-      {
-         return true;
-      }
-      break;
-   case Wait::Boxes:
-   {
-      const int32_t box = boxes::poll();
-      if (box < 0)
-      {
-         return true;
-      }
-      set_var(VarId{c.result_var}, box);
-      break;
-   }
    case Wait::Flight:
    {
       // The flight menu's answer; a point picked warps there (then the warp's wait)
@@ -1571,36 +1392,6 @@ bool still_waiting(Context& c)
       c.wait = Wait::Warp;
       return true;
    }
-   case Wait::Transform:
-   {
-      const int16_t result = growth::transform_poll();
-      if (result == growth::kTransformRunning)
-      {
-         return true;
-      }
-      set_var(VarId{c.result_var}, result);
-      break;
-   }
-   case Wait::Combine:
-   {
-      const int16_t result = combine::poll();
-      if (result == combine::kCombineRunning)
-      {
-         return true;
-      }
-      set_var(VarId{c.result_var}, result);
-      break;
-   }
-   case Wait::Nursery:
-   {
-      const int16_t result = nursery::poll();
-      if (result == nursery::kNurseryRunning)
-      {
-         return true;
-      }
-      set_var(VarId{c.result_var}, result);
-      break;
-   }
    case Wait::Door:
       if (world::door_busy())
       {
@@ -1619,14 +1410,21 @@ bool still_waiting(Context& c)
          return true;
       }
       break;
-   case Wait::Mart:
-      if (items::mart_poll())
+   case Wait::State:
+      if (game::state_busy())
       {
          return true;
       }
       break;
-   case Wait::State:
-      if (game::state_busy())
+   // D-36 package 2: the module waits
+   case Wait::Bag:
+   case Wait::Shop:
+   case Wait::Mart:
+   case Wait::Boxes:
+   case Wait::Transform:
+   case Wait::Combine:
+   case Wait::Nursery:
+      if (poll_module(c))
       {
          return true;
       }
@@ -1678,6 +1476,415 @@ bool run_to_end(ScriptId s)
 }
 
 } // namespace
+
+namespace detail
+{
+
+/// Mart (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_mart(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   const uint8_t kind = *p++;
+   const uint16_t n = load_le16(p);
+   p += kU16Bytes;
+   const uint8_t* items = p;
+   p += kU16Bytes * n;
+   items::mart_open(kind, items, n);
+   advance(f, p, base);
+   c.wait = Wait::Mart;
+   return Outcome::Waiting;
+}
+
+/// RoleGet (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_role_get(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   const VarId v{load_le16(p)};
+   p += kU16Bytes;
+   const uint8_t slot = byte_index(operand(p));
+   const uint8_t role = *p++;
+   const uint8_t element = byte_index(operand(p));
+   advance(f, p, base);
+   set_var(v, party::role_get(slot, role, element));   // clamps to the variable's range
+   return Outcome::Continue;
+}
+
+/// RoleSet (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_role_set(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   const uint8_t slot = byte_index(operand(p));
+   const uint8_t role = *p++;
+   const uint8_t element = byte_index(operand(p));
+   const int32_t value = operand(p);
+   advance(f, p, base);
+   party::role_set(slot, role, element, value);
+   return Outcome::Continue;
+}
+
+/// ItemGive / ItemTake (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_item_give(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   // The bag through the items port (all or nothing); the result variable gets 1 when it worked
+   const uint16_t v = load_le16(p);
+   p += kU16Bytes;
+   const int32_t item = operand(p);
+   const int32_t n = operand(p);
+   advance(f, p, base);
+   const auto id = static_cast<uint16_t>(clamp_to<int32_t>(item, 0, kMaxItemId));
+   const bool ok = op == Op::ItemGive ? items::give(id, n) : items::take(id, n);
+   if (v != kNoVar)
+   {
+      set_var(VarId{v}, ok ? 1 : 0);
+   }
+   return Outcome::Continue;
+}
+
+/// ItemCount (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_item_count(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   const VarId v{load_le16(p)};
+   p += kU16Bytes;
+   const int32_t item = operand(p);
+   advance(f, p, base);
+   set_var(v, items::count(static_cast<uint16_t>(clamp_to<int32_t>(item, 0, kMaxItemId))));
+   return Outcome::Continue;
+}
+
+/// BagOpen (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_bag_open(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   c.result_var = load_le16(p);
+   p += kU16Bytes;
+   advance(f, p, base);
+   items::bag_open();
+   c.wait = Wait::Bag;
+   return Outcome::Waiting;
+}
+
+/// Shop (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_shop(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   const uint8_t shop = *p++;
+   const VarId money{load_le16(p)};
+   p += kU16Bytes;
+   advance(f, p, base);
+   items::shop_open(shop, money);
+   c.wait = Wait::Shop;
+   return Outcome::Waiting;
+}
+
+/// BoxCount (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_box_count(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   // The storage boxes through the boxes port
+   const VarId v{load_le16(p)};
+   p += kU16Bytes;
+   advance(f, p, base);
+   set_var(v, boxes::count());
+   return Outcome::Continue;
+}
+
+/// BoxDeposit / BoxWithdraw (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_box_deposit(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   const uint16_t v = load_le16(p);
+   p += kU16Bytes;
+   const int32_t at = operand(p);
+   advance(f, p, base);
+   const bool ok = op == Op::BoxDeposit ? boxes::deposit(at) : boxes::withdraw(at);
+   if (v != kNoVar)
+   {
+      set_var(VarId{v}, ok ? 1 : 0);
+   }
+   return Outcome::Continue;
+}
+
+/// BoxesOpen (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_boxes_open(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   c.result_var = load_le16(p);
+   p += kU16Bytes;
+   advance(f, p, base);
+   boxes::open();
+   c.wait = Wait::Boxes;
+   return Outcome::Waiting;
+}
+
+/// Transform (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_transform(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   // A party member's transformation (the script trigger's rules) through the growth port; waits
+   c.result_var = load_le16(p);
+   p += kU16Bytes;
+   const int32_t slot = operand(p);
+   advance(f, p, base);
+   // a slot past the party is refused by the port (nothing changes)
+   growth::transform_open(static_cast<uint8_t>(clamp_to<int32_t>(slot, 0, monster::kMaxPartySize)));
+   c.wait = Wait::Transform;
+   return Outcome::Waiting;
+}
+
+/// Combine (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_combine(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   // A combination method through the combine port (Open / Run wait; the queries answer at once)
+   const auto kind = static_cast<CombineOp>(*p++);
+   const uint8_t method = *p++;
+   uint8_t slots[kMaxCombineMembers] = {};
+   uint8_t count = 0;
+   if (kind != CombineOp::Open)
+   {
+      const uint8_t given = *p++;
+      for (uint8_t k = 0; k < given; ++k)
+      {
+         const int32_t slot = operand(p);
+         if (count < kMaxCombineMembers)
+         {
+            // a slot past the party is refused by the port
+            slots[count++] = static_cast<uint8_t>(clamp_to<int32_t>(slot, 0, monster::kMaxPartySize));
+         }
+      }
+   }
+   const uint16_t v = load_le16(p);
+   p += kU16Bytes;
+   advance(f, p, base);
+   if (kind == CombineOp::Open || kind == CombineOp::Run)
+   {
+      c.result_var = v;
+      if (kind == CombineOp::Open)
+      {
+         combine::open(method);
+      }
+      else
+      {
+         combine::run(method, slots, count);
+      }
+      c.wait = Wait::Combine;
+      return Outcome::Waiting;
+   }
+   set_var(VarId{v}, combine::query(kind, method, slots, count));
+   return Outcome::Continue;
+}
+
+/// Nursery (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_nursery(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   // The nursery and the nickname prompt through the nursery port (Pick / Name wait; the rest answer at once)
+   const auto kind = static_cast<NurseryOp>(*p++);
+   const bool has_arg = kind == NurseryOp::Deposit || kind == NurseryOp::Withdraw || kind == NurseryOp::Levels ||
+                        kind == NurseryOp::Fee || kind == NurseryOp::Name;
+   const int32_t arg = has_arg ? operand(p) : 0;
+   uint16_t money = kNoVar;
+   if (kind == NurseryOp::Withdraw)
+   {
+      money = load_le16(p);
+      p += kU16Bytes;
+   }
+   const uint16_t v = load_le16(p);
+   p += kU16Bytes;
+   advance(f, p, base);
+   if (kind == NurseryOp::Pick || kind == NurseryOp::Name)
+   {
+      c.result_var = v;
+      if (kind == NurseryOp::Pick)
+      {
+         nursery::pick_open();
+      }
+      else
+      {
+         nursery::name_open(static_cast<uint8_t>(clamp_to<int32_t>(arg, 0, monster::kMaxPartySize)));
+      }
+      c.wait = Wait::Nursery;
+      return Outcome::Waiting;
+   }
+   if (kind == NurseryOp::Withdraw)
+   {
+      // a negative money value takes no fee (no money variable)
+      const int32_t have = money != kNoVar ? var(VarId{money}) : -1;
+      int32_t paid = 0;
+      const int32_t r = nursery::withdraw(arg, have, paid);
+      if (money != kNoVar && paid > 0)
+      {
+         set_var(VarId{money}, have - paid);
+      }
+      set_var(VarId{v}, r);
+      return Outcome::Continue;
+   }
+   set_var(VarId{v}, nursery::query(kind, arg));
+   return Outcome::Continue;
+}
+
+/// Wait::Bag (D-36 package 2: a module wait, polled through the game's dispatch table).
+/// @param c  the context
+/// @return true while it still waits (the result variable is written when it ends)
+bool poll_bag(Context& c)
+{
+   const int32_t item = items::bag_poll();
+   if (item < 0)
+   {
+      return true;
+   }
+   set_var(VarId{c.result_var}, item);
+   return false;
+}
+
+/// Wait::Shop (D-36 package 2: a module wait, polled through the game's dispatch table).
+/// @param c  the context
+/// @return true while it still waits (the result variable is written when it ends)
+bool poll_shop([[maybe_unused]] Context& c)
+{
+   if (items::shop_poll())
+   {
+      return true;
+   }
+   return false;
+}
+
+/// Wait::Boxes (D-36 package 2: a module wait, polled through the game's dispatch table).
+/// @param c  the context
+/// @return true while it still waits (the result variable is written when it ends)
+bool poll_boxes(Context& c)
+{
+   const int32_t box = boxes::poll();
+   if (box < 0)
+   {
+      return true;
+   }
+   set_var(VarId{c.result_var}, box);
+   return false;
+}
+
+/// Wait::Transform (D-36 package 2: a module wait, polled through the game's dispatch table).
+/// @param c  the context
+/// @return true while it still waits (the result variable is written when it ends)
+bool poll_transform(Context& c)
+{
+   const int16_t result = growth::transform_poll();
+   if (result == growth::kTransformRunning)
+   {
+      return true;
+   }
+   set_var(VarId{c.result_var}, result);
+   return false;
+}
+
+/// Wait::Combine (D-36 package 2: a module wait, polled through the game's dispatch table).
+/// @param c  the context
+/// @return true while it still waits (the result variable is written when it ends)
+bool poll_combine(Context& c)
+{
+   const int16_t result = combine::poll();
+   if (result == combine::kCombineRunning)
+   {
+      return true;
+   }
+   set_var(VarId{c.result_var}, result);
+   return false;
+}
+
+/// Wait::Nursery (D-36 package 2: a module wait, polled through the game's dispatch table).
+/// @param c  the context
+/// @return true while it still waits (the result variable is written when it ends)
+bool poll_nursery(Context& c)
+{
+   const int16_t result = nursery::poll();
+   if (result == nursery::kNurseryRunning)
+   {
+      return true;
+   }
+   set_var(VarId{c.result_var}, result);
+   return false;
+}
+
+/// Wait::Mart (D-36 package 2: a module wait, polled through the game's dispatch table).
+/// @param c  the context
+/// @return true while it still waits (the result variable is written when it ends)
+bool poll_mart([[maybe_unused]] Context& c)
+{
+   if (items::mart_poll())
+   {
+      return true;
+   }
+   return false;
+}
+
+}   // namespace detail
 
 bool immediate()
 {

@@ -42,6 +42,7 @@ add_executable(capsule_cell_interactions_tests
    src/map/map.cpp
    src/overworld/overworld.cpp
    src/script/script.cpp
+   src/script/script_dispatch_all.cpp
    src/script/field_actions.cpp
    src/script/script_port_defaults.cpp
    ${CAPSULE_SCRIPT_ITEMS_SOURCES}
