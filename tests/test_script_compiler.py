@@ -236,6 +236,14 @@ class Language(unittest.TestCase):
                        bytes([op["ObjectFace"], sc.OPND_CONST8, sc.OBJECT_PLAYER, sc.FACE_WORDS["encounter"],
                               op["Encounter"], k.index("select"), sc.OPND_CONST8, sc.ENCOUNTER_SIDES["b"],
                               op["End"]]))
+      # C1b: the spotter group's statements; side C (its code after kEncounterSideCurrent)
+      self.assertEqual(self.code("encounter load; encounter approach; encounter next -> var(v); encounter next; "
+                                 "encounter select c;"),
+                       bytes([op["Encounter"], k.index("load"), op["Encounter"], k.index("approach"),
+                              op["Encounter"], k.index("next"), 0, 0, op["Encounter"], k.index("next"), 0xFF, 0xFF,
+                              op["Encounter"], k.index("select"), sc.OPND_CONST8, sc.ENCOUNTER_SIDES["c"],
+                              op["End"]]))
+      self.assertEqual(sc.ENCOUNTER_SIDES["c"], sc.VM.constants["kEncounterSideC"])
       b = sc.BATTLE_KINDS
       self.assertEqual(self.code("battle unowned 25 5 -> var(v); battle party;"),
                        bytes([op["Battle"], b.index("unowned"), sc.OPND_CONST8, 25, sc.OPND_CONST8, 5, sc.OPND_CONST8,
@@ -266,6 +274,7 @@ class Checks(unittest.TestCase):
       self.assert_error("script s { encounter set a 1 self after nowhere; }", "unknown script 'nowhere'")
       self.assert_error("script s { encounter set a 1 self loud; }", "expected beaten")
       self.assert_error("var v : u8; script s { encounter get party; }", "needs -> var(v)")
+      self.assert_error("script a { encounter approach; } map_scripts m { on_load -> a; }", "on_load script a waits")
 
    def test_depth(self) -> None:
       """A chain deeper than stack_depth is an error."""

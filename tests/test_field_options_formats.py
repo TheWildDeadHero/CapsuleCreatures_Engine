@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """!Tests of the field options data formats in the compilers (a review's findings): the scripts manifest's "vm" options,
 the session lifetime (never saved), the face and object words (tools/script_compiler.py), immediate triggers
-(tools/event_compiler.py), text box styles and the text tables' language (tools/asset_compiler.py). Fixture:
+(tools/event_compiler.py), text box styles and the text tables' language (tools/asset_compiler.py), C1b's spotter
+groups (the world's "spotters", a pair spotter: tools/map_compiler.py, tools/object_compiler.py). Fixture:
 tests/data/field_options (copied to a temporary folder when a test changes it)."""
 from __future__ import annotations
 
@@ -199,6 +200,58 @@ class Languages(unittest.TestCase):
       m["fallback_language"] = "de"
       with self.assertRaisesRegex(ac.ManifestError, "fallback_language"):
          self.texts(m, "fr")
+
+
+class SpotterGroups(unittest.TestCase):
+   """!C1b: the world's "spotters" and a pair spotter's sight bit."""
+
+   def world(self, folder: Path = FIXTURE) -> JsonDict:
+      """!A world compiled.
+      @param folder  the fixture or a copy
+      @return compile_world()'s result
+      """
+      return mc.compile_world(folder / "world.json", scripts_path=folder / "scripts/scripts.json")
+
+   def test_emitted(self) -> None:
+      """!The group's script, its positions (the default order left out) end the World initializer; the pair
+      spotter's sight carries kSpotterPair; a world without groups keeps the shorter initializer."""
+      world = self.world()
+      self.assertEqual(world["spotters"]["positions"], 3)
+      text = mc.emit("world.json", world)
+      script = world["spotters"]["script"]
+      self.assertIn(f", nullptr, nullptr, nullptr, nullptr, 0, nullptr, 0, {script}, 3}};", text)
+      self.assertIn("3 | kSpotterPair,", text)
+      with tempfile.TemporaryDirectory() as tmp:
+         folder = copy_fixture(tmp)
+         w = json.loads((folder / "world.json").read_text(encoding="utf-8"))
+         w["spotters"] = {"script": "group", "order": "local"}
+         (folder / "world.json").write_text(json.dumps(w), encoding="utf-8")
+         self.assertIn(f", {script}, 1, SpotOrder::Local}};", mc.emit("world.json", self.world(folder)))
+         del w["spotters"]
+         (folder / "world.json").write_text(json.dumps(w), encoding="utf-8")
+         self.assertIn("kVehicleClasses, kDarknessLevels, 4};", mc.emit("world.json", self.world(folder)))
+
+   def test_refusals(self) -> None:
+      """!Positions outside 1-3, an unknown order, an unknown key or script, a pair that is no boolean."""
+      for spotters, message in (({"script": "group", "positions": 4}, "positions must be"),
+                                ({"script": "group", "positions": True}, "positions must be"),
+                                ({"script": "group", "order": "random"}, "order must be"),
+                                ({"script": "group", "when": 1}, "unknown"),
+                                ({"script": "nowhere"}, "nowhere")):
+         with tempfile.TemporaryDirectory() as tmp:
+            folder = copy_fixture(tmp)
+            w = json.loads((folder / "world.json").read_text(encoding="utf-8"))
+            w["spotters"] = spotters
+            (folder / "world.json").write_text(json.dumps(w), encoding="utf-8")
+            with self.assertRaisesRegex(mc.ManifestError, message):
+               self.world(folder)
+      with tempfile.TemporaryDirectory() as tmp:
+         folder = copy_fixture(tmp)
+         m = json.loads((folder / "maps/spot.json").read_text(encoding="utf-8"))
+         m["objects"][1]["spotter"]["pair"] = 1
+         (folder / "maps/spot.json").write_text(json.dumps(m), encoding="utf-8")
+         with self.assertRaisesRegex(mc.ManifestError, "pair must be true or false"):
+            self.world(folder)
 
 
 if __name__ == "__main__":

@@ -148,12 +148,13 @@ implicit variable egg_member (u8, map) holds the party slot of the egg that
 hatched, and the structure's eggs.hatch_script names the script run for it.
 D-36 package 2 C1, encounters with parties and battles (capsule/script/battle_port.h):
 `encounter clear;` empties the encounter record;
-`encounter set a|b|current <party> <obj> [beaten flag(f)] [intro <text>]
+`encounter set a|b|c|current <party> <obj> [beaten flag(f)] [intro <text>]
 [defeat <text>] [cannot <text>] [after <script>] [then <script>] [pair]
 [rematch] [no_music] [mode <n>];` fills a side, remembers the statement
 after it as the return point and, with then, goes on in that script at once
-(mode: the game's own number, 0-255);
-`encounter select a|b|<side>;` picks the current side;
+(mode: the game's own number, 0-255; side A starts a new encounter: the
+other sides are emptied);
+`encounter select a|b|c|<side>;` picks the current side;
 `encounter get party|object|beaten|bits|side|sides|mode -> var(v);`;
 `encounter text intro|defeat|cannot [nowait] [instant] [autoscroll];` types
 the current side's text (with nowait the script goes on while it types, as
@@ -163,6 +164,13 @@ no_music); `encounter mark;` sets the sides' beaten flags;
 `encounter continue;` goes on at the return point and `encounter after;` in
 the current side's after-script (without one, the next statement runs). The object word
 `encounter` is the current side's object (`face player encounter;`).
+C1b, spotter groups (the world's "spotters" script): `encounter load;` empties
+the record and fills sides A, B, C from the field's group: each spotter's own
+script runs, the spotter its object, until its first `encounter set`, which
+fills that spotter's side (whatever side it names) and ends the run without
+its then-script; `encounter approach;` walks the current side's object up to
+the player and waits; `encounter next [-> var(v)];` makes the next filled
+side current (v = 1), after the last side A again (v = 0).
 `battle party|rematch [-> var(v)];`, `battle unowned <species> <level>
 [<item>] [-> var(v)];` and `battle scripted <number> [-> var(v)];` start a
 battle through the game's battle port and wait; v = its
@@ -345,9 +353,10 @@ ENCOUNTER_KINDS = VM.words("EncounterOp")
 ENCOUNTER_FIELDS = VM.words("EncounterField")
 ## Encounter Set's side words and their side bytes.
 ENCOUNTER_SIDES = {"a": VM.constants["kEncounterSideA"], "b": VM.constants["kEncounterSideB"],
-                   "current": VM.constants["kEncounterSideCurrent"]}
+                   "c": VM.constants["kEncounterSideC"], "current": VM.constants["kEncounterSideCurrent"]}
 ## Encounter select's side words and their values.
-ENCOUNTER_SELECT = {"a": VM.constants["kEncounterSideA"], "b": VM.constants["kEncounterSideB"]}
+ENCOUNTER_SELECT = {"a": VM.constants["kEncounterSideA"], "b": VM.constants["kEncounterSideB"],
+                    "c": VM.constants["kEncounterSideC"]}
 ## The texts of a side: their words and kEncounterHas... bits (also Encounter Text's byte), in the bits' order.
 ENCOUNTER_TEXTS = {"intro": VM.constants["kEncounterHasIntro"], "defeat": VM.constants["kEncounterHasDefeat"],
                    "cannot": VM.constants["kEncounterHasCannot"]}
@@ -1644,10 +1653,11 @@ class Parser:
 
    def encounter_statement(self, t: Token) -> Node:
       """!Parses an encounter statement (D-36 package 2 C1): `encounter clear|music|mark|continue|after;`,
-      `encounter set a|b|current <party> <object> [beaten flag(F)] [intro|defeat|cannot <text>]
+      `encounter set a|b|c|current <party> <object> [beaten flag(F)] [intro|defeat|cannot <text>]
       [after <script>] [then <script>] [pair] [rematch] [no_music] [mode <n>];`,
-      `encounter select a|b|<side>;`,
-      `encounter get <field> -> var(v);` and `encounter text intro|defeat|cannot [msg modifiers];`.
+      `encounter select a|b|c|<side>;`,
+      `encounter get <field> -> var(v);` and `encounter text intro|defeat|cannot [msg modifiers];`; C1b:
+      `encounter load|approach;` and `encounter next [-> var(v)];`.
       @param t  the statement's first token (the encounter word)
       @return its node
       """
@@ -1695,6 +1705,8 @@ class Parser:
          node["flags"] = 0
          while self.peek().kind == "name" and self.peek().text in MSG_FLAGS:
             node["flags"] |= MSG_FLAGS[self.take().text]   # msg modifiers
+      elif kind == "next":
+         node["result"] = self.var_ref().text if self.accept("->") else None
       self.expect(";")
       return node
 
@@ -3970,6 +3982,10 @@ class Compiler:
          e.u8(s["flags"])
          if not s["flags"] & MSG_FLAGS["nowait"]:
             ctx["waits"] = True
+      elif kind == "approach":
+         ctx["waits"] = True   # until the walk-up ends
+      elif kind == "next":
+         e.u16(self.var_id(s["result"], s) if s["result"] is not None else NO_VAR)
       return kind not in ENCOUNTER_LEAVING
 
    def role_ref(self, s: Node) -> tuple[int, tuple[int, int] | None]:

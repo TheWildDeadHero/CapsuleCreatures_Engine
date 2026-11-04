@@ -390,6 +390,15 @@ every key.
   between passable and free, spots it, waits 30 frames, walks up, and its
   script is requested (`Source::Spotter`). The first in local-ID order
   wins; there is no "!" emote yet.
+- **Spotter groups (C1b, REF-14):** a world with `"spotters": {"script",
+  "positions", "order"}` collects every spotter that sees the standing
+  walker, nearest first (`"order": "local"`: local-ID order), while their
+  positions fit (`"positions"` 1-3, default 1; a spotter with
+  `"pair": true` fills two; the game's `field::game::spot_positions()` may
+  allow fewer); the others spot the walker again later. The world's script is
+  requested at once (`Source::Spotter`, the first spotter as its object) and
+  the field walks no one up: the script reads the group (`encounter load;`)
+  and walks each spotter up (`encounter approach;`, `encounter next`).
 - **Locking:** once a script is requested, objects stop moving on their own
   until the script ends (`field::release()`; the overworld runner calls it,
   and `field::lock()` for the scripts it starts itself); scripted walks and
@@ -406,8 +415,8 @@ every key.
   new line at once) and Static objects turn back to their facing. Over a map
   whose layers use BG0 there is no text box.
 
-Not built yet: schedules (C-05 world clock), the "!" emote, several
-spotters approaching together (battle formats), the cheap per-chunk spotter
+Not built yet: schedules (C-05 world clock), the "!" emote, the battle
+formats of several spotters (triple, Battle Royal: spec 08), the cheap per-chunk spotter
 candidate list of E-8 (15 objects are scanned), and objects that are not
 16 pixels wide on the cell grid.
 

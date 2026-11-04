@@ -115,6 +115,7 @@ constexpr std::array<WaitPoll, kWaitCount> make_polls()
    polls[static_cast<int>(Wait::Combine)] = poll_combine;
    polls[static_cast<int>(Wait::Nursery)] = poll_nursery;
    polls[static_cast<int>(Wait::Battle)] = poll_battle;
+   polls[static_cast<int>(Wait::Approach)] = poll_approach;
    return polls;
 }
 

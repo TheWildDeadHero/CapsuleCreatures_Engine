@@ -1439,6 +1439,7 @@ bool still_waiting(Context& c)
    case Wait::Combine:
    case Wait::Nursery:
    case Wait::Battle:
+   case Wait::Approach:
       if (poll_module(c))
       {
          return true;
@@ -1909,8 +1910,14 @@ namespace
 constexpr int kEncounterTexts = 3;
 /// Bytes of a stored text reference (its tag and its 32-bit value, as the bytecode has it).
 constexpr int kTextRefBytes = 1 + kU32Bytes;
-/// Sides of the encounter record (A and B).
-constexpr int kEncounterSides = 2;
+/// Sides of the encounter record (A, B and C: REF-14's most positions).
+constexpr int kEncounterSides = 3;
+/// The record's slot of each side code (kEncounterSide...: C's code is 3, after kEncounterSideCurrent).
+constexpr uint8_t kSideCodes[kEncounterSides] = {kEncounterSideA, kEncounterSideB, kEncounterSideC};
+/// The slot of side A.
+constexpr uint8_t kSlotA = 0;
+/// g_load_slot while no Load runs.
+constexpr uint8_t kNotLoading = 0xFF;
 
 /// One side of the encounter record.
 struct EncounterSide
@@ -1931,11 +1938,28 @@ struct EncounterRecord
    bool has_back;                          ///< A Set gave the return point.
    uint8_t bits;                           ///< The mode bits (kEncounterPair ...).
    uint8_t mode;                           ///< The game's own mode number (opaque to the engine).
-   uint8_t current;                        ///< The current side (kEncounterSideA / B).
+   uint8_t current;                        ///< The current side's slot (kSideCodes index).
 };
 
 /// The encounter record (EWRAM: IWRAM is the stack's).
 CAPSULE_EWRAM_BSS EncounterRecord g_encounter;
+/// C1b: the slot a Load fills while a spotter's script runs to its Set, or kNotLoading.
+uint8_t g_load_slot = kNotLoading;
+
+/// The slot of a side code.
+/// @param side  kEncounterSideA, B or C
+/// @return its slot, or kEncounterSides for another value
+constexpr int slot_of(uint8_t side)
+{
+   for (int i = 0; i < kEncounterSides; ++i)
+   {
+      if (kSideCodes[i] == side)
+      {
+         return i;
+      }
+   }
+   return kEncounterSides;
+}
 
 /// An empty side.
 /// @return it
@@ -1949,11 +1973,28 @@ constexpr EncounterSide empty_side()
    return s;
 }
 
+/// The current side's slot.
+/// @return it (side A's for a bad value)
+uint8_t current_slot()
+{
+   return g_encounter.current < kEncounterSides ? g_encounter.current : kSlotA;
+}
+
 /// The current side.
 /// @return it
 EncounterSide& current_side()
 {
-   return g_encounter.sides[g_encounter.current < kEncounterSides ? g_encounter.current : kEncounterSideA];
+   return g_encounter.sides[g_encounter.current < kEncounterSides ? g_encounter.current : kSlotA];
+}
+
+/// Empties the record (Clear, Load).
+void clear_record()
+{
+   g_encounter = EncounterRecord{};
+   for (EncounterSide& s : g_encounter.sides)
+   {
+      s = empty_side();
+   }
 }
 
 /// A side's texts by index: their kEncounterHas... bits.
@@ -2017,6 +2058,34 @@ Outcome go_back(Context& c, Frame& f)
    return Outcome::Continue;
 }
 
+/// C1b (Load): runs a spotter's script, its object the spotter, until its first Set fills a slot (the Set takes no
+/// then-script and ends the run). The script must reach its Set without waiting; a wait ends the run unfilled.
+/// @param slot    the slot
+/// @param script  the spotter's script
+/// @param self    the spotter's local ID
+/// @return true when the slot was filled
+bool load_side(uint8_t slot, uint16_t script, uint8_t self)
+{
+   ENGINE_ASSERT(script < bank().script_count);
+   Context c{};
+   c.self = self;
+   c.last_object = kNoSelf;
+   push(c, raw(ScriptId{script}));
+   const bool outer = g_immediate;   // nothing in it may wait (natives see immediate())
+   g_immediate = true;
+   g_load_slot = slot;
+   for (int i = 0; i < kMaxRunSteps && c.depth != 0; ++i)
+   {
+      if (execute(c) == Outcome::Waiting)
+      {
+         break;   // it waits before its Set: the slot stays empty
+      }
+   }
+   g_load_slot = kNotLoading;
+   g_immediate = outer;
+   return g_encounter.sides[slot].party != battles::kNoParty;
+}
+
 ///@}
 
 }   // namespace
@@ -2035,13 +2104,14 @@ namespace battles
 
 Side encounter_side(uint8_t side)
 {
-   const detail::EncounterSide& s = detail::g_encounter.sides[side < detail::kEncounterSides ? side : kEncounterSideA];
+   const int slot = detail::slot_of(side);
+   const detail::EncounterSide& s = detail::g_encounter.sides[slot < detail::kEncounterSides ? slot : detail::kSlotA];
    return Side{s.party, s.object};
 }
 
 uint8_t encounter_current_side()
 {
-   return detail::g_encounter.current;
+   return detail::kSideCodes[detail::current_slot()];
 }
 
 uint8_t encounter_bits()
@@ -2073,18 +2143,25 @@ Outcome op_encounter(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const
    {
    case EncounterOp::Clear:
       advance(f, p, base);
-      g_encounter = EncounterRecord{};
-      for (EncounterSide& s : g_encounter.sides)
-      {
-         s = empty_side();
-      }
+      clear_record();
       return Outcome::Continue;
    case EncounterOp::Set:
    {
       const uint8_t side = *p++;
-      const uint8_t index = side == kEncounterSideCurrent ? g_encounter.current : side;
-      ENGINE_ASSERT(index < kEncounterSides);
-      EncounterSide& s = g_encounter.sides[index < kEncounterSides ? index : kEncounterSideA];
+      const bool loading = g_load_slot != kNotLoading;
+      // C1b: under Load the side is the spotter's slot, whatever the Set names
+      const int named = side == kEncounterSideCurrent ? current_slot() : slot_of(side);
+      ENGINE_ASSERT(loading || named < kEncounterSides);
+      const int slot = loading ? g_load_slot : named < kEncounterSides ? named : kSlotA;
+      if (!loading && slot == kSlotA)
+      {
+         // side A starts a new encounter: the other sides of an earlier one go
+         for (int i = kSlotA + 1; i < kEncounterSides; ++i)
+         {
+            g_encounter.sides[i] = empty_side();
+         }
+      }
+      EncounterSide& s = g_encounter.sides[slot];
       read_side(c, p, s);
       uint16_t then = kNoScriptId;
       if ((s.parts & kEncounterHasThen) != 0)
@@ -2092,8 +2169,22 @@ Outcome op_encounter(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const
          then = load_le16(p);
          p += kU16Bytes;
       }
-      g_encounter.bits = *p++;
-      g_encounter.mode = *p++;
+      const uint8_t bits = *p++;
+      const uint8_t mode = *p++;
+      if (loading)
+      {
+         // the spotter's side, its object the spotter; side A's mode is the encounter's; the run ends here
+         s.object = c.self;
+         if (slot == kSlotA)
+         {
+            g_encounter.bits = bits;
+            g_encounter.mode = mode;
+         }
+         c.depth = 0;
+         return Outcome::Ended;
+      }
+      g_encounter.bits = bits;
+      g_encounter.mode = mode;
       advance(f, p, base);
       // the instruction after the Set is where Continue goes on
       g_encounter.back = f;
@@ -2109,7 +2200,8 @@ Outcome op_encounter(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const
    {
       const int32_t side = operand(p);
       advance(f, p, base);
-      g_encounter.current = side == kEncounterSideB ? kEncounterSideB : kEncounterSideA;
+      const int slot = side >= 0 ? slot_of(static_cast<uint8_t>(side)) : kEncounterSides;
+      g_encounter.current = static_cast<uint8_t>(slot < kEncounterSides ? slot : kSlotA);
       return Outcome::Continue;
    }
    case EncounterOp::Get:
@@ -2135,7 +2227,7 @@ Outcome op_encounter(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const
          value = g_encounter.bits;
          break;
       case EncounterField::Side:
-         value = g_encounter.current;
+         value = kSideCodes[current_slot()];
          break;
       case EncounterField::Mode:
          value = g_encounter.mode;
@@ -2211,6 +2303,59 @@ Outcome op_encounter(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const
       f = Frame{after, 0};
       return Outcome::Continue;
    }
+   case EncounterOp::Load:
+   {
+      advance(f, p, base);
+      ENGINE_ASSERT(g_load_slot == kNotLoading);   // a spotter's script loads no group itself
+      if (g_load_slot != kNotLoading)
+      {
+         return Outcome::Continue;
+      }
+      clear_record();
+      uint8_t objects[kEncounterSides] = {};
+      uint16_t scripts[kEncounterSides] = {};
+      const uint8_t n = world::spotters(objects, scripts, kEncounterSides);
+      uint8_t slot = kSlotA;
+      for (uint8_t i = 0; i < n && slot < kEncounterSides; ++i)
+      {
+         // a spotter whose script reaches no Set leaves its slot to the next one
+         slot = static_cast<uint8_t>(slot + (load_side(slot, scripts[i], objects[i]) ? 1 : 0));
+      }
+      if (slot < kEncounterSides)
+      {
+         g_encounter.sides[slot] = empty_side();   // a Set without a party (an empty side) left nothing
+      }
+      return Outcome::Continue;
+   }
+   case EncounterOp::Approach:
+   {
+      advance(f, p, base);
+      const uint8_t obj = current_side().object;
+      if (obj == kNoSelf || !world::approach(obj))
+      {
+         return Outcome::Continue;   // nothing walks up: nothing to wait for
+      }
+      c.wait = Wait::Approach;
+      return Outcome::Waiting;
+   }
+   case EncounterOp::Next:
+   {
+      const uint16_t v = load_le16(p);
+      p += kU16Bytes;
+      advance(f, p, base);
+      int next = current_slot() + 1;
+      while (next < kEncounterSides && g_encounter.sides[next].party == battles::kNoParty)
+      {
+         ++next;
+      }
+      const bool more = next < kEncounterSides;
+      g_encounter.current = static_cast<uint8_t>(more ? next : kSlotA);
+      if (v != kNoVar)
+      {
+         set_var(VarId{v}, more ? 1 : 0);
+      }
+      return Outcome::Continue;
+   }
    case EncounterOp::NUM_ENCOUNTER_OPS:
       break;
    }
@@ -2243,11 +2388,13 @@ Outcome op_battle(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const ui
    else
    {
       // a party battle takes the encounter record's sides
-      const EncounterSide& a = g_encounter.sides[kEncounterSideA];
-      const EncounterSide& b = g_encounter.sides[kEncounterSideB];
+      const EncounterSide& a = g_encounter.sides[slot_of(kEncounterSideA)];
+      const EncounterSide& b = g_encounter.sides[slot_of(kEncounterSideB)];
+      const EncounterSide& sc = g_encounter.sides[slot_of(kEncounterSideC)];
       r.bits = g_encounter.bits;
       r.a = battles::Side{a.party, a.object};
       r.b = battles::Side{b.party, b.object};
+      r.c = battles::Side{sc.party, sc.object};
    }
    c.result_var = load_le16(p);
    p += kU16Bytes;
@@ -2279,6 +2426,14 @@ bool poll_battle(Context& c)
       set_var(VarId{c.result_var}, static_cast<int32_t>(battles::outcome()));
    }
    return false;
+}
+
+/// Wait::Approach (C1b: encounter approach, a module wait polled through the game's dispatch table).
+/// @param c  the context
+/// @return true while the walk-up runs
+bool poll_approach([[maybe_unused]] Context& c)
+{
+   return world::approaching();
 }
 
 }   // namespace detail

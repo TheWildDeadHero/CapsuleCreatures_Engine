@@ -70,6 +70,7 @@ bool poll_transform(Context& c);   ///< Wait::Transform.
 bool poll_combine(Context& c);     ///< Wait::Combine.
 bool poll_nursery(Context& c);     ///< Wait::Nursery.
 bool poll_battle(Context& c);      ///< Wait::Battle (C1).
+bool poll_approach(Context& c);    ///< Wait::Approach (C1b).
 ///@}
 
 /// The encounter record's current side's object (C1: kObjectEncounter, kFaceEncounter; src/script/script.cpp).

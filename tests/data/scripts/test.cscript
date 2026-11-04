@@ -273,6 +273,40 @@ script fight_start {
     var(out) = 1;
 }
 script fight_after { var(out) = 7; }
+// C1b: a spotter group (the field's group in the test world: spotter_one, spotter_none, spotter_two): loaded,
+// walked up one by one with their intros, one battle against both, then their after-scripts in turn
+script spot_group {
+    encounter load;
+    encounter get sides -> var(v8);
+    goto spot_approach;
+}
+script spot_approach {
+    encounter approach;
+    encounter text intro;
+    encounter next -> var(answer);
+    if var(answer) == 1 { goto spot_approach; }
+    battle party;
+    goto spot_after;
+}
+script spot_after {
+    encounter after;
+    encounter next -> var(answer);
+    if var(answer) == 1 { goto spot_after; }
+}
+script spotter_one {
+    encounter set current 21 self beaten flag(f_beaten_a) intro "One!" then fight_start mode 2;
+    var(out) = 55;
+}
+script spotter_none { var(bag_ok) = 1; }
+script spotter_two {
+    var(v16) = 4;
+    encounter set a 22 self intro "Two!" then fight_start;
+}
+// C1b: a new encounter on side A leaves no side of the group before
+script spot_single {
+    encounter set a 30 self;
+    battle party;
+}
 script lone_battle {
     battle unowned 25 5 -> var(answer);
     battle scripted 3;

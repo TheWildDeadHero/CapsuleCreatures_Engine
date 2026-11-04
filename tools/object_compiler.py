@@ -55,7 +55,8 @@ Map (`capsule.map/2`), optional key:
   up to "sight" cells, 1-8, nothing in between) the object walks up to it
   and its script runs (an opponent who challenges the player, a guard...).
   "until" turns the sight off while set; the script (or the battle it
-  starts) sets it. A spotter needs both.
+  starts) sets it. A spotter needs both. "pair": true (C1b) makes it fill
+  two positions of a spotter group (a pair battle; the world's "spotters").
 - **pages** (RPG Maker XP's event pages): each has conditions ("when": a
   flag set, a variable at least a value, or equal with "equal": true, self
   switches on: "self": "A" or ["A", "B"]; at least one) and the fields it
@@ -125,6 +126,8 @@ MAX_OBJECTS = 15
 MAX_VIEW_OBJECTS = 64
 ## Longest spotter sight.
 MAX_SIGHT = 8
+## The sight's bit of a pair spotter (capsule::map::kSpotterPair), as the generated source names it.
+SPOTTER_PAIR = "kSpotterPair"
 ## Largest range each way (4 bits; I3: was 7).
 MAX_RANGE = 15
 ## Parallel objects per map (overworld::kMaxParallel script contexts).
@@ -176,7 +179,7 @@ MovementFields = tuple[int, int, int, int, int]
 KEYS = {
    "object": {"name", "at", "elevation", "sprite", "facing", "movement", "range", "route", "speed", "frequency",
               "options", "script", "trigger", "flag", "self_switches", "spotter", "pages", "kind", "movement_args"},
-   "spotter": {"sight", "until"},
+   "spotter": {"sight", "until", "pair"},
    "page": {"when", "sprite", "facing", "movement", "range", "route", "speed", "frequency", "options", "script",
             "trigger", "hidden", "movement_args"},
    "when": {"flag", "var", "value", "equal", "self"},
@@ -522,7 +525,7 @@ def compile_objects(map_names: Sequence[str], parsed: Mapping[str, list[JsonDict
                raise evc.EventError(f"{w}: kind must be one of the world's object_kinds "
                                     f"({', '.join(kinds) or 'none declared'}), got {o['kind']!r}")
             kind = list(kinds).index(o["kind"]) + 1
-         sight, until = 0, NONE
+         sight, until, pair = 0, NONE, False
          if "spotter" in o:
             t = o["spotter"]
             _keys(t, "spotter", f"{w} spotter")
@@ -531,6 +534,9 @@ def compile_objects(map_names: Sequence[str], parsed: Mapping[str, list[JsonDict
                raise evc.EventError(f"{w}: a spotter needs its until flag (its sight stays on until the "
                                     "flag is set, so without one it would spot the player again and again)")
             until = names.flag(t["until"], f"{w} spotter until")
+            pair = t.get("pair", False)
+            if not isinstance(pair, bool):
+               raise evc.EventError(f"{w}: spotter pair must be true or false")
             if script == NONE:
                raise evc.EventError(f"{w}: a spotter needs a script (it runs when the spotter sees the player)")
          uses_self = o.get("self_switches", False)
@@ -570,7 +576,7 @@ def compile_objects(map_names: Sequence[str], parsed: Mapping[str, list[JsonDict
                raise evc.EventError("too many objects with self switches in the world")
          objs.append({"sprite": key, "x": x, "y": y, "script": script, "flag": flag, "until": until, "kind": kind,
                       "page_first": first, "route": route, "self_base": base_self, "elevation": elev,
-                      "facing": facing, "movement": movement, "range": rng, "sight": sight,
+                      "facing": facing, "movement": movement, "range": rng, "sight": sight, "pair": pair,
                       "page_count": len(pages) - first, "trigger": trigger, "motion": motion,
                       "options": options, "sprite_ref": o["sprite"], "name": o["name"], "movement_arg": m_arg,
                       "movement_flags": m_flags})
@@ -669,6 +675,14 @@ def _enum(name: str) -> str:
    return "".join(p.capitalize() for p in name.split("_"))
 
 
+def sight_text(o: JsonDict) -> str:
+   """!An object's ObjectTemplate::sight initializer: its sight, with kSpotterPair for a pair spotter (C1b).
+   @param o  compiled object
+   @return C++ text
+   """
+   return f"{o['sight']} | {SPOTTER_PAIR}" if o.get("pair") else str(o["sight"])
+
+
 def emit_map(i: int, objs: JsonDict) -> tuple[list[str], str, str, str, str]:
    """!C++ tables of one map's objects.
    @param i     map index
@@ -684,7 +698,7 @@ def emit_map(i: int, objs: JsonDict) -> tuple[list[str], str, str, str, str]:
          L.append(f"    {{AssetKey{{0x{o['sprite']:08X}u}}, {o['x']}, {o['y']}, 0x{o['script']:04X}, "
                   f"0x{o['flag']:04X}, 0x{o['until']:04X}, {o['page_first']}, 0x{o['route']:04X}, "
                   f"0x{o['self_base']:04X}, {o['elevation']}, {o['facing']}, "
-                  f"Movement::{_enum(MOVEMENTS[o['movement']])}, 0x{o['range']:02X}, {o['sight']}, "
+                  f"Movement::{_enum(MOVEMENTS[o['movement']])}, 0x{o['range']:02X}, {sight_text(o)}, "
                   f"{o['page_count']}, Trigger::{_enum(TRIGGERS[o['trigger']])}, 0x{o['motion']:02X}, "
                   f"0x{o['options']:02X}, {o['kind']}, 0x{o.get('movement_arg', 0):02X}, "
                   f"0x{o.get('movement_flags', 0):02X}}},   // {o['name']} ({o['sprite_ref']})")

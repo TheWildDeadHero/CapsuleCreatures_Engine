@@ -382,8 +382,17 @@ void place(int x, int y, uint8_t facing);
 /// with every cell in between passable and free, spots it: it waits
 /// kSpotFrames, walks up to the cell next to the walker, the walker turns to
 /// it, and its script is requested (Source::Spotter). The first spotter in
-/// local-ID order wins; how many may approach together comes from the battle
-/// formats, later.
+/// local-ID order wins.
+///
+/// Spotter groups (C1b, REF-14): a world with a spotter script
+/// (map::World::spotter_script) collects every spotter that sees the walker
+/// on the same step, in the world's order (map::World::spotter_order), while
+/// their positions fit (a map::kSpotterPair spotter fills two; at most
+/// map::World::spotter_positions and game::spot_positions()); the others
+/// spot the walker again later. The field then requests the spotter script
+/// at once (Source::Spotter, its object the group's first spotter) and walks
+/// no one up: the script reads the group (spotters()) and walks each spotter
+/// up with approach().
 ///
 /// Locking: from the moment a script is requested (any source) objects stop
 /// moving on their own until release(), which the game calls when the script
@@ -419,6 +428,32 @@ void show_object(uint8_t local, bool on);
 /// stands in for what a spotter starts (a battle it does not run yet) without writing saved state. Never saved.
 /// @param local  local ID
 void stop_sight(uint8_t local);
+
+/// C1b: the most spotters one group holds (one position each at least).
+inline constexpr int kMaxSpotters = map::kMaxSpotPositions;
+
+/// C1b: the spotter group the field last requested the world's spotter script for (empty before any, and after
+/// the next map).
+struct SpotterGroup
+{
+   uint8_t objects[kMaxSpotters];   ///< Their local IDs, in approach order.
+   uint8_t count;                   ///< How many.
+};
+
+/// C1b: the last spotter group.
+/// @return it
+const SpotterGroup& spotters();
+
+/// C1b: walks a spotter up to the walker as the field's own approach does (it waits kSpotFrames, walks to the cell
+/// next to the walker along its facing, and the walker turns to it), for a script: no script is requested at the
+/// end. The caller holds the lock.
+/// @param local  local ID
+/// @return false when there is no such (shown) object, or another approach runs
+bool approach(uint8_t local);
+
+/// C1b: whether an approach() still runs.
+/// @return true while it does
+bool approaching();
 
 /// C10: takes an object off the map until it may come back (a reference game's object removal): unlike
 /// show_object(false) it is not held hidden; it spawns again at its template cell when the walker's next step looks
@@ -788,6 +823,12 @@ uint16_t step_hook(uint16_t hook);
 /// @param arg    its argument
 /// @return true when it is done (the route goes on)
 bool route_step(uint8_t mover, uint8_t step, uint8_t arg);
+
+/// C1b: how many positions of a spotter group the walker's side can face now (REF-14: a battle format's need, the
+/// party's usable members); spotters beyond them drop out and spot the walker again later. Asked when a group
+/// forms. The default (src/field/field_spot_default.cpp, weak) sets no limit beyond the world's.
+/// @return the positions (map::kMaxSpotPositions or more: no limit)
+uint8_t spot_positions();
 
 } // namespace game
 
