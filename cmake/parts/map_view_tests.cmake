@@ -28,6 +28,7 @@ add_executable(capsule_map_view_tests
    src/map/map.cpp
    src/overworld/overworld.cpp
    src/script/script.cpp
+   src/script/script_dispatch_all.cpp
    src/script/script_empty.cpp
    src/script/field_actions.cpp
    src/script/script_port_defaults.cpp

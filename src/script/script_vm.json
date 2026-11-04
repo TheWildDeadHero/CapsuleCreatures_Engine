@@ -5,7 +5,7 @@
  "name": "script_vm",
  "owner": "engine",
  "tier": 0,
- "doc": "The field script VM's opcodes, their kinds and constants (D-36 package 2, step A). tools/vm_ext.py script-header writes include/capsule/script/ops.h from it; tools/script_compiler.py reads it. Ids and value orders are the bytecode: never renumber.",
+ "doc": "The field script VM's opcodes, their kinds and constants (D-36 package 2, step A). tools/vm_ext.py script-header writes include/capsule/script/ops.h from it; tools/script_compiler.py reads it. Ids and value orders are the bytecode: never renumber. Ops with a \"handler\" belong to an engine module (\"module\") and run through the game's dispatch table (step B): `script_vm.py dispatch` writes it, with only the ops the game's scripts use; \"polls\" names the module waits and the ops that set them.",
  "ops": [
   {
    "id": 0,
@@ -373,7 +373,9 @@
    "kind": "generic",
    "doc": "Read a party record's role (D-22 decision 2).",
    "bytes": "var16, operand (slot), role8, operand (element)",
-   "does": "var = an element of a party record's role (party::role_get(); clamps to the variable's range)"
+   "does": "var = an element of a party record's role (party::role_get(); clamps to the variable's range)",
+   "module": "party",
+   "handler": "op_role_get"
   },
   {
    "id": 46,
@@ -381,7 +383,9 @@
    "kind": "generic",
    "doc": "Write a party record's role.",
    "bytes": "operand (slot), role8, operand (element), operand (value)",
-   "does": "writes it (party::role_set(); truncated to the role's width)"
+   "does": "writes it (party::role_set(); truncated to the role's width)",
+   "module": "party",
+   "handler": "op_role_set"
   },
   {
    "id": 47,
@@ -389,7 +393,9 @@
    "kind": "generic",
    "doc": "Put items into the bag (G2).",
    "bytes": "var16 (or kNoVar), operand (item), operand (n)",
-   "does": "var = 1 when the bag took all n (items::give(); G2)"
+   "does": "var = 1 when the bag took all n (items::give(); G2)",
+   "module": "items",
+   "handler": "op_item_give"
   },
   {
    "id": 48,
@@ -397,7 +403,9 @@
    "kind": "generic",
    "doc": "Take items from the bag.",
    "bytes": "var16 (or kNoVar), operand (item), operand (n)",
-   "does": "var = 1 when the bag held n (they are gone; items::take())"
+   "does": "var = 1 when the bag held n (they are gone; items::take())",
+   "module": "items",
+   "handler": "op_item_give"
   },
   {
    "id": 49,
@@ -405,7 +413,9 @@
    "kind": "generic",
    "doc": "Count an item in the bag.",
    "bytes": "var16, operand (item)",
-   "does": "var = how many the bag holds (items::count())"
+   "does": "var = how many the bag holds (items::count())",
+   "module": "items",
+   "handler": "op_item_count"
   },
   {
    "id": 50,
@@ -413,7 +423,9 @@
    "kind": "generic",
    "doc": "Open the bag menu.",
    "bytes": "var16",
-   "does": "the bag menu (items::bag_open()); waits; var = the chosen item, 0 for none"
+   "does": "the bag menu (items::bag_open()); waits; var = the chosen item, 0 for none",
+   "module": "items",
+   "handler": "op_bag_open"
   },
   {
    "id": 51,
@@ -421,7 +433,9 @@
    "kind": "generic",
    "doc": "Open a shop list.",
    "bytes": "shop8, var16 (money)",
-   "does": "a shop list (items::shop_open()); waits until it closes"
+   "does": "a shop list (items::shop_open()); waits until it closes",
+   "module": "items",
+   "handler": "op_shop"
   },
   {
    "id": 52,
@@ -437,7 +451,9 @@
    "kind": "generic",
    "doc": "Count the records in the storage boxes (G3).",
    "bytes": "var16",
-   "does": "var = the records the storage boxes hold (boxes::count(); G3)"
+   "does": "var = the records the storage boxes hold (boxes::count(); G3)",
+   "module": "boxes",
+   "handler": "op_box_count"
   },
   {
    "id": 54,
@@ -445,7 +461,9 @@
    "kind": "generic",
    "doc": "Move a party member into the boxes.",
    "bytes": "var16 (or kNoVar), operand (party member)",
-   "does": "moves a party member into the boxes (boxes::deposit()); var = 1 when it went"
+   "does": "moves a party member into the boxes (boxes::deposit()); var = 1 when it went",
+   "module": "boxes",
+   "handler": "op_box_deposit"
   },
   {
    "id": 55,
@@ -453,7 +471,9 @@
    "kind": "generic",
    "doc": "Move a boxed record into the party.",
    "bytes": "var16 (or kNoVar), operand (storage slot)",
-   "does": "moves a boxed record into the party (boxes::withdraw()); var = 1 when it came"
+   "does": "moves a boxed record into the party (boxes::withdraw()); var = 1 when it came",
+   "module": "boxes",
+   "handler": "op_box_deposit"
   },
   {
    "id": 56,
@@ -461,7 +481,9 @@
    "kind": "generic",
    "doc": "Open the boxes menu.",
    "bytes": "var16",
-   "does": "the boxes menu (boxes::open()); waits; var = the chosen box + 1, 0 for none"
+   "does": "the boxes menu (boxes::open()); waits; var = the chosen box + 1, 0 for none",
+   "module": "boxes",
+   "handler": "op_boxes_open"
   },
   {
    "id": 57,
@@ -469,7 +491,9 @@
    "kind": "generic",
    "doc": "A party member's transformation (G4).",
    "bytes": "var16, operand (party member)",
-   "does": "the member's transformation by the script trigger's rules (growth::transform_open(), capsule/script/growth_port.h; G4); waits; var = 0 nothing, 1 changed, 2 stopped"
+   "does": "the member's transformation by the script trigger's rules (growth::transform_open(), capsule/script/growth_port.h; G4); waits; var = 0 nothing, 1 changed, 2 stopped",
+   "module": "growth",
+   "handler": "op_transform"
   },
   {
    "id": 58,
@@ -525,7 +549,9 @@
    "kind": "generic",
    "doc": "Run or ask a combination method (B1).",
    "bytes": "kind8 (CombineOp), method8, [Run / Preview / Status / Fee: count8, count operands (party slots)], var16",
-   "does": "B1: a combination method (capsule/script/combine_port.h): Open picks the inputs through the menu, previews, asks and combines, Run combines the given members (both wait; var = 0 backed out, 1 combined, 2 refused); Preview: var = the result species + 1 (0: none, kCombineRandom: a random pick), Status: the combine::Status, Fee: the fee"
+   "does": "B1: a combination method (capsule/script/combine_port.h): Open picks the inputs through the menu, previews, asks and combines, Run combines the given members (both wait; var = 0 backed out, 1 combined, 2 refused); Preview: var = the result species + 1 (0: none, kCombineRandom: a random pick), Status: the combine::Status, Fee: the fee",
+   "module": "combine",
+   "handler": "op_combine"
   },
   {
    "id": 65,
@@ -533,7 +559,9 @@
    "kind": "generic",
    "doc": "The nursery: deposit, withdraw, queries, the result, the nickname prompt (B2).",
    "bytes": "kind8 (NurseryOp), [Deposit / Withdraw / Levels / Fee / Name: operand], [Withdraw: var16 money (or kNoVar)], var16",
-   "does": "B2: the nursery (capsule/script/nursery_port.h): Pick opens the party menu (waits; var = member + 1, 0 backed out), Deposit (var = 1 when it went), Withdraw with the fee taken from the money variable (var = 1 done, 0 refused, kNurseryPoor too poor), Count, Levels (gained), Fee, Ready (var = 1 when a result waits), Odds, Take (var = 1 when it joined the party), Name (the nickname prompt; waits; var = 1 named)"
+   "does": "B2: the nursery (capsule/script/nursery_port.h): Pick opens the party menu (waits; var = member + 1, 0 backed out), Deposit (var = 1 when it went), Withdraw with the fee taken from the money variable (var = 1 done, 0 refused, kNurseryPoor too poor), Count, Levels (gained), Fee, Ready (var = 1 when a result waits), Odds, Take (var = 1 when it joined the party), Name (the nickname prompt; waits; var = 1 named)",
+   "module": "combine",
+   "handler": "op_nursery"
   },
   {
    "id": 66,
@@ -678,7 +706,9 @@
    "kind": "generic",
    "doc": "A mart list.",
    "bytes": "kind8, n16, n x item16",
-   "does": "I4: a mart list (items::mart_open()); waits until it closes"
+   "does": "I4: a mart list (items::mart_open()); waits until it closes",
+   "module": "items",
+   "handler": "op_mart"
   },
   {
    "id": 84,
@@ -1650,5 +1680,56 @@
    "name": "NUM_OPS",
    "doc": "Number of opcodes."
   }
- }
+ },
+ "polls": [
+  {
+   "wait": "Bag",
+   "symbol": "poll_bag",
+   "ops": [
+    "BagOpen"
+   ]
+  },
+  {
+   "wait": "Shop",
+   "symbol": "poll_shop",
+   "ops": [
+    "Shop"
+   ]
+  },
+  {
+   "wait": "Mart",
+   "symbol": "poll_mart",
+   "ops": [
+    "Mart"
+   ]
+  },
+  {
+   "wait": "Boxes",
+   "symbol": "poll_boxes",
+   "ops": [
+    "BoxesOpen"
+   ]
+  },
+  {
+   "wait": "Transform",
+   "symbol": "poll_transform",
+   "ops": [
+    "Transform"
+   ]
+  },
+  {
+   "wait": "Combine",
+   "symbol": "poll_combine",
+   "ops": [
+    "Combine"
+   ]
+  },
+  {
+   "wait": "Nursery",
+   "symbol": "poll_nursery",
+   "ops": [
+    "Nursery"
+   ]
+  }
+ ]
 }

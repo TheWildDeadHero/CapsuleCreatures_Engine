@@ -118,7 +118,12 @@ manifests and refuses to generate their dispatch until each VM has its generic s
   manifests may use) in their bytecode numbering, with each op's operand bytes and action, the kind enums their
   operands select (each value with its script word) and the operand constants. `tools/script_vm.py header` writes
   `include/capsule/script/ops.h` from it (checked up to date by `script_vm_tests`), and `script_compiler.py` takes
-  its opcode list, words and constants from it: there is no other copy. Its natives go through one `game::native(id, args, argc, result)` switch with
+  its opcode list, words and constants from it: there is no other copy. Since step B the ops of the engine's
+  gameplay modules (`"module"`: party roles, the bag, the boxes, growth, combination, the nursery) name a C++
+  `"handler"` and their waits a poll (`"polls"`): they run through a dispatch table (`src/script/script_dispatch.h`)
+  that each game writes from its scripts' usage record with `tools/script_vm.py dispatch --usage <scripts.json>`,
+  listing only the ops its scripts use, so a module none of them reaches is not linked.
+  `src/script/script_dispatch_all.cpp` is the default table with every op. Its natives go through one `game::native(id, args, argc, result)` switch with
   evaluated `int32_t` arguments, not operand bytes. A manifest entry per native id (name, argument count, `waits`,
   `reason`) can replace the switch with a generated table of function pointers; aliases there are natives whose
   body is a variable read / write, a flag test or a plain wait, run as the VM's own expressions. Needs: a

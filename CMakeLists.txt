@@ -262,6 +262,7 @@ add_library(capsule_engine STATIC
    src/overworld/overworld.cpp
    src/overworld/locations_empty.cpp
    src/script/script.cpp
+   src/script/script_dispatch_all.cpp
    src/script/field_effects.cpp
    src/script/field_actions.cpp
    src/script/step_effects.cpp
@@ -635,6 +636,19 @@ function(capsule_game dir)
          COMMENT "Compiling scripts of ${name}")
       target_sources(${target} PRIVATE ${gen}/scripts.cpp ${gen}/script_ids.h)
       capsule_usage_add(${target} ${usage}/scripts.json)
+      # D-36 package 2: the game's module dispatch, with only the module ops its scripts use (the engine's
+      # src/script/script_dispatch_all.cpp, every op, is then not linked, and neither are the modules no script
+      # reaches)
+      add_custom_command(
+         OUTPUT  ${gen}/script_dispatch.cpp
+         COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/script_vm.py dispatch --usage ${usage}/scripts.json
+               --out ${gen}/script_dispatch.cpp
+         DEPENDS ${CAPSULE_ROOT}/tools/script_vm.py ${CAPSULE_ROOT}/tools/vm_ext.py
+               ${CAPSULE_ROOT}/src/script/script_vm.json ${usage}/scripts.json
+         COMMENT "Writing the script dispatch of ${name}"
+         VERBATIM)
+      target_sources(${target} PRIVATE ${gen}/script_dispatch.cpp)
+      set_source_files_properties(${gen}/script_dispatch.cpp PROPERTIES INCLUDE_DIRECTORIES ${CAPSULE_ROOT}/src/script)
    endif()
 
    string(JSON n ERROR_VARIABLE err LENGTH "${json}" sequences)
@@ -881,6 +895,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
       src/map/map.cpp
       src/overworld/overworld.cpp
       src/script/script.cpp
+      src/script/script_dispatch_all.cpp
       src/script/field_actions.cpp
       src/script/script_port_defaults.cpp
       ${CAPSULE_SCRIPT_ITEMS_SOURCES}
@@ -979,6 +994,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
       src/asset/asset.cpp
       ${CAPSULE_TEST_RNG_SOURCES}
       src/script/script.cpp
+      src/script/script_dispatch_all.cpp
       src/script/field_effects.cpp
       src/script/field_actions.cpp
       ${CAPSULE_GENERATED_DIR}/test_script.cpp

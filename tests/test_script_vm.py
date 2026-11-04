@@ -56,6 +56,26 @@ class Table(unittest.TestCase):
       with self.assertRaises(vm_ext.ManifestError):
          vm_ext._manifest_from(other, Path("other.json"))
 
+   def test_dispatch(self) -> None:
+      """The default dispatch table is up to date and holds every module op; a game's table holds only the module
+      ops its scripts use and the waits those ops set."""
+      self.assertEqual(script_vm.main(["dispatch", "--check"]), 0)
+      every = script_vm.DISPATCH_ALL.read_text(encoding="utf-8")
+      self.assertIn("op_combine,", every)
+      self.assertIn("= poll_transform;", every)
+      with tempfile.TemporaryDirectory() as tmp:
+         record = Path(tmp) / "scripts.json"
+         record.write_text(json.dumps({"schema": script_vm.USAGE_RECORD_SCHEMA, "game": "g", "source": "script",
+                                       "used": {script_vm.OP_CATEGORY: {"End": 3, "BagOpen": 1, "Message": 2}}}),
+                           encoding="utf-8")
+         out = Path(tmp) / "script_dispatch.cpp"
+         self.assertEqual(script_vm.main(["dispatch", "--usage", str(record), "--out", str(out)]), 0)
+         text = out.read_text(encoding="utf-8")
+         self.assertIn("op_bag_open,", text)
+         self.assertIn("= poll_bag;", text)
+         for absent in ("op_combine", "op_transform", "op_role_get", "poll_transform", "poll_shop"):
+            self.assertNotIn(absent, text)
+
    def test_stale_header(self) -> None:
       """--check reports a header that differs from the manifest's."""
       with tempfile.TemporaryDirectory() as tmp:
