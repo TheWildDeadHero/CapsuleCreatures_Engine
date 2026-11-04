@@ -199,49 +199,26 @@ from asset_compiler import CHANNEL_MASK as ASSET_CHANNEL_MASK  # noqa: E402
 from sequence_compiler import asset_key, ManifestError as KeyError_  # noqa: E402
 from sequence_compiler import HEX_BASE, INT16_MAX, INT16_MIN, U16_MASK, U32_MASK  # noqa: E402
 import route_compiler as rc  # noqa: E402
+import script_vm  # noqa: E402
 import save_shape  # noqa: E402
 import text_encoder  # noqa: E402
 import usage  # noqa: E402
 
 ## This compiler's name in usage records.
 USAGE_SOURCE = "script"
-## Opcode numbers; order must match capsule::script::Op.
-OPS = ["End", "Return", "Goto", "Call", "CallTable", "IfFlagClear", "IfFlagSet", "IfCompare",
-       "SetFlag", "ClearFlag", "SetVar", "AddVar", "SubVar", "Random", "Message", "WaitButton",
-       "CloseMessage", "YesNo", "Choice", "Delay", "Native", "TriggerTrue", "ObjectMove", "ObjectFace",
-       "ObjectShow", "ObjectHide", "Route", "WaitMoves", "SelfSwitch", "IfSelfSet", "IfSelfClear", "VarOp",
-       "InputNumber", "WaitKey", "MessagePos", "Warp", "Place", "Scroll", "Tint", "Flash", "Shake", "TimerStart",
-       "TimerStop", "Encounters", "Vehicle", "RoleGet", "RoleSet",
-       # The bag, shops and the game's time of day
-       "ItemGive", "ItemTake", "ItemCount", "BagOpen", "Shop", "TimeOfDay",
-       # The storage boxes
-       "BoxCount", "BoxDeposit", "BoxWithdraw", "BoxesOpen",
-       # A party member's transformation
-       "Transform", "FieldEffect",
-       # Darkness, flight points, the escape point, field actions
-       "Darkness", "Flight", "Escape", "FieldAction",
-       # A walk by the movement rules (`move ... checked`)
-       "ObjectMoveChecked",
-       # A combination method
-       "Combine",
-       # Combination sections 2 and 3: the nursery and the nickname prompt
-       "Nursery",
-       # , imported event scripts: a jump to another script, object locks, message modes, object waits,
-       # removals, visibility and template changes, doors, weather, screen fades, metatiles, the respawn point,
-       # remembered warps, sound, marts
-       "Jump", "Lock", "Release", "MessageEx", "WaitMessage", "WaitObject", "ObjectRemove", "ObjectVisible",
-       "ObjectTemplate", "Door", "Weather", "Fade", "SetMetatile", "Respawn", "SetWarp", "Sound", "WaitSound",
-       "Mart", "CallLoose", "WaitState",
-       # Cell override sets
-       "Override"]
+## The field script VM's table (D-36 package 2: src/script/script_vm.json, tools/script_vm.py): the opcodes, the
+## kind enums' words and the operand constants are read from it, never kept here.
+VM = script_vm.table()
+## Opcode numbers (capsule::script::Op order).
+OPS = VM.ops
 ## Opcode name -> number.
 OP = {name: i for i, name in enumerate(OPS)}
 ## Comparison operators in capsule::script::Compare order.
-COMPARES = ["==", "!=", "<", "<=", ">", ">="]
+COMPARES = VM.words("Compare")
 ## Negation of each comparison.
 NEGATE = {"==": "!=", "!=": "==", "<": ">=", "<=": ">", ">": "<=", ">=": "<"}
 ## Lifetime names in capsule::script::Lifetime order ("session" last: kept in RAM only, never saved).
-LIFETIMES = ["permanent", "daily", "area", "map", "session"]
+LIFETIMES = VM.words("Lifetime")
 ## The lifetime cleared on every map change (the implicit map-lifetime variables use it).
 MAP_LIFETIME = "map"
 ## The lifetime kept in RAM only (last; every lifetime before it is saved).
@@ -251,7 +228,7 @@ TYPES = {"u8": (1, 0, 255), "u16": (2, 0, 65535), "u32": (4, 0, 2**31 - 1)}
 ## Trigger kinds in capsule::script::TriggerKind order (on_resume when the field resumes on the map, on_warp_into
 ## after a warp's arrival (the first entry whose condition holds), on_dive when a dive / emerge has no connection,
 ## on_return when the field comes back from a menu or a battle).
-TRIGGER_KINDS = ["on_transition", "on_load", "on_frame", "on_resume", "on_warp_into", "on_dive", "on_return"]
+TRIGGER_KINDS = VM.words("TriggerKind")
 ## Trigger kinds whose entries have a condition (on_frame, on_warp_into).
 CONDITION_KINDS = ("on_frame", "on_warp_into")
 ## Trigger kinds whose scripts must not wait (every kind but on_frame: they run to their end at once).
@@ -264,24 +241,25 @@ KEYWORDS = {"flag", "var", "const", "native", "script", "map_scripts", "when", "
             "player", "route", "wait_moves", "input_number", "wait_key", "msg_pos", "warp", "place", "scroll",
             "tint", "flash", "shake", "timer", "encounters", "pos_x", "pos_y", "facing", "map_index",
             "steps", "vehicle", "role_get", "role_set"} | set(LIFETIMES) | set(TYPES)
-## Limits shared with capsule/script/data.h.
-MAX_STACK = 32
+## Limits shared with capsule/script/ops.h.
+MAX_STACK = VM.constants["kMaxStack"]
 ## Arguments per native.
-MAX_NATIVE_ARGS = 8
+MAX_NATIVE_ARGS = VM.constants["kMaxNativeArgs"]
 ## Options per choice.
-MAX_CHOICES = 8
+MAX_CHOICES = VM.constants["kMaxChoices"]
 ## On-frame triggers per map.
-MAX_TRIGGERS = 16
+MAX_TRIGGERS = VM.constants["kMaxTriggers"]
 ## Flags / variables per trigger condition.
-MAX_TRIGGER_DEPS = 8
-## Operand tags (capsule/script/data.h).
-OPND_CONST8, OPND_CONST16, OPND_CONST32, OPND_VAR = 0, 1, 2, 3
+MAX_TRIGGER_DEPS = VM.constants["kMaxTriggerDeps"]
+## Operand tags (capsule/script/ops.h).
+OPND_CONST8, OPND_CONST16, OPND_CONST32, OPND_VAR = (VM.constants[k] for k in ("kOpConst8", "kOpConst16",
+                                                                                  "kOpConst32", "kOpVar"))
 ## Text reference tags.
-TEXT_ASSET, TEXT_INLINE = 0, 1
+TEXT_ASSET, TEXT_INLINE = VM.constants["kTextAsset"], VM.constants["kTextInline"]
 ## Native without a result variable.
-NO_VAR = 0xFFFF
+NO_VAR = VM.constants["kNoVar"]
 ## Choice without a cancel index.
-NO_CANCEL = 0xFF
+NO_CANCEL = VM.constants["kNoCancel"]
 ## Bank::deps bit for a variable.
 DEP_VAR = 0x8000
 ## Opcodes that make a script wait.
@@ -297,11 +275,11 @@ BOX_STATEMENTS = {"deposit_box": "BoxDeposit", "withdraw_box": "BoxWithdraw"}
 BOX_QUERIES = {"count_boxed": "BoxCount", "open_boxes": "BoxesOpen"}
 ## F1: `field_effect KIND NAME ...` kinds in capsule::script::FieldEffectOp order (start takes an amount; active and
 ## remaining need -> var(v)).
-FIELD_EFFECT_KINDS = ["start", "active", "remaining"]
+FIELD_EFFECT_KINDS = VM.words("FieldEffectOp")
 ## The statement word of the timed field effects.
 FIELD_EFFECT_WORD = "field_effect"
 ## `flight KIND ...` kinds in capsule::script::FlightOp order.
-FLIGHT_KINDS = ["record", "visit", "menu"]
+FLIGHT_KINDS = VM.words("FlightOp")
 ## The statement word of the flight points.
 FLIGHT_WORD = "flight"
 ## The statement word of the darkness level.
@@ -312,12 +290,12 @@ CHECKED_WORD = "checked"
 ## The statement word of the escape point.
 ESCAPE_WORD = "escape"
 ## `field_action KIND NAME -> var(v);` kinds in capsule::script::FieldActionOp order.
-FIELD_ACTION_KINDS = ["available"]
+FIELD_ACTION_KINDS = VM.words("FieldActionOp")
 ## The statement word of the field actions.
 FIELD_ACTION_WORD = "field_action"
 ## `combine KIND NAME ...` kinds in capsule::script::CombineOp order (open: the menu flow; run: given members;
 ## preview / status / fee: queries).
-COMBINE_KINDS = ["open", "run", "preview", "status", "fee"]
+COMBINE_KINDS = VM.words("CombineOp")
 ## The combine kinds that wait.
 COMBINE_WAITING = ("open", "run")
 ## The statement word of the combination methods.
@@ -325,7 +303,7 @@ COMBINE_WORD = "combine"
 ## Most party members a combine statement names (capsule::script::kMaxCombineMembers).
 MAX_COMBINE_MEMBERS = 8
 ## `nursery KIND ...` kinds in capsule::script::NurseryOp order.
-NURSERY_KINDS = ["pick", "deposit", "withdraw", "count", "levels", "fee", "ready", "odds", "take", "name"]
+NURSERY_KINDS = VM.words("NurseryOp")
 ## The nursery kinds with an operand (a party member or a nursery slot).
 NURSERY_OPERAND = ("deposit", "withdraw", "levels", "fee", "name")
 ## The nursery kinds that wait (the party menu, the nickname prompt).
@@ -355,48 +333,48 @@ ACTION_ASKS = 1
 NO_SCRIPT_ID = 0xFFFF
 ## Most items one give / take moves (BagSlot counts are 16 bits).
 MAX_ITEM_COUNT = 0xFFFF
-## Operand tag of a game query (capsule/script/data.h kOpQuery).
-OPND_QUERY = 4
+## Operand tag of a game query (capsule/script/ops.h kOpQuery).
+OPND_QUERY = VM.constants["kOpQuery"]
 ## Queries in capsule::script::Query order: name -> takes an object.
-QUERIES = {"pos_x": True, "pos_y": True, "facing": True, "map_index": False, "steps": False, "timer": False}
+QUERIES = VM.word_values("Query", "object")
 ## VarOp sub-operations in capsule::script::VarOpKind order.
-VAR_OPS = ["*=", "/=", "%="]
+VAR_OPS = VM.words("VarOpKind")
 ## Warp transitions in capsule::script::Transition order ("default" = the warp's own or the world's; silent (a fade
 ## without the warp's sound), door (walking into a door), fall (through a hole), teleport, spin).
-TRANSITIONS = ["none", "fade", "white", "mosaic", "wipe_h", "wipe_v", "box", "silent", "door", "fall", "teleport",
-               "spin"]
+TRANSITIONS = VM.words("Transition")
 ## Transition byte for "the default".
-TRANSITION_DEFAULT = 0xFF
+TRANSITION_DEFAULT = VM.constants["kTransitionDefault"]
 ## Text box positions in order.
 MSG_POSITIONS = ["bottom", "middle", "top"]
 ## Self switch letters.
 SELF_LETTERS = "ABCD"
 ## Route operand flag (high bit of the Route flags byte): the script goes on at once.
-ROUTE_NOWAIT = 0x80
+ROUTE_NOWAIT = VM.constants["kRouteNoWait"]
 ## Directions in field::Direction order.
 DIRECTIONS = ["down", "up", "left", "right"]
 ## Object operands (capsule/script/data.h): the context's own object, the walker.
-OBJECT_SELF, OBJECT_PLAYER = 254, 255
+OBJECT_SELF, OBJECT_PLAYER = VM.constants["kObjectSelf"], VM.constants["kObjectPlayer"]
 ## Highest local ID of a map object (map::kMaxObjectTemplates - 1: a map with object_view lists up to 64
 ## templates; plus the manifest's object_base).
 MAX_OBJECT = 63
 ## ObjectFace targets beyond the directions: towards the walker, towards self; opposite the walker's facing
 ## (capsule::script::kFaceOppositePlayer).
-FACE_PLAYER, FACE_SELF, FACE_OPPOSITE_PLAYER = 4, 5, 6
+FACE_PLAYER, FACE_SELF, FACE_OPPOSITE_PLAYER = (VM.constants[k] for k in ("kFacePlayer", "kFaceSelf",
+                                                                           "kFaceOppositePlayer"))
 ## The face words beyond the directions and their ObjectFace targets.
 FACE_WORDS = {"player": FACE_PLAYER, "self": FACE_SELF, "opposite_player": FACE_OPPOSITE_PLAYER}
 ## Warp / Place facing byte: keep the current facing (kKeepFacing).
-KEEP_FACING = 4
+KEEP_FACING = VM.constants["kKeepFacing"]
 ## Scroll direction byte: back to the player.
 SCROLL_BACK = 4
 
 # --- The statements of imported event scripts ---
 ## Object operands beyond the local IDs: the camera (capsule::script::kObjectCamera) and the object a script last
 ## gave a route (kObjectLast; `wait_moves last;` only).
-OBJECT_CAMERA, OBJECT_LAST = 252, 251
+OBJECT_CAMERA, OBJECT_LAST = VM.constants["kObjectCamera"], VM.constants["kObjectLast"]
 ## Object operand: the selected object (the script's own object, or the walker when it has none;
 ## capsule::script::kObjectSelected).
-OBJECT_SELECTED = 250
+OBJECT_SELECTED = VM.constants["kObjectSelected"]
 ## Object words of object_ref() besides self and player (not keywords: scripts may still name things so).
 OBJECT_WORDS = {"camera": OBJECT_CAMERA, "last": OBJECT_LAST, "selected": OBJECT_SELECTED}
 ## The scripts manifest's "vm" object: key -> {value: capsule::script::kVm... bit} (the first value of each key
@@ -408,33 +386,33 @@ VM_OPTIONS = {"resume": {"same_frame": 0, "next_frame": 1},
 MAX_OBJECT_BASE = 1
 ## `msg` modifiers -> MessageEx flag bits (capsule::script::kMessage...): no wait for the typing, the text at once,
 ## text that scrolls on by itself.
-MSG_FLAGS = {"nowait": 1, "instant": 2, "autoscroll": 4}
+MSG_FLAGS = {"nowait": VM.constants["kMessageNoWait"], "instant": VM.constants["kMessageInstant"],
+             "autoscroll": VM.constants["kMessageAutoScroll"]}
 ## `msgbox` kinds (the compiler writes them out as ops): npc (lock, face the player, message, button, release),
 ## sign (lock all, message, button, release all), yesno (message, then yes / no into a variable), autoclose
 ## (message, button, release).
 MSGBOX_KINDS = ("npc", "sign", "yesno", "autoclose")
 ## Lock / Release kind bytes: the context's object (and its own freeze), every object.
-LOCK_SELF, LOCK_ALL = 0, 1
+LOCK_SELF, LOCK_ALL = VM.constants["kLockSelf"], VM.constants["kLockAll"]
 ## `set_template` kinds in capsule::script::TemplateOp order: its cell, its movement, its cell from where it stands.
-TEMPLATE_KINDS = ["pos", "movement", "here"]
+TEMPLATE_KINDS = VM.words("TemplateOp")
 ## `door` kinds in capsule::script::DoorOp order (wait takes no cell).
-DOOR_KINDS = ["open", "close", "set_open", "set_closed", "wait"]
+DOOR_KINDS = VM.words("DoorOp")
 ## `weather` kinds in capsule::script::WeatherOp order (set takes the weather).
-WEATHER_KINDS = ["set", "reset", "apply"]
+WEATHER_KINDS = VM.words("WeatherOp")
 ## `fade` kinds in capsule::script::FadeOp order.
-FADE_KINDS = ["to_black", "from_black", "to_white", "from_white"]
+FADE_KINDS = VM.words("FadeOp")
 ## Fade flags byte: the fade keeps the palettes the scene changes meanwhile (swapped palette buffers).
-FADE_SWAP = 1
+FADE_SWAP = VM.constants["kFadeSwap"]
 ## Fade speed byte when the statement gives none.
 DEFAULT_FADE_SPEED = 0
 ## `set_warp` kinds in capsule::script::WarpSlot order: the next warp, the dynamic warp, the dive / emerge, the hole,
 ## the escape warp.
-SET_WARP_KINDS = ["next", "dynamic", "dive", "hole", "escape"]
+SET_WARP_KINDS = VM.words("WarpSlot")
 ## `sound` kinds in capsule::script::SoundOp order -> the operands they take.
-SOUND_KINDS = {"bgm": 2, "bgm_save": 1, "fade_default": 0, "fade_new": 1, "fade_out": 1, "fade_in": 1, "se": 1,
-               "fanfare": 1, "cry": 2}
+SOUND_KINDS = VM.word_values("SoundOp", "operands")
 ## `wait_sound` kinds in capsule::script::SoundWait order.
-SOUND_WAITS = ["se", "fanfare", "cry", "bgm"]
+SOUND_WAITS = VM.words("SoundWait")
 ## Most items of one mart (16-bit count).
 MAX_MART_ITEMS = 0xFFFF
 ## Most game route steps (8-bit ids).
@@ -452,7 +430,7 @@ LOOSE_WORD = "loose"
 ## The warp word that does not wait (`warp ... nowait;`: the warp starts, the script goes on).
 WARP_NOWAIT_WORD = "nowait"
 ## Warp facing byte bit: the script goes on at once (capsule::script::kWarpNoWait).
-WARP_NOWAIT = 0x80
+WARP_NOWAIT = VM.constants["kWarpNoWait"]
 ## Statement words of the script ports that are no keywords.
 PORT_WORDS = ("lock", "release", "wait_msg", "remove", "visible", "set_template", "door", "weather", "fade",
             "set_metatile", "respawn", "set_warp", "sound", "wait_sound", "mart", "wait_state", "override")

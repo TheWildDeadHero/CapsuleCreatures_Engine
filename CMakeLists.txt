@@ -1043,6 +1043,8 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
    add_test(NAME usage_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage.py)
    # D-42: the GBA memory by owner, the memory budgets and the link launcher (tools/usage_memory.py, gba_link.py)
    add_test(NAME usage_memory_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage_memory.py)
+   # D-36 package 2: the field script VM's opcode table (src/script/script_vm.json, tools/script_vm.py)
+   add_test(NAME script_vm_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_script_vm.py)
    # RP: the sample projects (apps/*/sample.json) stay copyable: paths out of an app lead only to the files
    # its shared templates list, and its libraries are ones every game may link (docs/APPS.md, Sample projects).
    add_test(NAME sample_project_tests

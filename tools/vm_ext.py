@@ -46,8 +46,11 @@ DISPATCH_VMS = ("battle", "anim")
 OPCODE_MAX = 0xFF
 ## The animation player's first game opcode (include/capsule/anim/bank.h kFirstGameOpcode).
 ANIM_FIRST_GAME_OPCODE = 0x40
-## Op kinds.
-KINDS = ("alias", "native")
+## Op kinds: a generic op the VM itself runs (the field script VM's own opcodes, tools/script_vm.py), an alias, a
+## native.
+KINDS = ("generic", "alias", "native")
+## The VMs whose manifests may declare generic ops (the others' generic ops are their engine code).
+GENERIC_VMS = ("script",)
 ## Parity states of a native that has an alias candidate.
 PARITY_STATES = ("pending", "proven")
 
@@ -308,7 +311,10 @@ def _op(raw: dict[str, Any], manifest: Manifest, where: str) -> Op:
            owner=str(raw.get("owner", manifest.raw.get("owner", ""))),
            tier=int(raw.get("tier", manifest.raw.get("tier", 0))), glitch=list(raw.get("glitch", [])),
            override=bool(raw.get("override", False)))
-   if kind == "native":
+   if kind == "generic":
+      if manifest.vm not in GENERIC_VMS:
+         raise ManifestError(f"{label}: only the {', '.join(GENERIC_VMS)} VM's manifests declare generic ops")
+   elif kind == "native":
       op.symbol = raw.get("symbol")
       op.reason = str(raw.get("reason", "")).strip()
       if not isinstance(op.symbol, str) or not IDENT.match(op.symbol):

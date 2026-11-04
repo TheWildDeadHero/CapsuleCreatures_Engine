@@ -113,7 +113,12 @@ own parity scenarios, then removes the native and lets the check confirm no stra
 The schema already names every VM (`script`, `effect`, `seq`, `screen-task`); `vm_ext.py` loads and checks their
 manifests and refuses to generate their dispatch until each VM has its generic step runner. What each needs:
 
-- **Field script VM** (`script/`): its natives go through one `game::native(id, args, argc, result)` switch with
+- **Field script VM** (`script/`). Its own opcodes are a manifest since D-36 package 2 step A:
+  `src/script/script_vm.json` declares the 87 opcodes as `"kind": "generic"` ops (a kind only the script VM's
+  manifests may use) in their bytecode numbering, with each op's operand bytes and action, the kind enums their
+  operands select (each value with its script word) and the operand constants. `tools/script_vm.py header` writes
+  `include/capsule/script/ops.h` from it (checked up to date by `script_vm_tests`), and `script_compiler.py` takes
+  its opcode list, words and constants from it: there is no other copy. Its natives go through one `game::native(id, args, argc, result)` switch with
   evaluated `int32_t` arguments, not operand bytes. A manifest entry per native id (name, argument count, `waits`,
   `reason`) can replace the switch with a generated table of function pointers; aliases there are natives whose
   body is a variable read / write, a flag test or a plain wait, run as the VM's own expressions. Needs: a

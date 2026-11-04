@@ -1,0 +1,1654 @@
+{
+ "schema": "capsule.vm-ext/1",
+ "vm": "script",
+ "table": "main",
+ "name": "script_vm",
+ "owner": "engine",
+ "tier": 0,
+ "doc": "The field script VM's opcodes, their kinds and constants (D-36 package 2, step A). tools/vm_ext.py script-header writes include/capsule/script/ops.h from it; tools/script_compiler.py reads it. Ids and value orders are the bytecode: never renumber.",
+ "ops": [
+  {
+   "id": 0,
+   "name": "End",
+   "kind": "generic",
+   "doc": "End the script.",
+   "bytes": "—",
+   "does": "ends the script (and every caller)"
+  },
+  {
+   "id": 1,
+   "name": "Return",
+   "kind": "generic",
+   "doc": "Return to the caller.",
+   "bytes": "—",
+   "does": "returns to the caller, or ends at the outermost level"
+  },
+  {
+   "id": 2,
+   "name": "Goto",
+   "kind": "generic",
+   "doc": "Jump.",
+   "bytes": "off16",
+   "does": "jumps"
+  },
+  {
+   "id": 3,
+   "name": "Call",
+   "kind": "generic",
+   "doc": "Call a script.",
+   "bytes": "id16",
+   "does": "calls a script"
+  },
+  {
+   "id": 4,
+   "name": "CallTable",
+   "kind": "generic",
+   "doc": "Call one of a declared list by index.",
+   "bytes": "operand, n8, n x id16",
+   "does": "calls the script at the operand's index (declared targets, B-1)"
+  },
+  {
+   "id": 5,
+   "name": "IfFlagClear",
+   "kind": "generic",
+   "doc": "Jump if a flag is clear.",
+   "bytes": "flag16, off16",
+   "does": "jumps when the flag is clear"
+  },
+  {
+   "id": 6,
+   "name": "IfFlagSet",
+   "kind": "generic",
+   "doc": "Jump if a flag is set.",
+   "bytes": "flag16, off16",
+   "does": "jumps when the flag is set"
+  },
+  {
+   "id": 7,
+   "name": "IfCompare",
+   "kind": "generic",
+   "doc": "Jump if a comparison holds.",
+   "bytes": "cmp8, operand, operand, off16",
+   "does": "jumps when the comparison holds"
+  },
+  {
+   "id": 8,
+   "name": "SetFlag",
+   "kind": "generic",
+   "doc": "Set a flag.",
+   "bytes": "flag16",
+   "does": ""
+  },
+  {
+   "id": 9,
+   "name": "ClearFlag",
+   "kind": "generic",
+   "doc": "Clear a flag.",
+   "bytes": "flag16",
+   "does": ""
+  },
+  {
+   "id": 10,
+   "name": "SetVar",
+   "kind": "generic",
+   "doc": "Assign a variable.",
+   "bytes": "var16, operand",
+   "does": "the variable clamps or saturates to its declared range (P-18)"
+  },
+  {
+   "id": 11,
+   "name": "AddVar",
+   "kind": "generic",
+   "doc": "Add, saturating.",
+   "bytes": "var16, operand",
+   "does": "the variable clamps or saturates to its declared range (P-18)"
+  },
+  {
+   "id": 12,
+   "name": "SubVar",
+   "kind": "generic",
+   "doc": "Subtract, saturating.",
+   "bytes": "var16, operand",
+   "does": "the variable clamps or saturates to its declared range (P-18)"
+  },
+  {
+   "id": 13,
+   "name": "Random",
+   "kind": "generic",
+   "doc": "Random value below a bound.",
+   "bytes": "var16, operand",
+   "does": "var = 0 to operand - 1 from the gameplay stream (A-4; C10: kVmRandomModulo)"
+  },
+  {
+   "id": 14,
+   "name": "Message",
+   "kind": "generic",
+   "doc": "Type text in the box.",
+   "bytes": "text",
+   "does": "opens the box if needed and types the text; waits until it is typed"
+  },
+  {
+   "id": 15,
+   "name": "WaitButton",
+   "kind": "generic",
+   "doc": "Wait for Accept / Back.",
+   "bytes": "—",
+   "does": "waits for Accept or Back"
+  },
+  {
+   "id": 16,
+   "name": "CloseMessage",
+   "kind": "generic",
+   "doc": "Close the box.",
+   "bytes": "—",
+   "does": "closes the box"
+  },
+  {
+   "id": 17,
+   "name": "YesNo",
+   "kind": "generic",
+   "doc": "Yes / no question.",
+   "bytes": "var16",
+   "does": "asks; var = 1 for yes, 0 for no (Back = no)"
+  },
+  {
+   "id": 18,
+   "name": "Choice",
+   "kind": "generic",
+   "doc": "Menu.",
+   "bytes": "var16, cancel8, n8, n x text",
+   "does": "menu; var = chosen index, or cancel (0xFF: Back does nothing)"
+  },
+  {
+   "id": 19,
+   "name": "Delay",
+   "kind": "generic",
+   "doc": "Wait frames.",
+   "bytes": "operand",
+   "does": "waits that many frames"
+  },
+  {
+   "id": 20,
+   "name": "Native",
+   "kind": "generic",
+   "doc": "Game action.",
+   "bytes": "id16, argc8, argc x operand, var16",
+   "does": "game action (P-13); result into var16 unless 0xFFFF"
+  },
+  {
+   "id": 21,
+   "name": "TriggerTrue",
+   "kind": "generic",
+   "doc": "Trigger condition result.",
+   "bytes": "—",
+   "does": "ends a trigger condition as true"
+  },
+  {
+   "id": 22,
+   "name": "ObjectMove",
+   "kind": "generic",
+   "doc": "Walk a map object or the player (B-21).",
+   "bytes": "operand (object), dir8, operand (steps)",
+   "does": "walks the object that many cells through anything; waits until it stands"
+  },
+  {
+   "id": 23,
+   "name": "ObjectFace",
+   "kind": "generic",
+   "doc": "Turn a map object or the player.",
+   "bytes": "operand (object), face8",
+   "does": "turns it: a direction 0-3, kFacePlayer or kFaceSelf (towards that one), kFaceOppositePlayer (C10)"
+  },
+  {
+   "id": 24,
+   "name": "ObjectShow",
+   "kind": "generic",
+   "doc": "Show a map object.",
+   "bytes": "operand (object)",
+   "does": "shows (at its template cell) or hides a map object"
+  },
+  {
+   "id": 25,
+   "name": "ObjectHide",
+   "kind": "generic",
+   "doc": "Hide a map object.",
+   "bytes": "operand (object)",
+   "does": "shows (at its template cell) or hides a map object"
+  },
+  {
+   "id": 26,
+   "name": "Route",
+   "kind": "generic",
+   "doc": "Run a move route (D-17).",
+   "bytes": "operand (object), flags8 (kRouteNoWait), len16, len bytes",
+   "does": "runs a move route (capsule/script/route.h); waits until it ends unless kRouteNoWait"
+  },
+  {
+   "id": 27,
+   "name": "WaitMoves",
+   "kind": "generic",
+   "doc": "Wait until no move route runs.",
+   "bytes": "—",
+   "does": "waits until no route started by a script (without repeat) runs"
+  },
+  {
+   "id": 28,
+   "name": "SelfSwitch",
+   "kind": "generic",
+   "doc": "Set or clear a self switch of the context's object.",
+   "bytes": "letter8 (0-3 = A-D), on8",
+   "does": "sets a self switch of the context's object"
+  },
+  {
+   "id": 29,
+   "name": "IfSelfSet",
+   "kind": "generic",
+   "doc": "Jump if a self switch is on.",
+   "bytes": "letter8, off16",
+   "does": "jumps on a self switch of the context's object"
+  },
+  {
+   "id": 30,
+   "name": "IfSelfClear",
+   "kind": "generic",
+   "doc": "Jump if a self switch is off.",
+   "bytes": "letter8, off16",
+   "does": "jumps on a self switch of the context's object"
+  },
+  {
+   "id": 31,
+   "name": "VarOp",
+   "kind": "generic",
+   "doc": "Multiply, divide or take the remainder of a variable.",
+   "bytes": "kind8 (VarOpKind), var16, operand",
+   "does": "*=, /=, %= (dividing by 0 changes nothing)"
+  },
+  {
+   "id": 32,
+   "name": "InputNumber",
+   "kind": "generic",
+   "doc": "Number entry.",
+   "bytes": "var16, digits8",
+   "does": "number entry; waits for the answer"
+  },
+  {
+   "id": 33,
+   "name": "WaitKey",
+   "kind": "generic",
+   "doc": "Wait for a key press.",
+   "bytes": "var16",
+   "does": "waits for a key press; var = 1 A, 2 B, 3 Select, 4 Start, 5 Right, 6 Left, 7 Up, 8 Down, 9 R, 10 L"
+  },
+  {
+   "id": 34,
+   "name": "MessagePos",
+   "kind": "generic",
+   "doc": "Text box position.",
+   "bytes": "pos8 (0 bottom, 1 middle, 2 top)",
+   "does": "where the next messages show"
+  },
+  {
+   "id": 35,
+   "name": "Warp",
+   "kind": "generic",
+   "doc": "Move the player to another map (or cell), with a transition.",
+   "bytes": "key32 (map), operand x, operand y, facing8 (4 keeps), transition8 (Transition, 0xFF the default)",
+   "does": "moves the player; waits until the new map is shown"
+  },
+  {
+   "id": 36,
+   "name": "Place",
+   "kind": "generic",
+   "doc": "Put an object or the player on a cell.",
+   "bytes": "operand (object), operand x, operand y, facing8 (4 keeps)",
+   "does": "puts it on a cell at once"
+  },
+  {
+   "id": 37,
+   "name": "Scroll",
+   "kind": "generic",
+   "doc": "Pan the camera.",
+   "bytes": "dir8 (4 = back to the player), operand cells, speed8 (1-4)",
+   "does": "pans the camera; waits"
+  },
+  {
+   "id": 38,
+   "name": "Tint",
+   "kind": "generic",
+   "doc": "Tint the screen.",
+   "bytes": "r8, g8, b8 (0-31), strength8 (0-16), frames16",
+   "does": "tints the screen towards a color over frames"
+  },
+  {
+   "id": 39,
+   "name": "Flash",
+   "kind": "generic",
+   "doc": "Flash the screen.",
+   "bytes": "r8, g8, b8, frames16",
+   "does": "flashes the screen with a color, fading over frames"
+  },
+  {
+   "id": 40,
+   "name": "Shake",
+   "kind": "generic",
+   "doc": "Shake the screen.",
+   "bytes": "power8, frames16",
+   "does": "shakes the screen"
+  },
+  {
+   "id": 41,
+   "name": "TimerStart",
+   "kind": "generic",
+   "doc": "Start the countdown timer.",
+   "bytes": "operand (seconds)",
+   "does": "starts the countdown timer, shown on screen"
+  },
+  {
+   "id": 42,
+   "name": "TimerStop",
+   "kind": "generic",
+   "doc": "Stop it.",
+   "bytes": "—",
+   "does": "stops it"
+  },
+  {
+   "id": 43,
+   "name": "Encounters",
+   "kind": "generic",
+   "doc": "Encounters on or off.",
+   "bytes": "on8",
+   "does": "encounters on or off"
+  },
+  {
+   "id": 44,
+   "name": "Vehicle",
+   "kind": "generic",
+   "doc": "Change the walker's vehicle class.",
+   "bytes": "class8",
+   "does": "the walker's vehicle class (A2, field::set_vehicle())"
+  },
+  {
+   "id": 45,
+   "name": "RoleGet",
+   "kind": "generic",
+   "doc": "Read a party record's role (D-22 decision 2).",
+   "bytes": "var16, operand (slot), role8, operand (element)",
+   "does": "var = an element of a party record's role (party::role_get(); clamps to the variable's range)"
+  },
+  {
+   "id": 46,
+   "name": "RoleSet",
+   "kind": "generic",
+   "doc": "Write a party record's role.",
+   "bytes": "operand (slot), role8, operand (element), operand (value)",
+   "does": "writes it (party::role_set(); truncated to the role's width)"
+  },
+  {
+   "id": 47,
+   "name": "ItemGive",
+   "kind": "generic",
+   "doc": "Put items into the bag (G2).",
+   "bytes": "var16 (or kNoVar), operand (item), operand (n)",
+   "does": "var = 1 when the bag took all n (items::give(); G2)"
+  },
+  {
+   "id": 48,
+   "name": "ItemTake",
+   "kind": "generic",
+   "doc": "Take items from the bag.",
+   "bytes": "var16 (or kNoVar), operand (item), operand (n)",
+   "does": "var = 1 when the bag held n (they are gone; items::take())"
+  },
+  {
+   "id": 49,
+   "name": "ItemCount",
+   "kind": "generic",
+   "doc": "Count an item in the bag.",
+   "bytes": "var16, operand (item)",
+   "does": "var = how many the bag holds (items::count())"
+  },
+  {
+   "id": 50,
+   "name": "BagOpen",
+   "kind": "generic",
+   "doc": "Open the bag menu.",
+   "bytes": "var16",
+   "does": "the bag menu (items::bag_open()); waits; var = the chosen item, 0 for none"
+  },
+  {
+   "id": 51,
+   "name": "Shop",
+   "kind": "generic",
+   "doc": "Open a shop list.",
+   "bytes": "shop8, var16 (money)",
+   "does": "a shop list (items::shop_open()); waits until it closes"
+  },
+  {
+   "id": 52,
+   "name": "TimeOfDay",
+   "kind": "generic",
+   "doc": "Read the game's time of day.",
+   "bytes": "var16",
+   "does": "var = the game's time of day (capsule/core/clock.h clock::time_of_day())"
+  },
+  {
+   "id": 53,
+   "name": "BoxCount",
+   "kind": "generic",
+   "doc": "Count the records in the storage boxes (G3).",
+   "bytes": "var16",
+   "does": "var = the records the storage boxes hold (boxes::count(); G3)"
+  },
+  {
+   "id": 54,
+   "name": "BoxDeposit",
+   "kind": "generic",
+   "doc": "Move a party member into the boxes.",
+   "bytes": "var16 (or kNoVar), operand (party member)",
+   "does": "moves a party member into the boxes (boxes::deposit()); var = 1 when it went"
+  },
+  {
+   "id": 55,
+   "name": "BoxWithdraw",
+   "kind": "generic",
+   "doc": "Move a boxed record into the party.",
+   "bytes": "var16 (or kNoVar), operand (storage slot)",
+   "does": "moves a boxed record into the party (boxes::withdraw()); var = 1 when it came"
+  },
+  {
+   "id": 56,
+   "name": "BoxesOpen",
+   "kind": "generic",
+   "doc": "Open the boxes menu.",
+   "bytes": "var16",
+   "does": "the boxes menu (boxes::open()); waits; var = the chosen box + 1, 0 for none"
+  },
+  {
+   "id": 57,
+   "name": "Transform",
+   "kind": "generic",
+   "doc": "A party member's transformation (G4).",
+   "bytes": "var16, operand (party member)",
+   "does": "the member's transformation by the script trigger's rules (growth::transform_open(), capsule/script/growth_port.h; G4); waits; var = 0 nothing, 1 changed, 2 stopped"
+  },
+  {
+   "id": 58,
+   "name": "FieldEffect",
+   "kind": "generic",
+   "doc": "Start or read a timed field effect (F1, D-27 section 2).",
+   "bytes": "kind8 (FieldEffectOp), effect8, [Start: operand (amount)], var16 (or kNoVar)",
+   "does": "a timed field effect (capsule/script/field_effects.h; F1): Start starts it by its stack rule (var = 1 started, 0 refused), Active (var = 1 while it runs), Remaining (var = its steps or minutes left)"
+  },
+  {
+   "id": 59,
+   "name": "Darkness",
+   "kind": "generic",
+   "doc": "Set the shown map's darkness level (F2, D-27 section 3).",
+   "bytes": "operand (level)",
+   "does": "the shown map's darkness level, 0 (lit) to map::kMaxDarkness, until the next map (world::set_darkness(); F2)"
+  },
+  {
+   "id": 60,
+   "name": "Flight",
+   "kind": "generic",
+   "doc": "Record, visit or pick a flight point (F2).",
+   "bytes": "kind8 (FlightOp), [Record / Visit: point8], [Visit: transition8], [Menu: var16]",
+   "does": "a flight point (capsule/script/field_actions.h): Record sets its flag, Visit warps there (waits), Menu lists the recorded points and warps to the one picked (waits; var = 1 warped, 0 backed out)"
+  },
+  {
+   "id": 61,
+   "name": "Escape",
+   "kind": "generic",
+   "doc": "Warp to the escape point (F2).",
+   "bytes": "transition8, var16 (or kNoVar)",
+   "does": "warps to the escape point when one is recorded (world::escape(); waits); var = 1 when it warped"
+  },
+  {
+   "id": 62,
+   "name": "FieldAction",
+   "kind": "generic",
+   "doc": "Ask whether a field action is available (F2).",
+   "bytes": "kind8 (FieldActionOp), action8, var16",
+   "does": "Available: var = the first party member the action's requirement holds for, plus 1 (0: none; actions::available())"
+  },
+  {
+   "id": 63,
+   "name": "ObjectMoveChecked",
+   "kind": "generic",
+   "doc": "Walk a map object or the player by the movement rules, or not at all (C8).",
+   "bytes": "operand (object), dir8, operand (steps), var16 (or kNoVar)",
+   "does": "C8: as ObjectMove when every step of the walk is allowed by the field's movement rules (world::path_clear(): terrain, elevation, vehicle class, objects); else nothing moves; var = 1 when it walks (waits until it stands), 0 when blocked"
+  },
+  {
+   "id": 64,
+   "name": "Combine",
+   "kind": "generic",
+   "doc": "Run or ask a combination method (B1).",
+   "bytes": "kind8 (CombineOp), method8, [Run / Preview / Status / Fee: count8, count operands (party slots)], var16",
+   "does": "B1: a combination method (capsule/script/combine_port.h): Open picks the inputs through the menu, previews, asks and combines, Run combines the given members (both wait; var = 0 backed out, 1 combined, 2 refused); Preview: var = the result species + 1 (0: none, kCombineRandom: a random pick), Status: the combine::Status, Fee: the fee"
+  },
+  {
+   "id": 65,
+   "name": "Nursery",
+   "kind": "generic",
+   "doc": "The nursery: deposit, withdraw, queries, the result, the nickname prompt (B2).",
+   "bytes": "kind8 (NurseryOp), [Deposit / Withdraw / Levels / Fee / Name: operand], [Withdraw: var16 money (or kNoVar)], var16",
+   "does": "B2: the nursery (capsule/script/nursery_port.h): Pick opens the party menu (waits; var = member + 1, 0 backed out), Deposit (var = 1 when it went), Withdraw with the fee taken from the money variable (var = 1 done, 0 refused, kNurseryPoor too poor), Count, Levels (gained), Fee, Ready (var = 1 when a result waits), Odds, Take (var = 1 when it joined the party), Name (the nickname prompt; waits; var = 1 named)"
+  },
+  {
+   "id": 66,
+   "name": "Jump",
+   "kind": "generic",
+   "doc": "Go on in another script (the frame is replaced).",
+   "bytes": "id16",
+   "does": "I4: goes on in another script in the same frame (nothing returns here; a `goto` naming a script)",
+   "comment": "I4 (D-29): what imported event scripts need"
+  },
+  {
+   "id": 67,
+   "name": "Lock",
+   "kind": "generic",
+   "doc": "Stop the objects' own movement.",
+   "bytes": "kind8 (kLockSelf, kLockAll)",
+   "does": "I4: stops / lets go the objects' own movement (world::lock() / release())"
+  },
+  {
+   "id": 68,
+   "name": "Release",
+   "kind": "generic",
+   "doc": "Let them move again.",
+   "bytes": "kind8 (kLockSelf, kLockAll)",
+   "does": "I4: stops / lets go the objects' own movement (world::lock() / release())"
+  },
+  {
+   "id": 69,
+   "name": "MessageEx",
+   "kind": "generic",
+   "doc": "A message typed at once, scrolling on, or not waited for.",
+   "bytes": "flags8 (kMessage... bits), text",
+   "does": "I4: as Message, typed at once (kMessageInstant), scrolling on by itself (kMessageAutoScroll), or without waiting for the typing (kMessageNoWait)"
+  },
+  {
+   "id": 70,
+   "name": "WaitMessage",
+   "kind": "generic",
+   "doc": "Wait until the message is typed.",
+   "bytes": "—",
+   "does": "I4: waits until the message is typed"
+  },
+  {
+   "id": 71,
+   "name": "WaitObject",
+   "kind": "generic",
+   "doc": "Wait until one object stands.",
+   "bytes": "operand (object, or kObjectLast)",
+   "does": "I4: waits until that object (or the walker) stands"
+  },
+  {
+   "id": 72,
+   "name": "ObjectRemove",
+   "kind": "generic",
+   "doc": "Remove a map object until its flag clears.",
+   "bytes": "operand (object)",
+   "does": "I4: removes a map object for good on this map (world::remove(): hidden, its hide flag set)"
+  },
+  {
+   "id": 73,
+   "name": "ObjectVisible",
+   "kind": "generic",
+   "doc": "Show or hide an object's sprite where it stands.",
+   "bytes": "operand (object), on8",
+   "does": "I4: shows or hides its sprite where it stands (it still blocks)"
+  },
+  {
+   "id": 74,
+   "name": "ObjectTemplate",
+   "kind": "generic",
+   "doc": "Change an object's template on the shown map.",
+   "bytes": "operand (object), kind8 (TemplateOp), [Pos: operand x, operand y], [Movement: operand]",
+   "does": "I4: changes the object's template on the shown map until the next map (world::set_template())"
+  },
+  {
+   "id": 75,
+   "name": "Door",
+   "kind": "generic",
+   "doc": "A door's animation.",
+   "bytes": "kind8 (DoorOp), [all but Wait: operand x, operand y]",
+   "does": "I4: a door's animation on a cell (world::door()); Wait waits until it ends"
+  },
+  {
+   "id": 76,
+   "name": "Weather",
+   "kind": "generic",
+   "doc": "Set, reset or apply the weather.",
+   "bytes": "kind8 (WeatherOp), [Set: operand]",
+   "does": "I4: the weather the next Apply shows (world::weather())"
+  },
+  {
+   "id": 77,
+   "name": "Fade",
+   "kind": "generic",
+   "doc": "Fade the screen.",
+   "bytes": "kind8 (FadeOp), speed8 (0: the default), flags8 (kFadeSwap)",
+   "does": "I4: fades the screen (world::fade()); waits"
+  },
+  {
+   "id": 78,
+   "name": "SetMetatile",
+   "kind": "generic",
+   "doc": "Change a cell of the shown map.",
+   "bytes": "operand x, operand y, operand (metatile), operand (solid)",
+   "does": "I4: changes a cell of the shown map until the next map (world::set_metatile())"
+  },
+  {
+   "id": 79,
+   "name": "Respawn",
+   "kind": "generic",
+   "doc": "Set the respawn point.",
+   "bytes": "operand",
+   "does": "I4: the respawn point (world::set_respawn(): the game's own numbering)"
+  },
+  {
+   "id": 80,
+   "name": "SetWarp",
+   "kind": "generic",
+   "doc": "Remember a warp destination.",
+   "bytes": "kind8 (WarpSlot), key32 (map), operand x, operand y",
+   "does": "I4: remembers a warp destination (world::set_warp())"
+  },
+  {
+   "id": 81,
+   "name": "Sound",
+   "kind": "generic",
+   "doc": "Music, sound effects, fanfares, cries.",
+   "bytes": "kind8 (SoundOp), n8, n x operand",
+   "does": "I4: music, sound effects, fanfares, cries (audio::play())"
+  },
+  {
+   "id": 82,
+   "name": "WaitSound",
+   "kind": "generic",
+   "doc": "Wait until a sound ends.",
+   "bytes": "kind8 (SoundWait)",
+   "does": "I4: waits until that sound ends (audio::playing())"
+  },
+  {
+   "id": 83,
+   "name": "Mart",
+   "kind": "generic",
+   "doc": "A mart list.",
+   "bytes": "kind8, n16, n x item16",
+   "does": "I4: a mart list (items::mart_open()); waits until it closes"
+  },
+  {
+   "id": 84,
+   "name": "CallLoose",
+   "kind": "generic",
+   "doc": "A call that becomes a jump on a full stack.",
+   "bytes": "id16",
+   "does": "I4: calls a script that may recurse; with the stack full (Bank::stack_depth) it goes on as a Jump, as the imported game's own VM does"
+  },
+  {
+   "id": 85,
+   "name": "WaitState",
+   "kind": "generic",
+   "doc": "Wait while the game is busy.",
+   "bytes": "—",
+   "does": "I4: waits while the game is busy (game::state_busy(): a special the game runs over frames)"
+  },
+  {
+   "id": 86,
+   "name": "Override",
+   "kind": "generic",
+   "doc": "DS1: apply or clear a cell override set.",
+   "bytes": "apply8 (1 apply, 0 clear), set16",
+   "does": "DS1: a cell override set of the world (index into map::kWorld.override_sets; world::override_set())"
+  }
+ ],
+ "enums": [
+  {
+   "name": "Lifetime",
+   "type": "uint8_t",
+   "doc": [
+    "Lifetime of a flag or variable (B-2)."
+   ],
+   "values": [
+    {
+     "name": "Permanent",
+     "doc": "Kept until the game changes it.",
+     "word": "permanent"
+    },
+    {
+     "name": "Daily",
+     "doc": "Cleared at the day rollover (RTC).",
+     "word": "daily"
+    },
+    {
+     "name": "Area",
+     "doc": "Cleared when the player leaves an outdoor area and its interiors.",
+     "word": "area"
+    },
+    {
+     "name": "Map",
+     "doc": "Cleared on any map change.",
+     "word": "map"
+    },
+    {
+     "name": "Session",
+     "doc": "C10: kept in RAM only: never saved, cleared at a new game (a reference game's unsaved flags).",
+     "word": "session"
+    }
+   ],
+   "count": {
+    "name": "NUM_LIFETIMES",
+    "doc": "Number of lifetimes."
+   }
+  },
+  {
+   "name": "Query",
+   "type": "uint8_t",
+   "doc": [
+    "Game values a script can read (kOpQuery)."
+   ],
+   "values": [
+    {
+     "name": "PosX",
+     "doc": "An object's or the player's cell column.",
+     "word": "pos_x",
+     "object": true
+    },
+    {
+     "name": "PosY",
+     "doc": "Its row.",
+     "word": "pos_y",
+     "object": true
+    },
+    {
+     "name": "Facing",
+     "doc": "Its facing (0 down, 1 up, 2 left, 3 right).",
+     "word": "facing",
+     "object": true
+    },
+    {
+     "name": "MapIndex",
+     "doc": "The shown map's index (world_ids.h MAP_...).",
+     "word": "map_index",
+     "object": false
+    },
+    {
+     "name": "Steps",
+     "doc": "The player's steps.",
+     "word": "steps",
+     "object": false
+    },
+    {
+     "name": "Timer",
+     "doc": "Seconds left on the countdown timer (0 when stopped).",
+     "word": "timer",
+     "object": false
+    }
+   ],
+   "count": {
+    "name": "NUM_QUERIES",
+    "doc": "Number of queries."
+   }
+  },
+  {
+   "name": "VarOpKind",
+   "type": "uint8_t",
+   "doc": [
+    "VarOp operations."
+   ],
+   "values": [
+    {
+     "name": "Mul",
+     "doc": "*= (saturating)",
+     "word": "*="
+    },
+    {
+     "name": "Div",
+     "doc": "/= (truncating; by 0: unchanged)",
+     "word": "/="
+    },
+    {
+     "name": "Mod",
+     "doc": "%= (by 0: unchanged)",
+     "word": "%="
+    }
+   ],
+   "count": {
+    "name": "NUM_VAR_OPS",
+    "doc": "Number of operations."
+   }
+  },
+  {
+   "name": "Transition",
+   "type": "uint8_t",
+   "doc": [
+    "Screen transitions of warps (D-17)."
+   ],
+   "values": [
+    {
+     "name": "None",
+     "doc": "Cut.",
+     "word": "none"
+    },
+    {
+     "name": "Fade",
+     "doc": "Fade to black and back.",
+     "word": "fade"
+    },
+    {
+     "name": "White",
+     "doc": "Fade to white and back.",
+     "word": "white"
+    },
+    {
+     "name": "Mosaic",
+     "doc": "Mosaic while fading to black.",
+     "word": "mosaic"
+    },
+    {
+     "name": "WipeH",
+     "doc": "Black wipe from the left, uncovered to the right.",
+     "word": "wipe_h"
+    },
+    {
+     "name": "WipeV",
+     "doc": "Black wipe from the top, uncovered downwards.",
+     "word": "wipe_v"
+    },
+    {
+     "name": "Box",
+     "doc": "A shrinking box, then a growing one.",
+     "word": "box"
+    },
+    {
+     "name": "Silent",
+     "doc": "I4: a fade to black and back without the warp's sound.",
+     "word": "silent"
+    },
+    {
+     "name": "Door",
+     "doc": "I4: walking into a door (the game's door sequence).",
+     "word": "door"
+    },
+    {
+     "name": "Fall",
+     "doc": "I4: falling through a hole.",
+     "word": "fall"
+    },
+    {
+     "name": "Teleport",
+     "doc": "I4: a teleport.",
+     "word": "teleport"
+    },
+    {
+     "name": "Spin",
+     "doc": "I4: spinning away.",
+     "word": "spin"
+    }
+   ],
+   "count": {
+    "name": "NUM_TRANSITIONS",
+    "doc": "Number of transitions."
+   }
+  },
+  {
+   "name": "Compare",
+   "type": "uint8_t",
+   "doc": [
+    "Comparisons of IfCompare."
+   ],
+   "values": [
+    {
+     "name": "Eq",
+     "doc": "==",
+     "word": "=="
+    },
+    {
+     "name": "Ne",
+     "doc": "!=",
+     "word": "!="
+    },
+    {
+     "name": "Lt",
+     "doc": "<",
+     "word": "<"
+    },
+    {
+     "name": "Le",
+     "doc": "<=",
+     "word": "<="
+    },
+    {
+     "name": "Gt",
+     "doc": ">",
+     "word": ">"
+    },
+    {
+     "name": "Ge",
+     "doc": ">=",
+     "word": ">="
+    }
+   ],
+   "count": {
+    "name": "NUM_COMPARES",
+    "doc": "Number of comparisons."
+   }
+  },
+  {
+   "name": "TemplateOp",
+   "type": "uint8_t",
+   "doc": [
+    "I4: ObjectTemplate kinds."
+   ],
+   "values": [
+    {
+     "name": "Pos",
+     "doc": "Its cell (x, y).",
+     "word": "pos"
+    },
+    {
+     "name": "Movement",
+     "doc": "Its movement (the game's own numbering).",
+     "word": "movement"
+    },
+    {
+     "name": "Here",
+     "doc": "Its cell from where the object stands.",
+     "word": "here"
+    }
+   ],
+   "count": {
+    "name": "NUM_TEMPLATE_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "DoorOp",
+   "type": "uint8_t",
+   "doc": [
+    "I4: Door kinds."
+   ],
+   "values": [
+    {
+     "name": "Open",
+     "doc": "Animate it opening.",
+     "word": "open"
+    },
+    {
+     "name": "Close",
+     "doc": "Animate it closing.",
+     "word": "close"
+    },
+    {
+     "name": "SetOpen",
+     "doc": "Show it open at once.",
+     "word": "set_open"
+    },
+    {
+     "name": "SetClosed",
+     "doc": "Show it closed at once.",
+     "word": "set_closed"
+    },
+    {
+     "name": "Wait",
+     "doc": "Wait until the animation ends.",
+     "word": "wait"
+    }
+   ],
+   "count": {
+    "name": "NUM_DOOR_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "WeatherOp",
+   "type": "uint8_t",
+   "doc": [
+    "I4: Weather kinds."
+   ],
+   "values": [
+    {
+     "name": "Set",
+     "doc": "The weather the next Apply shows (the game's numbering).",
+     "word": "set"
+    },
+    {
+     "name": "Reset",
+     "doc": "Back to the map's own weather.",
+     "word": "reset"
+    },
+    {
+     "name": "Apply",
+     "doc": "Show it.",
+     "word": "apply"
+    }
+   ],
+   "count": {
+    "name": "NUM_WEATHER_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "FadeOp",
+   "type": "uint8_t",
+   "doc": [
+    "I4: Fade kinds."
+   ],
+   "values": [
+    {
+     "name": "ToBlack",
+     "doc": "Out to black.",
+     "word": "to_black"
+    },
+    {
+     "name": "FromBlack",
+     "doc": "In from black.",
+     "word": "from_black"
+    },
+    {
+     "name": "ToWhite",
+     "doc": "Out to white.",
+     "word": "to_white"
+    },
+    {
+     "name": "FromWhite",
+     "doc": "In from white.",
+     "word": "from_white"
+    }
+   ],
+   "count": {
+    "name": "NUM_FADE_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "WarpSlot",
+   "type": "uint8_t",
+   "doc": [
+    "I4: the warp destinations SetWarp remembers."
+   ],
+   "values": [
+    {
+     "name": "Next",
+     "doc": "The next warp's destination (the game's warp command takes it).",
+     "word": "next"
+    },
+    {
+     "name": "Dynamic",
+     "doc": "The dynamic warp (a warp that leads back where the player came from).",
+     "word": "dynamic"
+    },
+    {
+     "name": "Dive",
+     "doc": "The dive / emerge destination.",
+     "word": "dive"
+    },
+    {
+     "name": "Hole",
+     "doc": "Where a hole leads.",
+     "word": "hole"
+    },
+    {
+     "name": "Escape",
+     "doc": "The escape warp.",
+     "word": "escape"
+    }
+   ],
+   "count": {
+    "name": "NUM_WARP_SLOTS",
+    "doc": "Number of slots."
+   }
+  },
+  {
+   "name": "SoundOp",
+   "type": "uint8_t",
+   "doc": [
+    "I4: Sound kinds (operands as the game numbers them)."
+   ],
+   "values": [
+    {
+     "name": "Bgm",
+     "doc": "Play music (song, save: 1 to keep it as the map's).",
+     "word": "bgm",
+     "operands": 2
+    },
+    {
+     "name": "BgmSave",
+     "doc": "Save a song to play after the next map's.",
+     "word": "bgm_save",
+     "operands": 1
+    },
+    {
+     "name": "FadeDefault",
+     "doc": "Fade to the map's own music.",
+     "word": "fade_default",
+     "operands": 0
+    },
+    {
+     "name": "FadeNew",
+     "doc": "Fade to a song.",
+     "word": "fade_new",
+     "operands": 1
+    },
+    {
+     "name": "FadeOut",
+     "doc": "Fade the music out (speed).",
+     "word": "fade_out",
+     "operands": 1
+    },
+    {
+     "name": "FadeIn",
+     "doc": "Fade it back in (speed).",
+     "word": "fade_in",
+     "operands": 1
+    },
+    {
+     "name": "Se",
+     "doc": "A sound effect.",
+     "word": "se",
+     "operands": 1
+    },
+    {
+     "name": "Fanfare",
+     "doc": "A fanfare (the music pauses).",
+     "word": "fanfare",
+     "operands": 1
+    },
+    {
+     "name": "Cry",
+     "doc": "A cry (species, mode).",
+     "word": "cry",
+     "operands": 2
+    }
+   ],
+   "count": {
+    "name": "NUM_SOUND_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "SoundWait",
+   "type": "uint8_t",
+   "doc": [
+    "I4: WaitSound kinds."
+   ],
+   "values": [
+    {
+     "name": "Se",
+     "doc": "The sound effect.",
+     "word": "se"
+    },
+    {
+     "name": "Fanfare",
+     "doc": "The fanfare.",
+     "word": "fanfare"
+    },
+    {
+     "name": "Cry",
+     "doc": "The cry.",
+     "word": "cry"
+    },
+    {
+     "name": "Bgm",
+     "doc": "E1 (M4): the music paused or stopped (a fade-out's end).",
+     "word": "bgm"
+    }
+   ],
+   "count": {
+    "name": "NUM_SOUND_WAITS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "TriggerKind",
+   "type": "uint8_t",
+   "doc": [
+    "When a map trigger runs."
+   ],
+   "values": [
+    {
+     "name": "OnTransition",
+     "doc": "Once when the map is entered, before on_load (must not wait).",
+     "word": "on_transition"
+    },
+    {
+     "name": "OnLoad",
+     "doc": "Once while the map loads (must not wait).",
+     "word": "on_load"
+    },
+    {
+     "name": "OnFrame",
+     "doc": "While its condition holds; re-checked only after a flag or variable it reads changes.",
+     "word": "on_frame"
+    },
+    {
+     "name": "OnResume",
+     "doc": "I4: once when the field resumes on the map (after on_load; must not wait).",
+     "word": "on_resume"
+    },
+    {
+     "name": "OnWarpInto",
+     "doc": "I4: after a warp's arrival, the first entry whose condition holds (must not wait).",
+     "word": "on_warp_into"
+    },
+    {
+     "name": "OnDive",
+     "doc": "I4: when a dive or emerge leads to the map (must not wait).",
+     "word": "on_dive"
+    },
+    {
+     "name": "OnReturn",
+     "doc": "I4: when the field comes back from a menu or a battle (must not wait).",
+     "word": "on_return"
+    }
+   ],
+   "count": {
+    "name": "NUM_TRIGGER_KINDS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "FieldEffectOp",
+   "type": "uint8_t",
+   "doc": [
+    "FieldEffect op kinds."
+   ],
+   "values": [
+    {
+     "name": "Start",
+     "doc": "Start it (amount operand); var = 1 started, 0 refused.",
+     "word": "start"
+    },
+    {
+     "name": "Active",
+     "doc": "var = 1 while it runs.",
+     "word": "active"
+    },
+    {
+     "name": "Remaining",
+     "doc": "var = what it has left.",
+     "word": "remaining"
+    }
+   ],
+   "count": {
+    "name": "NUM_FIELD_EFFECT_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "FlightOp",
+   "type": "uint8_t",
+   "doc": [
+    "Flight op kinds."
+   ],
+   "values": [
+    {
+     "name": "Record",
+     "doc": "Record a point (its flag).",
+     "word": "record"
+    },
+    {
+     "name": "Visit",
+     "doc": "Warp to a point (transition operand).",
+     "word": "visit"
+    },
+    {
+     "name": "Menu",
+     "doc": "The menu of recorded points: warp to the one picked; var = 1 warped, 0 backed out.",
+     "word": "menu"
+    }
+   ],
+   "count": {
+    "name": "NUM_FLIGHT_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "FieldActionOp",
+   "type": "uint8_t",
+   "doc": [
+    "FieldAction op kinds."
+   ],
+   "values": [
+    {
+     "name": "Available",
+     "doc": "var = the first member it is available to, plus 1; 0 when none (or no party).",
+     "word": "available"
+    }
+   ],
+   "count": {
+    "name": "NUM_FIELD_ACTION_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "CombineOp",
+   "type": "uint8_t",
+   "doc": [
+    "Combine op kinds (B1; tools/script_compiler.py COMBINE_KINDS)."
+   ],
+   "values": [
+    {
+     "name": "Open",
+     "doc": "The menu flow: pick the inputs, preview, ask, combine (waits).",
+     "word": "open"
+    },
+    {
+     "name": "Run",
+     "doc": "Combine the given party members (waits: the move picks).",
+     "word": "run"
+    },
+    {
+     "name": "Preview",
+     "doc": "var = the result species + 1 (0: it does not combine; kCombineRandom: a random pick).",
+     "word": "preview"
+    },
+    {
+     "name": "Status",
+     "doc": "var = what a combination would say (capsule::combine::Status).",
+     "word": "status"
+    },
+    {
+     "name": "Fee",
+     "doc": "var = its fee (0 when it does not combine or the result is a random pick).",
+     "word": "fee"
+    }
+   ],
+   "count": {
+    "name": "NUM_COMBINE_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "NurseryOp",
+   "type": "uint8_t",
+   "doc": [
+    "Nursery op kinds (B2; tools/script_compiler.py NURSERY_KINDS)."
+   ],
+   "values": [
+    {
+     "name": "Pick",
+     "doc": "The party menu (waits): var = the member + 1, 0 backed out.",
+     "word": "pick"
+    },
+    {
+     "name": "Deposit",
+     "doc": "Leave a party member (operand): var = 1 when it went.",
+     "word": "deposit"
+    },
+    {
+     "name": "Withdraw",
+     "doc": "Take a slot's record back (operand) paying its fee from a money variable: var = 1 done, 0 refused,\nkNurseryPoor not enough money.",
+     "word": "withdraw"
+    },
+    {
+     "name": "Count",
+     "doc": "var = the records held.",
+     "word": "count"
+    },
+    {
+     "name": "Levels",
+     "doc": "var = the levels a slot's record gained (operand).",
+     "word": "levels"
+    },
+    {
+     "name": "Fee",
+     "doc": "var = what taking a slot's record back costs (operand).",
+     "word": "fee"
+    },
+    {
+     "name": "Ready",
+     "doc": "var = 1 when a result waits.",
+     "word": "ready"
+    },
+    {
+     "name": "Odds",
+     "doc": "var = the method's odds over the held records.",
+     "word": "odds"
+    },
+    {
+     "name": "Take",
+     "doc": "The waiting result joins the party: var = 1 when it did.",
+     "word": "take"
+    },
+    {
+     "name": "Name",
+     "doc": "The nickname prompt for a party member (operand; waits): var = 1 when named.",
+     "word": "name"
+    }
+   ],
+   "count": {
+    "name": "NUM_NURSERY_OPS",
+    "doc": "Number of kinds."
+   }
+  }
+ ],
+ "constants": [
+  {
+   "title": "Operand and text-reference tags",
+   "items": [
+    {
+     "name": "kOpConst8",
+     "type": "uint8_t",
+     "value": "0",
+     "doc": "1-byte unsigned constant."
+    },
+    {
+     "name": "kOpConst16",
+     "type": "uint8_t",
+     "value": "1",
+     "doc": "2-byte signed constant."
+    },
+    {
+     "name": "kOpConst32",
+     "type": "uint8_t",
+     "value": "2",
+     "doc": "4-byte signed constant."
+    },
+    {
+     "name": "kOpVar",
+     "type": "uint8_t",
+     "value": "3",
+     "doc": "2-byte variable ID."
+    },
+    {
+     "name": "kOpQuery",
+     "type": "uint8_t",
+     "value": "4",
+     "doc": "Query byte and object byte."
+    },
+    {
+     "name": "kRouteNoWait",
+     "type": "uint8_t",
+     "value": "0x80",
+     "doc": "Route: the script goes on at once."
+    },
+    {
+     "name": "kTransitionDefault",
+     "type": "uint8_t",
+     "value": "0xFF",
+     "doc": "Warp: the default transition."
+    },
+    {
+     "name": "kKeepFacing",
+     "type": "uint8_t",
+     "value": "4",
+     "doc": "Warp / Place: facing kept."
+    },
+    {
+     "name": "kTextAsset",
+     "type": "uint8_t",
+     "value": "0",
+     "doc": "4-byte asset key of a text asset."
+    },
+    {
+     "name": "kTextInline",
+     "type": "uint8_t",
+     "value": "1",
+     "doc": "4-byte offset into Bank::text."
+    },
+    {
+     "name": "kNoVar",
+     "type": "uint16_t",
+     "value": "0xFFFF",
+     "doc": "Native without a result variable."
+    },
+    {
+     "name": "kNoCancel",
+     "type": "uint8_t",
+     "value": "0xFF",
+     "doc": "Choice: Back does nothing."
+    },
+    {
+     "name": "kObjectSelf",
+     "type": "uint8_t",
+     "value": "254",
+     "doc": "Object operand: the context's own object."
+    },
+    {
+     "name": "kObjectPlayer",
+     "type": "uint8_t",
+     "value": "255",
+     "doc": "Object operand: the walker."
+    },
+    {
+     "name": "kNoSelf",
+     "type": "uint8_t",
+     "value": "253",
+     "doc": "Context::self: no object started the script."
+    },
+    {
+     "name": "kFacePlayer",
+     "type": "uint8_t",
+     "value": "4",
+     "doc": "ObjectFace: towards the walker."
+    },
+    {
+     "name": "kFaceSelf",
+     "type": "uint8_t",
+     "value": "5",
+     "doc": "ObjectFace: towards the context's own object."
+    },
+    {
+     "name": "kObjectCamera",
+     "type": "uint8_t",
+     "value": "252",
+     "doc": "I4: object operand: the camera."
+    },
+    {
+     "name": "kObjectLast",
+     "type": "uint8_t",
+     "value": "251",
+     "doc": "I4: object operand: the object the context last gave a route."
+    },
+    {
+     "name": "kObjectSelected",
+     "type": "uint8_t",
+     "value": "250",
+     "doc": "C10: object operand: the selected object, the context's own object or, when the context has none, the walker\n(a reference game's \"selected object\", which its field input resets to the player every frame)."
+    },
+    {
+     "name": "kFaceOppositePlayer",
+     "type": "uint8_t",
+     "value": "6",
+     "doc": "C10: ObjectFace: the direction opposite the walker's facing (whatever the geometry; a reference game's way)."
+    },
+    {
+     "name": "kWarpNoWait",
+     "type": "uint8_t",
+     "value": "0x80",
+     "doc": "I4: Warp facing bit: the script goes on at once."
+    },
+    {
+     "name": "kWarpFacingMask",
+     "type": "uint8_t",
+     "value": "0x7F",
+     "doc": "I4: Warp facing bits without kWarpNoWait."
+    },
+    {
+     "name": "kLockSelf",
+     "type": "uint8_t",
+     "value": "0",
+     "doc": "I4: Lock / Release: the context's object (and the others' movement)."
+    },
+    {
+     "name": "kLockAll",
+     "type": "uint8_t",
+     "value": "1",
+     "doc": "I4: Lock / Release: every object."
+    },
+    {
+     "name": "kMessageNoWait",
+     "type": "uint8_t",
+     "value": "1",
+     "doc": "I4: MessageEx: the script goes on while it types."
+    },
+    {
+     "name": "kMessageInstant",
+     "type": "uint8_t",
+     "value": "2",
+     "doc": "I4: MessageEx: typed at once."
+    },
+    {
+     "name": "kMessageAutoScroll",
+     "type": "uint8_t",
+     "value": "4",
+     "doc": "I4: MessageEx: scrolls on without a button."
+    },
+    {
+     "name": "kFadeSwap",
+     "type": "uint8_t",
+     "value": "1",
+     "doc": "I4: Fade flags: keep the palettes the scene changes meanwhile."
+    }
+   ]
+  },
+  {
+   "title": "Limits",
+   "items": [
+    {
+     "name": "kMaxStack",
+     "type": "int",
+     "value": "32",
+     "doc": "VM call stack slots (the manifest's stack_depth is at most this)."
+    },
+    {
+     "name": "kMaxNativeArgs",
+     "type": "int",
+     "value": "8",
+     "doc": "Arguments per native call."
+    },
+    {
+     "name": "kMaxChoices",
+     "type": "int",
+     "value": "8",
+     "doc": "Options of one Choice."
+    },
+    {
+     "name": "kMaxTriggers",
+     "type": "int",
+     "value": "16",
+     "doc": "On-frame triggers armed at once (one map)."
+    },
+    {
+     "name": "kMaxTriggerDeps",
+     "type": "int",
+     "value": "8",
+     "doc": "Flags and variables one trigger reads."
+    }
+   ]
+  }
+ ],
+ "op_enum": {
+  "doc": [
+   "Opcodes (see the file comment for operands)."
+  ],
+  "count": {
+   "name": "NUM_OPS",
+   "doc": "Number of opcodes."
+  }
+ }
+}
