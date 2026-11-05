@@ -307,6 +307,15 @@ script spot_single {
     encounter set a 30 self;
     battle party;
 }
+// C2: props and an object's draw order
+script props {
+    var(v8) = 9;
+    prop place 4 sprite:PROP_TEST 12 var(v8) 3 left;
+    prop face 4 up;
+    prop remove 4;
+    order player 83;
+    order self reset;
+}
 script lone_battle {
     battle unowned 25 5 -> var(answer);
     battle scripted 3;

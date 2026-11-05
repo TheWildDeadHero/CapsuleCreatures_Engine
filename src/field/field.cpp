@@ -2,6 +2,7 @@
 /// Overworld traversal (see capsule/field/field.h).
 #include "capsule/field/field.h"
 #include "capsule/field/doors.h"
+#include "props.h"
 
 #include "capsule/core/assert.h"
 #include "capsule/core/endian.h"
@@ -482,6 +483,25 @@ int anim_or_walk(const asset::Sprite& s, int anim, uint8_t dir)
    }
    return dir < s.animation_count ? dir : 0;
 }
+
+} // namespace
+
+void props::standing_frame(const asset::Sprite& sprite, uint8_t facing, uint8_t& frame, uint8_t& flips)
+{
+   // As a standing object shows itself: a step sprite on its walk animation's first standing entry, another sprite
+   // on its facing's animation (draw_object(), step_face())
+   const int anim = sprite.steps != nullptr ? anim_or_walk(sprite, kWalkAnimFirst + facing, facing)
+                    : facing < sprite.animation_count ? facing
+                                                      : 0;
+   const asset::Animation& a = sprite.animations[anim];
+   const uint8_t entry = sprite.steps != nullptr ? sprite.steps[asset::kStepFirstStand] : uint8_t{0};
+   const uint8_t e = entry < a.count ? entry : uint8_t{0};
+   frame = a.frames[e];
+   flips = a.flips != nullptr ? a.flips[e] : uint8_t{0};
+}
+
+namespace
+{
 
 /// Starts or resumes a step animation (a step or a walk in place begins): the entry after the standing entry it
 /// paused on, else where it is.
@@ -3525,6 +3545,7 @@ void update(const Intent& intent)
    {
       draw_object(i);
    }
+   props::draw();   // C2
    doors::update();   // DS1: the doors animating on the map, one display frame
 }
 
@@ -3625,6 +3646,7 @@ void apply_persisted_sets(uint16_t index)
 /// offset end and the effect slots are free (the objects' go with their spawn).
 void reset_cutscene()
 {
+   props::reset();   // C2: the old map's props (their slots are effect slots, freed below too)
    g.camera_on = false;
    g.cam_left = 0;
    g.cam_rest_dx = 0;

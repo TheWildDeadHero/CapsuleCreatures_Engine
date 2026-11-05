@@ -196,7 +196,11 @@ needs the manifest's `world`, or a class number), the doors
 `override apply NAME;` / `override clear NAME;` (a cell override set of a
 map of the manifest's world, the maps' `override_sets`: its cells show their
 override until cleared; a persisting set's flag or variable is written, so it
-shows again when its map is entered), and
+shows again when its map is entered), C2's props `prop place <id> sprite:NAME
+<x> <y> <level> <facing>;`, `prop face <id> <facing>;`, `prop remove <id>;`
+(a sprite standing on a cell until the next map; id and level 0-255) and an
+object's draw order `order <obj> <n>;` / `order <obj> reset;` (0-255, or the
+world's rule again), and
 compile-time `when [not] game(...) { }`.
 
 Operands: numbers, constants, `yes` / `no` / `true` / `false`, `var(v)` and
@@ -510,9 +514,18 @@ WARP_NOWAIT_WORD = "nowait"
 WARP_NOWAIT = VM.constants["kWarpNoWait"]
 ## Statement words of the script ports that are no keywords.
 PORT_WORDS = ("lock", "release", "wait_msg", "remove", "visible", "set_template", "door", "weather", "fade",
-            "set_metatile", "respawn", "set_warp", "sound", "wait_sound", "mart", "wait_state", "override")
+            "set_metatile", "respawn", "set_warp", "sound", "wait_sound", "mart", "wait_state", "override", "prop",
+            "order")
 ## The override statement's kinds (`override apply NAME;` / `override clear NAME;`) and their apply byte.
 OVERRIDE_KINDS = ("clear", "apply")
+## C2: the prop statement's kinds (capsule::script::PropOp, in order).
+PROP_KINDS = VM.words("PropOp")
+## C2: the largest prop number and level (one byte each).
+PROP_BYTE_MAX = 0xFF
+## C2: the order statement's word that gives an object back to the world's draw-order rule.
+ORDER_RESET_WORD = "reset"
+## C2: the largest draw order (a sub-priority byte).
+ORDER_MAX = 0xFF
 
 ## Stack depth when the manifest gives none.
 DEFAULT_STACK_DEPTH = 20
@@ -2357,6 +2370,34 @@ class Parser:
          value = self.operand()
          self.expect(";")
          return Node("respawn", t, value=value)
+      if w == "prop":   # C2: a sprite standing on a cell
+         kind = self.direction(PROP_KINDS)
+         pid, pid_tok = self.number()
+         if not 0 <= pid <= PROP_BYTE_MAX:
+            raise self.error(f"prop: its number must be 0-{PROP_BYTE_MAX}, not {pid_tok.text}")
+         if kind == "place":
+            ref = self.take()
+            if ref.kind != "ref" or not ref.text.startswith("sprite:"):
+               raise self.error(f"prop place: expected a sprite:NAME, found {ref.text or 'end of file'!r}")
+            x, y = self.operand(), self.operand()
+            elevation, e_tok = self.number()
+            if not 0 <= elevation <= PROP_BYTE_MAX:
+               raise self.error(f"prop place: its level must be 0-{PROP_BYTE_MAX}, not {e_tok.text}")
+            facing = self.direction(tuple(DIRECTIONS))
+            self.expect(";")
+            return Node("prop", t, kind=kind, id=pid, sprite=ref.text, x=x, y=y, elevation=elevation, facing=facing)
+         facing = self.direction(tuple(DIRECTIONS)) if kind == "face" else None
+         self.expect(";")
+         return Node("prop", t, kind=kind, id=pid, facing=facing)
+      if w == "order":   # C2: an object's draw order among the sprites
+         obj = self.object_ref()
+         order = None
+         if not self.accept(ORDER_RESET_WORD):
+            order, o_tok = self.number()
+            if not 0 <= order <= ORDER_MAX:
+               raise self.error(f"order: the order must be 0-{ORDER_MAX} or {ORDER_RESET_WORD}, not {o_tok.text}")
+         self.expect(";")
+         return Node("order", t, obj=obj, order=order)
       if w == "override":   # a cell override set of the world
          kind = self.direction(OVERRIDE_KINDS)
          name = self.name("an override set's name")
@@ -3846,6 +3887,33 @@ class Compiler:
       if k == "respawn":
          e.op("Respawn")
          self.emit_operand(e, s["value"])
+         return True
+      if k == "prop":
+         e.op("Prop")
+         e.u8(PROP_KINDS.index(s["kind"]))
+         e.u8(s["id"])
+         if s["kind"] == "place":
+            try:
+               key = asset_key(s["sprite"], "prop sprite")
+            except KeyError_ as err:
+               self.err(str(err), s)
+               key = 0
+            kind = self.asset_keys.get(key) if self.asset_keys is not None else None
+            if kind is not None and kind != "sprite":   # sprites may come from another manifest than the scripts'
+               self.err(f"prop place: {s['sprite']} is a {kind}, not a sprite", s)
+            e.u32(key)
+            self.emit_operand(e, s["x"])
+            self.emit_operand(e, s["y"])
+            e.u8(s["elevation"])
+            e.u8(DIRECTIONS.index(s["facing"]))
+         elif s["kind"] == "face":
+            e.u8(DIRECTIONS.index(s["facing"]))
+         return True
+      if k == "order":
+         e.op("ObjectOrder")
+         self.emit_operand(e, s["obj"])
+         e.u8(0 if s["order"] is None else 1)
+         e.u8(0 if s["order"] is None else s["order"])
          return True
       if k == "override":
          sets = (self.world_field or {}).get("override_sets", [])

@@ -7,7 +7,9 @@
 /// across all its frames; a streamed sprite (asset::kSpriteStreamed, I3) keeps
 /// only the frame shown there, uploaded (must-land) when the slot changes
 /// frames, so one frame may use them all. Animation entries may be drawn
-/// mirrored (asset::Animation::flips). Slots below kAffineSlots can scale and rotate (OBJ
+/// mirrored (asset::Animation::flips). C2: a slot may instead hold chosen
+/// frames only (load_frames()), and instances draw more copies of a slot's
+/// sprite with its tiles and palette (add_instance()). Slots below kAffineSlots can scale and rotate (OBJ
 /// matrix n); a transformed sprite is drawn in a box twice its size around its
 /// centre, so enlarging it never cuts it off. Call update() once per frame: it advances
 /// animations and writes OAM.
@@ -25,10 +27,15 @@ namespace capsule::gfx::sprites
 inline constexpr int kSlots = 16;            ///< Sprite slots.
 inline constexpr int kTilesPerSlot = 64;     ///< OBJ tiles per slot (e.g. 4 frames of 32x32).
 inline constexpr int kAffineSlots = 16;      ///< Slots that can scale / rotate.
+inline constexpr int kInstances = 48;        ///< C2: instances (OAM entries after the slots').
+inline constexpr int kMaxSetFrames = 8;      ///< C2: frames load_frames() keeps in a slot.
+inline constexpr uint8_t kNoInstance = 0xFF; ///< C2: add_instance(): none free.
+/// C2: OAM entries the slots and the instances take (from set_first_entry()'s first).
+inline constexpr int kEntries = kSlots + kInstances;
 static_assert(kSlots * kTilesPerSlot <= hal::video::kObjTiles4bpp);
-static_assert(kAffineSlots <= hal::video::kNumObjAffine && kSlots <= hal::video::kNumObjs);
+static_assert(kAffineSlots <= hal::video::kNumObjAffine && kEntries <= hal::video::kNumObjs);
 
-/// Hides every slot, forgets what was loaded, turns the sprite layer on.
+/// Hides every slot, forgets what was loaded, frees every instance, turns the sprite layer on.
 void reset();
 
 /// Loads a sprite into a slot and starts its animation 0. Position, shown
@@ -102,7 +109,7 @@ void set_priority(uint8_t slot, uint8_t priority);
 /// Unsorted (after reset()), OAM entry n is slot n, so a lower slot covers a higher one. Sorted (set_sorted(true),
 /// the field's screens), OAM entries go out each update() in the order of the slots' priority, then their
 /// sub-priority (set_order(); lower in front), then the lower sprite on screen in front (its top edge), then the
-/// order of the frame before (a stable insertion sort over the last order, as the reference games sort their
+/// order of the frame before (C2: instances sort among them; unsorted, they follow the slots in instance order) (a stable insertion sort over the last order, as the reference games sort their
 /// sprites). A slot keeps its tiles, palette bank and OBJ matrix; only its OAM entry moves.
 ///@{
 
@@ -117,7 +124,7 @@ void set_sorted(bool on);
 
 /// The OAM entry a slot was written to by the last update() (tests, debug views).
 /// @param slot  the slot
-/// @return 0 to kSlots - 1
+/// @return 0 to kEntries - 1
 uint8_t oam_entry(uint8_t slot);
 ///@}
 
@@ -129,12 +136,70 @@ void set_mode(uint8_t slot, hal::video::ObjMode mode);
 /// Advances animations one frame and writes every slot's OAM entry.
 void update();
 
-/// T1 (M5): moves the slots' OAM entries to first ... first + kSlots - 1 (0 by default and after reset()), so a
+/// T1 (M5): moves the slots' (C2: and the instances') OAM entries to first ... first + kEntries - 1 (0 by default and after reset()), so a
 /// scene's own sprites drawn over the slots can take the entries before them (the hardware draws lower entries in
 /// front: the reference games sort a battle transition's sprites ahead of the field's objects). The entries left
 /// are hidden; the next update() writes the new ones. The matrices stay 0 ... kAffineSlots - 1.
-/// @param first  the first entry (first + kSlots <= hal::video::kNumObjs)
+/// @param first  the first entry (first + kEntries <= hal::video::kNumObjs)
 void set_first_entry(uint8_t first);
+
+/// @name Instances (C2)
+/// An instance draws one frame of a slot's sprite somewhere else, with the slot's tiles and palette bank: a crowd of
+/// one sprite takes one slot. It does not animate, scale or rotate; it has its own position, shown state, frame and
+/// flips, priority and sub-priority, and sorts with the slots (set_sorted()). Its frame is one the slot's tiles hold:
+/// a sprite frame for a slot loaded whole, an index into the frames given for a slot loaded with load_frames(). An
+/// instance of a slot that is unloaded or loaded again draws nothing until it is removed or given a frame again.
+///@{
+
+/// Loads chosen frames of a sprite into a slot, one after another (a streamed sprite's too), for instances; the
+/// slot itself shows frame 0 of them and plays no animation. Every frame together must fit kTilesPerSlot tiles.
+/// @param slot    the slot
+/// @param sprite  the sprite
+/// @param frames  its frame indices (the slot's frames 0 to count - 1)
+/// @param count   1 to kMaxSetFrames
+void load_frames(uint8_t slot, const asset::Sprite& sprite, const uint8_t* frames, uint8_t count);
+
+/// Adds a hidden instance of a slot's sprite (frame 0, no flips, priority 0, sub-priority 0).
+/// @param slot  a loaded slot
+/// @return the instance, or kNoInstance when every one is taken
+uint8_t add_instance(uint8_t slot);
+
+/// Frees an instance (one reset() freed already stays free).
+/// @param instance  the instance
+void remove_instance(uint8_t instance);
+
+/// Shows or hides an instance.
+/// @param instance  the instance
+/// @param on        show it
+void show_instance(uint8_t instance, bool on);
+
+/// Positions an instance.
+/// @param instance  the instance
+/// @param x         left edge, pixels
+/// @param y         top edge, pixels
+void set_instance_position(uint8_t instance, int16_t x, int16_t y);
+
+/// Sets the frame an instance shows.
+/// @param instance  the instance
+/// @param frame     a frame its slot's tiles hold
+/// @param flips     asset::kFlip... bits
+void set_instance_frame(uint8_t instance, uint8_t frame, uint8_t flips);
+
+/// Sets an instance's priority against the background layers (as set_priority()).
+/// @param instance  the instance
+/// @param priority  0 (front) to 3
+void set_instance_priority(uint8_t instance, uint8_t priority);
+
+/// Sets an instance's sub-priority among the sprites of equal priority (as set_order()).
+/// @param instance      the instance
+/// @param sub_priority  0 (front) to 255
+void set_instance_order(uint8_t instance, uint8_t sub_priority);
+
+/// The OAM entry an instance was written to by the last update() (tests, debug views).
+/// @param instance  the instance
+/// @return 0 to kEntries - 1
+uint8_t instance_entry(uint8_t instance);
+///@}
 
 /// UC (D-33): puts every loaded slot's tiles back into OBJ memory (a streamed slot: the frame it shows) and hides
 /// every OAM entry, after a full-screen scene used the sprite memory; the slots' state (sprite, position, animation,

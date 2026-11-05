@@ -97,6 +97,8 @@ const OpHandler kModuleOps[kOpCount] = {
    nullptr,          // 86 Override
    op_encounter,     // 87 Encounter
    op_battle,        // 88 Battle
+   nullptr,          // 89 Prop
+   nullptr,          // 90 ObjectOrder
 };
 
 /// The module waits by wait kind (nullptr: not a module wait, or one no op of the table sets).

@@ -15,6 +15,8 @@
 /// - Override sets: map::set_override_set() on the shown map, and the set's flag or variable written when it
 ///   persists (so it is applied again when the field enters its map).
 /// - Spotter groups (C1b): the field's (field::spotters(), field::approach(), field::approaching()).
+/// - Props and draw order (C2): the field's (field::place_prop() with the sprite asset, face_prop(), remove_prop(),
+///   set_fixed_order()).
 /// - Weather, fades, metatiles, the respawn point, remembered warps, sound, marts and the busy state: nothing, and
 ///   nothing to wait for.
 #include "capsule/script/port.h"
@@ -197,6 +199,30 @@ CAPSULE_WEAK bool approach(uint8_t obj)
 CAPSULE_WEAK bool approaching()
 {
    return field::approaching();
+}
+
+CAPSULE_WEAK void place_prop(uint8_t id, AssetKey sprite, int32_t x, int32_t y, uint8_t elevation, uint8_t facing)
+{
+   const asset::Sprite* s = asset::sprite(sprite);
+   if (s != nullptr)
+   {
+      field::place_prop(id, *s, static_cast<int16_t>(x), static_cast<int16_t>(y), elevation, facing);
+   }
+}
+
+CAPSULE_WEAK void face_prop(uint8_t id, uint8_t facing)
+{
+   field::face_prop(id, facing);
+}
+
+CAPSULE_WEAK void remove_prop(uint8_t id)
+{
+   field::remove_prop(id);
+}
+
+CAPSULE_WEAK void set_order(uint8_t obj, bool fixed, uint8_t order)
+{
+   field::set_fixed_order(obj, fixed, order);
 }
 
 } // namespace capsule::script::world

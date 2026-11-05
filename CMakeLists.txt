@@ -252,6 +252,7 @@ add_library(capsule_engine STATIC
    src/field/field_game_default.cpp
    src/field/field_route_default.cpp
    src/field/field_spot_default.cpp
+   src/field/field_props.cpp
    src/gfx/background.cpp
    src/gfx/palette.cpp
    src/gfx/sprites.cpp
@@ -892,6 +893,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
       src/field/field.cpp
       src/field/field_route_default.cpp
       src/field/field_spot_default.cpp
+      src/field/field_props.cpp
       src/gfx/background.cpp
       src/gfx/palette.cpp
       src/gfx/sprites.cpp

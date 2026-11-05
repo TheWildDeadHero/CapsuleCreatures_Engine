@@ -581,6 +581,55 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       world::fade(kind, speed, flags);
       return wait(Wait::Fade);
    }
+   case Op::Prop:
+   {
+      // kind8, id8, [Place: sprite32, operand x, operand y, elevation8, facing8], [Face: facing8]
+      const auto kind = static_cast<PropOp>(*p++);
+      const uint8_t id = *p++;
+      switch (kind)
+      {
+      case PropOp::Place:
+      {
+         const AssetKey sprite{load_le32(p)};
+         p += kU32Bytes;
+         const int32_t x = operand(p);
+         const int32_t y = operand(p);
+         const uint8_t elevation = *p++;
+         const uint8_t facing = *p++;
+         next();
+         world::place_prop(id, sprite, x, y, elevation, facing);
+         return Outcome::Continue;
+      }
+      case PropOp::Face:
+      {
+         const uint8_t facing = *p++;
+         next();
+         world::face_prop(id, facing);
+         return Outcome::Continue;
+      }
+      case PropOp::Remove:
+         next();
+         world::remove_prop(id);
+         return Outcome::Continue;
+      case PropOp::NUM_PROP_OPS:
+         break;
+      }
+      ENGINE_ASSERT(false && "bad prop op");
+      return Outcome::Ended;
+   }
+   case Op::ObjectOrder:
+   {
+      // operand (object), fixed8, order8
+      const uint8_t obj = object_of(c, operand(p));
+      const bool fixed = *p++ != 0;
+      const uint8_t order = *p++;
+      next();
+      if (obj != kNoSelf && obj != kObjectCamera)
+      {
+         world::set_order(obj, fixed, order);
+      }
+      return Outcome::Continue;
+   }
    case Op::Override:
    {
       // apply8, set16 (map::kWorld.override_sets)
@@ -1266,6 +1315,8 @@ Outcome execute(Context& c)
    case Op::WaitSound:
    case Op::WaitState:
    case Op::Override:
+   case Op::Prop:
+   case Op::ObjectOrder:
       return execute_port(c, op, p, base);
    // D-36 package 2: the ops of the bag, boxes, party roles, growth, combination and nursery modules
    case Op::RoleGet:

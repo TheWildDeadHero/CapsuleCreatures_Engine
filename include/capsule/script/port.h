@@ -328,6 +328,31 @@ bool approach(uint8_t obj);
 /// C1b: whether approach()'s walk-up still runs.
 /// @return true while it does (the default: field::approaching())
 bool approaching();
+
+/// C2: places a prop (the default: field::place_prop() with the sprite asset; nothing for a key that names none).
+/// @param id         the script's number for it
+/// @param sprite     its sprite's asset key
+/// @param x          its cell's column
+/// @param y          row
+/// @param elevation  its level
+/// @param facing     direction (0 down, 1 up, 2 left, 3 right)
+void place_prop(uint8_t id, AssetKey sprite, int32_t x, int32_t y, uint8_t elevation, uint8_t facing);
+
+/// C2: turns a prop (the default: field::face_prop()).
+/// @param id      its number
+/// @param facing  direction
+void face_prop(uint8_t id, uint8_t facing);
+
+/// C2: removes a prop (the default: field::remove_prop()).
+/// @param id  its number
+void remove_prop(uint8_t id);
+
+/// C2: fixes an object's draw order among the sprites, or gives it back to the world's rule (the default:
+/// field::set_fixed_order()).
+/// @param obj    local ID, or kObjectPlayer
+/// @param fixed  fixed (else the world's rule)
+/// @param order  the sub-priority while fixed (0 front)
+void set_order(uint8_t obj, bool fixed, uint8_t order);
 ///@}
 
 } // namespace capsule::script::world

@@ -753,6 +753,22 @@
    "does": "C1: the battle (capsule/script/battle_port.h; Party / Rematch take the encounter record's sides); waits until it ends; var = its capsule::battle::Outcome",
    "module": "battle",
    "handler": "op_battle"
+  },
+  {
+   "id": 89,
+   "name": "Prop",
+   "kind": "generic",
+   "doc": "C2: place, turn or remove a prop (a sprite standing on a cell, no object).",
+   "bytes": "kind8 (PropOp), id8, [Place: sprite32 (asset key), operand x, operand y, elevation8, facing8], [Face: facing8]",
+   "does": "C2: world::place_prop() / face_prop() / remove_prop() (capsule/field/field.h props; gone at the next map)"
+  },
+  {
+   "id": 90,
+   "name": "ObjectOrder",
+   "kind": "generic",
+   "doc": "C2: fix an object's draw order among the sprites, or give it back to the world's rule.",
+   "bytes": "operand (object), fixed8 (1 fixed, 0 the world's rule), order8",
+   "does": "C2: world::set_order() (field::set_fixed_order(); the walker as player)"
   }
  ],
  "enums": [
@@ -1594,6 +1610,34 @@
    "count": {
     "name": "NUM_ENCOUNTER_FIELDS",
     "doc": "Number of encounter fields."
+   }
+  },
+  {
+   "name": "PropOp",
+   "type": "uint8_t",
+   "doc": [
+    "C2: Prop kinds."
+   ],
+   "values": [
+    {
+     "name": "Place",
+     "doc": "Place it (the same id again replaces it).",
+     "word": "place"
+    },
+    {
+     "name": "Face",
+     "doc": "Turn it.",
+     "word": "face"
+    },
+    {
+     "name": "Remove",
+     "doc": "Remove it.",
+     "word": "remove"
+    }
+   ],
+   "count": {
+    "name": "NUM_PROP_OPS",
+    "doc": "Number of kinds."
    }
   },
   {

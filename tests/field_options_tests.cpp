@@ -546,6 +546,64 @@ void spotter_group()
    g_spot_positions = map::kMaxSpotPositions;
 }
 
+/// C2: the pixels of one color on the composed screen.
+/// @param color  BGR555
+/// @return how many
+int count_color(uint16_t color)
+{
+   static uint16_t frame[hal::video::kScreenWidth * hal::video::kScreenHeight];
+   gfx::sprites::update();
+   hal::vram::flush();   // the queued uploads land first, as in system::update()
+   hal::soft::latch();
+   hal::soft::compose(frame);
+   int n = 0;
+   for (const uint16_t px : frame)
+   {
+      n += px == color ? 1 : 0;
+   }
+   return n;
+}
+
+/// C2: props: a crowd of one sprite takes one sprite slot (more props than the field has slots), each its own
+/// instance; turning, replacing and removing one; the next map drops them all.
+void props()
+{
+   constexpr int kCrowd = 24;   // more than the field's object slots
+   constexpr uint8_t kRow = 1;
+   constexpr uint8_t kLevel = 3;
+   constexpr int kSpotWidth = 8;   // the spot map's columns
+   field::SpotterGroup unused{};
+   form_group(map::kMaxSpotPositions, unused);   // a fresh spot map (any map would do)
+   const asset::Sprite* dot = asset::sprite(asset::key_v1("sprite:FIELD_OPTIONS_DOT"));
+   CHECK(dot != nullptr);
+   if (dot == nullptr)
+   {
+      return;
+   }
+   constexpr uint16_t kDotColor = 0x001F;   // the dot's red, BGR555
+   constexpr int kDotPixels = 64;           // its 8 x 8 square
+   field::update(field::Intent{});
+   const int before = count_color(kDotColor);   // the spotters' dots
+   bool all = true;
+   for (int i = 0; i < kCrowd; ++i)
+   {
+      all = field::place_prop(static_cast<uint8_t>(i), *dot, static_cast<int16_t>(i % kSpotWidth), kRow, kLevel,
+                              field::DIR_DOWN) && all;
+   }
+   CHECK(all);
+   field::update(field::Intent{});
+   // every column of the row shows a dot (the crowd's later props stand on the earlier ones' cells)
+   CHECK(count_color(kDotColor) == before + kSpotWidth * kDotPixels);
+   CHECK(gfx::sprites::instance_entry(0) != gfx::sprites::instance_entry(1));
+   CHECK(field::face_prop(1, field::DIR_LEFT) && !field::face_prop(kCrowd, field::DIR_LEFT));
+   CHECK(field::place_prop(1, *dot, 2, kRow, kLevel, field::DIR_UP));   // the same number: replaced
+   CHECK(field::remove_prop(1) && !field::remove_prop(1));
+   // the next map: none left, and the slot is free again
+   field::leave();
+   field::enter(world_ids::MAP_SPOT, 1, 4, field::DIR_RIGHT);
+   CHECK(!field::face_prop(0, field::DIR_UP) && !field::remove_prop(2));
+}
+
 /// Text box styles as data: the window's settings, its fonts and its frame from the asset; the build's language.
 void text_box_style()
 {
@@ -582,6 +640,7 @@ int main()
    removal_and_return();
    stopped_sight();
    spotter_group();
+   props();
    text_box_style();
    saved_entry();
    std::printf("field_options tests: %d checks, %d failures\n", g_checks, g_failures);
