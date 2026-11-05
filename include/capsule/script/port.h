@@ -311,6 +311,23 @@ void set_respawn(int32_t value);
 /// @param x     column (or the game's warp number)
 /// @param y     row
 void set_warp(WarpSlot slot, AssetKey map, int32_t x, int32_t y);
+
+/// C1b: the spotter group the field last formed (the spotters that saw the walker together, in approach order;
+/// encounter load reads it; the default: field::spotters()).
+/// @param objects  receives up to max local IDs
+/// @param scripts  receives their scripts (the objects' active pages')
+/// @param max      the arrays' size
+/// @return how many it wrote
+uint8_t spotters(uint8_t* objects, uint16_t* scripts, uint8_t max);
+
+/// C1b: walks an object up to the walker as a spotter does (encounter approach; the default: field::approach()).
+/// @param obj  local ID
+/// @return false when it cannot (no such object, or another walk-up runs): nothing to wait for
+bool approach(uint8_t obj);
+
+/// C1b: whether approach()'s walk-up still runs.
+/// @return true while it does (the default: field::approaching())
+bool approaching();
 ///@}
 
 } // namespace capsule::script::world

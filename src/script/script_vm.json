@@ -739,8 +739,8 @@
    "name": "Encounter",
    "kind": "generic",
    "doc": "The encounter record: its sides (parties), texts, beaten flags and where the script goes on (D-36 package 2 C1).",
-   "bytes": "kind8 (EncounterOp), then by kind: Set: side8, operand (party), operand (object), flag16 (or kEncounterNoFlag), parts8 (kEncounterHas... bits), the texts and script16s (after, then) the bits name, bits8 (kEncounter... mode bits), mode8 (the game's own number); Select: operand (side); Get: field8 (EncounterField), var16; Text: which8 (kEncounterHasIntro / Defeat / Cannot), flags8 (kMessage... bits, as MessageEx); Clear / Music / Mark / Continue / After: nothing",
-   "does": "C1: Clear empties the record; Set fills a side, remembers the instruction after it as the return point and, with a then-script, goes on there; Select picks the current side; Get reads the record into a variable; Text types the current side's text (waits until typed unless kMessageNoWait); Music plays the current party's encounter music (battle port); Mark sets the filled sides' beaten flags; Continue goes on at the return point (else ends); After goes on in the current side's after-script (without one, the next instruction)",
+   "bytes": "kind8 (EncounterOp), then by kind: Set: side8, operand (party), operand (object), flag16 (or kEncounterNoFlag), parts8 (kEncounterHas... bits), the texts and script16s (after, then) the bits name, bits8 (kEncounter... mode bits), mode8 (the game's own number); Select: operand (side); Get: field8 (EncounterField), var16; Text: which8 (kEncounterHasIntro / Defeat / Cannot), flags8 (kMessage... bits, as MessageEx); Next: var16 (or kNoVar); Clear / Music / Mark / Continue / After / Load / Approach: nothing",
+   "does": "C1: Clear empties the record; Set fills a side, remembers the instruction after it as the return point and, with a then-script, goes on there; Select picks the current side; Get reads the record into a variable; Text types the current side's text (waits until typed unless kMessageNoWait); Music plays the current party's encounter music (battle port); Mark sets the filled sides' beaten flags; Continue goes on at the return point (else ends); After goes on in the current side's after-script (without one, the next instruction); C1b: Load fills the sides from the field's spotter group (each spotter's script runs to its first Set); Approach walks the current side's object up to the walker (world::approach()) and waits; Next makes the next filled side current (var = 1), after the last side A (var = 0)",
    "module": "battle",
    "handler": "op_encounter"
   },
@@ -1494,7 +1494,7 @@
     },
     {
      "name": "Select",
-     "doc": "The current side (operand: 0 A, 1 B).",
+     "doc": "The current side (operand: kEncounterSideA / B / C).",
      "word": "select"
     },
     {
@@ -1526,6 +1526,21 @@
      "name": "After",
      "doc": "Go on in the current side's after-script (without one, the next statement runs).",
      "word": "after"
+    },
+    {
+     "name": "Load",
+     "doc": "C1b: empty the record and fill sides A, B, C from the field's spotter group (world::spotters()): each spotter's script runs, its object the spotter, until its first Set, which fills that spotter's side without its then-script.",
+     "word": "load"
+    },
+    {
+     "name": "Approach",
+     "doc": "C1b: the current side's object walks up to the walker (world::approach()); waits until it stands.",
+     "word": "approach"
+    },
+    {
+     "name": "Next",
+     "doc": "C1b: the next filled side becomes current (var = 1); after the last, side A (var = 0).",
+     "word": "next"
     }
    ],
    "count": {
@@ -1824,6 +1839,12 @@
      "doc": "C1: Encounter Set: the current side."
     },
     {
+     "name": "kEncounterSideC",
+     "type": "uint8_t",
+     "value": "3",
+     "doc": "C1b: Encounter Set / Select: side C (REF-14's third position; 2 is kEncounterSideCurrent)."
+    },
+    {
      "name": "kEncounterNoFlag",
      "type": "uint16_t",
      "value": "0xFFFF",
@@ -1979,6 +2000,13 @@
    "symbol": "poll_battle",
    "ops": [
     "Battle"
+   ]
+  },
+  {
+   "wait": "Approach",
+   "symbol": "poll_approach",
+   "ops": [
+    "Encounter"
    ]
   }
  ]

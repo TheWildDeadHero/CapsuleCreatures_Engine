@@ -14,6 +14,7 @@
 ///   cell, SetOpen / SetClosed draw it at once, door_busy() while one animates.
 /// - Override sets: map::set_override_set() on the shown map, and the set's flag or variable written when it
 ///   persists (so it is applied again when the field enters its map).
+/// - Spotter groups (C1b): the field's (field::spotters(), field::approach(), field::approaching()).
 /// - Weather, fades, metatiles, the respawn point, remembered warps, sound, marts and the busy state: nothing, and
 ///   nothing to wait for.
 #include "capsule/script/port.h"
@@ -168,6 +169,34 @@ CAPSULE_WEAK void set_warp(WarpSlot slot, AssetKey map, int32_t x, int32_t y)
    (void)map;
    (void)x;
    (void)y;
+}
+
+CAPSULE_WEAK uint8_t spotters(uint8_t* objects, uint16_t* scripts, uint8_t max)
+{
+   const field::SpotterGroup& group = field::spotters();
+   uint8_t n = 0;
+   for (uint8_t i = 0; i < group.count && n < max; ++i)
+   {
+      const field::Object* o = field::object(group.objects[i]);
+      if (o == nullptr || o->script == field::kNoScript)
+      {
+         continue;   // gone since the group formed
+      }
+      objects[n] = group.objects[i];
+      scripts[n] = o->script;
+      ++n;
+   }
+   return n;
+}
+
+CAPSULE_WEAK bool approach(uint8_t obj)
+{
+   return field::approach(obj);
+}
+
+CAPSULE_WEAK bool approaching()
+{
+   return field::approaching();
 }
 
 } // namespace capsule::script::world

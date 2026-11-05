@@ -36,6 +36,7 @@ add_executable(capsule_cell_interactions_tests
    src/field/doors.cpp
    src/field/field.cpp
    src/field/field_route_default.cpp
+   src/field/field_spot_default.cpp
    src/gfx/background.cpp
    src/gfx/palette.cpp
    src/gfx/sprites.cpp

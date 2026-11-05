@@ -2,7 +2,7 @@
  "schema": "capsule.world/1",
  "id": "field_options_world",
  "editor": {
-  "notes": "field options test fixture (tests/field_options_tests.cpp, tests/test_field_options_formats.py): an immediate trigger before a plain one on one cell, on_resume hiding an object before the objects spawn, an object walking onto a raised cell, a removable object that comes back when its flag clears, a spotter, script VM options (resume next frame, modulo random, wrapping u16 variables), session flags and variables. Simple shapes only."
+  "notes": "field options test fixture (tests/field_options_tests.cpp, tests/test_field_options_formats.py): an immediate trigger before a plain one on one cell, on_resume hiding an object before the objects spawn, an object walking onto a raised cell, a removable object that comes back when its flag clears, a spotter, a spotter group (C1b: the world's spotter script, a pair spotter, the positions that fit), script VM options (resume next frame, modulo random, wrapping u16 variables), session flags and variables. Simple shapes only."
  },
  "behaviors": [
   {
@@ -14,7 +14,8 @@
  },
  "maps": {
   "plain": "maps/plain.json",
-  "annex": "maps/annex.json"
+  "annex": "maps/annex.json",
+  "spot": "maps/spot.json"
  },
  "start": {
   "map": "plain",
@@ -22,5 +23,9 @@
   "y": 4,
   "facing": "right"
  },
- "scripts": "scripts/scripts.json"
+ "scripts": "scripts/scripts.json",
+ "spotters": {
+  "script": "group",
+  "positions": 3
+ }
 }

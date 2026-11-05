@@ -88,6 +88,12 @@ World (`capsule.world/1`):
     it must be set), "same_level": true (optional: the faced level must be
     the cell's), "after_actions": true (optional: tried only after the field
     actions had nothing)}] (capsule::map::Interaction).
+  - spotters (optional, C1b): spotter groups (REF-14): {"script": SCRIPT
+    (runs when spotters see the player together; its encounter load reads
+    them), "positions": 1-3 (optional, default 1: the positions a group fills,
+    a pair spotter two), "order": "nearest" (default) or "local" (local-ID
+    order)}. Without it each spotter walks up on its own and its own script
+    runs (capsule::map::World::spotter_script).
 
 Tileset (`capsule.tileset/2`):
   - sheets: 8x8-tile sources, each drawn from shapes ("size" + "shapes",
@@ -418,6 +424,13 @@ MAX_DOOR_BINDINGS = 255
 MAX_INTERACTIONS = 0xFFFF
 ## capsule::map::kAnyDirection, kAnyVehicle, kNoEventCondition.
 ANY_DIRECTION, ANY_VEHICLE, NO_CONDITION = 4, 0xFF, 0xFFFF
+## Spotter groups (C1b): the most positions (capsule::map::kMaxSpotPositions) and the default
+## (kDefaultSpotPositions).
+MAX_SPOT_POSITIONS, DEFAULT_SPOT_POSITIONS = 3, 1
+## The spotter orders' words, in capsule::map::SpotOrder order.
+SPOT_ORDERS = ("nearest", "local")
+## World's override set pointers (sets, cells, entries) before their count.
+OVERRIDE_POINTERS = 3
 ## capsule::map::kInteractSameLevel, kInteractAfterActions.
 INTERACT_SAME_LEVEL, INTERACT_AFTER_ACTIONS = 1, 2
 ## DoorBinding::x of a metatile binding (capsule::map::kDoorAnyCell).
@@ -461,7 +474,8 @@ KEYS = {
              "start",
              "map_groups", "battle", "encounter_methods", "encounter_conditions", "encounter_tables", "scripts",
              "step_hooks", "transition", "banner_styles", "locations", "object_kinds", "map_tags", "flight_points",
-             "darkness_levels", "draw_order", "doors", "interactions"},
+             "darkness_levels", "draw_order", "doors", "interactions", "spotters"},
+   "spotters": {"script", "positions", "order"},
    "interaction": {"behavior", "script", "facing", "vehicle", "flag", "same_level", "after_actions"},
    "draw_order": {"elevation_base", "bias", "row_pixels", "rows", "row_step", "add", "wrap"},
    "door_binding": {"tileset", "metatile", "door"},
@@ -2065,13 +2079,14 @@ def compile_world(path: str | Path, deps: list[Path] | None = None, sources: Sou
    draw_order = compile_draw_order(w)
    doors = compile_door_bindings(w, maps, world_events["events"])
    interactions = compile_interactions(w, by_name, classes, world_events["names"])
+   spotters = compile_spotters(w, world_events["names"])
    sets = resolve_override_sets(maps, world_events["names"])
    return {"behaviors": behs, "behavior_walls": walls, "classes": classes, "vehicles": vehicles,
            "elevations": elevations, "maps": maps,
            "start": start, "darkness_levels": darkness,
            "tilesets": tilesets, "encounters": encounters, "events": world_events,
            "map_names": list(map_paths), "locations": locations, "draw_order": draw_order, "doors": doors,
-           "override_sets": sets, "interactions": interactions,
+           "override_sets": sets, "interactions": interactions, "spotters": spotters,
            "target_saved": sum(ts.target_saved for ts in tilesets.values())}
 
 
@@ -2114,6 +2129,31 @@ def compile_interactions(w: Mapping[str, Any], behaviors: Mapping[str, int], cla
                   "vehicle": ANY_VEHICLE if vehicle is None else classes.index(vehicle), "flags": flags,
                   "where": f"{r['behavior']} -> {r['script']}"})
    return out
+
+
+def compile_spotters(w: Mapping[str, Any], names: Any) -> dict[str, Any] | None:
+   """!The world's "spotters" (C1b: spotter groups; see the module notes).
+   @param w      the world manifest
+   @param names  event_compiler.Names (the scripts' script names)
+   @return {"script", "positions", "order" (SPOT_ORDERS index)}, or None without spotter groups
+   """
+   if "spotters" not in w:
+      return None
+   sp = w["spotters"]
+   where = "world spotters"
+   check_keys(sp, "spotters", where)
+   positions = sp.get("positions", DEFAULT_SPOT_POSITIONS)
+   if isinstance(positions, bool) or not isinstance(positions, int) or \
+         not 1 <= positions <= MAX_SPOT_POSITIONS:
+      raise ManifestError(f"{where}: positions must be 1-{MAX_SPOT_POSITIONS}")
+   order = sp.get("order", SPOT_ORDERS[0])
+   if order not in SPOT_ORDERS:
+      raise ManifestError(f"{where}: order must be one of {', '.join(SPOT_ORDERS)}")
+   try:
+      script = names.script(sp.get("script"), where)
+   except evc.EventError as e:
+      raise ManifestError(str(e)) from None
+   return {"script": script, "positions": positions, "order": SPOT_ORDERS.index(order)}
 
 
 def resolve_override_sets(maps: Sequence[dict[str, Any]], names: Any) -> list[dict[str, Any]]:
@@ -2349,25 +2389,44 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
 
 
 def emit_world_ds1(L: list[str], world: Mapping[str, Any]) -> str:
-   """!The world's draw-order rule and override sets (arrays appended to L).
+   """!The World initializer's optional last fields: the draw-order rule, the override sets, the cell interaction
+   rules and (C1b) the spotter groups (arrays appended to L), as far as any is set (a world without the later ones
+   keeps the shorter initializer of before).
    @param L      the source lines
    @param world  compile_world() result
-   @return the World initializer's last fields (empty when the world has neither, so the initializer of before stays)
+   @return the World initializer's last fields (empty, or starting with ", ")
    """
+   # (value, its default), in World's order
+   fields: list[tuple[str, str]] = []
    rule = world.get("draw_order")
-   sets = world.get("override_sets", [])
-   rules = world.get("interactions", [])
-   if rule is None and not sets and not rules:
-      return ""
    draw = "nullptr"
    if rule is not None:
       draw = "&kDrawOrder"
       L.append(f"const DrawOrder kDrawOrder = {{{{{', '.join(str(v) for v in rule['base'])}}}, {rule['bias']}, "
                f"0x{rule['mask']:02X}, {rule['row_shift']}, {rule['rows']}, {rule['row_step']}, {rule['add']}, "
                "{0, 0}};")
-   tail = emit_world_interactions(L, rules)
+   fields.append((draw, "nullptr"))
+   fields += emit_world_override_sets(L, world.get("override_sets", []))
+   fields += emit_world_interactions(L, world.get("interactions", []))
+   spotters = world.get("spotters")
+   if spotters is not None:
+      order = f"SpotOrder::{SPOT_ORDERS[spotters['order']].capitalize()}"
+      fields += [(str(spotters["script"]), "kNoEventCondition"),
+                 (str(spotters["positions"]), str(DEFAULT_SPOT_POSITIONS)),
+                 (order, f"SpotOrder::{SPOT_ORDERS[0].capitalize()}")]
+   while fields and fields[-1][0] == fields[-1][1]:
+      fields.pop()
+   return "".join(f", {value}" for value, _ in fields)
+
+
+def emit_world_override_sets(L: list[str], sets: Sequence[Mapping[str, Any]]) -> list[tuple[str, str]]:
+   """!The world's cell override sets (arrays appended to L).
+   @param L     the source lines
+   @param sets  resolve_override_sets() result
+   @return World's override fields as (value, default)
+   """
    if not sets:
-      return f", {draw}" + (", nullptr, nullptr, nullptr, 0" + tail if tail else "")
+      return [("nullptr", "nullptr")] * OVERRIDE_POINTERS + [("0", "0")]
    cells, entries, rows = [], [], []
    for s in sets:
       rows.append(f"    {{{s['map']}, {len(cells)}, {len(s['cells'])}, {s['id']}, {s['value']}, "
@@ -2391,22 +2450,23 @@ def emit_world_ds1(L: list[str], world: Mapping[str, Any]) -> str:
       L.extend("    " + ", ".join(f"0x{v:04X}" for v in entries[k:k + HALFWORDS_PER_LINE]) + ","
                for k in range(0, len(entries), HALFWORDS_PER_LINE))
       L.append("};")
-   return f", {draw}, kOverrideSets, kOverrideCells, {entry_sym}, {len(sets)}{tail}"
+   return [("kOverrideSets", "nullptr"), ("kOverrideCells", "nullptr"), (entry_sym, "nullptr"),
+           (str(len(sets)), "0")]
 
 
-def emit_world_interactions(L: list[str], rules: Sequence[Mapping[str, Any]]) -> str:
+def emit_world_interactions(L: list[str], rules: Sequence[Mapping[str, Any]]) -> list[tuple[str, str]]:
    """!The world's cell interaction rules (an array appended to L).
    @param L      the source lines
    @param rules  compile_interactions() result
-   @return the World initializer's last two fields (empty without rules)
+   @return World's interaction fields as (value, default)
    """
    if not rules:
-      return ""
+      return [("nullptr", "nullptr"), ("0", "0")]
    L.append("const Interaction kInteractions[] = {")
    L.extend(f"    {{{r['script']}, 0x{r['flag']:04X}, {r['behavior']}, {r['facing']}, 0x{r['vehicle']:02X}, "
             f"{r['flags']}}},   // {r['where']}" for r in rules)
    L.append("};")
-   return f", kInteractions, {len(rules)}"
+   return [("kInteractions", "nullptr"), (str(len(rules)), "0")]
 
 
 def anim_flags_text(an: Mapping[str, Any]) -> str:
@@ -2479,7 +2539,8 @@ def world_usage(world: Mapping[str, Any]) -> dict[str, dict[str, int]]:
                "interaction": len(world.get("interactions", [])),
                "vehicle_class": len(world.get("vehicles", [])),
                "location": len(world.get("locations", {}).get("locations", [])) if world.get("locations") else 0,
-               "draw_order": 0 if world.get("draw_order") is None else 1}
+               "draw_order": 0 if world.get("draw_order") is None else 1,
+               "spotter_group": 0 if world.get("spotters") is None else 1}
    for name, n in features.items():
       if n:
          usage.count(used, "map.feature", name, n)

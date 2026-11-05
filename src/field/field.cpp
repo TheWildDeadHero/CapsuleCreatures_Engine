@@ -134,6 +134,9 @@ struct State
    bool locked;   ///< Objects do not move on their own (see release()).
    uint8_t approach;   ///< Spotter walking up to the walker, or kNoObject.
    uint8_t approach_timer;   ///< Frames before it starts walking.
+   bool approach_scripted;   ///< C1b: the approach is a script's (approach()): no request at its end; the script
+                             ///< holds the lock.
+   SpotterGroup group;   ///< C1b: the last spotter group (spotters()).
    uint8_t object_count;   ///< Objects of the shown map.
    uint8_t frame;   ///< Frame counter (speed 1 moves on odd frames).
    uint32_t state_seen;   ///< script::state_version() when pages were last chosen.
@@ -409,6 +412,18 @@ void request_object(uint8_t i, Source source)
    request(Request::Script, source, o.script, o.x, o.y);
    g.event.object = i;
    g.talked = i;
+}
+
+/// Ends a spotter's approach before it reached the walker (its object went). A field approach ends with no script,
+/// so nothing holds the lock any more; a script's approach (approach()) leaves the lock to the script.
+void drop_approach()
+{
+   if (!g.approach_scripted && g.event.what == Request::None)
+   {
+      g.locked = false;
+   }
+   g.approach = kNoObject;
+   g.approach_scripted = false;
 }
 
 /// Whether nothing else is going on, so an object's trigger may fire.
@@ -953,11 +968,7 @@ void apply_page(uint8_t i, uint8_t page)
    }
    if (!o.active && g.approach == i)
    {
-      g.approach = kNoObject;
-      if (g.event.what == Request::None)
-      {
-         g.locked = false;
-      }
+      drop_approach();
    }
    draw_object(i);
 }
@@ -1112,12 +1123,8 @@ void despawn(uint8_t i)
    o.moving = false;
    g_routes[i] = RouteRun{};
    if (g.approach == i)
-   {   // its approach ends with no script: nothing holds the lock
-      g.approach = kNoObject;
-      if (g.event.what == Request::None)
-      {
-         g.locked = false;
-      }
+   {
+      drop_approach();
    }
    draw_object(i);
    free_slot(i);
@@ -1521,13 +1528,14 @@ bool watches_runner(uint8_t i)
    const Object& o = g_objects[i];
    const map::ObjectTemplate& t = tmpl(i);
    const Walker& w = g.w;
-   if (t.sight == 0 || !w.running || w.motion != Motion::Walking)
+   const int sight = t.sight & map::kSightMask;
+   if (sight == 0 || !w.running || w.motion != Motion::Walking)
    {
       return false;
    }
    const int dx = w.x - o.x;
    const int dy = w.y - o.y;
-   return dx >= -t.sight && dx <= t.sight && dy >= -t.sight && dy <= t.sight;
+   return dx >= -sight && dx <= sight && dy >= -sight && dy <= sight;
 }
 
 /// The direction a watching object turns to: towards the walker on the longer axis (ties: the vertical one), then,
@@ -2007,50 +2015,78 @@ void update_objects()
    }
 }
 
-/// The first spotter that sees the standing walker (E-8): facing it in a
-/// line within its sight, with every cell in between passable and free.
+/// A spotter's sight in cells (map::ObjectTemplate::sight without its kSpotterPair bit).
+/// @param t  its template
+/// @return the cells
+constexpr int sight_of(const map::ObjectTemplate& t)
+{
+   return t.sight & map::kSightMask;
+}
+
+/// Whether a spotter sees the standing walker (E-8): facing it in a line within its sight, with every cell in
+/// between passable and free.
+/// @param m     the shown map
+/// @param i     local ID
+/// @param dist  receives the distance in cells when it does
+/// @return true when it does
+bool sees(const map::Map& m, uint8_t i, int& dist)
+{
+   const Walker& w = g.w;
+   const Object& o = g_objects[i];
+   const map::ObjectTemplate& t = m.objects[i];
+   const int sight = sight_of(t);
+   if (!o.active || o.moving || o.blind || sight == 0 || o.script == kNoScript)
+   {
+      return false;
+   }
+   if (t.until != map::kNoEventCondition && script::flag(script::FlagId{t.until}))
+   {
+      return false;
+   }
+   if (!map::levels_meet(o.elevation, w.elevation))
+   {
+      return false;
+   }
+   const int ddx = dx_of(o.facing);
+   const int ddy = dy_of(o.facing);
+   // The cheap test first: same row or column, ahead, within sight.
+   dist = ddx != 0 ? (w.x - o.x) * ddx : (w.y - o.y) * ddy;
+   if ((ddx != 0 ? w.y != o.y : w.x != o.x) || dist < 1 || dist > sight)
+   {
+      return false;
+   }
+   for (int k = 1; k < dist; ++k)
+   {
+      const int cx = o.x + ddx * k;
+      const int cy = o.y + ddy * k;
+      if (can_enter(m, cx, cy, o.elevation, 0) != Blocked::None || object_on(cx, cy, o.elevation, i) != kNoObject)
+      {
+         return false;
+      }
+   }
+   return true;
+}
+
+/// Whether spotters may see the walker at all (it walks through anything, or the map has no objects).
+/// @return true when they may
+bool can_spot()
+{
+   return !g.w.noclip && g.object_count > 0;
+}
+
+/// The first spotter that sees the standing walker, in local-ID order.
 /// @return its local ID, or kNoObject
 uint8_t spotter()
 {
-   const Walker& w = g.w;
-   if (w.noclip || g.object_count == 0)
+   if (!can_spot())
    {
       return kNoObject;
    }
    const map::Map& m = shown();
    for (uint8_t i = 0; i < g.object_count; ++i)
    {
-      const Object& o = g_objects[i];
-      const map::ObjectTemplate& t = m.objects[i];
-      if (!o.active || o.moving || o.blind || t.sight == 0 || o.script == kNoScript)
-      {
-         continue;
-      }
-      if (t.until != map::kNoEventCondition && script::flag(script::FlagId{t.until}))
-      {
-         continue;
-      }
-      if (!map::levels_meet(o.elevation, w.elevation))
-      {
-         continue;
-      }
-      const int ddx = dx_of(o.facing);
-      const int ddy = dy_of(o.facing);
-      // The cheap test first: same row or column, ahead, within sight.
-      const int dist = ddx != 0 ? (w.x - o.x) * ddx : (w.y - o.y) * ddy;
-      if ((ddx != 0 ? w.y != o.y : w.x != o.x) || dist < 1 || dist > t.sight)
-      {
-         continue;
-      }
-      bool clear = true;
-      for (int k = 1; k < dist && clear; ++k)
-      {
-         const int cx = o.x + ddx * k;
-         const int cy = o.y + ddy * k;
-         clear =
-            can_enter(m, cx, cy, o.elevation, 0) == Blocked::None && object_on(cx, cy, o.elevation, i) == kNoObject;
-      }
-      if (clear)
+      int dist = 0;
+      if (sees(m, i, dist))
       {
          return i;
       }
@@ -2058,7 +2094,77 @@ uint8_t spotter()
    return kNoObject;
 }
 
-/// Starts a spotter's approach when one sees the walker.
+/// Positions a spotter fills in a group: one,
+constexpr int kSinglePositions = 1;
+/// or two with map::kSpotterPair (a pair battle).
+constexpr int kPairPositions = 2;
+
+/// The positions a spotter group may fill now: the world's (1 to kMaxSpotPositions), at most the game's.
+/// @return them (0: no spotter may spot the walker)
+int group_positions()
+{
+   const int world = map::kWorld.spotter_positions;
+   const int limit = world < 1 ? 1 : world > map::kMaxSpotPositions ? map::kMaxSpotPositions : world;
+   const int game = game::spot_positions();
+   return game < limit ? game : limit;
+}
+
+/// C1b: the spotters that see the standing walker together (REF-14): taken in the world's order while their
+/// positions fit, the others left to spot the walker later.
+/// @param out  receives the group
+/// @return true when it has a spotter
+bool spot_group(SpotterGroup& out)
+{
+   out = SpotterGroup{};
+   if (!can_spot())
+   {
+      return false;
+   }
+   const map::Map& m = shown();
+   // Every spotter that sees the walker, by its order key (the distance, or none for local-ID order).
+   constexpr uint8_t kSeesNot = 0;   // seen[i]: does not see the walker; else its key + kSeesNot + 1
+   constexpr int kKeyBase = kSeesNot + 1;
+   uint8_t seen[map::kMaxObjectTemplates] = {};
+   const bool nearest = map::kWorld.spotter_order == map::SpotOrder::Nearest;
+   for (uint8_t i = 0; i < g.object_count; ++i)
+   {
+      int dist = 0;
+      if (sees(m, i, dist))
+      {
+         seen[i] = static_cast<uint8_t>((nearest ? dist : 0) + kKeyBase);
+      }
+   }
+   const int positions = group_positions();
+   int used = 0;
+   while (out.count < kMaxSpotters && used < positions)
+   {
+      // The next one by key (ties: the lower local ID)
+      uint8_t next = kNoObject;
+      for (uint8_t i = 0; i < g.object_count; ++i)
+      {
+         if (seen[i] != kSeesNot && (next == kNoObject || seen[i] < seen[next]))
+         {
+            next = i;
+         }
+      }
+      if (next == kNoObject)
+      {
+         break;
+      }
+      seen[next] = kSeesNot;
+      const int need = (m.objects[next].sight & map::kSpotterPair) != 0 ? kPairPositions : kSinglePositions;
+      if (used + need > positions)
+      {
+         continue;   // it does not fit: it spots the walker again later
+      }
+      used += need;
+      out.objects[out.count++] = next;
+   }
+   return out.count > 0;
+}
+
+/// Starts a spotter's approach when one sees the walker, or (C1b) requests the world's spotter script for the
+/// spotters that see it together.
 /// @return true when one did (the walker waits)
 bool check_sight()
 {
@@ -2066,6 +2172,20 @@ bool check_sight()
    {
       return false;
    }   // a script runs
+   const uint16_t group_script = map::kWorld.spotter_script;
+   if (group_script != map::kNoEventCondition)
+   {
+      SpotterGroup group{};
+      if (!spot_group(group))
+      {
+         return false;
+      }
+      g.group = group;
+      const Object& first = g_objects[group.objects[0]];
+      request(Request::Script, Source::Spotter, group_script, first.x, first.y);
+      g.event.object = group.objects[0];
+      return true;
+   }
    const uint8_t i = spotter();
    if (i == kNoObject)
    {
@@ -2073,11 +2193,13 @@ bool check_sight()
    }
    g.approach = i;
    g.approach_timer = kSpotFrames;
+   g.approach_scripted = false;
    g.locked = true;
    return true;
 }
 
-/// Advances a spotter's approach; requests its script once it stands next to the walker.
+/// Advances a spotter's approach; once it stands next to the walker, the walker turns to it and (a field approach)
+/// its script is requested.
 void update_approach()
 {
    if (g.approach == kNoObject)
@@ -2104,6 +2226,11 @@ void update_approach()
    turn(g.w.facing, g.w.options, opposite(o.facing));
    const uint8_t i = g.approach;
    g.approach = kNoObject;
+   if (g.approach_scripted)
+   {
+      g.approach_scripted = false;   // the script that asked goes on
+      return;
+   }
    request(Request::Script, Source::Spotter, o.script, o.x, o.y);
    g.event.object = i;
 }
@@ -3197,11 +3324,12 @@ void place(int x, int y, uint8_t facing)
    g.routed = false;
    g.walker_steps = 0;
    g_routes[kWalkerRoute] = RouteRun{};
-   if (g.approach != kNoObject)
+   if (g.approach != kNoObject && !g.approach_scripted)
    {
       g.locked = false;
-   }   // the approach (and its lock) ends
+   }   // a field approach (and its lock) ends; a script's lock stays the script's
    g.approach = kNoObject;
+   g.approach_scripted = false;
    g.w.x = static_cast<int16_t>(x);
    g.w.y = static_cast<int16_t>(y);
    g.from_x = g.w.x;
@@ -3675,6 +3803,8 @@ void spawn_objects()
    ENGINE_ASSERT(g.object_count <= map::kMaxObjectTemplates);
    ENGINE_ASSERT(m == nullptr || map::spawns_by_view(*m) || g.object_count <= map::kMaxObjects);
    g.approach = kNoObject;
+   g.approach_scripted = false;
+   g.group = SpotterGroup{};   // C1b: the old map's group is gone
    g.talked = kNoObject;
    g.state_seen = script::state_version();
    g.slots_used = g.effect_slots;   // N2: slots claimed for effects (by the map's load scripts) stay theirs
@@ -3750,6 +3880,28 @@ void show_object(uint8_t local, bool on)
       return;
    }
    despawn(local);
+}
+
+const SpotterGroup& spotters()
+{
+   return g.group;
+}
+
+bool approach(uint8_t local)
+{
+   if (local >= g.object_count || !g_objects[local].active || g.approach != kNoObject)
+   {
+      return false;
+   }
+   g.approach = local;
+   g.approach_timer = kSpotFrames;
+   g.approach_scripted = true;
+   return true;
+}
+
+bool approaching()
+{
+   return g.approach != kNoObject;
 }
 
 void stop_sight(uint8_t local)
@@ -4063,7 +4215,7 @@ void lock()
 
 void release()
 {
-   if (g.event.what != Request::None || g.approach != kNoObject)
+   if (g.event.what != Request::None || (g.approach != kNoObject && !g.approach_scripted))
    {
       return;
    }   // another script is on its way

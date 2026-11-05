@@ -475,7 +475,7 @@ struct ObjectTemplate
    uint8_t facing;   ///< field::Direction.
    Movement movement;   ///< How it moves.
    uint8_t range;   ///< Wander / pace range: x | y << 4 (cells each way, 0-7).
-   uint8_t sight;   ///< Spotter sight in cells (0: not a spotter).
+   uint8_t sight;   ///< Spotter sight in cells (kSightMask bits; 0: not a spotter) | kSpotterPair.
    uint8_t page_count;   ///< Pages (0-255).
    Trigger trigger;   ///< What starts its script.
    uint8_t motion;   ///< Speed (1-4) | frequency (1-5) << 4.
@@ -485,6 +485,28 @@ struct ObjectTemplate
    uint8_t movement_flags;   ///< I3: the movement's flags (see "Movement arguments").
 };
 CAPSULE_POD(ObjectTemplate, 32);
+
+/// @name ObjectTemplate::sight bits (C1b)
+///@{
+inline constexpr uint8_t kSightMask = 0x7F;     ///< The sight in cells.
+inline constexpr uint8_t kSpotterPair = 0x80;   ///< The spotter fills two positions of a spotter group (a pair battle).
+///@}
+
+/// @name Spotter groups (C1b, REF-14: World::spotter_script)
+///@{
+
+/// The order in which a group's spotters approach (World::spotter_order).
+enum class SpotOrder : uint8_t
+{
+   Nearest,   ///< The nearest first (ties: local-ID order).
+   Local,     ///< Local-ID order (the reference games' object order).
+};
+
+/// The most positions a spotter group fills (REF-14's max_simultaneous_trainers).
+inline constexpr uint8_t kMaxSpotPositions = 3;
+/// The positions of a world that does not name them.
+inline constexpr uint8_t kDefaultSpotPositions = 1;
+///@}
 
 /// ObjectTemplate::kind of an object without a kind (F2).
 inline constexpr uint8_t kNoObjectKind = 0;
@@ -859,6 +881,11 @@ struct World
    uint16_t override_set_count = 0;   ///< DS1: override sets.
    const Interaction* interactions = nullptr;   ///< C13b: the cell interaction rules, or nullptr.
    uint16_t interaction_count = 0;   ///< C13b: rules.
+   /// C1b: the script spotters that see the walker together run (a spotter group: field::spotters()), or
+   /// kNoEventCondition: each spotter walks up on its own and its own script runs.
+   uint16_t spotter_script = kNoEventCondition;
+   uint8_t spotter_positions = kDefaultSpotPositions;   ///< C1b: positions a group fills (1 to kMaxSpotPositions).
+   SpotOrder spotter_order = SpotOrder::Nearest;        ///< C1b: the order a group's spotters approach in.
 };
 
 /// The build's world, generated at build time.

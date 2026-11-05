@@ -78,6 +78,7 @@ enum class Wait : uint8_t
    Mart,          ///< I4: a mart list.
    State,         ///< I4: the game is busy (game::state_busy()).
    Battle,        ///< C1: a battle through the battle port.
+   Approach,      ///< C1b: a spotter's walk-up (encounter approach).
    NUM_WAITS      ///< Number of waits.
 };
 

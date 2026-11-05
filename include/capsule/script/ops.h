@@ -88,7 +88,7 @@
 /// | CallLoose | id16 | I4: calls a script that may recurse; with the stack full (Bank::stack_depth) it goes on as a Jump, as the imported game's own VM does |
 /// | WaitState | — | I4: waits while the game is busy (game::state_busy(): a special the game runs over frames) |
 /// | Override | apply8 (1 apply, 0 clear), set16 | DS1: a cell override set of the world (index into map::kWorld.override_sets; world::override_set()) |
-/// | Encounter | kind8 (EncounterOp), then by kind: Set: side8, operand (party), operand (object), flag16 (or kEncounterNoFlag), parts8 (kEncounterHas... bits), the texts and script16s (after, then) the bits name, bits8 (kEncounter... mode bits), mode8 (the game's own number); Select: operand (side); Get: field8 (EncounterField), var16; Text: which8 (kEncounterHasIntro / Defeat / Cannot), flags8 (kMessage... bits, as MessageEx); Clear / Music / Mark / Continue / After: nothing | C1: Clear empties the record; Set fills a side, remembers the instruction after it as the return point and, with a then-script, goes on there; Select picks the current side; Get reads the record into a variable; Text types the current side's text (waits until typed unless kMessageNoWait); Music plays the current party's encounter music (battle port); Mark sets the filled sides' beaten flags; Continue goes on at the return point (else ends); After goes on in the current side's after-script (without one, the next instruction) |
+/// | Encounter | kind8 (EncounterOp), then by kind: Set: side8, operand (party), operand (object), flag16 (or kEncounterNoFlag), parts8 (kEncounterHas... bits), the texts and script16s (after, then) the bits name, bits8 (kEncounter... mode bits), mode8 (the game's own number); Select: operand (side); Get: field8 (EncounterField), var16; Text: which8 (kEncounterHasIntro / Defeat / Cannot), flags8 (kMessage... bits, as MessageEx); Next: var16 (or kNoVar); Clear / Music / Mark / Continue / After / Load / Approach: nothing | C1: Clear empties the record; Set fills a side, remembers the instruction after it as the return point and, with a then-script, goes on there; Select picks the current side; Get reads the record into a variable; Text types the current side's text (waits until typed unless kMessageNoWait); Music plays the current party's encounter music (battle port); Mark sets the filled sides' beaten flags; Continue goes on at the return point (else ends); After goes on in the current side's after-script (without one, the next instruction); C1b: Load fills the sides from the field's spotter group (each spotter's script runs to its first Set); Approach walks the current side's object up to the walker (world::approach()) and waits; Next makes the next filled side current (var = 1), after the last side A (var = 0) |
 /// | Battle | kind8 (BattleKind), [Unowned: operand species, operand level, operand item], [Scripted: operand number], var16 (or kNoVar) | C1: the battle (capsule/script/battle_port.h; Party / Rematch take the encounter record's sides); waits until it ends; var = its capsule::battle::Outcome |
 #pragma once
 
@@ -401,13 +401,16 @@ enum class EncounterOp : uint8_t
 {
    Clear,   ///< Empty the record (both sides, the mode bits, the return point).
    Set,   ///< Fill a side: party, object, beaten flag, texts, after-script, mode bits, the game's mode number; the return point; then go on in its then-script.
-   Select,   ///< The current side (operand: 0 A, 1 B).
+   Select,   ///< The current side (operand: kEncounterSideA / B / C).
    Get,   ///< var = a field of the record (EncounterField).
    Text,   ///< Type one of the current side's texts (waits until typed unless kMessageNoWait).
    Music,   ///< The current party's encounter music (none with kEncounterNoMusic).
    Mark,   ///< Set the filled sides' beaten flags.
    Continue,   ///< Go on at the return point (end the script without one).
    After,   ///< Go on in the current side's after-script (without one, the next statement runs).
+   Load,   ///< C1b: empty the record and fill sides A, B, C from the field's spotter group (world::spotters()): each spotter's script runs, its object the spotter, until its first Set, which fills that spotter's side without its then-script.
+   Approach,   ///< C1b: the current side's object walks up to the walker (world::approach()); waits until it stands.
+   Next,   ///< C1b: the next filled side becomes current (var = 1); after the last, side A (var = 0).
    NUM_ENCOUNTER_OPS   ///< Number of encounter op kinds.
 };
 
@@ -472,6 +475,7 @@ inline constexpr uint8_t kFaceEncounter = 7;   ///< C1: ObjectFace: towards the 
 inline constexpr uint8_t kEncounterSideA = 0;   ///< C1: Encounter Set: side A.
 inline constexpr uint8_t kEncounterSideB = 1;   ///< C1: Encounter Set: side B.
 inline constexpr uint8_t kEncounterSideCurrent = 2;   ///< C1: Encounter Set: the current side.
+inline constexpr uint8_t kEncounterSideC = 3;   ///< C1b: Encounter Set / Select: side C (REF-14's third position; 2 is kEncounterSideCurrent).
 inline constexpr uint16_t kEncounterNoFlag = 0xFFFF;   ///< C1: Encounter Set: no beaten flag.
 inline constexpr uint8_t kEncounterHasIntro = 1;   ///< C1: Encounter Set parts / Text: the intro text.
 inline constexpr uint8_t kEncounterHasDefeat = 2;   ///< C1: Encounter Set parts / Text: the defeat text.

@@ -34,6 +34,7 @@ struct Request
    uint8_t bits;      ///< Party / Rematch: the encounter record's mode bits (kEncounterPair ...).
    Side a;            ///< Party / Rematch: side A.
    Side b;            ///< Party / Rematch: side B (two parties when it has one).
+   Side c;            ///< Party / Rematch: side C (C1b: a spotter group's third position).
    int32_t species;   ///< Unowned: the species.
    int32_t level;     ///< Unowned: the level.
    int32_t item;      ///< Unowned: the held item (0: none).
@@ -62,12 +63,12 @@ int32_t encounter_music(uint16_t party);
 ///@{
 
 /// A side of the encounter record.
-/// @param side  kEncounterSideA or kEncounterSideB
+/// @param side  kEncounterSideA, kEncounterSideB or kEncounterSideC
 /// @return its party and object
 Side encounter_side(uint8_t side);
 
 /// The encounter record's current side.
-/// @return kEncounterSideA or kEncounterSideB
+/// @return kEncounterSideA, kEncounterSideB or kEncounterSideC
 uint8_t encounter_current_side();
 
 /// The encounter record's mode bits.

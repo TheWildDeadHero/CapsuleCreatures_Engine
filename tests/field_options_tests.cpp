@@ -6,7 +6,8 @@
 /// trigger still checked), on_resume before the objects spawn, an object's level after each step, a removed object
 /// that comes back once its flag clears, a spotter that stops spotting, and a text box style (asset::TextBox) with
 /// the fonts its Font control selects; text tables of two languages (the build took "en"). A saved game's
-/// map entry (field::enter_saved(): on_load only, the game's view and object hooks, on_return).
+/// map entry (field::enter_saved(): on_load only, the game's view and object hooks, on_return). C1b: a spotter
+/// group (the world's spotter script; the spotters that fit the positions, nearest first; walked up by the script).
 #include "capsule/asset/asset.h"
 #include "capsule/core/assert.h"
 #include "capsule/core/random.h"
@@ -190,6 +191,21 @@ uint16_t capsule::field::game::step_hook(uint16_t hook)
 namespace
 {
 
+/// C1b: the positions field::game::spot_positions() reports (the test sets it).
+uint8_t g_spot_positions = capsule::map::kMaxSpotPositions;
+
+} // namespace
+
+/// C1b: the test's limit of a spotter group's positions.
+/// @return g_spot_positions
+uint8_t capsule::field::game::spot_positions()
+{
+   return g_spot_positions;
+}
+
+namespace
+{
+
 using namespace capsule;
 using namespace script_ids;
 
@@ -219,6 +235,10 @@ constexpr uint8_t kRaised = 3;    ///< The level of plain's raised cell (3, 2).
 constexpr int32_t kU16Top = 65535;   ///< A u16 variable's highest value.
 constexpr uint32_t kRollBound = 10;  ///< rolls: random(10).
 constexpr uint8_t kSmallTop = 9;     ///< The narrow variable's highest value.
+constexpr uint8_t kNear = 0;         ///< C1b: spot's spotters: three cells right of the walker's cell (2, 4),
+constexpr uint8_t kPair = 1;         ///< three cells below it (a pair spotter),
+constexpr uint8_t kFar = 2;          ///< and four cells above it.
+constexpr int kSpotFramesMore = 240; ///< C1b: frames enough for a script's two walk-ups.
 
 /// Fresh video and scripts, plain entered with the walker at a cell.
 /// @param x       column
@@ -466,6 +486,66 @@ void stopped_sight()
    CHECK(field::has_event());   // the spotter's approach and request
 }
 
+/// C1b: the spot map's group at (2, 4) for a positions limit: the spotters' local IDs in approach order.
+/// @param positions  the game's limit
+/// @param out        receives the group
+void form_group(uint8_t positions, field::SpotterGroup& out)
+{
+   g_spot_positions = positions;
+   hal::soft::reset();
+   hal::vram::reset();
+   gfx::palette::reset();
+   gfx::sprites::reset();
+   script::clear_all();
+   field::leave();
+   field::enter(world_ids::MAP_SPOT, 1, 4, field::DIR_RIGHT);
+   walk(field::DIR_RIGHT);
+   out = field::spotters();
+}
+
+/// C1b: a spotter group: the world's spotter script is requested at once for the spotters that fit (nearest first,
+/// a pair spotter two positions, the others left for later); the script loads their sides, walks each up and marks
+/// them beaten; the one left out spots the walker after the script.
+void spotter_group()
+{
+   field::SpotterGroup g{};
+   form_group(map::kMaxSpotPositions, g);
+   CHECK(g.count == 2 && g.objects[0] == kNear && g.objects[1] == kPair);
+   field::FieldEvent e{};
+   CHECK(field::take_event(&e) && e.source == field::Source::Spotter && e.object == kNear &&
+         e.script == static_cast<uint16_t>(SCRIPT_GROUP) && field::locked());
+   CHECK(!field::object(kNear)->moving && !field::approaching());   // the field walks no one up itself
+   form_group(2, g);   // the pair spotter does not fit: the farther single one comes
+   CHECK(g.count == 2 && g.objects[0] == kNear && g.objects[1] == kFar);
+   form_group(1, g);
+   CHECK(g.count == 1 && g.objects[0] == kNear);
+   form_group(0, g);
+   CHECK(g.count == 0 && !field::has_event() && !field::locked());
+
+   // The script: loads both sides, walks each up (the walker turns to it), one battle, their flags
+   form_group(map::kMaxSpotPositions, g);
+   CHECK(field::take_event(&e));
+   script::Context c;
+   script::start(c, script::ScriptId{e.script}, e.object);
+   for (int i = 0; i < kSpotFramesMore && script::running(c); ++i)
+   {
+      field::update(field::Intent{});
+      script::update(c);
+   }
+   CHECK(!script::running(c) && script::var(VAR_SIDES) == 2 && script::var(VAR_MORE) == 0);
+   CHECK(field::object(kNear)->x == 3 && field::object(kPair)->y == 5 && field::object(kFar)->y == 0);
+   CHECK(field::walker().facing == field::DIR_DOWN && !field::approaching());
+   CHECK(script::flag(FLAG_NEAR_BEATEN) && script::flag(FLAG_PAIR_BEATEN) && !script::flag(FLAG_FAR_BEATEN));
+   // Released, the one left out spots the walker (alone now)
+   field::release();
+   for (int i = 0; i < kStepFrames && !field::has_event(); ++i)
+   {
+      field::update(field::Intent{});
+   }
+   CHECK(field::take_event(&e) && e.object == kFar && field::spotters().count == 1);
+   g_spot_positions = map::kMaxSpotPositions;
+}
+
 /// Text box styles as data: the window's settings, its fonts and its frame from the asset; the build's language.
 void text_box_style()
 {
@@ -501,6 +581,7 @@ int main()
    object_levels();
    removal_and_return();
    stopped_sight();
+   spotter_group();
    text_box_style();
    saved_entry();
    std::printf("field_options tests: %d checks, %d failures\n", g_checks, g_failures);

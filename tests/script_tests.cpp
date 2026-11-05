@@ -187,6 +187,8 @@ struct World
    bool missing;      ///< Object 9 does not exist.
    bool blocked;      ///< path_clear() says a step is blocked.
    uint32_t self;     ///< Self switches (bit obj * 4 + letter).
+   int group;         ///< C1b: spotters in the group world::spotters() reports (kGroup's first ones).
+   int approach;      ///< C1b: frames the current walk-up keeps going.
 };
 World g_world{};   ///< The test world.
 
@@ -595,6 +597,40 @@ void set_warp(WarpSlot slot, AssetKey map, int32_t x, int32_t y)
    std::snprintf(b, sizeof b, "setwarp %u %08X %d %d;", static_cast<unsigned>(slot), static_cast<unsigned>(map),
                  static_cast<int>(x), static_cast<int>(y));
    log(b);
+}
+/// C1b: the test's spotter group: objects 7, 4 and 5 with scripts spotter_one, spotter_none, spotter_two.
+/// @param objects  receives the local IDs
+/// @param scripts  receives their scripts
+/// @param max      the arrays' size
+/// @return g_world.group of them
+uint8_t spotters(uint8_t* objects, uint16_t* scripts, uint8_t max)
+{
+   constexpr uint8_t kObjects[] = {7, 4, 5};
+   const uint16_t kScripts[] = {raw(SCRIPT_SPOTTER_ONE), raw(SCRIPT_SPOTTER_NONE), raw(SCRIPT_SPOTTER_TWO)};
+   uint8_t n = 0;
+   for (; n < g_world.group && n < max && n < sizeof kObjects; ++n)
+   {
+      objects[n] = kObjects[n];
+      scripts[n] = kScripts[n];
+   }
+   return n;
+}
+/// C1b: records a walk-up of two frames.
+/// @param obj  local ID
+/// @return true
+bool approach(uint8_t obj)
+{
+   char b[24];
+   std::snprintf(b, sizeof b, "approach %u;", static_cast<unsigned>(obj));
+   log(b);
+   g_world.approach = 2;
+   return true;
+}
+/// C1b: counts down the walk-up.
+/// @return true while it walks
+bool approaching()
+{
+   return g_world.approach-- > 0;
 }
 /// Records an override set's apply or clear.
 /// @param set    the set
@@ -1634,6 +1670,41 @@ void test_encounter()
    CHECK(bp::g_battle_last.number == 3);
 }
 
+/// C1b: a spotter group: Load fills a side per spotter whose script reaches a Set (its object the spotter, no
+/// then-script, the statements before the Set run), Approach walks each up, Next steps through the filled sides
+/// and back to A; the battle takes both; a later Set of side A starts a new encounter.
+void test_spotter_group()
+{
+   namespace bp = script::battles;
+   script::clear_all();
+   g_world = World{};
+   g_world.group = 3;
+   bp::g_battle_starts = 0;
+   script::Context c{};
+   script::start(c, SCRIPT_SPOT_GROUP, 7);
+   run(c);
+   CHECK(script::var(VAR_V8) == 2 && script::var(VAR_V16) == 4 && script::var(VAR_BAG_OK) == 1);
+   CHECK(script::var(VAR_OUT) == 0);   // no then-script and no statement after a Set ran
+   CHECK(std::strcmp(g_world.log, "approach 7;approach 5;") == 0);
+   CHECK(std::strcmp(g_port.last, "Two!") == 0);
+   CHECK(bp::g_battle_starts == 1 && bp::g_battle_last.kind == script::BattleKind::Party);
+   CHECK(bp::g_battle_last.a.party == 21 && bp::g_battle_last.a.object == 7);
+   CHECK(bp::g_battle_last.b.party == 22 && bp::g_battle_last.b.object == 5);
+   CHECK(bp::g_battle_last.c.party == bp::kNoParty);
+   CHECK(bp::g_battle_last.bits == 0);
+   CHECK(script::var(VAR_ANSWER) == 0 && bp::encounter_current_side() == script::kEncounterSideA);
+   CHECK(bp::encounter_mode() == 2);   // side A's mode
+   // A new encounter on side A: side B of the group goes
+   script::start(c, SCRIPT_SPOT_SINGLE, 6);
+   run(c);
+   CHECK(bp::g_battle_starts == 2 && bp::g_battle_last.a.party == 30 && bp::g_battle_last.b.party == bp::kNoParty);
+   // An empty group loads nothing: the battle has no side
+   g_world.group = 0;
+   script::start(c, SCRIPT_SPOT_GROUP, 7);
+   run(c);
+   CHECK(script::var(VAR_V8) == 0 && bp::g_battle_last.a.party == bp::kNoParty);
+}
+
 /// F1: the timed field effects of tests/data/battle_stats3 (ward by steps, refused while it runs;
 /// glow by minutes, added up, not saved; lure by steps, started over): their implicit variables and expiry scripts,
 /// the statements, the stack rules, steps, minutes and the expiry reports.
@@ -1783,6 +1854,7 @@ int main()
    test_transform();
    test_combine();
    test_encounter();
+   test_spotter_group();
    test_field_effects();
    test_f2();
    test_paged_menu();

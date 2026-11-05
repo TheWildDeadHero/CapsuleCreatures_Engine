@@ -1136,6 +1136,15 @@ RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RE
                          for name, why in {"test_script.cpp": ENCOUNTER_TEXT_FLAGS,
                                            "sandbox_map/scripts.cpp": ENCOUNTER_TEXT_FLAGS}.items()})
 
+## Why the script outputs changed for spotter groups (C1b: encounter load / approach / next, side C).
+SPOTTER_GROUP_CHANGES = {"test_script.cpp": ("The spotter group test scripts spot_group, spot_approach, spot_after, "
+                                             "spotter_one, spotter_none, spotter_two and spot_single"),
+                         "test_script_ids.h": ("SCRIPT_SPOT_GROUP, SCRIPT_SPOT_APPROACH, SCRIPT_SPOT_AFTER, "
+                                               "SCRIPT_SPOTTER_ONE, SCRIPT_SPOTTER_NONE, SCRIPT_SPOTTER_TWO, "
+                                               "SCRIPT_SPOT_SINGLE (SCRIPT_LONE_BATTLE and later ids move up)")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in SPOTTER_GROUP_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"
