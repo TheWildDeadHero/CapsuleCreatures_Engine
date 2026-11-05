@@ -424,9 +424,10 @@ MAX_DOOR_BINDINGS = 255
 MAX_INTERACTIONS = 0xFFFF
 ## capsule::map::kAnyDirection, kAnyVehicle, kNoEventCondition.
 ANY_DIRECTION, ANY_VEHICLE, NO_CONDITION = 4, 0xFF, 0xFFFF
-## Spotter groups (C1b): the most positions (capsule::map::kMaxSpotPositions), the default
-## (kDefaultSpotPositions) and the orders' words in capsule::map::SpotOrder order.
+## Spotter groups (C1b): the most positions (capsule::map::kMaxSpotPositions) and the default
+## (kDefaultSpotPositions).
 MAX_SPOT_POSITIONS, DEFAULT_SPOT_POSITIONS = 3, 1
+## The spotter orders' words, in capsule::map::SpotOrder order.
 SPOT_ORDERS = ("nearest", "local")
 ## World's override set pointers (sets, cells, entries) before their count.
 OVERRIDE_POINTERS = 3

@@ -2094,8 +2094,9 @@ uint8_t spotter()
    return kNoObject;
 }
 
-/// Positions a spotter fills in a group: one, or two with map::kSpotterPair (a pair battle).
+/// Positions a spotter fills in a group: one,
 constexpr int kSinglePositions = 1;
+/// or two with map::kSpotterPair (a pair battle).
 constexpr int kPairPositions = 2;
 
 /// The positions a spotter group may fill now: the world's (1 to kMaxSpotPositions), at most the game's.
