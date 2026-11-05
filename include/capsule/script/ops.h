@@ -90,6 +90,8 @@
 /// | Override | apply8 (1 apply, 0 clear), set16 | DS1: a cell override set of the world (index into map::kWorld.override_sets; world::override_set()) |
 /// | Encounter | kind8 (EncounterOp), then by kind: Set: side8, operand (party), operand (object), flag16 (or kEncounterNoFlag), parts8 (kEncounterHas... bits), the texts and script16s (after, then) the bits name, bits8 (kEncounter... mode bits), mode8 (the game's own number); Select: operand (side); Get: field8 (EncounterField), var16; Text: which8 (kEncounterHasIntro / Defeat / Cannot), flags8 (kMessage... bits, as MessageEx); Next: var16 (or kNoVar); Clear / Music / Mark / Continue / After / Load / Approach: nothing | C1: Clear empties the record; Set fills a side, remembers the instruction after it as the return point and, with a then-script, goes on there; Select picks the current side; Get reads the record into a variable; Text types the current side's text (waits until typed unless kMessageNoWait); Music plays the current party's encounter music (battle port); Mark sets the filled sides' beaten flags; Continue goes on at the return point (else ends); After goes on in the current side's after-script (without one, the next instruction); C1b: Load fills the sides from the field's spotter group (each spotter's script runs to its first Set); Approach walks the current side's object up to the walker (world::approach()) and waits; Next makes the next filled side current (var = 1), after the last side A (var = 0) |
 /// | Battle | kind8 (BattleKind), [Unowned: operand species, operand level, operand item], [Scripted: operand number], var16 (or kNoVar) | C1: the battle (capsule/script/battle_port.h; Party / Rematch take the encounter record's sides); waits until it ends; var = its capsule::battle::Outcome |
+/// | Prop | kind8 (PropOp), id8, [Place: sprite32 (asset key), operand x, operand y, elevation8, facing8], [Face: facing8] | C2: world::place_prop() / face_prop() / remove_prop() (capsule/field/field.h props; gone at the next map) |
+/// | ObjectOrder | operand (object), fixed8 (1 fixed, 0 the world's rule), order8 | C2: world::set_order() (field::set_fixed_order(); the walker as player) |
 #pragma once
 
 #include <cstdint>
@@ -190,6 +192,8 @@ enum class Op : uint8_t
    Override,   ///< DS1: apply or clear a cell override set.
    Encounter,   ///< The encounter record: its sides (parties), texts, beaten flags and where the script goes on (D-36 package 2 C1).
    Battle,   ///< Start a battle through the game's battle port and wait for its outcome (D-36 package 2 C1).
+   Prop,   ///< C2: place, turn or remove a prop (a sprite standing on a cell, no object).
+   ObjectOrder,   ///< C2: fix an object's draw order among the sprites, or give it back to the world's rule.
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -425,6 +429,15 @@ enum class EncounterField : uint8_t
    Sides,   ///< How many sides are filled.
    Mode,   ///< The game's mode number (the last Set's `mode`).
    NUM_ENCOUNTER_FIELDS   ///< Number of encounter fields.
+};
+
+/// C2: Prop kinds.
+enum class PropOp : uint8_t
+{
+   Place,   ///< Place it (the same id again replaces it).
+   Face,   ///< Turn it.
+   Remove,   ///< Remove it.
+   NUM_PROP_OPS   ///< Number of kinds.
 };
 
 /// Battle op kinds (C1; capsule/script/battle_port.h; tools/script_compiler.py BATTLE_KINDS).

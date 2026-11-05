@@ -429,6 +429,39 @@ void show_object(uint8_t local, bool on);
 /// @param local  local ID
 void stop_sight(uint8_t local);
 
+/// @name Props (C2)
+/// A prop is a sprite standing on a cell with a facing and a level: it never blocks, moves or runs a script, and is
+/// drawn as a standing object (centred on its cell, its draw order from the world's rule for its level). Each distinct
+/// sprite takes one claimed sprite slot (claim_sprite_slot()) holding its standing frames; every prop of it is a
+/// gfx::sprites instance, so a crowd of a few sprites fits. Props go at the next map (enter(), shift_map()); none is
+/// saved.
+///@{
+
+/// The most props at once.
+inline constexpr int kMaxProps = gfx::sprites::kInstances;
+
+/// Places a prop (the same id again replaces it).
+/// @param id         the caller's number for it
+/// @param sprite     its sprite
+/// @param x          its cell's column
+/// @param y          row
+/// @param elevation  its level
+/// @param facing     DIR_*
+/// @return false when it could not be drawn (no sprite slot or instance free, or kMaxProps placed): it is not placed
+bool place_prop(uint8_t id, const asset::Sprite& sprite, int16_t x, int16_t y, uint8_t elevation, uint8_t facing);
+
+/// Turns a prop.
+/// @param id      its number
+/// @param facing  DIR_*
+/// @return false without such a prop
+bool face_prop(uint8_t id, uint8_t facing);
+
+/// Removes a prop.
+/// @param id  its number
+/// @return false without such a prop
+bool remove_prop(uint8_t id);
+///@}
+
 /// C1b: the most spotters one group holds (one position each at least).
 inline constexpr int kMaxSpotters = map::kMaxSpotPositions;
 

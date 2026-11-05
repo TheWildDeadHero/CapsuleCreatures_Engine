@@ -23,6 +23,7 @@ add_executable(capsule_map_view_tests
    src/field/field_game_default.cpp
    src/field/field_route_default.cpp
    src/field/field_spot_default.cpp
+   src/field/field_props.cpp
    src/gfx/background.cpp
    src/gfx/palette.cpp
    src/gfx/sprites.cpp

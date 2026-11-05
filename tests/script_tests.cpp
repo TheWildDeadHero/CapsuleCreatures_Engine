@@ -632,6 +632,49 @@ bool approaching()
 {
    return g_world.approach-- > 0;
 }
+/// C2: records a prop placed.
+/// @param id         its number
+/// @param sprite     its sprite's key
+/// @param x          column
+/// @param y          row
+/// @param elevation  level
+/// @param facing     direction
+void place_prop(uint8_t id, AssetKey sprite, int32_t x, int32_t y, uint8_t elevation, uint8_t facing)
+{
+   char b[64];
+   std::snprintf(b, sizeof b, "prop %u %08X %d,%d e%u f%u;", static_cast<unsigned>(id),
+                 static_cast<unsigned>(sprite), static_cast<int>(x), static_cast<int>(y),
+                 static_cast<unsigned>(elevation), static_cast<unsigned>(facing));
+   log(b);
+}
+/// C2: records a prop turned.
+/// @param id      its number
+/// @param facing  direction
+void face_prop(uint8_t id, uint8_t facing)
+{
+   char b[32];
+   std::snprintf(b, sizeof b, "propface %u f%u;", static_cast<unsigned>(id), static_cast<unsigned>(facing));
+   log(b);
+}
+/// C2: records a prop removed.
+/// @param id  its number
+void remove_prop(uint8_t id)
+{
+   char b[24];
+   std::snprintf(b, sizeof b, "propgone %u;", static_cast<unsigned>(id));
+   log(b);
+}
+/// C2: records an object's draw order.
+/// @param obj    the object
+/// @param fixed  fixed
+/// @param order  its order
+void set_order(uint8_t obj, bool fixed, uint8_t order)
+{
+   char b[32];
+   std::snprintf(b, sizeof b, "order %u %s %u;", static_cast<unsigned>(obj), fixed ? "fix" : "rule",
+                 static_cast<unsigned>(order));
+   log(b);
+}
 /// Records an override set's apply or clear.
 /// @param set    the set
 /// @param apply  applied
@@ -1670,6 +1713,21 @@ void test_encounter()
    CHECK(bp::g_battle_last.number == 3);
 }
 
+/// C2: props reach the world port with their sprite's key, cell (a variable's too), level and facing; the order
+/// statement fixes or resets an object's draw order.
+void test_props()
+{
+   script::clear_all();
+   g_world = World{};
+   script::Context c{};
+   script::start(c, SCRIPT_PROPS, 6);
+   run(c);
+   char want[160];
+   std::snprintf(want, sizeof want, "prop 4 %08X 12,9 e3 f2;propface 4 f1;propgone 4;order 255 fix 83;order 6 rule 0;",
+                 static_cast<unsigned>(asset::key_v1("sprite:PROP_TEST")));
+   CHECK(std::strcmp(g_world.log, want) == 0);
+}
+
 /// C1b: a spotter group: Load fills a side per spotter whose script reaches a Set (its object the spotter, no
 /// then-script, the statements before the Set run), Approach walks each up, Next steps through the filled sides
 /// and back to A; the battle takes both; a later Set of side A starts a new encounter.
@@ -1855,6 +1913,7 @@ int main()
    test_combine();
    test_encounter();
    test_spotter_group();
+   test_props();
    test_field_effects();
    test_f2();
    test_paged_menu();

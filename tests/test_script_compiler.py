@@ -250,6 +250,44 @@ class Language(unittest.TestCase):
                               sc.BATTLE_NO_ITEM, 0, 0, op["Battle"], b.index("party"), 0xFF, 0xFF, op["End"]]))
 
 
+class Props(unittest.TestCase):
+   """C2: props and object draw order."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u8;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """Place (its sprite's key, x and y operands, level, facing), face, remove; order fixed and reset."""
+      op = sc.OP
+      k = sc.PROP_KINDS
+      key = sc.asset_key("sprite:AUDIENCE", "test").to_bytes(4, "little")
+      self.assertEqual(self.code("prop place 3 sprite:AUDIENCE 12 var(v) 3 left;")[:8],
+                       bytes([op["Prop"], k.index("place"), 3]) + key + bytes([sc.OPND_CONST8]))
+      code = self.code("prop place 3 sprite:AUDIENCE 12 var(v) 3 left;")
+      self.assertEqual(code[-3:], bytes([3, sc.DIRECTIONS.index("left"), op["End"]]))
+      self.assertEqual(self.code("prop face 3 down; prop remove 3;"),
+                       bytes([op["Prop"], k.index("face"), 3, sc.DIRECTIONS.index("down"),
+                              op["Prop"], k.index("remove"), 3, op["End"]]))
+      self.assertEqual(self.code("order player 83; order 2 reset;"),
+                       bytes([op["ObjectOrder"], sc.OPND_CONST8, sc.VM.constants["kObjectPlayer"], 1, 83,
+                              op["ObjectOrder"], sc.OPND_CONST8, 2, 0, 0, op["End"]]))
+
+   def test_refusals(self) -> None:
+      """A number or level past a byte, a reference that is no sprite, an order past a byte."""
+      for body, text in (("prop face 256 down;", "0-255"), ("prop place 1 text:a.b 1 2 3 down;", "sprite:NAME"),
+                         ("prop place 1 sprite:A 1 2 300 down;", "level"), ("order 1 256;", "order must be"),
+                         ("prop spin 1;", "place")):
+         errs = errors(compile_text(f"script s {{ {body} }}"))
+         self.assertTrue(any(text in e for e in errs), (body, errs))
+
+
 class Checks(unittest.TestCase):
    """Build errors and warnings."""
 

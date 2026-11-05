@@ -1145,6 +1145,13 @@ SPOTTER_GROUP_CHANGES = {"test_script.cpp": ("The spotter group test scripts spo
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in SPOTTER_GROUP_CHANGES.items()})
 
+## Why the script outputs changed for props and object draw order (C2: the Prop and ObjectOrder ops).
+PROP_CHANGES = {"test_script.cpp": "The props test script (prop place / face / remove, order)",
+                "test_script_assets.cpp": "The props test sprite sprite:PROP_TEST",
+                "test_script_ids.h": "SCRIPT_PROPS (SCRIPT_LONE_BATTLE and later ids move up)"}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in PROP_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"
