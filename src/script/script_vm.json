@@ -777,6 +777,14 @@
    "doc": "C3: a positioned menu of a list asset's texts (a column, a grid or a scrolling list).",
    "bytes": "var16, flags8 (kMenu... bits), x8, y8, cursor8, columns8, rows8, delay8 (kMenuStyleDelay: the port's), cancel8, list32 (asset key), style32 (text box asset key, or 0)",
    "does": "C3: port::menu_open() / menu_poll(); waits until it answers; var = the chosen option's index, or cancel (Back with kMenuBack; a menu that cannot open)"
+  },
+  {
+   "id": 92,
+   "name": "Name",
+   "kind": "generic",
+   "doc": "C4: write a name slot (a name placeholder: STR_VAR-like text buffers) from a text, a list entry, a number or a name of a kind.",
+   "bytes": "slot8 (the name placeholder's index), source8 (NameSource), [Text: text ref], [Entry: list32 (asset key), operand index], [Number: operand], [Kind: kind8 (NameKind, or kFirstGameNameKind + the manifest's name_kinds index), operand id, counted8 (1: an operand count follows), [operand count]]",
+   "does": "C4: script::set_name() of the source's text, cut to the slot's length (a kind: game::name_text(); the engine's kinds' defaults from the battle data and the party)"
   }
  ],
  "enums": [
@@ -1680,6 +1688,72 @@
     "name": "NUM_BATTLE_KINDS",
     "doc": "Number of battle kinds."
    }
+  },
+  {
+   "name": "NameSource",
+   "type": "uint8_t",
+   "doc": [
+    "C4: Name sources."
+   ],
+   "values": [
+    {
+     "name": "Text",
+     "doc": "A text (asset or inline).",
+     "word": "text"
+    },
+    {
+     "name": "Entry",
+     "doc": "A list asset's text by index.",
+     "word": "list"
+    },
+    {
+     "name": "Number",
+     "doc": "An operand in decimal.",
+     "word": "number"
+    },
+    {
+     "name": "Kind",
+     "doc": "The name of a kind (an item, a species, ...) by id.",
+     "word": "kind"
+    }
+   ],
+   "count": {
+    "name": "NUM_NAME_SOURCES",
+    "doc": "Number of sources."
+   }
+  },
+  {
+   "name": "NameKind",
+   "type": "uint8_t",
+   "doc": [
+    "C4: the engine's name kinds (a game's own follow from kFirstGameNameKind)."
+   ],
+   "values": [
+    {
+     "name": "Item",
+     "doc": "An item's name (the battle data's; with a count, the game's plural rule).",
+     "word": "item"
+    },
+    {
+     "name": "Species",
+     "doc": "A species' name.",
+     "word": "species"
+    },
+    {
+     "name": "Move",
+     "doc": "A move's name.",
+     "word": "move"
+    },
+    {
+     "name": "Nickname",
+     "doc": "A party slot's nickname (party::role_get()).",
+     "word": "nickname"
+    }
+   ],
+   "count": {
+    "name": "NUM_NAME_KINDS",
+    "doc": "Number of engine kinds."
+   }
   }
  ],
  "constants": [
@@ -2014,6 +2088,18 @@
      "type": "int",
      "value": "16",
      "doc": "C3: options of one Menu (a list asset's first ones)."
+    },
+    {
+     "name": "kFirstGameNameKind",
+     "type": "uint8_t",
+     "value": "4",
+     "doc": "C4: the first game name kind (a scripts manifest's name_kinds, in order; NameKind's count)."
+    },
+    {
+     "name": "kMaxGameNameKinds",
+     "type": "int",
+     "value": "32",
+     "doc": "C4: name kinds a scripts manifest may declare."
     }
    ]
   }

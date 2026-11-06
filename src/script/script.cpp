@@ -313,6 +313,24 @@ int32_t operand(const uint8_t*& p)
    return v;
 }
 
+// C4: decimal() is defined (and documented) with the placeholders below
+int decimal(int32_t v, text::Code* out, int capacity);
+
+/// C4: copies a text's codes (no kCodeEnd).
+/// @param t         the text, or nullptr (nothing)
+/// @param out       where they go
+/// @param capacity  most codes
+/// @return codes written
+int copy_codes(const text::Code* t, text::Code* out, int capacity)
+{
+   int n = 0;
+   for (; t != nullptr && t[n] != text::kCodeEnd && n < capacity; ++n)
+   {
+      out[n] = t[n];
+   }
+   return n;
+}
+
 /// Reads one text reference and advances past it.
 /// @param p  read position; advanced
 /// @return the text (a "?" stand-in when the asset is missing)
@@ -617,6 +635,53 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       }
       ENGINE_ASSERT(false && "bad prop op");
       return Outcome::Ended;
+   }
+   case Op::Name:
+   {
+      // slot8, source8, then the source's bytes (script_vm.json)
+      const uint8_t slot = *p++;
+      const auto source = static_cast<NameSource>(*p++);
+      text::Code codes[text::kMaxPlaceholderCodes + 1] = {};
+      int n = 0;
+      switch (source)
+      {
+      case NameSource::Text:
+         n = copy_codes(text_ref(p), codes, text::kMaxPlaceholderCodes);
+         break;
+      case NameSource::Entry:
+      {
+         const AssetKey key{load_le32(p)};
+         p += kU32Bytes;
+         const int32_t index = operand(p);
+         const asset::List* l = asset::list(key);
+         const bool in = l != nullptr && index >= 0 && index < l->count;
+         n = copy_codes(in ? asset::text(l->items[index]) : nullptr, codes, text::kMaxPlaceholderCodes);
+         break;
+      }
+      case NameSource::Number:
+      {
+         const int32_t v = operand(p);
+         n = decimal(v > 0 ? v : 0, codes, text::kMaxPlaceholderCodes);   // a name holds no sign
+         break;
+      }
+      case NameSource::Kind:
+      {
+         const uint8_t kind = *p++;
+         const int32_t id = operand(p);
+         const bool counted = *p++ != 0;
+         const int32_t count = counted ? operand(p) : 1;
+         n = game::name_text(kind, id, count, counted, codes, text::kMaxPlaceholderCodes);
+         n = n < 0 ? 0 : (n > text::kMaxPlaceholderCodes ? text::kMaxPlaceholderCodes : n);
+         break;
+      }
+      case NameSource::NUM_NAME_SOURCES:
+         ENGINE_ASSERT(false && "bad name source");
+         return Outcome::Ended;
+      }
+      codes[n] = text::kCodeEnd;
+      next();
+      set_name(slot, codes);   // cut to the slot's length
+      return Outcome::Continue;
    }
    case Op::ObjectOrder:
    {
@@ -1363,6 +1428,7 @@ Outcome execute(Context& c)
    case Op::Override:
    case Op::Prop:
    case Op::ObjectOrder:
+   case Op::Name:
       return execute_port(c, op, p, base);
    // D-36 package 2: the ops of the bag, boxes, party roles, growth, combination and nursery modules
    case Op::RoleGet:

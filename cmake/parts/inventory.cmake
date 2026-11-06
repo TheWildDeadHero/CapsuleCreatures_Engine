@@ -14,6 +14,8 @@ set(CAPSULE_INVENTORY_SOURCES
    src/script/script_items.cpp
    src/script/script_boxes.cpp
    src/script/script_menu.cpp
+   # C4: the Name op's kinds (the battle data's names)
+   src/script/script_names.cpp
    src/core/clock_default.cpp
    # F1: the minute clock's default (timed field effects counted in minutes)
    src/core/clock_minutes_default.cpp)
@@ -24,6 +26,7 @@ set(CAPSULE_SCRIPT_ITEMS_SOURCES
    src/script/script_items.cpp
    src/script/script_boxes.cpp
    src/script/script_menu.cpp
+   src/script/script_names.cpp
    src/inventory/bag.cpp
    src/inventory/inventory_empty.cpp
    src/storage/storage.cpp

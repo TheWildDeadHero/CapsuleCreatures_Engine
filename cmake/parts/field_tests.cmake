@@ -7,6 +7,7 @@
 # test's own, encounter::set_bank()).
 capsule_battle_test(field_tests ${CAPSULE_ROOT}/tests/data/field/battle.json
                     SOURCES tests/field_tests.cpp src/battle/encounter_lead.cpp src/encounter/encounter.cpp
+                            src/script/script_names.cpp
                             src/map/map.cpp src/map/world_empty.cpp src/gfx/background.cpp src/gfx/palette.cpp
                             src/hal/common/vram_queue.cpp src/hal/soft/soft_video.cpp
                     DIR field)

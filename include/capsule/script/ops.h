@@ -93,6 +93,7 @@
 /// | Prop | kind8 (PropOp), id8, [Place: sprite32 (asset key), operand x, operand y, elevation8, facing8], [Face: facing8] | C2: world::place_prop() / face_prop() / remove_prop() (capsule/field/field.h props; gone at the next map) |
 /// | ObjectOrder | operand (object), fixed8 (1 fixed, 0 the world's rule), order8 | C2: world::set_order() (field::set_fixed_order(); the walker as player) |
 /// | Menu | var16, flags8 (kMenu... bits), x8, y8, cursor8, columns8, rows8, delay8 (kMenuStyleDelay: the port's), cancel8, list32 (asset key), style32 (text box asset key, or 0) | C3: port::menu_open() / menu_poll(); waits until it answers; var = the chosen option's index, or cancel (Back with kMenuBack; a menu that cannot open) |
+/// | Name | slot8 (the name placeholder's index), source8 (NameSource), [Text: text ref], [Entry: list32 (asset key), operand index], [Number: operand], [Kind: kind8 (NameKind, or kFirstGameNameKind + the manifest's name_kinds index), operand id, counted8 (1: an operand count follows), [operand count]] | C4: script::set_name() of the source's text, cut to the slot's length (a kind: game::name_text(); the engine's kinds' defaults from the battle data and the party) |
 #pragma once
 
 #include <cstdint>
@@ -196,6 +197,7 @@ enum class Op : uint8_t
    Prop,   ///< C2: place, turn or remove a prop (a sprite standing on a cell, no object).
    ObjectOrder,   ///< C2: fix an object's draw order among the sprites, or give it back to the world's rule.
    Menu,   ///< C3: a positioned menu of a list asset's texts (a column, a grid or a scrolling list).
+   Name,   ///< C4: write a name slot (a name placeholder: STR_VAR-like text buffers) from a text, a list entry, a number or a name of a kind.
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -452,6 +454,26 @@ enum class BattleKind : uint8_t
    NUM_BATTLE_KINDS   ///< Number of battle kinds.
 };
 
+/// C4: Name sources.
+enum class NameSource : uint8_t
+{
+   Text,   ///< A text (asset or inline).
+   Entry,   ///< A list asset's text by index.
+   Number,   ///< An operand in decimal.
+   Kind,   ///< The name of a kind (an item, a species, ...) by id.
+   NUM_NAME_SOURCES   ///< Number of sources.
+};
+
+/// C4: the engine's name kinds (a game's own follow from kFirstGameNameKind).
+enum class NameKind : uint8_t
+{
+   Item,   ///< An item's name (the battle data's; with a count, the game's plural rule).
+   Species,   ///< A species' name.
+   Move,   ///< A move's name.
+   Nickname,   ///< A party slot's nickname (party::role_get()).
+   NUM_NAME_KINDS   ///< Number of engine kinds.
+};
+
 /// @name Operand and text-reference tags
 ///@{
 inline constexpr uint8_t kOpConst8 = 0;   ///< 1-byte unsigned constant.
@@ -514,6 +536,8 @@ inline constexpr int kMaxChoices = 8;   ///< Options of one Choice.
 inline constexpr int kMaxTriggers = 16;   ///< On-frame triggers armed at once (one map).
 inline constexpr int kMaxTriggerDeps = 8;   ///< Flags and variables one trigger reads.
 inline constexpr int kMaxMenuItems = 16;   ///< C3: options of one Menu (a list asset's first ones).
+inline constexpr uint8_t kFirstGameNameKind = 4;   ///< C4: the first game name kind (a scripts manifest's name_kinds, in order; NameKind's count).
+inline constexpr int kMaxGameNameKinds = 32;   ///< C4: name kinds a scripts manifest may declare.
 ///@}
 
 }   // namespace capsule::script

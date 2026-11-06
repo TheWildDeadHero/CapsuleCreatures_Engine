@@ -322,6 +322,15 @@ script menus {
     menu list:MENU_COLORS columns 3 cancel 127 noback -> var(v8);
     menu list:MENU_COLORS rows 2 style text_box:MENU_STYLE -> var(v16);
 }
+// C4: name slots from every source
+script names {
+    name str:1 = text:MENU_BLUE;
+    var(v8) = 1;
+    name str:2 = list:STD_WORDS var(v8);
+    name str:3 = number 123456789;
+    name str:4 = trophy 7 count var(v8);
+    name str:5 = "A long inline name";
+}
 script lone_battle {
     battle unowned 25 5 -> var(answer);
     battle scripted 3;

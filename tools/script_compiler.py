@@ -12,6 +12,11 @@ The manifest names the sources and the build settings:
      "game": "base", "games": ["base", "other"], "stack_depth": 20,
      "assets": "assets.json", "world": "world.json"}
 
+"name_kinds" (optional, C4): the game's own kinds of names for the name
+statement (["decoration", "medal", ...]), after the engine's item, species,
+move and nickname; script_ids.h names each NAME_KIND_<NAME> (the id
+game::name_text() receives).
+
 "vm" (optional) changes how the VM runs, for a game whose original script engine
 behaves so: {"resume": "next_frame"} (the instruction after a wait runs on the next
 frame), {"random": "modulo"} (`random(n)` is a draw modulo n, drawn even for n = 0),
@@ -208,7 +213,11 @@ option; columns: a grid; rows: rows shown, a scrolling list when fewer; delay:
 frames before input, else the port's; cancel: the answer for Back and for a
 menu that cannot open, Back doing nothing with noback or without cancel;
 fadewait: input waits while the screen fades; style: the port's text box
-style; v = the chosen option's index; waits), and
+style; v = the chosen option's index; waits), C4's name slots `name <placeholder> =
+text:KEY | "text" | list:NAME <index> | number <operand> | <kind> <id> [count <n>];`
+(a name placeholder of the manifest; a kind: the engine's item, species, move,
+nickname or one of the manifest's "name_kinds", named by the game's
+game::name_text(); cut to the slot's length), and
 compile-time `when [not] game(...) { }`.
 
 Operands: numbers, constants, `yes` / `no` / `true` / `false`, `var(v)` and
@@ -524,7 +533,7 @@ WARP_NOWAIT = VM.constants["kWarpNoWait"]
 ## Statement words of the script ports that are no keywords.
 PORT_WORDS = ("lock", "release", "wait_msg", "remove", "visible", "set_template", "door", "weather", "fade",
             "set_metatile", "respawn", "set_warp", "sound", "wait_sound", "mart", "wait_state", "override", "prop",
-            "order", "menu")
+            "order", "menu", "name")
 ## The override statement's kinds (`override apply NAME;` / `override clear NAME;`) and their apply byte.
 OVERRIDE_KINDS = ("clear", "apply")
 ## C2: the prop statement's kinds (capsule::script::PropOp, in order).
@@ -535,6 +544,15 @@ PROP_BYTE_MAX = 0xFF
 ORDER_RESET_WORD = "reset"
 ## C2: the largest draw order (a sub-priority byte).
 ORDER_MAX = 0xFF
+## C4: the name statement's sources (capsule::script::NameSource, in order).
+NAME_SOURCES = VM.words("NameSource")
+## C4: the engine's name kinds (capsule::script::NameKind, in order; a manifest's own follow).
+NAME_KINDS = VM.words("NameKind")
+## C4: the most name kinds a manifest declares.
+MAX_GAME_NAME_KINDS = VM.constants["kMaxGameNameKinds"]
+## C4: the name statement's word for a number source, and for a kind's count.
+NAME_NUMBER_WORD, NAME_COUNT_WORD = "number", "count"
+assert len(NAME_KINDS) == VM.constants["kFirstGameNameKind"], "a game's first name kind follows the engine's"
 ## C3: the menu statement's number fields (word, node field) and their largest value (a byte each).
 MENU_NUMBERS = {"default": "cursor", "columns": "columns", "rows": "rows", "delay": "delay", "cancel": "cancel"}
 ## C3: the largest menu number (a byte; a delay of 255 is kMenuStyleDelay, the port's).
@@ -665,6 +683,21 @@ TERM_ONE, TERM_MANY = text_encoder.TERM_FORMS
 
 ## A record role a script names: (role ID, element width, element count).
 RoleShape = tuple[int, int, int]
+
+
+def game_name_kinds(raw: Any) -> list[str]:
+   """!C4: a scripts manifest's "name_kinds": the game's own kinds for the name statement (game::name_text()).
+   @param raw  its value
+   @return the kinds, in order
+   @throws ScriptError when it is no list of new identifiers, or too long
+   """
+   if not isinstance(raw, list) or not all(isinstance(k, str) and re.fullmatch(r"[a-z_][a-z0-9_]*", k) for k in raw):
+      raise ScriptError("name_kinds must be a list of lower-case names")
+   if len(set(raw)) != len(raw) or set(raw) & set(NAME_KINDS):
+      raise ScriptError(f"name_kinds: each kind once, none of the engine's ({', '.join(NAME_KINDS)})")
+   if len(raw) > MAX_GAME_NAME_KINDS:
+      raise ScriptError(f"name_kinds: at most {MAX_GAME_NAME_KINDS}")
+   return list(raw)
 
 
 def vm_flags(vm: Any) -> int:
@@ -1795,6 +1828,16 @@ class Parser:
       self.take()
       return t.text
 
+   def end_name(self, t: Token, slot: Token, **fields: Any) -> Node:
+      """!C4: ends a name statement.
+      @param t       its first token
+      @param slot    the placeholder's token
+      @param fields  its source's fields
+      @return its node
+      """
+      self.expect(";")
+      return Node("name_set", t, slot=slot.text, **fields)
+
    def text_ref(self) -> Node:
       """!Parses a text: a string literal or text:key.
       @return its node
@@ -2410,6 +2453,26 @@ class Parser:
          facing = self.direction(tuple(DIRECTIONS)) if kind == "face" else None
          self.expect(";")
          return Node("prop", t, kind=kind, id=pid, facing=facing)
+      if w == "name":   # C4: a name slot from a text, a list entry, a number or a name of a kind
+         slot = self.take()
+         if slot.kind not in ("ref", "name"):
+            raise self.error(f"name: expected a name placeholder, found {slot.text or 'end of file'!r}")
+         self.expect("=")
+         src = self.peek()
+         if src.kind == "ref" and src.text.startswith("text:") or src.kind == "string":
+            return self.end_name(t, slot, source="text", text=self.text_ref())
+         if src.kind == "ref" and src.text.startswith("list:"):
+            self.take()
+            return self.end_name(t, slot, source="list", list=src.text, index=self.operand())
+         if self.accept(NAME_NUMBER_WORD):
+            return self.end_name(t, slot, source="number", value=self.operand())
+         kind = self.take()   # a kind may be a keyword too (move)
+         if kind.kind != "name":
+            raise self.error(f"name: expected a name kind, number, text:KEY or list:NAME, found "
+                             f"{kind.text or 'end of file'!r}")
+         ident = self.operand()
+         count = self.operand() if self.accept(NAME_COUNT_WORD) else None
+         return self.end_name(t, slot, source="kind", kind=kind.text, id=ident, count=count)
       if w == "menu":   # C3: a positioned menu of a list asset's texts
          ref = self.take()
          if ref.kind != "ref" or not ref.text.startswith("list:"):
@@ -2672,6 +2735,8 @@ class Compiler:
       self.result = None
       ## The manifest's field placeholders (read_manifest()), or None before.
       self.field = None
+      ## C4: the manifest's own name kinds (their ids follow the engine's: FIRST_GAME_NAME_KIND + index).
+      self.name_kinds: list[str] = []
       ## The first local ID of the game's numbering (the manifest's object_base).
       self.object_base = 0
       ## capsule::script::Bank::vm_flags (the manifest's "vm").
@@ -2728,7 +2793,7 @@ class Compiler:
       """
       m = {k: v for k, v in self.manifest.items() if k != "editor"}
       allowed = {"schema", "sources", "game", "games", "stack_depth", "assets", "world", "placeholders", "terms",
-                 "battle", save_shape.HISTORY_KEY, "object_base", "warn_unused", "glitches", "vm"}
+                 "battle", save_shape.HISTORY_KEY, "object_base", "warn_unused", "glitches", "vm", "name_kinds"}
       for k in m:
          if k not in allowed:
             raise ScriptError(f"unknown manifest key {k!r}")
@@ -2751,6 +2816,8 @@ class Compiler:
       if isinstance(base, bool) or not isinstance(base, int) or not 0 <= base <= MAX_OBJECT_BASE:
          raise ScriptError(f"object_base must be 0-{MAX_OBJECT_BASE}")
       self.object_base = base
+      ## C4: the manifest's own name kinds.
+      self.name_kinds = game_name_kinds(m.get("name_kinds", []))
       self.vm_flags = vm_flags(m.get("vm", {}))
       if not isinstance(m.get("warn_unused", True), bool):
          raise ScriptError("warn_unused must be true or false")
@@ -3973,6 +4040,42 @@ class Compiler:
          elif s["kind"] == "face":
             e.u8(DIRECTIONS.index(s["facing"]))
          return True
+      if k == "name_set":
+         field = self.field
+         binding = field.bindings.get(s["slot"]) if field is not None else None
+         if binding is None or binding[0] != "name":
+            self.err(f"name: {s['slot']} is no name placeholder of the manifest", s)
+            return True
+         e.op("Name")
+         e.u8(list(field.bindings).index(s["slot"]))
+         e.u8(NAME_SOURCES.index(s["source"]))
+         if s["source"] == "text":
+            self.emit_text(e, s["text"])
+         elif s["source"] == "list":
+            try:
+               key = asset_key(s["list"], "name list")
+            except KeyError_ as err:
+               self.err(str(err), s)
+               key = 0
+            known = self.asset_keys.get(key) if self.asset_keys is not None else None
+            if known is not None and known != "list":   # lists may come from another manifest than the scripts'
+               self.err(f"name: {s['list']} is a {known}, not a list", s)
+            e.u32(key)
+            self.emit_operand(e, s["index"])
+         elif s["source"] == "number":
+            self.emit_operand(e, s["value"])
+         else:
+            kinds = NAME_KINDS + self.name_kinds
+            if s["kind"] not in kinds:
+               self.err(f"name: unknown name kind {s['kind']!r} (the engine's {', '.join(NAME_KINDS)}, or the "
+                        f"manifest's name_kinds)", s)
+               return True
+            e.u8(kinds.index(s["kind"]))
+            self.emit_operand(e, s["id"])
+            e.u8(0 if s["count"] is None else 1)
+            if s["count"] is not None:
+               self.emit_operand(e, s["count"])
+         return True
       if k == "menu":
          keys = []
          for ref, kind in ((s["list"], "list"), (s["style"], "text_box")):
@@ -4884,6 +4987,9 @@ class Compiler:
          L.append("")
          for n, (rid, _w, _c) in self.field.roles.items():
             L.append(f"inline constexpr uint8_t ROLE_{n.upper()} = 0x{rid:02X};   ///< Record role {n} (role_get).")
+      L.append("")
+      for i, n in enumerate(NAME_KINDS + self.name_kinds):   # C4: the Name op's kinds (game::name_text())
+         L.append(f"inline constexpr uint8_t NAME_KIND_{n.upper()} = {i};   ///< Name kind {n}.")
       if self.route_steps:   # the game route steps (the step IDs field::game::route_step() receives)
          L.append("")
          for i, n in enumerate(self.route_steps):

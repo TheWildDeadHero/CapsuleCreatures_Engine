@@ -66,7 +66,8 @@ class Fixture(unittest.TestCase):
       # flags (the encounter test's beaten flags)
       self.assertEqual(r["flag_first"], [0, 5, 6, 7, 8, 8])
       self.assertIn("field.on_frame.1", r["names"])
-      self.assertEqual(r["name_bytes"], 6)   # the fixture's name slot {hero}: a length byte and 5 codes
+      # the fixture's name slots: {hero} (a length byte and 5 codes) and C4's str:1-str:5 (8 codes each)
+      self.assertEqual(r["name_bytes"], 6 + 5 * (8 + 1))
       self.assertEqual(comp.save_bytes(), sum(r["flag_bytes"]) + sum(r["var_bytes"]) + r["name_bytes"])
       self.assertIn("SCRIPT_FLOW", comp.emit_ids("x"))
       self.assertIn("const Bank kBank", comp.emit_cpp("x"))
@@ -326,6 +327,53 @@ class Menus(unittest.TestCase):
                          ("menu list:A at 1 -> var(v);", "number")):
          errs = errors(compile_text(f"var v : u8;\nscript s {{ {body} }}"))
          self.assertTrue(any(text in e for e in errs), (body, errs))
+
+
+class Names(unittest.TestCase):
+   """C4: name slots from texts, list entries, numbers and kinds."""
+
+   ## The manifest's placeholders (a name slot first, a variable second) and its own name kind.
+   MANIFEST = {"placeholders": {"str:1": {"name": 8}, "count": {"var": "v"}}, "name_kinds": ["trophy"]}
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u8;\nscript s {{ {body} }}", **self.MANIFEST)
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """Each source: its byte, then its fields; a kind's count only when given; a game kind after the engine's."""
+      op, src = sc.OP["Name"], sc.NAME_SOURCES
+      lst = sc.asset_key("list:STD", "test").to_bytes(4, "little")
+      text = sc.asset_key("text:A", "test").to_bytes(4, "little")
+      self.assertEqual(self.code("name str:1 = text:A;"),
+                       bytes([op, 0, src.index("text"), sc.TEXT_ASSET]) + text + bytes([sc.OP["End"]]))
+      self.assertEqual(self.code("name str:1 = list:STD 3;"),
+                       bytes([op, 0, src.index("list")]) + lst + bytes([sc.OPND_CONST8, 3, sc.OP["End"]]))
+      self.assertEqual(self.code("name str:1 = number 9;"),
+                       bytes([op, 0, src.index("number"), sc.OPND_CONST8, 9, sc.OP["End"]]))
+      self.assertEqual(self.code("name str:1 = move 2;")[3], sc.NAME_KINDS.index("move"))   # a keyword as a kind
+      self.assertEqual(self.code("name str:1 = item 4;"),
+                       bytes([op, 0, src.index("kind"), sc.NAME_KINDS.index("item"), sc.OPND_CONST8, 4, 0,
+                              sc.OP["End"]]))
+      self.assertEqual(self.code("name str:1 = trophy 4 count 2;"),
+                       bytes([op, 0, src.index("kind"), len(sc.NAME_KINDS), sc.OPND_CONST8, 4, 1, sc.OPND_CONST8, 2,
+                              sc.OP["End"]]))
+
+   def test_refusals(self) -> None:
+      """A placeholder that is no name slot (or none), an unknown kind, a malformed name_kinds."""
+      for body, text in (("name count = number 1;", "no name placeholder"),
+                         ("name str:9 = number 1;", "no name placeholder"),
+                         ("name str:1 = medal 1;", "unknown name kind")):
+         errs = errors(compile_text(f"var v : u8;\nscript s {{ {body} }}", **self.MANIFEST))
+         self.assertTrue(any(text in e for e in errs), (body, errs))
+      for kinds in (["item"], ["Trophy"], ["a", "a"], "trophy"):
+         with self.assertRaises(sc.ScriptError):
+            sc.game_name_kinds(kinds)
 
 
 class Checks(unittest.TestCase):
@@ -656,7 +704,7 @@ class Roles(unittest.TestCase):
       self.assertIn("inline constexpr uint8_t ROLE_RIBBONS = 0x81;", ids)
       self.assertIn("inline constexpr uint8_t ROLE_LEVEL = 0x05;", ids)
       self.assertNotIn("ROLE_STAT_AWAKEN", ids)
-      self.assertEqual(comp.result["placeholders"][3:], [(3, 2, 20, 8), (3, 1, 0x82, 0)])
+      self.assertEqual(comp.result["placeholders"][3:5], [(3, 2, 20, 8), (3, 1, 0x82, 0)])   # then C4's str slots
       # without a battle no ROLE_ ids
       self.assertNotIn("ROLE_", compile_text("script s { end; }").emit_ids("x"))
 
