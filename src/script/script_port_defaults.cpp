@@ -17,6 +17,7 @@
 /// - Spotter groups (C1b): the field's (field::spotters(), field::approach(), field::approaching()).
 /// - Props and draw order (C2): the field's (field::place_prop() with the sprite asset, face_prop(), remove_prop(),
 ///   set_fixed_order()).
+/// - Counter boxes (C5): src/script/script_counter.cpp (the text layer's banner).
 /// - Weather, fades, metatiles, the respawn point, remembered warps, sound, marts and the busy state: nothing, and
 ///   nothing to wait for.
 #include "capsule/script/port.h"
@@ -39,7 +40,6 @@ CAPSULE_WEAK void message_mode(uint8_t flags)
 
 namespace capsule::script::world
 {
-
 CAPSULE_WEAK void lock(uint8_t self, bool all)
 {
    (void)self;

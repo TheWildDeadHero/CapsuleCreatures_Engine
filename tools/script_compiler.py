@@ -12,6 +12,11 @@ The manifest names the sources and the build settings:
      "game": "base", "games": ["base", "other"], "stack_depth": 20,
      "assets": "assets.json", "world": "world.json"}
 
+"counters" (optional, C5): the game's counter boxes, each bound to a declared
+variable, with an optional label (else its name): {"money": {"var": "money",
+"label": "Money"}}; the counter statement shows them; script_ids.h names each
+COUNTER_<NAME> (the box world::counter() receives).
+
 "name_kinds" (optional, C4): the game's own kinds of names for the name
 statement (["decoration", "medal", ...]), after the engine's item, species,
 move and nickname; script_ids.h names each NAME_KIND_<NAME> (the id
@@ -533,7 +538,7 @@ WARP_NOWAIT = VM.constants["kWarpNoWait"]
 ## Statement words of the script ports that are no keywords.
 PORT_WORDS = ("lock", "release", "wait_msg", "remove", "visible", "set_template", "door", "weather", "fade",
             "set_metatile", "respawn", "set_warp", "sound", "wait_sound", "mart", "wait_state", "override", "prop",
-            "order", "menu", "name")
+            "order", "menu", "name", "counter")
 ## The override statement's kinds (`override apply NAME;` / `override clear NAME;`) and their apply byte.
 OVERRIDE_KINDS = ("clear", "apply")
 ## C2: the prop statement's kinds (capsule::script::PropOp, in order).
@@ -544,6 +549,10 @@ PROP_BYTE_MAX = 0xFF
 ORDER_RESET_WORD = "reset"
 ## C2: the largest draw order (a sub-priority byte).
 ORDER_MAX = 0xFF
+## C5: the counter statement's kinds (capsule::script::CounterOp, in order).
+COUNTER_KINDS = VM.words("CounterOp")
+## C5: the most counter boxes a manifest declares, and the largest cell of a shown one (a byte).
+MAX_COUNTERS, COUNTER_CELL_MAX = VM.constants["kMaxCounters"], 0xFF
 ## C4: the name statement's sources (capsule::script::NameSource, in order).
 NAME_SOURCES = VM.words("NameSource")
 ## C4: the engine's name kinds (capsule::script::NameKind, in order; a manifest's own follow).
@@ -683,6 +692,26 @@ TERM_ONE, TERM_MANY = text_encoder.TERM_FORMS
 
 ## A record role a script names: (role ID, element width, element count).
 RoleShape = tuple[int, int, int]
+
+
+def game_counters(raw: Any) -> dict[str, dict[str, str]]:
+   """!C5: a scripts manifest's "counters": its counter boxes, each bound to a variable, with a label.
+   @param raw  its value
+   @return name -> {"var", "label"} (the label defaults to the name), in order
+   @throws ScriptError when malformed or too many
+   """
+   if not isinstance(raw, Mapping):
+      raise ScriptError("counters must be an object of name -> {\"var\": ..., \"label\": ...}")
+   out: dict[str, dict[str, str]] = {}
+   for name, c in raw.items():
+      if not re.fullmatch(r"[a-z_][a-z0-9_]*", str(name)) or not isinstance(c, Mapping) \
+            or not isinstance(c.get("var"), str) or not isinstance(c.get("label", ""), str) \
+            or set(c) - {"var", "label"}:
+         raise ScriptError(f"counters: {name!r} needs a lower-case name and {{\"var\": NAME}} (and an optional label)")
+      out[str(name)] = {"var": c["var"], "label": c.get("label", str(name))}
+   if len(out) > MAX_COUNTERS:
+      raise ScriptError(f"counters: at most {MAX_COUNTERS}")
+   return out
 
 
 def game_name_kinds(raw: Any) -> list[str]:
@@ -2453,6 +2482,19 @@ class Parser:
          facing = self.direction(tuple(DIRECTIONS)) if kind == "face" else None
          self.expect(";")
          return Node("prop", t, kind=kind, id=pid, facing=facing)
+      if w == "counter":   # C5: a counter box (a variable's value beside the messages)
+         kind = self.direction(COUNTER_KINDS)
+         box = self.name("a counter box's name")
+         at = None
+         if kind == "show":
+            self.expect("at")
+            x, x_tok = self.number()
+            y, y_tok = self.number()
+            if not (0 <= x <= COUNTER_CELL_MAX and 0 <= y <= COUNTER_CELL_MAX):
+               raise self.error(f"counter show: cells 0-{COUNTER_CELL_MAX}, not {x_tok.text} {y_tok.text}")
+            at = (x, y)
+         self.expect(";")
+         return Node("counter", t, kind=kind, box=box.text, at=at)
       if w == "name":   # C4: a name slot from a text, a list entry, a number or a name of a kind
          slot = self.take()
          if slot.kind not in ("ref", "name"):
@@ -2737,6 +2779,8 @@ class Compiler:
       self.field = None
       ## C4: the manifest's own name kinds (their ids follow the engine's: FIRST_GAME_NAME_KIND + index).
       self.name_kinds: list[str] = []
+      ## C5: the manifest's counter boxes, in order.
+      self.counters: dict[str, dict[str, str]] = {}
       ## The first local ID of the game's numbering (the manifest's object_base).
       self.object_base = 0
       ## capsule::script::Bank::vm_flags (the manifest's "vm").
@@ -2793,7 +2837,8 @@ class Compiler:
       """
       m = {k: v for k, v in self.manifest.items() if k != "editor"}
       allowed = {"schema", "sources", "game", "games", "stack_depth", "assets", "world", "placeholders", "terms",
-                 "battle", save_shape.HISTORY_KEY, "object_base", "warn_unused", "glitches", "vm", "name_kinds"}
+                 "battle", save_shape.HISTORY_KEY, "object_base", "warn_unused", "glitches", "vm", "name_kinds",
+                 "counters"}
       for k in m:
          if k not in allowed:
             raise ScriptError(f"unknown manifest key {k!r}")
@@ -2818,6 +2863,8 @@ class Compiler:
       self.object_base = base
       ## C4: the manifest's own name kinds.
       self.name_kinds = game_name_kinds(m.get("name_kinds", []))
+      ## C5: the manifest's counter boxes (name -> {"var", "label"}).
+      self.counters = game_counters(m.get("counters", {}))
       self.vm_flags = vm_flags(m.get("vm", {}))
       if not isinstance(m.get("warn_unused", True), bool):
          raise ScriptError("warn_unused must be true or false")
@@ -4040,6 +4087,22 @@ class Compiler:
          elif s["kind"] == "face":
             e.u8(DIRECTIONS.index(s["facing"]))
          return True
+      if k == "counter":
+         if s["box"] not in self.counters:
+            self.err(f"counter: {s['box']!r} is no counter of the manifest's counters", s)
+            return True
+         c = self.counters[s["box"]]
+         e.op("Counter")
+         e.u8(COUNTER_KINDS.index(s["kind"]))
+         e.u8(list(self.counters).index(s["box"]))
+         e.u16(self.var_id(c["var"], s))
+         if s["kind"] == "show":
+            e.u8(s["at"][0])
+            e.u8(s["at"][1])
+            label = dict(s)   # an inline text at the statement's position (its errors point there)
+            label.update(k="inline", text=c["label"])
+            self.emit_text(e, label)
+         return True
       if k == "name_set":
          field = self.field
          binding = field.bindings.get(s["slot"]) if field is not None else None
@@ -4987,6 +5050,10 @@ class Compiler:
          L.append("")
          for n, (rid, _w, _c) in self.field.roles.items():
             L.append(f"inline constexpr uint8_t ROLE_{n.upper()} = 0x{rid:02X};   ///< Record role {n} (role_get).")
+      if self.counters:
+         L.append("")
+         for i, n in enumerate(self.counters):   # C5: the counter boxes (world::counter())
+            L.append(f"inline constexpr uint8_t COUNTER_{n.upper()} = {i};   ///< Counter box {n}.")
       L.append("")
       for i, n in enumerate(NAME_KINDS + self.name_kinds):   # C4: the Name op's kinds (game::name_text())
          L.append(f"inline constexpr uint8_t NAME_KIND_{n.upper()} = {i};   ///< Name kind {n}.")

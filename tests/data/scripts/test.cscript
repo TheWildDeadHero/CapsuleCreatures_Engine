@@ -331,6 +331,15 @@ script names {
     name str:4 = trophy 7 count var(v8);
     name str:5 = "A long inline name";
 }
+// C5: counter boxes
+script counters {
+    var(v16) = 250;
+    counter show gold at 20 1;
+    var(v16) = 75;
+    counter update gold;
+    counter hide gold;
+    counter show tokens at 0 0;
+}
 script lone_battle {
     battle unowned 25 5 -> var(answer);
     battle scripted 3;

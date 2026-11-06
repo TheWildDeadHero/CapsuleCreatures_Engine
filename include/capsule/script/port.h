@@ -385,6 +385,16 @@ void remove_prop(uint8_t id);
 /// @param fixed  fixed (else the world's rule)
 /// @param order  the sub-priority while fixed (0 front)
 void set_order(uint8_t obj, bool fixed, uint8_t order);
+
+/// C5: shows, updates or hides a counter box (the default: the value in the text layer's banner, its label before
+/// it; a game's port draws its own boxes).
+/// @param op     Show, Update or Hide
+/// @param box    the scripts manifest's counters index (script_ids.h COUNTER_...)
+/// @param value  its variable's value now
+/// @param x      Show: its left cell
+/// @param y      Show: its top cell
+/// @param label  Show: its label (the manifest's, or its name), else nullptr
+void counter(CounterOp op, uint8_t box, int32_t value, uint8_t x, uint8_t y, const text::Code* label);
 ///@}
 
 } // namespace capsule::script::world

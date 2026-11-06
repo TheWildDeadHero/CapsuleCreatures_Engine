@@ -6,6 +6,7 @@
   "games": ["base", "other"],
   "stack_depth": 4,
   "name_kinds": ["trophy"],
+  "counters": {"gold": {"var": "v16", "label": "Gold"}, "tokens": {"var": "v8"}},
   "assets": "assets.json",
   "world": "../maps/world.json",
   "battle": "../battle_stats3/battle.json",

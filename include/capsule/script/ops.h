@@ -94,6 +94,7 @@
 /// | ObjectOrder | operand (object), fixed8 (1 fixed, 0 the world's rule), order8 | C2: world::set_order() (field::set_fixed_order(); the walker as player) |
 /// | Menu | var16, flags8 (kMenu... bits), x8, y8, cursor8, columns8, rows8, delay8 (kMenuStyleDelay: the port's), cancel8, list32 (asset key), style32 (text box asset key, or 0) | C3: port::menu_open() / menu_poll(); waits until it answers; var = the chosen option's index, or cancel (Back with kMenuBack; a menu that cannot open) |
 /// | Name | slot8 (the name placeholder's index), source8 (NameSource), [Text: text ref], [Entry: list32 (asset key), operand index], [Number: operand], [Kind: kind8 (NameKind, or kFirstGameNameKind + the manifest's name_kinds index), operand id, counted8 (1: an operand count follows), [operand count]] | C4: script::set_name() of the source's text, cut to the slot's length (a kind: game::name_text(); the engine's kinds' defaults from the battle data and the party) |
+/// | Counter | kind8 (CounterOp), box8 (the manifest's counters index), var16 (its variable), [Show: x8, y8 (cells), label text ref] | C5: world::counter() with the variable's current value (the default: the text layer's banner) |
 #pragma once
 
 #include <cstdint>
@@ -198,6 +199,7 @@ enum class Op : uint8_t
    ObjectOrder,   ///< C2: fix an object's draw order among the sprites, or give it back to the world's rule.
    Menu,   ///< C3: a positioned menu of a list asset's texts (a column, a grid or a scrolling list).
    Name,   ///< C4: write a name slot (a name placeholder: STR_VAR-like text buffers) from a text, a list entry, a number or a name of a kind.
+   Counter,   ///< C5: show, update or hide a counter box (a variable's value beside the messages: money, coins).
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -474,6 +476,15 @@ enum class NameKind : uint8_t
    NUM_NAME_KINDS   ///< Number of engine kinds.
 };
 
+/// C5: Counter kinds.
+enum class CounterOp : uint8_t
+{
+   Show,   ///< Show the box at its cells.
+   Update,   ///< Show the value again.
+   Hide,   ///< Hide the box.
+   NUM_COUNTER_OPS   ///< Number of kinds.
+};
+
 /// @name Operand and text-reference tags
 ///@{
 inline constexpr uint8_t kOpConst8 = 0;   ///< 1-byte unsigned constant.
@@ -538,6 +549,7 @@ inline constexpr int kMaxTriggerDeps = 8;   ///< Flags and variables one trigger
 inline constexpr int kMaxMenuItems = 16;   ///< C3: options of one Menu (a list asset's first ones).
 inline constexpr uint8_t kFirstGameNameKind = 4;   ///< C4: the first game name kind (a scripts manifest's name_kinds, in order; NameKind's count).
 inline constexpr int kMaxGameNameKinds = 32;   ///< C4: name kinds a scripts manifest may declare.
+inline constexpr int kMaxCounters = 16;   ///< C5: counter boxes a scripts manifest may declare.
 ///@}
 
 }   // namespace capsule::script

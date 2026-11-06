@@ -376,6 +376,42 @@ class Names(unittest.TestCase):
             sc.game_name_kinds(kinds)
 
 
+class Counters(unittest.TestCase):
+   """C5: counter boxes."""
+
+   ## A manifest with two counters (one with a label).
+   MANIFEST = {"counters": {"gold": {"var": "v", "label": "Gold"}, "coins": {"var": "w"}}}
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nvar w : u8;\nscript s {{ {body} }}", **self.MANIFEST)
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """Show: the kind, the box, its variable, the cells, the label inline; update and hide: no cells or label."""
+      op, k = sc.OP["Counter"], sc.COUNTER_KINDS
+      show = self.code("counter show coins at 20 1;")
+      self.assertEqual(show[:7], bytes([op, k.index("show"), 1, 1, 0, 20, 1]))
+      self.assertEqual(show[7], sc.TEXT_INLINE)
+      self.assertEqual(self.code("counter update gold; counter hide gold;"),
+                       bytes([op, k.index("update"), 0, 0, 0, op, k.index("hide"), 0, 0, 0, sc.OP["End"]]))
+
+   def test_refusals(self) -> None:
+      """An undeclared counter, a show without cells, a malformed counters key."""
+      for body, text in (("counter show silver at 0 0;", "no counter"), ("counter show gold;", "expected 'at'"),
+                         ("counter spin gold;", "show")):
+         errs = errors(compile_text(f"var v : u16;\nvar w : u8;\nscript s {{ {body} }}", **self.MANIFEST))
+         self.assertTrue(any(text in e for e in errs), (body, errs))
+      for bad in ({"Gold": {"var": "v"}}, {"gold": {"label": "x"}}, {"gold": {"var": "v", "font": "x"}}, ["gold"]):
+         with self.assertRaises(sc.ScriptError):
+            sc.game_counters(bad)
+
+
 class Checks(unittest.TestCase):
    """Build errors and warnings."""
 
