@@ -3,6 +3,10 @@
   "id": "script_test_assets",
   "assets": [
     {"key": "text:TEST LINE", "kind": "text", "text": "From an asset."},
+    {"key": "text:MENU_RED", "kind": "text", "text": "Red"},
+    {"key": "text:MENU_GREEN", "kind": "text", "text": "Green"},
+    {"key": "text:MENU_BLUE", "kind": "text", "text": "Blue"},
+    {"key": "list:MENU_COLORS", "kind": "list", "items": ["text:MENU_RED", "text:MENU_GREEN", "text:MENU_BLUE"]},
     {"key": "sprite:PROP_TEST", "kind": "sprite", "width": 16, "height": 16, "palette": ["#ff0000"],
      "frames": [{"shapes": [{"shape": "rect", "x": 0, "y": 0, "w": 16, "h": 16, "color": 1}]}]}
   ]

@@ -37,6 +37,7 @@ constexpr int kU32Bytes = 4;            ///< A 32-bit operand (constants, asset 
 constexpr int kQueryBytes = 2;          ///< A query operand: query byte and object byte.
 constexpr int kFlagBranchBytes = 4;     ///< IfFlagSet / IfFlagClear: flag ID and target.
 constexpr int kChoiceHeaderBytes = 4;   ///< Choice: result variable, cancel index, option count.
+constexpr int kMenuPlaceBytes = 2;      ///< C3: Menu: x and y.
 constexpr int kSelfSwitchBytes = 2;     ///< SelfSwitch: letter and on.
 constexpr int kWarpTailBytes = 2;       ///< Warp: facing and transition, after the position.
 constexpr int kFadeKindAt = 0;          ///< Fade: offset of its kind.
@@ -877,6 +878,51 @@ Outcome execute(Context& c)
       c.wait = Wait::Choice;
       return Outcome::Waiting;
    }
+   case Op::Menu:
+   {
+      // var16, flags8, x8, y8, cursor8, columns8, rows8, delay8, cancel8, list32, style32
+      c.result_var = load_le16(p);
+      p += kU16Bytes;
+      const uint8_t flags = *p++;
+      port::MenuRequest r{};
+      const bool at = (flags & kMenuAt) != 0;
+      r.x = at ? p[0] : port::kMenuPortPlace;
+      r.y = at ? p[1] : port::kMenuPortPlace;
+      p += kMenuPlaceBytes;
+      r.cursor = *p++;
+      r.columns = *p++;
+      r.rows = *p++;
+      r.delay = *p++;
+      r.cancel = *p++;
+      const AssetKey list{load_le32(p)};
+      p += kU32Bytes;
+      r.style = AssetKey{load_le32(p)};
+      p += kU32Bytes;
+      r.back = (flags & kMenuBack) != 0;
+      r.fade_wait = (flags & kMenuFadeWait) != 0;
+      next();
+      // The list's texts (its first kMaxMenuItems; a missing text shows as text_ref()'s); a missing or empty list
+      // answers the cancel value at once
+      static constexpr text::Code kMissingOption[] = {'?', text::kCodeEnd};
+      const text::Code* items[kMaxMenuItems] = {};
+      const asset::List* l = asset::list(list);
+      uint8_t n = 0;
+      for (uint16_t i = 0; l != nullptr && i < l->count && n < kMaxMenuItems; ++i)
+      {
+         const text::Code* t = asset::text(l->items[i]);
+         items[n++] = t != nullptr ? t : kMissingOption;
+      }
+      r.items = items;
+      r.count = n;
+      const int16_t a = n > 0 ? port::menu_open(r) : static_cast<int16_t>(r.cancel);
+      if (a != port::kMenuWaiting)
+      {
+         set_var(VarId{c.result_var}, a);
+         return Outcome::Continue;
+      }
+      c.wait = Wait::Menu;
+      return Outcome::Waiting;
+   }
    case Op::Delay:
    {
       const int32_t n = operand(p);
@@ -1386,6 +1432,16 @@ bool still_waiting(Context& c)
    {
       const int16_t a = port::choice_poll();
       if (a < 0)
+      {
+         return true;
+      }
+      set_var(VarId{c.result_var}, a);
+      break;
+   }
+   case Wait::Menu:
+   {
+      const int16_t a = port::menu_poll();
+      if (a == port::kMenuWaiting)
       {
          return true;
       }

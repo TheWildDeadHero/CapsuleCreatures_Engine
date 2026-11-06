@@ -92,6 +92,7 @@
 /// | Battle | kind8 (BattleKind), [Unowned: operand species, operand level, operand item], [Scripted: operand number], var16 (or kNoVar) | C1: the battle (capsule/script/battle_port.h; Party / Rematch take the encounter record's sides); waits until it ends; var = its capsule::battle::Outcome |
 /// | Prop | kind8 (PropOp), id8, [Place: sprite32 (asset key), operand x, operand y, elevation8, facing8], [Face: facing8] | C2: world::place_prop() / face_prop() / remove_prop() (capsule/field/field.h props; gone at the next map) |
 /// | ObjectOrder | operand (object), fixed8 (1 fixed, 0 the world's rule), order8 | C2: world::set_order() (field::set_fixed_order(); the walker as player) |
+/// | Menu | var16, flags8 (kMenu... bits), x8, y8, cursor8, columns8, rows8, delay8 (kMenuStyleDelay: the port's), cancel8, list32 (asset key), style32 (text box asset key, or 0) | C3: port::menu_open() / menu_poll(); waits until it answers; var = the chosen option's index, or cancel (Back with kMenuBack; a menu that cannot open) |
 #pragma once
 
 #include <cstdint>
@@ -194,6 +195,7 @@ enum class Op : uint8_t
    Battle,   ///< Start a battle through the game's battle port and wait for its outcome (D-36 package 2 C1).
    Prop,   ///< C2: place, turn or remove a prop (a sprite standing on a cell, no object).
    ObjectOrder,   ///< C2: fix an object's draw order among the sprites, or give it back to the world's rule.
+   Menu,   ///< C3: a positioned menu of a list asset's texts (a column, a grid or a scrolling list).
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -498,6 +500,10 @@ inline constexpr uint8_t kEncounterHasThen = 16;   ///< C1: Encounter Set parts:
 inline constexpr uint8_t kEncounterPair = 1;   ///< C1: Encounter mode bit: a pair battle (two battlers a side).
 inline constexpr uint8_t kEncounterRematch = 2;   ///< C1: Encounter mode bit: a rematch.
 inline constexpr uint8_t kEncounterNoMusic = 4;   ///< C1: Encounter mode bit: no encounter music.
+inline constexpr uint8_t kMenuBack = 1;   ///< C3: Menu flag: Back answers the cancel value (else Back does nothing).
+inline constexpr uint8_t kMenuFadeWait = 2;   ///< C3: Menu flag: input waits while the screen fades.
+inline constexpr uint8_t kMenuAt = 4;   ///< C3: Menu flag: x and y place it (its frame's top-left cell); else the port's place.
+inline constexpr uint8_t kMenuStyleDelay = 0xFF;   ///< C3: Menu delay: the port's (its style's) frames before input.
 ///@}
 
 /// @name Limits
@@ -507,6 +513,7 @@ inline constexpr int kMaxNativeArgs = 8;   ///< Arguments per native call.
 inline constexpr int kMaxChoices = 8;   ///< Options of one Choice.
 inline constexpr int kMaxTriggers = 16;   ///< On-frame triggers armed at once (one map).
 inline constexpr int kMaxTriggerDeps = 8;   ///< Flags and variables one trigger reads.
+inline constexpr int kMaxMenuItems = 16;   ///< C3: options of one Menu (a list asset's first ones).
 ///@}
 
 }   // namespace capsule::script

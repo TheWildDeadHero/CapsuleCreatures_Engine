@@ -99,6 +99,7 @@ const OpHandler kModuleOps[kOpCount] = {
    op_battle,        // 88 Battle
    nullptr,          // 89 Prop
    nullptr,          // 90 ObjectOrder
+   nullptr,          // 91 Menu
 };
 
 /// The module waits by wait kind (nullptr: not a module wait, or one no op of the table sets).

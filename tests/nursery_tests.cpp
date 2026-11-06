@@ -146,6 +146,14 @@ int16_t choice_poll()
 {
    return g_choice;
 }
+int16_t menu_open(const MenuRequest&)
+{
+   return 0;   // C3: no menus here
+}
+int16_t menu_poll()
+{
+   return 0;
+}
 } // namespace port
 } // namespace capsule::script
 

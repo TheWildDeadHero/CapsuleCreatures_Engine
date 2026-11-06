@@ -288,6 +288,46 @@ class Props(unittest.TestCase):
          self.assertTrue(any(text in e for e in errs), (body, errs))
 
 
+class Menus(unittest.TestCase):
+   """C3: positioned menus of a list asset."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u8;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """Every field in order; the defaults (the port's place and delay, a column, no cancel)."""
+      op = sc.OP
+      c = sc.VM.constants
+      lst = sc.asset_key("list:MULTI_X", "test").to_bytes(4, "little")
+      style = sc.asset_key("text_box:LIST", "test").to_bytes(4, "little")
+      flags = c["kMenuBack"] | c["kMenuAt"] | c["kMenuFadeWait"]
+      self.assertEqual(self.code("menu list:MULTI_X at 17 6 default 1 columns 2 rows 3 delay 12 cancel 127 fadewait "
+                                 "style text_box:LIST -> var(v);"),
+                       bytes([op["Menu"], 0, 0, flags, 17, 6, 1, 2, 3, 12, 127]) + lst + style + bytes([op["End"]]))
+      self.assertEqual(self.code("menu list:MULTI_X -> var(v);"),
+                       bytes([op["Menu"], 0, 0, 0, 0, 0, 0, 1, 0, c["kMenuStyleDelay"], c["kNoCancel"]]) + lst +
+                       bytes(4) + bytes([op["End"]]))
+      # noback: the cancel value stays (a menu that cannot open), Back does nothing
+      self.assertEqual(self.code("menu list:MULTI_X cancel 127 noback -> var(v);")[3], 0)
+
+   def test_refusals(self) -> None:
+      """No list, an unknown field, a value past a byte, a delay of the port's own value, no columns, no style."""
+      for body, text in (("menu text:a.b -> var(v);", "list:NAME"), ("menu list:A spin 3 -> var(v);", "unknown field"),
+                         ("menu list:A cancel 256 -> var(v);", "0-255"), ("menu list:A delay 255 -> var(v);", "0-254"),
+                         ("menu list:A columns 0 -> var(v);", "columns"),
+                         ("menu list:A style 3 -> var(v);", "text_box"),
+                         ("menu list:A at 1 -> var(v);", "number")):
+         errs = errors(compile_text(f"var v : u8;\nscript s {{ {body} }}"))
+         self.assertTrue(any(text in e for e in errs), (body, errs))
+
+
 class Checks(unittest.TestCase):
    """Build errors and warnings."""
 

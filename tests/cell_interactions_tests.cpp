@@ -103,6 +103,18 @@ int16_t choice_poll()
 {
    return 0;
 }
+/// C3: answers 0 at once.
+/// @return 0
+int16_t menu_open(const MenuRequest&)
+{
+   return 0;
+}
+/// C3: answers 0.
+/// @return 0
+int16_t menu_poll()
+{
+   return 0;
+}
 /// Nothing to advance.
 void tick()
 {

@@ -13,6 +13,12 @@
 /// - Menus: the box grows to fit the options (one per line, cursor in the
 ///   first column); A picks, B picks the cancel index when there is one.
 ///   The question's text is replaced while the menu is open.
+/// - C3 positioned menus (menu_open()): a box at the request's cells (else
+///   right-aligned at the box position), as wide as the widest option per
+///   column; a grid moves the cursor across columns with Left / Right, a
+///   list shorter than its options scrolls; input after the delay (the
+///   port's own: none); A picks, B answers the cancel value when allowed.
+///   Styles and fade waits are a game port's (this port has neither).
 /// - Box position (D-17): bottom (default), middle or top.
 /// - Number entry: the digits on the box's last line, right-aligned; Up /
 ///   Down change the chosen digit, Left / Right choose it, A answers, B
@@ -62,7 +68,10 @@ constexpr uint8_t kPositionTop = 2;      ///< Top of the screen; also the highes
 constexpr uint8_t kMenuNone = 0;     ///< No menu open.
 constexpr uint8_t kMenuYesNo = 1;    ///< Yes / no.
 constexpr uint8_t kMenuChoice = 2;   ///< A choice.
+constexpr uint8_t kMenuPlaced = 3;   ///< C3: a positioned menu (menu_open()).
 ///@}
+
+constexpr uint8_t kCursorCells = 1;   ///< C3: the cursor's cell before each option.
 
 /// @name Yes / no line, columns inside the frame
 ///@{
@@ -96,6 +105,13 @@ struct State
    uint8_t digit;         ///< Number entry: the digit the cursor is on (0 = leftmost).
    int32_t number;        ///< Number entry: the value.
    int32_t number_answer; ///< Number entry: -1 until answered.
+   const text::Code* items[kMaxMenuItems];   ///< C3: the positioned menu's texts.
+   uint8_t columns;       ///< C3: its grid columns.
+   uint8_t shown;         ///< C3: its rows shown.
+   uint8_t scroll;        ///< C3: its first row shown.
+   uint8_t cell;          ///< C3: cells per column (the cursor and the widest option).
+   uint8_t delay;         ///< C3: frames left before input.
+   bool back;             ///< C3: Back answers cancel.
 };
 State g{};   ///< The port.
 
@@ -184,6 +200,47 @@ void draw_cursor()
    for (uint8_t i = 0; i < g.count; ++i)
    {
       put_char(0, i, i == g.cursor ? '>' : ' ');
+   }
+}
+
+/// C3: the length of a text in cells (one a code).
+/// @param codes  the text
+/// @return its codes before kCodeEnd
+uint8_t text_cells(const text::Code* codes)
+{
+   uint8_t n = 0;
+   while (codes[n] != text::kCodeEnd && n < kBoxW)
+   {
+      ++n;
+   }
+   return n;
+}
+
+/// C3: rows a positioned menu's options take.
+/// @return ceil(count / columns)
+uint8_t menu_rows()
+{
+   return static_cast<uint8_t>((g.count + g.columns - 1) / g.columns);
+}
+
+/// C3: draws the positioned menu's shown rows and its cursor.
+void draw_placed()
+{
+   layer::clear(layer::kBoxTarget, 0, g.shown);
+   for (uint8_t r = 0; r < g.shown; ++r)
+   {
+      for (uint8_t c = 0; c < g.columns; ++c)
+      {
+         const int i = (g.scroll + r) * g.columns + c;
+         if (i >= g.count)
+         {
+            break;
+         }
+         const auto x = static_cast<uint8_t>(c * g.cell);
+         put_char(x, r, i == g.cursor ? '>' : ' ');
+         layer::print(layer::kBoxTarget, static_cast<uint8_t>(x + kCursorCells), r, layer::Align::Left, false,
+                      g.items[i]);
+      }
    }
 }
 
@@ -305,6 +362,120 @@ CAPSULE_WEAK int16_t choice_poll()
    if (g.answer < 0)
    {
       return -1;
+   }
+   g.menu = kMenuNone;
+   close_message();   // the menu box goes; the next message opens a fresh box
+   return g.answer;
+}
+
+CAPSULE_WEAK int16_t menu_open(const MenuRequest& r)
+{
+   const uint8_t n = r.count > kMaxMenuItems ? static_cast<uint8_t>(kMaxMenuItems) : r.count;
+   if (n == 0)
+   {
+      return r.cancel;
+   }
+   g.count = n;
+   for (uint8_t i = 0; i < n; ++i)
+   {
+      g.items[i] = r.items[i];
+   }
+   g.columns = r.columns >= 1 ? r.columns : uint8_t{1};
+   uint8_t widest = 0;
+   for (uint8_t i = 0; i < n; ++i)
+   {
+      const uint8_t w = text_cells(g.items[i]);
+      widest = w > widest ? w : widest;
+   }
+   g.cell = static_cast<uint8_t>(widest + kCursorCells);
+   const uint8_t rows = menu_rows();
+   g.shown = r.rows >= 1 && r.rows < rows ? r.rows : rows;
+   const auto inner = static_cast<uint8_t>(kScreenRows - kFrameCells);
+   g.shown = g.shown > inner ? inner : g.shown;
+   // the box keeps on screen: at most the screen's width, moved left / up when it would leave it
+   int w = g.columns * g.cell + kFrameCells;
+   w = w > kBoxW ? kBoxW : w;
+   const int h = g.shown + kFrameCells;
+   int x = r.x == kMenuPortPlace ? kBoxW - w : r.x;
+   int y = r.y == kMenuPortPlace ? box_top(static_cast<uint8_t>(h)) : r.y;
+   x = x + w > kBoxW ? kBoxW - w : x;
+   y = y + h > kScreenRows ? kScreenRows - h : y;
+   if (layer::box_open())
+   {   // the menu box replaces the message box
+      layer::close_box();
+   }
+   layer::open_box(static_cast<uint8_t>(x), static_cast<uint8_t>(y), static_cast<uint8_t>(w),
+                   static_cast<uint8_t>(h));
+   g.menu = kMenuPlaced;
+   g.cursor = r.cursor < n ? r.cursor : uint8_t{0};
+   g.scroll = 0;
+   const uint8_t row = static_cast<uint8_t>(g.cursor / g.columns);
+   if (row >= g.shown)
+   {
+      g.scroll = static_cast<uint8_t>(row - g.shown + 1);   // the cursor's row in view
+   }
+   g.delay = r.delay == kMenuStyleDelay ? uint8_t{0} : r.delay;
+   g.back = r.back;
+   g.cancel = r.cancel;
+   g.answer = -1;
+   draw_placed();
+   return kMenuWaiting;
+}
+
+CAPSULE_WEAK int16_t menu_poll()
+{
+   if (g.menu != kMenuPlaced)
+   {
+      return g.answer < 0 ? kMenuWaiting : g.answer;
+   }
+   if (g.delay > 0)
+   {
+      --g.delay;
+      g.pressed = KeyBits{0};   // presses during the delay are not read
+      return kMenuWaiting;
+   }
+   int cursor = g.cursor;
+   if (take(hal::input::KEY_UP))
+   {
+      cursor = cursor >= g.columns ? cursor - g.columns : (g.columns == 1 ? g.count - 1 : cursor);
+   }
+   if (take(hal::input::KEY_DOWN))
+   {
+      cursor = cursor + g.columns < g.count ? cursor + g.columns : (g.columns == 1 ? 0 : cursor);
+   }
+   if (g.columns > 1 && take(hal::input::KEY_LEFT) && cursor % g.columns > 0)
+   {
+      --cursor;
+   }
+   if (g.columns > 1 && take(hal::input::KEY_RIGHT) && cursor % g.columns + 1 < g.columns && cursor + 1 < g.count)
+   {
+      ++cursor;
+   }
+   if (cursor != g.cursor)
+   {
+      g.cursor = static_cast<uint8_t>(cursor);
+      const int row = cursor / g.columns;
+      if (row < g.scroll)
+      {
+         g.scroll = static_cast<uint8_t>(row);
+      }
+      else if (row >= g.scroll + g.shown)
+      {
+         g.scroll = static_cast<uint8_t>(row - g.shown + 1);
+      }
+      draw_placed();
+   }
+   if (take(hal::input::KEY_A))
+   {
+      g.answer = g.cursor;
+   }
+   else if (g.back && take(hal::input::KEY_B))
+   {
+      g.answer = g.cancel;
+   }
+   if (g.answer < 0)
+   {
+      return kMenuWaiting;
    }
    g.menu = kMenuNone;
    close_message();   // the menu box goes; the next message opens a fresh box
