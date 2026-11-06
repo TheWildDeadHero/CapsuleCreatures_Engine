@@ -9,7 +9,7 @@
 namespace capsule::field::props
 {
 
-/// Drops every prop and frees their sprite slots and instances (a new map: field.cpp's reset_cutscene()).
+/// Drops every prop and frees their instances (a new map: field.cpp's reset_cutscene()).
 void reset();
 
 /// Draws every prop for this frame (after the camera moved; field::update()).

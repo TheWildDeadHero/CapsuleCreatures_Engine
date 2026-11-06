@@ -430,6 +430,126 @@ void prompts_and_pages()
 
 /// Runs every check.
 /// @return 0 when all pass
+/// C2b: the tile heap and the palette pool: a slot takes its sprite's tiles (a streamed sprite one frame's), sprites
+/// of the same colors share a bank, own_palette() gives a slot colors of its own, unload() frees both.
+void sprite_heap_and_banks()
+{
+   fresh();
+   const asset::Sprite& blink = *asset::sprite(asset::key_v1("sprite:BLINK"));   // 16x16, 2 frames: 8 tiles
+   const asset::Sprite& stepper = *asset::sprite(asset::key_v1("sprite:STEPPER"));   // streamed 16x16
+   const int blink_tiles = asset::tiles_per_frame(blink) * blink.frame_count;
+   CHECK(gfx::sprites::free_tiles() == gfx::sprites::kTiles && gfx::sprites::free_banks() == gfx::sprites::kBanks);
+   CHECK(gfx::sprites::load(3, blink) && gfx::sprites::load(5, blink));
+   CHECK(gfx::sprites::palette_bank(3) == 3 && gfx::sprites::palette_bank(5) == 3);   // shared: the same colors
+   CHECK(gfx::sprites::free_banks() == gfx::sprites::kBanks - 1);
+   CHECK(gfx::sprites::free_tiles() == gfx::sprites::kTiles - 2 * blink_tiles);
+   CHECK(gfx::sprites::load(6, stepper) && gfx::sprites::palette_bank(6) == 6);   // other colors: its own number
+   CHECK(gfx::sprites::free_tiles() == gfx::sprites::kTiles - 2 * blink_tiles - asset::tiles_per_frame(stepper));
+
+   // own_palette(): slot 5 moves to a copy; a color changed there leaves slot 3's
+   const video::Color backdrop = video::rgb5(0, 0, 8);
+   gfx::palette::load_bg(0, &backdrop, 1);
+   const uint8_t own = gfx::sprites::own_palette(5);
+   CHECK(own != 3 && own != gfx::sprites::kNoBank && gfx::sprites::palette_bank(3) == 3);
+   gfx::palette::load_obj(static_cast<uint8_t>(own * gfx::palette::kBankColors + 1), &kRed, 1);
+   gfx::sprites::set_position(3, 40, 40);
+   gfx::sprites::set_position(5, 100, 40);
+   gfx::sprites::show(3, true);
+   gfx::sprites::show(5, true);
+   gfx::sprites::update();
+   show();
+   CHECK(pixel(40, 40) == video::rgb5(31, 31, 31) && pixel(100, 40) == kRed);
+   CHECK(gfx::sprites::own_palette(5) == own);   // its own already
+   // a sprite of those colors loaded now does not share the slot's own bank
+   CHECK(gfx::sprites::load(7, blink) && gfx::sprites::palette_bank(7) == 3);
+
+   // unload() gives the tiles and the banks back; a load of as many tiles keeps its place
+   gfx::sprites::unload(5);
+   gfx::sprites::unload(6);
+   gfx::sprites::unload(7);
+   CHECK(gfx::sprites::free_banks() == gfx::sprites::kBanks - 1);
+   CHECK(gfx::sprites::load(3, blink) && gfx::sprites::free_tiles() == gfx::sprites::kTiles - blink_tiles);
+   gfx::sprites::unload(3);
+   CHECK(gfx::sprites::free_tiles() == gfx::sprites::kTiles && gfx::sprites::free_banks() == gfx::sprites::kBanks);
+}
+
+/// C2b: instances need no slot: every instance showing one frame shares its tiles and bank; a crowd draws.
+void sprite_instances()
+{
+   fresh();
+   const asset::Sprite& blink = *asset::sprite(asset::key_v1("sprite:BLINK"));
+   const int frame_tiles = asset::tiles_per_frame(blink);
+   const video::Color backdrop = video::rgb5(0, 0, 8);
+   gfx::palette::load_bg(0, &backdrop, 1);
+   constexpr int kCrowd = 12;            // instances, a row of 16-pixel sprites
+   constexpr int16_t kRowY = 100;        // their row
+   constexpr int16_t kSpacing = 20;      // pixels between their left edges
+   uint8_t crowd[kCrowd] = {};
+   for (int k = 0; k < kCrowd; ++k)
+   {
+      crowd[k] = gfx::sprites::add_instance(blink);
+      CHECK(crowd[k] != gfx::sprites::kNoInstance && gfx::sprites::set_instance_frame(crowd[k], 0, 0));
+      gfx::sprites::set_instance_position(crowd[k], static_cast<int16_t>(k * kSpacing), kRowY);
+      gfx::sprites::show_instance(crowd[k], true);
+   }
+   CHECK(gfx::sprites::free_tiles() == gfx::sprites::kTiles - frame_tiles);   // one frame for the crowd
+   CHECK(gfx::sprites::free_banks() == gfx::sprites::kBanks - 1);
+   CHECK(!gfx::sprites::set_instance_frame(crowd[0], static_cast<uint8_t>(blink.frame_count), 0));   // no such frame
+   CHECK(gfx::sprites::set_instance_frame(crowd[0], 0, 0));
+   CHECK(gfx::sprites::set_instance_frame(crowd[1], 1, 0));   // another frame: its own tiles
+   CHECK(gfx::sprites::free_tiles() == gfx::sprites::kTiles - 2 * frame_tiles);
+   gfx::sprites::update();
+   show();
+   bool drawn = true;
+   for (int k = 0; k < kCrowd; ++k)
+   {
+      const bool white = pixel(k * kSpacing, kRowY) == video::rgb5(31, 31, 31);
+      drawn = drawn && white == (k != 1);   // frame 1 is empty
+   }
+   CHECK(drawn);
+
+   // reupload(): the frames come back after a scene used the sprite memory
+   static const uint32_t zeros[gfx::sprites::kTiles * asset::kTileWords4bpp] = {};
+   video::load_obj_tiles(0, zeros, static_cast<uint16_t>(gfx::sprites::kTiles));
+   show();
+   CHECK(pixel(0, kRowY) == backdrop);
+   gfx::sprites::reupload();
+   gfx::sprites::update();
+   show();
+   CHECK(pixel(0, kRowY) == video::rgb5(31, 31, 31));
+
+   for (const uint8_t i : crowd)
+   {
+      gfx::sprites::remove_instance(i);
+   }
+   gfx::sprites::remove_instance(crowd[0]);   // freed already: nothing
+   CHECK(gfx::sprites::free_tiles() == gfx::sprites::kTiles && gfx::sprites::free_banks() == gfx::sprites::kBanks);
+}
+
+/// C2b: reserve_tiles() / reserve_palette() lend a slot raw tiles and a bank; a full heap refuses loads and frames.
+void sprite_reserve_and_full()
+{
+   fresh();
+   const asset::Sprite& blink = *asset::sprite(asset::key_v1("sprite:BLINK"));
+   constexpr uint16_t kLent = 64;   // a scene's sprite: 64 tiles
+   const uint16_t first = gfx::sprites::reserve_tiles(4, kLent);
+   CHECK(first != gfx::sprites::kNoTiles && gfx::sprites::reserve_palette(4) == 4);
+   CHECK(gfx::sprites::free_tiles() == gfx::sprites::kTiles - kLent && gfx::sprites::free_banks() == gfx::sprites::kBanks - 1);
+   CHECK(gfx::sprites::load(5, blink) && gfx::sprites::palette_bank(5) == 5);   // the lent bank is never shared
+   gfx::sprites::unload(4);
+   CHECK(gfx::sprites::largest_free_run() < gfx::sprites::kTiles - asset::tiles_per_frame(blink) * blink.frame_count);
+   gfx::sprites::unload(5);
+   CHECK(gfx::sprites::largest_free_run() == gfx::sprites::kTiles);
+
+   // the heap full: a load or a frame finds no room, and draws nothing
+   CHECK(gfx::sprites::reserve_tiles(0, static_cast<uint16_t>(gfx::sprites::kTiles)) == 0);
+   CHECK(!gfx::sprites::load(1, blink));
+   const uint8_t i = gfx::sprites::add_instance(blink);
+   CHECK(i != gfx::sprites::kNoInstance && !gfx::sprites::set_instance_frame(i, 0, 0));
+   gfx::sprites::unload(0);
+   CHECK(gfx::sprites::load(1, blink) && gfx::sprites::set_instance_frame(i, 0, 0));
+}
+
 int main()
 {
    lookup();
@@ -437,6 +557,9 @@ int main()
    both_forms_and_priority();
    sprite_animation_and_scale();
    sprite_image_durations();
+   sprite_heap_and_banks();
+   sprite_instances();
+   sprite_reserve_and_full();
    palette_fade();
    text_layer();
    control_escapes();

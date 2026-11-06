@@ -568,7 +568,7 @@ int count_color(uint16_t color)
 /// instance; turning, replacing and removing one; the next map drops them all.
 void props()
 {
-   constexpr int kCrowd = 24;   // more than the field's object slots
+   constexpr int kCrowd = 24;   // more than the field's object slots (C2b: none of them used)
    constexpr uint8_t kRow = 1;
    constexpr uint8_t kLevel = 3;
    constexpr int kSpotWidth = 8;   // the spot map's columns
@@ -584,6 +584,14 @@ void props()
    constexpr int kDotPixels = 64;           // its 8 x 8 square
    field::update(field::Intent{});
    const int before = count_color(kDotColor);   // the spotters' dots
+   // C2b: props take no sprite slot, so they place with every slot the field has claimed
+   uint8_t claimed[gfx::sprites::kSlots] = {};
+   int claims = 0;
+   for (uint8_t slot = field::claim_sprite_slot(); slot != field::kNoSpriteSlot; slot = field::claim_sprite_slot())
+   {
+      claimed[claims++] = slot;
+   }
+   const uint16_t free_tiles = gfx::sprites::free_tiles();
    bool all = true;
    for (int i = 0; i < kCrowd; ++i)
    {
@@ -598,9 +606,14 @@ void props()
    CHECK(field::face_prop(1, field::DIR_LEFT) && !field::face_prop(kCrowd, field::DIR_LEFT));
    CHECK(field::place_prop(1, *dot, 2, kRow, kLevel, field::DIR_UP));   // the same number: replaced
    CHECK(field::remove_prop(1) && !field::remove_prop(1));
-   // the next map: none left, and the slot is free again
+   for (int k = 0; k < claims; ++k)
+   {
+      field::release_sprite_slot(claimed[k]);
+   }
+   // the next map: none left, and their tiles free again
    field::leave();
    field::enter(world_ids::MAP_SPOT, 1, 4, field::DIR_RIGHT);
+   CHECK(gfx::sprites::free_tiles() >= free_tiles);
    CHECK(!field::face_prop(0, field::DIR_UP) && !field::remove_prop(2));
 }
 
