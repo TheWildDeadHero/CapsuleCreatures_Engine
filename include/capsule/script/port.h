@@ -68,6 +68,38 @@ void choice_open(const text::Code* const* options, uint8_t count, uint8_t cancel
 /// The menu answer.
 /// @return -1 while waiting, else the chosen index
 int16_t choice_poll();
+
+/// C3: menu_open() / menu_poll(): no answer yet.
+inline constexpr int16_t kMenuWaiting = -1;
+/// C3: MenuRequest::x / y: the port's place (the request had no kMenuAt).
+inline constexpr uint8_t kMenuPortPlace = 0xFF;
+
+/// C3: a positioned menu (the Menu op's request; the texts are the VM's for the call only: a port keeps a copy).
+struct MenuRequest
+{
+   const text::Code* const* items;   ///< The options' texts.
+   uint8_t count;                    ///< Options (1 to kMaxMenuItems).
+   uint8_t x;                        ///< Its frame's left cell, or kMenuPortPlace.
+   uint8_t y;                        ///< Its frame's top cell, or kMenuPortPlace.
+   uint8_t cursor;                   ///< The option the cursor starts on.
+   uint8_t columns;                  ///< Grid columns (1: a column).
+   uint8_t rows;                     ///< Rows shown (0: every row; fewer than the rows: a scrolling list).
+   uint8_t delay;                    ///< Frames before input, or kMenuStyleDelay (the port's).
+   uint8_t cancel;                   ///< The answer for Back (with back) and for a menu that cannot open.
+   bool back;                        ///< Back answers cancel (else it does nothing).
+   bool fade_wait;                   ///< Input waits while the screen fades.
+   AssetKey style;                   ///< A text box style (asset::TextBox) for the port, or AssetKey{} (its own).
+};
+
+/// C3: opens a positioned menu.
+/// @param request  what it shows and how it answers
+/// @return kMenuWaiting while it waits for input, or an answer at once (the menu answered in its first frame, or
+///         could not open: request.cancel)
+int16_t menu_open(const MenuRequest& request);
+
+/// C3: one frame of the menu menu_open() opened (the VM calls it once per frame while it waits).
+/// @return kMenuWaiting while waiting, else the chosen option's index or the cancel value
+int16_t menu_poll();
 /// Sets where the box shows from the next message on.
 /// @param pos  0 bottom, 1 middle, 2 top
 void message_position(uint8_t pos);

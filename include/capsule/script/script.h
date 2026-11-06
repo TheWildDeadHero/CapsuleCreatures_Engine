@@ -79,6 +79,7 @@ enum class Wait : uint8_t
    State,         ///< I4: the game is busy (game::state_busy()).
    Battle,        ///< C1: a battle through the battle port.
    Approach,      ///< C1b: a spotter's walk-up (encounter approach).
+   Menu,          ///< C3: a positioned menu's answer (port::menu_poll()).
    NUM_WAITS      ///< Number of waits.
 };
 

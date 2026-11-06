@@ -55,6 +55,11 @@ struct Port
    char option0[16];       ///< First option of the last menu.
    int slow_calls;         ///< Calls of the slow native.
    int ticks;              ///< port::tick() calls.
+   script::port::MenuRequest menu;   ///< C3: the last positioned menu (its texts not kept).
+   char menu_option1[16];  ///< C3: its second option.
+   int menus;              ///< C3: menu_open() calls.
+   int16_t menu_answer;    ///< C3: menu_poll()'s next answer (given once; kMenuWaiting: none).
+   int16_t menu_at_once;   ///< C3: menu_open()'s answer.
 };
 Port g_port{};   ///< The test port.
 
@@ -125,6 +130,31 @@ void choice_open(const text::Code* const* options, uint8_t count, uint8_t cancel
       ++n;
    }
    g_port.option0[n] = '\0';
+}
+/// C3: records a positioned menu.
+/// @param r  the request
+/// @return the queued at-once answer
+int16_t menu_open(const MenuRequest& r)
+{
+   g_port.menu = r;
+   g_port.menu.items = nullptr;
+   ++g_port.menus;
+   int n = 0;
+   while (r.count > 1 && r.items[1][n] != text::kCodeEnd && n < 15)
+   {
+      g_port.menu_option1[n] = static_cast<char>(r.items[1][n]);
+      ++n;
+   }
+   g_port.menu_option1[n] = '\0';
+   return g_port.menu_at_once;
+}
+/// C3: the queued answer, once.
+/// @return it
+int16_t menu_poll()
+{
+   const int16_t a = g_port.menu_answer;
+   g_port.menu_answer = kMenuWaiting;
+   return a;
 }
 /// The queued answer.
 /// @return it
@@ -1728,6 +1758,46 @@ void test_props()
    CHECK(std::strcmp(g_world.log, want) == 0);
 }
 
+/// C3: positioned menus: the request carries the statement's fields and the list's texts; the VM waits until the
+/// port answers; an at-once answer goes on without waiting.
+void test_menus()
+{
+   namespace port = script::port;
+   script::clear_all();
+   g_port.menus = 0;
+   g_port.menu_at_once = port::kMenuWaiting;
+   g_port.menu_answer = port::kMenuWaiting;
+   script::Context c{};
+   script::start(c, SCRIPT_MENUS);
+   run(c);
+   const port::MenuRequest& m = g_port.menu;
+   CHECK(g_port.menus == 1 && c.wait == script::Wait::Menu);
+   CHECK(m.count == 3 && m.x == 17 && m.y == 6 && m.cursor == 1 && m.columns == 1 && m.rows == 0 && m.delay == 2);
+   CHECK(m.cancel == 127 && m.back && m.fade_wait && m.style == AssetKey{});
+   CHECK(std::strcmp(g_port.menu_option1, "Green") == 0);
+   g_port.menu_answer = 2;
+   run(c);
+   CHECK(script::var(VAR_ANSWER) == 2 && g_port.menus == 2 && c.wait == script::Wait::Menu);
+   // the grid: the port's place, Back does nothing, the port's delay
+   CHECK(m.x == port::kMenuPortPlace && m.y == port::kMenuPortPlace && m.columns == 3 && !m.back);
+   CHECK(m.cancel == 127 && !m.fade_wait && m.delay == script::kMenuStyleDelay);
+   g_port.menu_answer = 1;
+   run(c);
+   CHECK(script::var(VAR_V8) == 1 && g_port.menus == 3);
+   // the scrolling list: two rows, a style; no cancel: Back does nothing
+   CHECK(m.rows == 2 && !m.back && m.cancel == script::kNoCancel);
+   CHECK(m.style == asset::key_v1("text_box:MENU_STYLE"));
+   g_port.menu_answer = 0;
+   run(c);
+   CHECK(script::var(VAR_V16) == 0 && c.depth == 0);
+   // answered at once: no wait
+   g_port.menu_at_once = 1;
+   script::start(c, SCRIPT_MENUS);
+   CHECK(run(c) == 0);
+   CHECK(script::var(VAR_ANSWER) == 1 && script::var(VAR_V8) == 1 && script::var(VAR_V16) == 1);
+   g_port.menu_at_once = port::kMenuWaiting;
+}
+
 /// C1b: a spotter group: Load fills a side per spotter whose script reaches a Set (its object the spotter, no
 /// then-script, the statements before the Set run), Approach walks each up, Next steps through the filled sides
 /// and back to A; the battle takes both; a later Set of side A starts a new encounter.
@@ -1913,6 +1983,7 @@ int main()
    test_combine();
    test_encounter();
    test_spotter_group();
+   test_menus();
    test_props();
    test_field_effects();
    test_f2();

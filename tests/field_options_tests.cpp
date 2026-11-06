@@ -109,6 +109,18 @@ int16_t capsule::script::port::choice_poll()
 {
    return 0;
 }
+/// C3: answers 0 at once.
+/// @return 0
+int16_t capsule::script::port::menu_open(const capsule::script::port::MenuRequest&)
+{
+   return 0;
+}
+/// C3: answers 0.
+/// @return 0
+int16_t capsule::script::port::menu_poll()
+{
+   return 0;
+}
 /// Nothing to advance.
 void capsule::script::port::tick()
 {

@@ -1162,6 +1162,12 @@ HEAP_CHANGES = {name: HEAP_REASON for name in ("sandbox_map/assets.cpp", "sandbo
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in HEAP_CHANGES.items()})
 
+## Why the script test outputs changed for C3's menus (the menus script, its list and texts).
+MENU_REASON = "The test scripts gain C3's menu statements (a list asset of three texts)"
+MENU_CHANGES = {name: MENU_REASON for name in ("test_script.cpp", "test_script_assets.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in MENU_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

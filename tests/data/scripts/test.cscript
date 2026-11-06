@@ -316,6 +316,12 @@ script props {
     order player 83;
     order self reset;
 }
+// C3: positioned menus of a list asset
+script menus {
+    menu list:MENU_COLORS at 17 6 default 1 delay 2 cancel 127 fadewait -> var(answer);
+    menu list:MENU_COLORS columns 3 cancel 127 noback -> var(v8);
+    menu list:MENU_COLORS rows 2 style text_box:MENU_STYLE -> var(v16);
+}
 script lone_battle {
     battle unowned 25 5 -> var(answer);
     battle scripted 3;

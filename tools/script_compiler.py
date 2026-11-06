@@ -200,7 +200,15 @@ shows again when its map is entered), C2's props `prop place <id> sprite:NAME
 <x> <y> <level> <facing>;`, `prop face <id> <facing>;`, `prop remove <id>;`
 (a sprite standing on a cell until the next map; id and level 0-255) and an
 object's draw order `order <obj> <n>;` / `order <obj> reset;` (0-255, or the
-world's rule again), and
+world's rule again), C3's positioned menus `menu list:NAME [at <x> <y>]
+[default <n>] [columns <n>] [rows <n>] [delay <n>] [cancel <n>] [noback]
+[fadewait] [style text_box:NAME] -> var(v);` (a list asset's texts; at: its
+frame's top-left cell, else the port's place; default: the first cursor
+option; columns: a grid; rows: rows shown, a scrolling list when fewer; delay:
+frames before input, else the port's; cancel: the answer for Back and for a
+menu that cannot open, Back doing nothing with noback or without cancel;
+fadewait: input waits while the screen fades; style: the port's text box
+style; v = the chosen option's index; waits), and
 compile-time `when [not] game(...) { }`.
 
 Operands: numbers, constants, `yes` / `no` / `true` / `false`, `var(v)` and
@@ -297,7 +305,8 @@ NO_CANCEL = VM.constants["kNoCancel"]
 DEP_VAR = 0x8000
 ## Opcodes that make a script wait.
 WAITING_STATEMENTS = {"msg", "msgbox", "wait_button", "yesno", "choice", "delay", "move", "route", "wait_moves",
-                      "input_number", "wait_key", "warp", "scroll", "open_bag", "shop", "open_boxes", "transform"}
+                      "input_number", "wait_key", "warp", "scroll", "open_bag", "shop", "open_boxes", "transform",
+                      "menu"}
 ## The bag statements: name -> {"op": opcode, "counted": takes a count, "result": needs a result variable}.
 ITEM_STATEMENTS = {"give_item": {"op": "ItemGive", "counted": True, "result": False},
                    "take_item": {"op": "ItemTake", "counted": True, "result": False},
@@ -515,7 +524,7 @@ WARP_NOWAIT = VM.constants["kWarpNoWait"]
 ## Statement words of the script ports that are no keywords.
 PORT_WORDS = ("lock", "release", "wait_msg", "remove", "visible", "set_template", "door", "weather", "fade",
             "set_metatile", "respawn", "set_warp", "sound", "wait_sound", "mart", "wait_state", "override", "prop",
-            "order")
+            "order", "menu")
 ## The override statement's kinds (`override apply NAME;` / `override clear NAME;`) and their apply byte.
 OVERRIDE_KINDS = ("clear", "apply")
 ## C2: the prop statement's kinds (capsule::script::PropOp, in order).
@@ -526,6 +535,18 @@ PROP_BYTE_MAX = 0xFF
 ORDER_RESET_WORD = "reset"
 ## C2: the largest draw order (a sub-priority byte).
 ORDER_MAX = 0xFF
+## C3: the menu statement's number fields (word, node field) and their largest value (a byte each).
+MENU_NUMBERS = {"default": "cursor", "columns": "columns", "rows": "rows", "delay": "delay", "cancel": "cancel"}
+## C3: the largest menu number (a byte; a delay of 255 is kMenuStyleDelay, the port's).
+MENU_BYTE_MAX = 0xFF
+## C3: the largest menu delay a statement may give.
+MENU_DELAY_MAX = VM.constants["kMenuStyleDelay"] - 1
+## C3: the menu statement's flag words and their bits.
+MENU_FLAG_WORDS = {"fadewait": VM.constants["kMenuFadeWait"]}
+## C3: the menu statement's word that keeps Back from answering.
+MENU_NOBACK_WORD = "noback"
+## C3: the menu statement's grid, rows and delay defaults (a column, every row, the port's delay).
+MENU_DEFAULTS = {"cursor": 0, "columns": 1, "rows": 0, "delay": VM.constants["kMenuStyleDelay"], "cancel": None}
 
 ## Stack depth when the manifest gives none.
 DEFAULT_STACK_DEPTH = 20
@@ -2389,6 +2410,49 @@ class Parser:
          facing = self.direction(tuple(DIRECTIONS)) if kind == "face" else None
          self.expect(";")
          return Node("prop", t, kind=kind, id=pid, facing=facing)
+      if w == "menu":   # C3: a positioned menu of a list asset's texts
+         ref = self.take()
+         if ref.kind != "ref" or not ref.text.startswith("list:"):
+            raise self.error(f"menu: expected a list:NAME, found {ref.text or 'end of file'!r}")
+         fields: dict[str, Any] = dict(MENU_DEFAULTS)
+         fields.update({"at": None, "flags": 0, "back": True, "style": None})
+         while not self.at("->"):
+            if self.accept("at"):
+               x, x_tok = self.number()
+               y, y_tok = self.number()
+               if not (0 <= x < MENU_BYTE_MAX and 0 <= y < MENU_BYTE_MAX):
+                  raise self.error(f"menu: at needs cells 0-{MENU_BYTE_MAX - 1}, not {x_tok.text} {y_tok.text}")
+               fields["at"] = (x, y)
+               continue
+            word = next((wd for wd in MENU_NUMBERS if self.accept(wd)), None)
+            if word is not None:
+               value, v_tok = self.number()
+               top = MENU_DELAY_MAX if word == "delay" else MENU_BYTE_MAX
+               if not 0 <= value <= top:
+                  raise self.error(f"menu: {word} must be 0-{top}, not {v_tok.text}")
+               fields[MENU_NUMBERS[word]] = value
+               continue
+            flag = next((wd for wd in MENU_FLAG_WORDS if self.accept(wd)), None)
+            if flag is not None:
+               fields["flags"] |= MENU_FLAG_WORDS[flag]
+               continue
+            if self.accept(MENU_NOBACK_WORD):
+               fields["back"] = False
+               continue
+            if self.accept("style"):
+               st = self.take()
+               if st.kind != "ref" or not st.text.startswith("text_box:"):
+                  raise self.error(f"menu: style needs a text_box:NAME, found {st.text or 'end of file'!r}")
+               fields["style"] = st.text
+               continue
+            u = self.peek()
+            raise self.error(f"menu: unknown field {u.text or 'end of file'!r}")
+         self.expect("->")
+         n = self.var_ref()
+         self.expect(";")
+         if fields["columns"] < 1:
+            raise self.error("menu: columns must be 1 or more")
+         return Node("menu", t, list=ref.text, name=n.text, **fields)
       if w == "order":   # C2: an object's draw order among the sprites
          obj = self.object_ref()
          order = None
@@ -3908,6 +3972,42 @@ class Compiler:
             e.u8(DIRECTIONS.index(s["facing"]))
          elif s["kind"] == "face":
             e.u8(DIRECTIONS.index(s["facing"]))
+         return True
+      if k == "menu":
+         keys = []
+         for ref, kind in ((s["list"], "list"), (s["style"], "text_box")):
+            if ref is None:
+               keys.append(0)
+               continue
+            try:
+               key = asset_key(ref, f"menu {kind}")
+            except KeyError_ as err:
+               self.err(str(err), s)
+               key = 0
+            known = self.asset_keys.get(key) if self.asset_keys is not None else None
+            if known is not None and known != kind:   # lists may come from another manifest than the scripts'
+               self.err(f"menu: {ref} is a {known}, not a {kind}", s)
+            keys.append(key)
+         cancel = s["cancel"]
+         flags = s["flags"]
+         if cancel is not None and s["back"]:
+            flags |= VM.constants["kMenuBack"]
+         if s["at"] is not None:
+            flags |= VM.constants["kMenuAt"]
+         x, y = s["at"] if s["at"] is not None else (0, 0)
+         e.op("Menu")
+         e.u16(self.var_id(s["name"], s))
+         e.u8(flags)
+         e.u8(x)
+         e.u8(y)
+         e.u8(s["cursor"])
+         e.u8(s["columns"])
+         e.u8(s["rows"])
+         e.u8(s["delay"])
+         e.u8(NO_CANCEL if cancel is None else cancel)
+         e.u32(keys[0])
+         e.u32(keys[1])
+         ctx["waits"] = True
          return True
       if k == "order":
          e.op("ObjectOrder")
