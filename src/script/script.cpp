@@ -313,11 +313,7 @@ int32_t operand(const uint8_t*& p)
    return v;
 }
 
-/// Writes a number's decimal digits (defined with the placeholders below).
-/// @param v         the number (0 or more)
-/// @param out       where they go
-/// @param capacity  most codes
-/// @return codes written
+// C4: decimal() is defined (and documented) with the placeholders below
 int decimal(int32_t v, text::Code* out, int capacity);
 
 /// C4: copies a text's codes (no kCodeEnd).

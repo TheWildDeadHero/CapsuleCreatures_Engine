@@ -2816,6 +2816,7 @@ class Compiler:
       if isinstance(base, bool) or not isinstance(base, int) or not 0 <= base <= MAX_OBJECT_BASE:
          raise ScriptError(f"object_base must be 0-{MAX_OBJECT_BASE}")
       self.object_base = base
+      ## C4: the manifest's own name kinds.
       self.name_kinds = game_name_kinds(m.get("name_kinds", []))
       self.vm_flags = vm_flags(m.get("vm", {}))
       if not isinstance(m.get("warn_unused", True), bool):
