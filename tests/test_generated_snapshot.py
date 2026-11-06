@@ -1168,6 +1168,17 @@ MENU_CHANGES = {name: MENU_REASON for name in ("test_script.cpp", "test_script_a
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in MENU_CHANGES.items()})
 
+## Why the script test outputs changed for C4's name slots (the names script, five str slots, a list, a name kind).
+NAME_REASON = "The test scripts gain C4's name statements (five str name slots, a list asset, a game name kind)"
+NAME_CHANGES = {name: NAME_REASON for name in ("test_script.cpp", "test_script_assets.cpp", "test_script_ids.h")}
+## Every scripts' ids header names the Name op's kinds (C4: NAME_KIND_ITEM ...).
+NAME_KIND_REASON = "script_ids.h names the Name op's kinds (C4: NAME_KIND_...)"
+NAME_CHANGES.update({name: NAME_KIND_REASON for name in ("combine_script_ids.h", "field_script_ids.h",
+                                                         "sandbox_map/script_ids.h", "steps_script_ids.h",
+                                                         "test_map_script_ids.h", "test_script/script_ids.h")})
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in NAME_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

@@ -566,4 +566,18 @@ NativeStatus native(uint16_t id, const int32_t* args, uint8_t argc, int32_t& res
 /// @return true while it is
 bool state_busy();
 
+/// C4: the name of a kind's id for the Name op (a script's `name <slot> = <kind> <id> [count <n>];`). The engine's
+/// default (src/script/script_names.cpp) names the engine's kinds (NameKind: the battle data's items, species and
+/// moves, the party's nicknames) and nothing for a game's own (kFirstGameNameKind on); a game with its own tables or
+/// kinds defines it.
+/// @param kind      NameKind, or kFirstGameNameKind + the scripts manifest's name_kinds index (script_ids.h
+///                  NAME_KIND_...)
+/// @param id        the id (an item, a species, a party slot, ...)
+/// @param count     the count, for a plural (1 without one)
+/// @param counted   the statement gave a count
+/// @param out       where the codes go (no kCodeEnd)
+/// @param capacity  most codes (a name slot's: text::kMaxPlaceholderCodes)
+/// @return codes written, 0 to @p capacity (0: no name)
+int name_text(uint8_t kind, int32_t id, int32_t count, bool counted, text::Code* out, int capacity);
+
 } // namespace capsule::script::game

@@ -16,7 +16,9 @@
 #include "capsule/battle/field_context.h"
 #include "capsule/core/random.h"
 #include "capsule/encounter/encounter.h"
+#include "capsule/monster/monster.h"
 #include "capsule/script/field_effects.h"
+#include "capsule/script/port.h"
 
 #include "battle_ids.h"
 
@@ -108,6 +110,22 @@ bool take_expired(uint8_t*)
 }
 
 } // namespace capsule::script::field_effects
+
+namespace capsule::script::party
+{
+/// C4: party slot 2 holds the nickname "Rex" (codes 'R' 'e' 'x', then an end code); every other slot nothing.
+/// @param slot     party slot
+/// @param role     the role (Nickname)
+/// @param element  the code's index
+/// @return the code, or 0
+int32_t role_get(uint8_t slot, uint8_t role, uint8_t element)
+{
+   constexpr uint8_t kNamedSlot = 2;   // the test's nicknamed slot
+   static constexpr text::Code kRex[] = {'R', 'e', 'x', text::kCodeEnd};
+   const bool named = slot == kNamedSlot && role == static_cast<uint8_t>(monster::Role::Nickname);
+   return named && element < sizeof(kRex) / sizeof(kRex[0]) ? kRex[element] : 0;
+}
+} // namespace capsule::script::party
 
 namespace
 {
@@ -509,6 +527,45 @@ void test_primitives()
 
 /// Runs the tests.
 /// @return 0 when all pass
+/// C4: the Name op's engine kinds through the default game::name_text(): the battle data's item, species and move
+/// names, a party slot's nickname, nothing for an id past the data or a game's own kind; cut to the capacity.
+void test_name_kinds()
+{
+   namespace game = script::game;
+   text::Code out[text::kMaxPlaceholderCodes] = {};
+   auto same = [&out](int n, const text::Code* want)
+   {
+      int k = 0;
+      while (want != nullptr && want[k] != text::kCodeEnd)
+      {
+         ++k;
+      }
+      bool ok = n == k;
+      for (int i = 0; ok && i < k; ++i)
+      {
+         ok = out[i] == want[i];
+      }
+      return ok;
+   };
+   const auto item = static_cast<uint8_t>(script::NameKind::Item);
+   const auto species = static_cast<uint8_t>(script::NameKind::Species);
+   const auto move = static_cast<uint8_t>(script::NameKind::Move);
+   const auto nick = static_cast<uint8_t>(script::NameKind::Nickname);
+   constexpr int kCut = 2;   // a capacity shorter than the names
+   CHECK(same(game::name_text(item, ITEM_WARD_CHARM, 1, false, out, text::kMaxPlaceholderCodes),
+              battle::kData.items[ITEM_WARD_CHARM].name));
+   CHECK(same(game::name_text(item, ITEM_WARD_CHARM, 3, true, out, text::kMaxPlaceholderCodes),
+              battle::kData.items[ITEM_WARD_CHARM].name));   // no plural rule in the engine
+   CHECK(game::name_text(item, ITEM_WARD_CHARM, 1, false, out, kCut) == kCut);
+   CHECK(same(game::name_text(species, 1, 1, false, out, text::kMaxPlaceholderCodes), battle::kData.species[1].name));
+   CHECK(battle::kData.move_count < 2 ||
+         same(game::name_text(move, 1, 1, false, out, text::kMaxPlaceholderCodes), battle::kData.moves[1].name));
+   CHECK(game::name_text(item, battle::kData.item_count, 1, false, out, text::kMaxPlaceholderCodes) == 0);
+   CHECK(game::name_text(nick, 2, 1, false, out, text::kMaxPlaceholderCodes) == 3 && out[0] == 'R');
+   CHECK(game::name_text(nick, 0, 1, false, out, text::kMaxPlaceholderCodes) == 0);
+   CHECK(game::name_text(script::kFirstGameNameKind, 1, 1, false, out, text::kMaxPlaceholderCodes) == 0);
+}
+
 int main()
 {
    encounter::set_bank(&kBank);
@@ -522,6 +579,7 @@ int main()
    test_skip();
    test_made();
    test_primitives();
+   test_name_kinds();
    encounter::set_bank(nullptr);
    std::printf("field_tests: %d checks, %d failed\n", g_checks, g_failures);
    return g_failures == 0 ? 0 : 1;

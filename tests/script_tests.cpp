@@ -18,6 +18,7 @@
 #include "test_script_ids.h"
 
 #include <cstdio>
+#include <string>
 #include <cstdlib>
 #include <cstring>
 
@@ -883,6 +884,30 @@ bool state_busy()
    return false;
 }
 
+/// C4: the last kind the stub named, its id, count and whether one was given.
+struct NameCall
+{
+   uint8_t kind;      ///< The kind.
+   int32_t id;        ///< The id.
+   int32_t count;     ///< The count.
+   bool counted;      ///< A count was given.
+};
+NameCall g_name_call{};   ///< The last call.
+
+/// C4: names every kind "Cup" and records the call.
+/// @return codes written
+int name_text(uint8_t kind, int32_t id, int32_t count, bool counted, text::Code* out, int capacity)
+{
+   static constexpr text::Code kCup[] = {'C', 'u', 'p'};
+   g_name_call = NameCall{kind, id, count, counted};
+   int n = 0;
+   for (; n < capacity && n < static_cast<int>(sizeof(kCup) / sizeof(kCup[0])); ++n)
+   {
+      out[n] = kCup[n];
+   }
+   return n;
+}
+
 } // namespace capsule::script::game
 
 namespace
@@ -1582,8 +1607,9 @@ void test_placeholders()
    script::clear_all();
    g_port = Port{};
    g_role_count = 0;
-   CHECK(script::kBank.placeholder_count == 5);
-   CHECK(script::placeholder(PLACEHOLDER_LEAD) != nullptr && script::placeholder(5) == nullptr);
+   constexpr uint8_t kPlaceholders = 10;   // hero, count, town, lead, met and C4's str:1-str:5
+   CHECK(script::kBank.placeholder_count == kPlaceholders);
+   CHECK(script::placeholder(PLACEHOLDER_LEAD) != nullptr && script::placeholder(kPlaceholders) == nullptr);
    CHECK(script::placeholder(PLACEHOLDER_HERO)->kind == script::PlaceholderKind::Name);
    CHECK(script::placeholder(PLACEHOLDER_LEAD)->kind == script::PlaceholderKind::Record);
    CHECK(script::placeholder(PLACEHOLDER_LEAD)->param == 2);   // party slot
@@ -1615,8 +1641,9 @@ void test_placeholders()
    script::party::role_set(1, ROLE_MET_LEVEL, 0, 105);
    CHECK(script::placeholder_text(PLACEHOLDER_MET, out, text::kMaxPlaceholderCodes) == 3);
    CHECK(std::memcmp(out, "105", 3) == 0);
-   CHECK(script::placeholder_text(9, out, text::kMaxPlaceholderCodes) == 0);
-   CHECK(script::save_size() == kScriptSaveBytes && script::kBank.name_bytes == 6);
+   CHECK(script::placeholder_text(kPlaceholders, out, text::kMaxPlaceholderCodes) == 0);
+   constexpr uint32_t kNameBytes = 6 + 5 * (8 + 1);   // hero's 5 codes and C4's five 8-code slots, a length each
+   CHECK(script::save_size() == kScriptSaveBytes && script::kBank.name_bytes == kNameBytes);
    script::clear_all();
    CHECK(script::placeholder_text(PLACEHOLDER_HERO, out, text::kMaxPlaceholderCodes) == 0);
    // The message as the port receives it.
@@ -1796,6 +1823,33 @@ void test_menus()
    CHECK(run(c) == 0);
    CHECK(script::var(VAR_ANSWER) == 1 && script::var(VAR_V8) == 1 && script::var(VAR_V16) == 1);
    g_port.menu_at_once = port::kMenuWaiting;
+}
+
+/// C4: name slots: a text asset, a list entry by index, a number, a kind through game::name_text() (a game's own kind
+/// with a count), an inline text; each cut to the slot's eight characters.
+void test_names()
+{
+   script::clear_all();
+   script::Context c{};
+   text::Code out[text::kMaxPlaceholderCodes] = {};
+   auto slot = [&out](uint8_t placeholder)
+   {
+      const int n = script::placeholder_text(placeholder, out, text::kMaxPlaceholderCodes);
+      std::string s;
+      for (int i = 0; i < n; ++i)
+      {
+         s += static_cast<char>(out[i]);
+      }
+      return s;
+   };
+   script::start(c, SCRIPT_NAMES);
+   CHECK(run(c) == 0);
+   CHECK(slot(PLACEHOLDER_STR_1) == "Blue" && slot(PLACEHOLDER_STR_2) == "Green");
+   CHECK(slot(PLACEHOLDER_STR_3) == "12345678" && slot(PLACEHOLDER_STR_4) == "Cup");
+   CHECK(slot(PLACEHOLDER_STR_5) == "A long i");
+   CHECK(script::game::g_name_call.kind == NAME_KIND_TROPHY && script::game::g_name_call.id == 7);
+   CHECK(script::game::g_name_call.counted && script::game::g_name_call.count == 1);
+   CHECK(NAME_KIND_ITEM == 0 && NAME_KIND_TROPHY == script::kFirstGameNameKind);
 }
 
 /// C1b: a spotter group: Load fills a side per spotter whose script reaches a Set (its object the spotter, no
@@ -1983,6 +2037,7 @@ int main()
    test_combine();
    test_encounter();
    test_spotter_group();
+   test_names();
    test_menus();
    test_props();
    test_field_effects();
