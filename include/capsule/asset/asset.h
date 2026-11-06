@@ -86,7 +86,7 @@ inline constexpr uint8_t kFlipV = 2;   ///< The entry's frame is drawn mirrored 
 ///@}
 
 /// Sprite::flags (I3): only the frame shown is in VRAM (gfx::sprites uploads a frame when the slot changes to it),
-/// so frames x tiles may exceed a slot's tiles; one frame must fit.
+/// so a slot holds one frame's tiles (C2b: of the OBJ tile heap) whatever its frame count.
 inline constexpr uint8_t kSpriteStreamed = 1;
 
 /// @name Sprite::steps entries (I3: step animations)

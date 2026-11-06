@@ -1152,6 +1152,16 @@ PROP_CHANGES = {"test_script.cpp": "The props test script (prop place / face / r
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in PROP_CHANGES.items()})
 
+## Why the asset outputs changed for the OBJ tile heap (C2b: a sprite's tiles are checked against
+## gfx::sprites::kMaxSpriteTiles, as the per-slot kTilesPerSlot is gone).
+HEAP_REASON = "Each sprite's tile check names gfx::sprites::kMaxSpriteTiles (C2b: the OBJ tile heap)"
+HEAP_CHANGES = {name: HEAP_REASON for name in ("sandbox_map/assets.cpp", "sandbox_menu/assets.cpp",
+                                               "sandbox_screen/assets.cpp", "sandbox_sequence/assets.cpp",
+                                               "starter_battle/assets.cpp", "test_assets.cpp",
+                                               "test_script_assets.cpp")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in HEAP_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

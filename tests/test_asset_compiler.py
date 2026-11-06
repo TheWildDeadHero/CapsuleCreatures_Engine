@@ -194,7 +194,7 @@ class AssetCompilerTests(unittest.TestCase):
    def test_emit_mentions_every_table(self) -> None:
       """!The generated source defines the table and the VRAM-plan checks."""
       src = ac.emit("x.json", *compile_fixture())
-      for needle in ("const Table kTable", "gfx::background::kMaxTiles", "gfx::sprites::kTilesPerSlot",
+      for needle in ("const Table kTable", "gfx::background::kMaxTiles", "gfx::sprites::kMaxSpriteTiles",
                      "kListItems0", "&kBackgrounds["):
          self.assertIn(needle, src)
 

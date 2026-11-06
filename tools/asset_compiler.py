@@ -2067,7 +2067,7 @@ def emit(src_name: str, entries: Sequence[Entry], bgs: Sequence[JsonDict], sprit
          flip = f", kSprAnimFlips{i}_{j}" if flips is not None else ""
          L.append(f"    {{kSprAnimFrames{i}_{j}, {dur}, {len(fr)}, {period}, {loop}{flip}}},")
       L.append("};")
-      L.append(f"static_assert({s['tiles_total']} <= gfx::sprites::kTilesPerSlot, "
+      L.append(f"static_assert({s['tiles_total']} <= gfx::sprites::kMaxSpriteTiles, "
                f"\"sprite {i}: frames use too many tiles\");")
    for i, t in enumerate(texts):
       arr("text::Code", f"kText{i}", t, NARROW_VALUES_PER_LINE, "0x{:02X}")

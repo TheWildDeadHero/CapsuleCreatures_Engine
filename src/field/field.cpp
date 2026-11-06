@@ -3646,7 +3646,7 @@ void apply_persisted_sets(uint16_t index)
 /// offset end and the effect slots are free (the objects' go with their spawn).
 void reset_cutscene()
 {
-   props::reset();   // C2: the old map's props (their slots are effect slots, freed below too)
+   props::reset();   // C2: the old map's props (C2b: instances, no slots)
    g.camera_on = false;
    g.cam_left = 0;
    g.cam_rest_dx = 0;

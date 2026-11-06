@@ -40,6 +40,8 @@ static_assert(kMaxAffine <= gfx::sprites::kAffineSlots, "affine sequence slots m
 
 /// Stub song length before presenter::set_song_length(), frames (10 seconds).
 constexpr uint32_t kDefaultSongFrames = 600;
+/// C2b: the BG banks' bits of a palette mask (bits 0-15).
+constexpr uint32_t kBgBankBits = gfx::palette::obj_bank(0) - 1;
 
 /// Color effects and windows as the sequence set them.
 struct Effects
@@ -246,7 +248,19 @@ void brightness(uint8_t level, bool white)
 
 void palette_fade(uint32_t mask, uint16_t color, uint8_t coef)
 {
-   gfx::palette::set_fade(mask, color, coef > gfx::palette::kFadeFull ? gfx::palette::kFadeFull : coef);
+   // C2b: a sequence's OBJ palette n is its sprite slot n's palette: the bank the pool gave that slot (a slot with
+   // nothing loaded keeps bank n's bit)
+   uint32_t banks = mask & kBgBankBits;
+   for (int n = 0; n < gfx::sprites::kSlots; ++n)
+   {
+      if ((mask & gfx::palette::obj_bank(n)) == 0)
+      {
+         continue;
+      }
+      const uint8_t bank = gfx::sprites::palette_bank(static_cast<uint8_t>(n));
+      banks |= gfx::palette::obj_bank(bank < gfx::palette::kBanks ? bank : n);
+   }
+   gfx::palette::set_fade(banks, color, coef > gfx::palette::kFadeFull ? gfx::palette::kFadeFull : coef);
 }
 
 void window(uint8_t win, uint16_t flags, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)

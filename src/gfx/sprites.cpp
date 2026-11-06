@@ -25,6 +25,21 @@ constexpr int kDoubleSize = 2;
 constexpr uint8_t kNoFrame = 0xFF;
 /// 32-bit words of one 4bpp tile.
 constexpr uint32_t kTileWords = static_cast<uint32_t>(video::kTileBytes4bpp) / sizeof(uint32_t);
+/// C2b: tiles per word of the heap's allocation map.
+constexpr int kBitsPerWord = 32;
+/// C2b: words of the allocation map.
+constexpr int kMapWords = kTiles / kBitsPerWord;
+/// C2b: a tile's map word: t >> 5.
+constexpr int kWordShift = 5;
+/// C2b: a tile's bit in its word: t & 31.
+constexpr int kBitMask = kBitsPerWord - 1;
+/// C2b: frames the instances' frame cache holds (each instance shows one).
+constexpr int kCachedFrames = kInstances;
+/// C2b: Instance::cached: no frame.
+constexpr uint8_t kNoCached = 0xFF;
+static_assert(kTiles % kBitsPerWord == 0 && kCachedFrames < kNoCached);
+/// C2b: words of one queued piece (the queue's largest must-land request).
+constexpr uint32_t kPieceWords = hal::vram::kMaxMustLandBytes / sizeof(uint32_t);
 
 /// One sprite slot.
 struct Slot
@@ -46,21 +61,21 @@ struct Slot
    uint8_t uploaded;             ///< I3: streamed sprites: the frame in the slot's tiles, or kNoFrame.
    uint8_t sub;                  ///< DS1: sub-priority among sprites of equal priority (0 front).
    int16_t top;                  ///< DS1: top edge on screen as last written (the sort's tie-break).
-   uint8_t set_count;            ///< C2: frames load_frames() loaded (0: the sprite's own, as load()).
-   uint8_t set_frames[kMaxSetFrames];   ///< C2: those frames, as the sprite numbers them.
-   uint8_t generation;           ///< C2: counts the slot's loads (an instance of an earlier load draws nothing).
+   uint16_t tile;                ///< C2b: its first tile in the heap, or kNoTiles.
+   uint16_t tiles;               ///< C2b: tiles it holds (0: none).
+   uint8_t bank;                 ///< C2b: its palette bank, or kNoBank.
 };
 CAPSULE_EWRAM_BSS Slot g_slots[kSlots];   ///< The slots (D-42: EWRAM, the main loop's).
 
-/// C2: one instance (a further copy of a slot's sprite).
+/// C2: one instance (C2b: a frame of a sprite, without a slot).
 struct Instance
 {
-   bool used;            ///< Taken (zero-initialised: free).
-   uint8_t slot;         ///< Its slot.
-   uint8_t generation;   ///< The slot's load it was given a frame of (Slot::generation).
+   bool used;                     ///< Taken (zero-initialised: free).
+   const asset::Sprite* sprite;   ///< Its sprite.
+   uint8_t cached;                ///< C2b: its frame in the frame cache, or kNoCached.
+   uint8_t bank;                  ///< C2b: its palette bank, or kNoBank.
    int16_t x;            ///< Left edge, pixels.
    int16_t y;            ///< Top edge, pixels.
-   uint8_t frame;        ///< The frame among the slot's tiles.
    uint8_t flips;        ///< asset::kFlip... bits.
    uint8_t priority;     ///< 0 (front) to 3.
    uint8_t sub;          ///< Sub-priority (0 front).
@@ -68,6 +83,25 @@ struct Instance
    int16_t top;          ///< Top edge on screen as last written (the sort's tie-break).
 };
 CAPSULE_EWRAM_BSS Instance g_instances[kInstances];   ///< The instances (EWRAM).
+
+/// C2b: one frame in the instances' frame cache (tiles shared by every instance showing it).
+struct CachedFrame
+{
+   const asset::Sprite* sprite;   ///< The sprite, or nullptr (free).
+   uint16_t tile;                 ///< Its first tile in the heap.
+   uint8_t frame;                 ///< The sprite's frame.
+   uint8_t users;                 ///< Instances showing it.
+};
+
+/// C2b: the heap and the palette pool (EWRAM, the main loop's).
+struct Memory
+{
+   uint32_t tiles[kMapWords];          ///< Allocated tiles (a bit per tile).
+   CachedFrame frames[kCachedFrames];  ///< The instances' frames.
+   uint8_t users[kBanks];              ///< Sprites drawing with each bank (0: free).
+   bool own[kBanks];                   ///< A bank one slot changes (never shared).
+};
+CAPSULE_EWRAM_BSS Memory g_memory;   ///< The heap and the pool.
 
 /// DS1: the sorted draw order (an order of the drawables, front first; kept from frame to frame). Drawable d is
 /// slot d below kSlots, else instance d - kSlots (C2).
@@ -133,20 +167,229 @@ void sort_order()
    }
 }
 
-/// C2: uploads a slot's frame set (load_frames()), one frame after another.
-/// @param n  the slot
-void upload_set(int n)
+/// C2b: whether a tile is allocated.
+/// @param t  tile 0 to kTiles - 1
+/// @return true when it is
+bool allocated(int t)
 {
-   const Slot& s = g_slots[n];
-   const auto tiles = static_cast<uint32_t>(asset::tiles_per_frame(*s.sprite));
-   for (int k = 0; k < s.set_count; ++k)
+   return (g_memory.tiles[t >> kWordShift] >> (t & kBitMask) & 1u) != 0;
+}
+
+/// C2b: marks tiles allocated or free.
+/// @param first  first tile
+/// @param count  tiles
+/// @param on     allocated
+void mark(int first, int count, bool on)
+{
+   for (int t = first; t < first + count; ++t)
    {
-      hal::vram::copy32(video::Region::ObjVram,
-                        static_cast<uint32_t>((n * kTilesPerSlot + k * static_cast<int>(tiles)) * video::kTileBytes4bpp),
-                        s.sprite->tiles + static_cast<uint32_t>(s.set_frames[k]) * tiles * kTileWords, tiles * kTileWords,
+      const uint32_t bit = uint32_t{1} << (t & kBitMask);
+      uint32_t& word = g_memory.tiles[t >> kWordShift];
+      word = on ? (word | bit) : (word & ~bit);
+   }
+}
+
+/// C2b: first fit over the heap (the reference games' allocator).
+/// @param count  tiles
+/// @return the first tile, or kNoTiles
+uint16_t alloc_tiles(int count)
+{
+   if (count <= 0 || count > kTiles)
+   {
+      return kNoTiles;
+   }
+   int run = 0;
+   for (int t = 0; t < kTiles; ++t)
+   {
+      run = allocated(t) ? 0 : run + 1;
+      if (run == count)
+      {
+         const int first = t + 1 - count;
+         mark(first, count, true);
+         return static_cast<uint16_t>(first);
+      }
+   }
+   return kNoTiles;
+}
+
+/// C2b: gives a slot's tiles back to the heap.
+/// @param s  the slot
+void free_slot_tiles(Slot& s)
+{
+   if (s.tile != kNoTiles && s.tiles > 0)
+   {
+      mark(s.tile, s.tiles, false);
+   }
+   s.tile = kNoTiles;
+   s.tiles = 0;
+}
+
+/// C2b: whether a bank holds a palette's colors 1-15 (color 0 is transparent).
+/// @param bank    the bank
+/// @param colors  the palette (16 colors)
+/// @return true when they match
+bool same_colors(int bank, const video::Color* colors)
+{
+   for (int c = 1; c < palette::kBankColors; ++c)
+   {
+      if (palette::base(true, bank * palette::kBankColors + c) != colors[c])
+      {
+         return false;
+      }
+   }
+   return true;
+}
+
+/// C2b: a free bank: the preferred one when free, else the highest free (the slots prefer their own numbers, so the
+/// banks above the slots in use stay free longest).
+/// @param preferred  the bank wanted (kNoBank: any)
+/// @return the bank, or kNoBank
+uint8_t free_bank(uint8_t preferred)
+{
+   if (preferred < kBanks && g_memory.users[preferred] == 0)
+   {
+      return preferred;
+   }
+   for (int b = kBanks - 1; b >= 0; --b)
+   {
+      if (g_memory.users[b] == 0)
+      {
+         return static_cast<uint8_t>(b);
+      }
+   }
+   return kNoBank;
+}
+
+/// C2b: a bank for a palette: one holding its colors already (not a slot's own), else a free one loaded with them.
+/// @param colors     the palette (16 colors)
+/// @param preferred  the bank wanted when none holds them (kNoBank: any)
+/// @return the bank (counted), or kNoBank when every bank is taken
+uint8_t acquire_bank(const video::Color* colors, uint8_t preferred)
+{
+   for (int b = 0; b < kBanks; ++b)
+   {
+      if (g_memory.users[b] > 0 && !g_memory.own[b] && same_colors(b, colors))
+      {
+         ++g_memory.users[b];
+         return static_cast<uint8_t>(b);
+      }
+   }
+   const uint8_t b = free_bank(preferred);
+   if (b == kNoBank)
+   {
+      return kNoBank;
+   }
+   g_memory.users[b] = 1;
+   g_memory.own[b] = false;
+   // color 0 is transparent and never loaded
+   palette::load_obj(static_cast<uint8_t>(b * palette::kBankColors + 1), colors + 1, palette::kBankColors - 1);
+   return b;
+}
+
+/// C2b: gives a bank back to the pool (kNoBank: nothing).
+/// @param bank  the bank
+void release_bank(uint8_t bank)
+{
+   if (bank < kBanks && g_memory.users[bank] > 0 && --g_memory.users[bank] == 0)
+   {
+      g_memory.own[bank] = false;
+   }
+}
+
+/// C2b: frees a slot's tiles and bank.
+/// @param s  the slot
+void free_slot(Slot& s)
+{
+   free_slot_tiles(s);
+   release_bank(s.bank);
+   s.bank = kNoBank;
+}
+
+/// C2b: queues tiles into the heap (must-land, in pieces the queue takes: a sprite may now hold more tiles than one
+/// request carries).
+/// @param tile   the first tile
+/// @param words  the tiles' words
+/// @param count  tiles
+void upload_tiles(uint16_t tile, const uint32_t* words, uint32_t count)
+{
+   const uint32_t total = count * kTileWords;
+   const uint32_t base = static_cast<uint32_t>(tile) * video::kTileBytes4bpp;
+   for (uint32_t done = 0; done < total; done += kPieceWords)
+   {
+      const uint32_t n = total - done < kPieceWords ? total - done : kPieceWords;
+      hal::vram::copy32(video::Region::ObjVram, base + done * sizeof(uint32_t), words + done, n,
                         hal::vram::Priority::MustLand, video::Source::Rom);
    }
 }
+
+/// C2b: uploads a frame of a sprite into the heap (must-land).
+/// @param tile    the first tile
+/// @param sprite  the sprite
+/// @param frame   its frame
+void upload_frame(uint16_t tile, const asset::Sprite& sprite, int frame)
+{
+   const auto tiles = static_cast<uint32_t>(asset::tiles_per_frame(sprite));
+   upload_tiles(tile, sprite.tiles + static_cast<uint32_t>(frame) * tiles * kTileWords, tiles);
+}
+
+/// C2b: a frame in the cache: the one holding it, or a new one with its tiles uploaded.
+/// @param sprite  the sprite
+/// @param frame   its frame
+/// @return the cached frame (counted), or kNoCached (no entry or no room in the heap)
+uint8_t acquire_frame(const asset::Sprite& sprite, uint8_t frame)
+{
+   uint8_t free = kNoCached;
+   for (uint8_t k = 0; k < kCachedFrames; ++k)
+   {
+      CachedFrame& c = g_memory.frames[k];
+      if (c.sprite == &sprite && c.frame == frame)
+      {
+         ++c.users;
+         return k;
+      }
+      if (c.sprite == nullptr && free == kNoCached)
+      {
+         free = k;
+      }
+   }
+   if (free == kNoCached)
+   {
+      return kNoCached;
+   }
+   const uint16_t tile = alloc_tiles(asset::tiles_per_frame(sprite));
+   if (tile == kNoTiles)
+   {
+      return kNoCached;
+   }
+   g_memory.frames[free] = CachedFrame{&sprite, tile, frame, 1};
+   upload_frame(tile, sprite, frame);
+   return free;
+}
+
+/// C2b: gives a cached frame back (its tiles to the heap when no instance shows it).
+/// @param k  the cached frame, or kNoCached
+void release_frame(uint8_t k)
+{
+   if (k >= kCachedFrames)
+   {
+      return;
+   }
+   CachedFrame& c = g_memory.frames[k];
+   if (c.users > 0 && --c.users == 0)
+   {
+      mark(c.tile, asset::tiles_per_frame(*c.sprite), false);
+      c = CachedFrame{};
+   }
+}
+
+/// C2b: the bank a sprite is drawn with (none: bank 0's colors).
+/// @param bank  its bank, or kNoBank
+/// @return 0 to kBanks - 1
+uint8_t draw_bank(uint8_t bank)
+{
+   return bank < kBanks ? bank : uint8_t{0};
+}
+
 
 /// Writes a slot's OBJ matrix: the inverse of scale and rotation.
 /// @param n  slot (= matrix)
@@ -199,10 +442,7 @@ void stream_frame(int n, int frame)
       return;
    }
    s.uploaded = static_cast<uint8_t>(frame);
-   const auto tiles = static_cast<uint32_t>(asset::tiles_per_frame(*s.sprite));
-   hal::vram::copy32(video::Region::ObjVram, static_cast<uint32_t>(n * kTilesPerSlot * video::kTileBytes4bpp),
-                     s.sprite->tiles + static_cast<uint32_t>(frame) * tiles * kTileWords, tiles * kTileWords,
-                     hal::vram::Priority::MustLand, video::Source::Rom);
+   upload_frame(s.tile, *s.sprite, frame);
 }
 
 /// Advances a slot's animation when its entry's time is over (I3: before the entry is shown, so a caller between
@@ -252,8 +492,11 @@ void reset()
    {
       g_slots[n] = Slot{};
       g_slots[n].scale = kQ8One;
+      g_slots[n].tile = kNoTiles;
+      g_slots[n].bank = kNoBank;
       video::set_obj(static_cast<uint8_t>(g_first_entry + n), video::kObjHidden);
    }
+   g_memory = Memory{};   // C2b: every tile and every bank free
    for (int k = kSlots; k < kEntries; ++k)
    {
       video::set_obj(static_cast<uint8_t>(g_first_entry + k), video::kObjHidden);
@@ -267,40 +510,144 @@ void reset()
    video::set_obj_layer(true);
 }
 
-void load(uint8_t slot, const asset::Sprite& sprite)
+bool load(uint8_t slot, const asset::Sprite& sprite)
 {
-   ENGINE_ASSERT(slot < kSlots);
+   ENGINE_ASSERT(slot < kSlots && sprite.animation_count >= 1);
    const int frame_tiles = asset::tiles_per_frame(sprite);
    const int tiles = streamed(sprite) ? frame_tiles : frame_tiles * sprite.frame_count;
-   ENGINE_ASSERT(tiles <= kTilesPerSlot && sprite.animation_count >= 1);
    Slot& s = g_slots[slot];
+   // The bank first, so a sprite of the colors before keeps its bank (counted twice for a moment)
+   const uint8_t bank = acquire_bank(sprite.palette, slot);
+   release_bank(s.bank);
+   s.bank = bank;
+   if (s.tiles != tiles)
+   {
+      free_slot_tiles(s);   // the tiles before stay in place when the new sprite takes as many
+      s.tile = alloc_tiles(tiles);
+      s.tiles = s.tile != kNoTiles ? static_cast<uint16_t>(tiles) : uint16_t{0};
+   }
    s.sprite = &sprite;
    s.animation = 0;
    s.step = 0;
    s.timer = 0;
    s.paused = false;
    s.half = false;
-   s.set_count = 0;
-   ++s.generation;   // C2: its instances drew the sprite before
    // a streamed sprite loads the frame its first animation starts on; update() streams the others
    const int first = streamed(sprite) ? current_frame(s) : 0;
    s.uploaded = streamed(sprite) ? static_cast<uint8_t>(first) : kNoFrame;
-   video::load_obj_tiles(static_cast<video::TileIndex>(slot * kTilesPerSlot),
+   if (s.tile == kNoTiles)
+   {
+      return false;   // no room: the slot draws nothing
+   }
+   video::load_obj_tiles(static_cast<video::TileIndex>(s.tile),
                          sprite.tiles + static_cast<uint32_t>(first * frame_tiles) * kTileWords,
                          static_cast<uint16_t>(tiles));
-   // Slot n uses OBJ bank n; color 0 is transparent and never loaded.
-   palette::load_obj(static_cast<uint8_t>(slot * palette::kBankColors + 1), sprite.palette + 1,
-                     palette::kBankColors - 1);
+   return bank != kNoBank;
 }
 
 void unload(uint8_t slot)
 {
    ENGINE_ASSERT(slot < kSlots);
-   ++g_slots[slot].generation;   // C2: its instances draw nothing now
-   g_slots[slot].set_count = 0;
-   g_slots[slot].sprite = nullptr;
-   g_slots[slot].shown = 0;
-   g_slots[slot].uploaded = kNoFrame;
+   Slot& s = g_slots[slot];
+   free_slot(s);
+   s.sprite = nullptr;
+   s.shown = 0;
+   s.uploaded = kNoFrame;
+}
+
+uint8_t palette_bank(uint8_t slot)
+{
+   ENGINE_ASSERT(slot < kSlots);
+   return g_slots[slot].bank;
+}
+
+uint8_t own_palette(uint8_t slot)
+{
+   ENGINE_ASSERT(slot < kSlots);
+   Slot& s = g_slots[slot];
+   if (s.bank >= kBanks)
+   {
+      return kNoBank;
+   }
+   if (g_memory.users[s.bank] > 1)
+   {
+      // Shared: the slot moves to a copy of the colors (all 16, as its users may have changed color 0)
+      const uint8_t b = free_bank(slot);
+      if (b == kNoBank)
+      {
+         return kNoBank;
+      }
+      video::Color colors[palette::kBankColors];
+      for (int c = 0; c < palette::kBankColors; ++c)
+      {
+         colors[c] = palette::base(true, s.bank * palette::kBankColors + c);
+      }
+      palette::load_obj(static_cast<uint8_t>(b * palette::kBankColors), colors, palette::kBankColors);
+      release_bank(s.bank);
+      g_memory.users[b] = 1;
+      s.bank = b;
+   }
+   g_memory.own[s.bank] = true;
+   return s.bank;
+}
+
+uint16_t reserve_tiles(uint8_t slot, uint16_t count)
+{
+   ENGINE_ASSERT(slot < kSlots);
+   Slot& s = g_slots[slot];
+   s.sprite = nullptr;   // as unload(); its bank stays (reserve_palette() may have given it)
+   s.shown = 0;
+   s.uploaded = kNoFrame;
+   free_slot_tiles(s);
+   s.tile = alloc_tiles(count);
+   s.tiles = s.tile != kNoTiles ? count : uint16_t{0};
+   return s.tile;
+}
+
+uint8_t reserve_palette(uint8_t slot)
+{
+   ENGINE_ASSERT(slot < kSlots);
+   Slot& s = g_slots[slot];
+   release_bank(s.bank);
+   s.bank = free_bank(slot);
+   if (s.bank != kNoBank)
+   {
+      g_memory.users[s.bank] = 1;
+      g_memory.own[s.bank] = true;
+   }
+   return s.bank;
+}
+
+uint16_t free_tiles()
+{
+   int n = 0;
+   for (int t = 0; t < kTiles; ++t)
+   {
+      n += allocated(t) ? 0 : 1;
+   }
+   return static_cast<uint16_t>(n);
+}
+
+uint16_t largest_free_run()
+{
+   int best = 0;
+   int run = 0;
+   for (int t = 0; t < kTiles; ++t)
+   {
+      run = allocated(t) ? 0 : run + 1;
+      best = run > best ? run : best;
+   }
+   return static_cast<uint16_t>(best);
+}
+
+uint8_t free_banks()
+{
+   int n = 0;
+   for (const uint8_t users : g_memory.users)
+   {
+      n += users == 0 ? 1 : 0;
+   }
+   return static_cast<uint8_t>(n);
 }
 
 void show(uint8_t slot, bool on)
@@ -422,30 +769,9 @@ namespace
 video::ObjAttr slot_attr(int n)
 {
    Slot& s = g_slots[n];
-   if (s.sprite == nullptr || !s.shown || s.scale == 0)
+   if (s.sprite == nullptr || !s.shown || s.scale == 0 || s.tile == kNoTiles)
    {
       return video::kObjHidden;
-   }
-   if (s.set_count > 0)
-   {
-      // C2: a frame set: the slot shows its first frame, unanimated
-      video::ObjDesc d{};
-      d.shape = s.sprite->shape;
-      d.size = s.sprite->size;
-      d.palette_bank = static_cast<uint8_t>(n);
-      d.mode = s.mode;
-      d.priority = s.priority;
-      d.tile = static_cast<video::TileIndex>(n * kTilesPerSlot);
-      d.x = s.x;
-      d.y = s.y;
-      s.top = d.y;
-      const int w = video::obj_width(s.sprite->shape, s.sprite->size);
-      const int h = video::obj_height(s.sprite->shape, s.sprite->size);
-      if (d.x + w <= 0 || d.x >= video::kScreenWidth || d.y + h <= 0 || d.y >= video::kScreenHeight)
-      {
-         return video::kObjHidden;
-      }
-      return video::make_obj(d);
    }
    // Animation: once a step has been shown for its duration (or `period`) display frames, move on (loop or hold
    // the last frame), then show the step and count the frame (I3: advancing first keeps the step last shown visible
@@ -464,11 +790,11 @@ video::ObjAttr slot_attr(int n)
    video::ObjDesc d{};
    d.shape = s.sprite->shape;
    d.size = s.sprite->size;
-   d.palette_bank = static_cast<uint8_t>(n);
+   d.palette_bank = draw_bank(s.bank);
    d.mode = s.mode;
    d.priority = s.priority;
    const int shown = streamed(*s.sprite) ? 0 : frame;   // a streamed slot's tiles hold the frame shown
-   d.tile = static_cast<video::TileIndex>(n * kTilesPerSlot + shown * asset::tiles_per_frame(*s.sprite));
+   d.tile = static_cast<video::TileIndex>(s.tile + shown * asset::tiles_per_frame(*s.sprite));
    d.hflip = (flips & asset::kFlipH) != 0;
    d.vflip = (flips & asset::kFlipV) != 0;
    if (transformed)
@@ -503,34 +829,24 @@ video::ObjAttr slot_attr(int n)
 video::ObjAttr instance_attr(int k)
 {
    Instance& i = g_instances[k];
-   if (!i.used || !i.shown)
+   if (!i.used || !i.shown || i.cached == kNoCached)
    {
       return video::kObjHidden;
    }
-   const Slot& s = g_slots[i.slot];
-   if (s.sprite == nullptr || i.generation != s.generation || (s.set_count == 0 && streamed(*s.sprite)))
-   {
-      return video::kObjHidden;   // the slot's tiles hold no frame of its (a streamed slot keeps one frame only)
-   }
-   const int frames = s.set_count > 0 ? s.set_count : s.sprite->frame_count;
-   if (i.frame >= frames)
-   {
-      return video::kObjHidden;
-   }
-   const int w = video::obj_width(s.sprite->shape, s.sprite->size);
-   const int h = video::obj_height(s.sprite->shape, s.sprite->size);
+   const asset::Sprite& sprite = *i.sprite;
+   const int w = video::obj_width(sprite.shape, sprite.size);
+   const int h = video::obj_height(sprite.shape, sprite.size);
    i.top = i.y;
    if (i.x + w <= 0 || i.x >= video::kScreenWidth || i.y + h <= 0 || i.y >= video::kScreenHeight)
    {
       return video::kObjHidden;
    }
    video::ObjDesc d{};
-   d.shape = s.sprite->shape;
-   d.size = s.sprite->size;
-   d.palette_bank = i.slot;   // the slot's palette
-   d.mode = s.mode;
+   d.shape = sprite.shape;
+   d.size = sprite.size;
+   d.palette_bank = draw_bank(i.bank);
    d.priority = i.priority;
-   d.tile = static_cast<video::TileIndex>(i.slot * kTilesPerSlot + i.frame * asset::tiles_per_frame(*s.sprite));
+   d.tile = static_cast<video::TileIndex>(g_memory.frames[i.cached].tile);
    d.hflip = (i.flips & asset::kFlipH) != 0;
    d.vflip = (i.flips & asset::kFlipV) != 0;
    d.x = i.x;
@@ -549,33 +865,8 @@ Instance& instance_at(uint8_t instance)
 
 } // namespace
 
-void load_frames(uint8_t slot, const asset::Sprite& sprite, const uint8_t* frames, uint8_t count)
+uint8_t add_instance(const asset::Sprite& sprite)
 {
-   ENGINE_ASSERT(slot < kSlots && count >= 1 && count <= kMaxSetFrames);
-   ENGINE_ASSERT(count * asset::tiles_per_frame(sprite) <= kTilesPerSlot);
-   Slot& s = g_slots[slot];
-   s.sprite = &sprite;
-   s.animation = 0;
-   s.step = 0;
-   s.timer = 0;
-   s.paused = true;
-   s.half = false;
-   s.uploaded = kNoFrame;
-   ++s.generation;
-   s.set_count = count <= kMaxSetFrames ? count : static_cast<uint8_t>(kMaxSetFrames);
-   for (int k = 0; k < s.set_count; ++k)
-   {
-      ENGINE_ASSERT(frames[k] < sprite.frame_count);
-      s.set_frames[k] = frames[k];
-   }
-   upload_set(slot);
-   palette::load_obj(static_cast<uint8_t>(slot * palette::kBankColors + 1), sprite.palette + 1,
-                     palette::kBankColors - 1);
-}
-
-uint8_t add_instance(uint8_t slot)
-{
-   ENGINE_ASSERT(slot < kSlots && g_slots[slot].sprite != nullptr);
    for (uint8_t k = 0; k < kInstances; ++k)
    {
       Instance& i = g_instances[k];
@@ -583,8 +874,9 @@ uint8_t add_instance(uint8_t slot)
       {
          i = Instance{};
          i.used = true;
-         i.slot = slot;
-         i.generation = g_slots[slot].generation;
+         i.sprite = &sprite;
+         i.cached = kNoCached;
+         i.bank = acquire_bank(sprite.palette, kNoBank);
          return k;
       }
    }
@@ -593,9 +885,12 @@ uint8_t add_instance(uint8_t slot)
 
 void remove_instance(uint8_t instance)
 {
-   if (instance < kInstances)
+   if (instance < kInstances && g_instances[instance].used)
    {
-      g_instances[instance].used = false;   // one reset() freed already is free
+      Instance& i = g_instances[instance];   // one reset() freed already is free
+      release_frame(i.cached);
+      release_bank(i.bank);
+      i = Instance{};
    }
 }
 
@@ -611,12 +906,15 @@ void set_instance_position(uint8_t instance, int16_t x, int16_t y)
    i.y = y;
 }
 
-void set_instance_frame(uint8_t instance, uint8_t frame, uint8_t flips)
+bool set_instance_frame(uint8_t instance, uint8_t frame, uint8_t flips)
 {
    Instance& i = instance_at(instance);
-   i.frame = frame;
    i.flips = flips;
-   i.generation = g_slots[i.slot].generation;   // the slot's load now
+   // The new frame first, so the frame shown before stays cached when it is the same
+   const uint8_t cached = frame < i.sprite->frame_count ? acquire_frame(*i.sprite, frame) : kNoCached;
+   release_frame(i.cached);
+   i.cached = cached;
+   return cached != kNoCached;
 }
 
 void set_instance_priority(uint8_t instance, uint8_t priority)
@@ -680,27 +978,25 @@ void reupload()
    for (int n = 0; n < kSlots; ++n)
    {
       const Slot& s = g_slots[n];
-      if (s.sprite == nullptr)
+      if (s.sprite == nullptr || s.tile == kNoTiles)
       {
-         continue;
-      }
-      if (s.set_count > 0)
-      {
-         upload_set(n);   // C2: a frame set
-         continue;
+         continue;   // nothing loaded, no room, or tiles reserve_tiles() gave
       }
       const int frame_tiles = asset::tiles_per_frame(*s.sprite);
       const bool stream = streamed(*s.sprite);
-      const int first = stream ? s.uploaded : 0;   // a streamed slot's tiles hold the frame it last uploaded
-      const int tiles = stream ? frame_tiles : frame_tiles * s.sprite->frame_count;
       if (stream && s.uploaded == kNoFrame)
       {
          continue;
       }
-      hal::vram::copy32(video::Region::ObjVram, static_cast<uint32_t>(n * kTilesPerSlot * video::kTileBytes4bpp),
-                        s.sprite->tiles + static_cast<uint32_t>(first * frame_tiles) * kTileWords,
-                        static_cast<uint32_t>(tiles) * kTileWords, hal::vram::Priority::MustLand,
-                        video::Source::Rom);
+      const int first = stream ? s.uploaded : 0;   // a streamed slot's tiles hold the frame it last uploaded
+      upload_tiles(s.tile, s.sprite->tiles + static_cast<uint32_t>(first * frame_tiles) * kTileWords, s.tiles);
+   }
+   for (const CachedFrame& c : g_memory.frames)
+   {
+      if (c.sprite != nullptr)
+      {
+         upload_frame(c.tile, *c.sprite, c.frame);   // C2b: the instances' frames
+      }
    }
 }
 
