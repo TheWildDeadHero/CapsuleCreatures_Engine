@@ -706,6 +706,25 @@ void set_order(uint8_t obj, bool fixed, uint8_t order)
                  static_cast<unsigned>(order));
    log(b);
 }
+/// C5: records a counter box's call (its label as ASCII on show).
+/// @param op     the kind
+/// @param box    the box
+/// @param value  its variable's value
+/// @param x      cell
+/// @param y      cell
+/// @param label  its label, or nullptr
+void counter(script::CounterOp op, uint8_t box, int32_t value, uint8_t x, uint8_t y, const text::Code* label)
+{
+   char name[16] = {};
+   for (int i = 0; label != nullptr && label[i] != text::kCodeEnd && i < 15; ++i)
+   {
+      name[i] = static_cast<char>(label[i]);
+   }
+   char b[48];
+   std::snprintf(b, sizeof b, "counter %u %u %d %u,%u %s;", static_cast<unsigned>(op), static_cast<unsigned>(box),
+                 static_cast<int>(value), static_cast<unsigned>(x), static_cast<unsigned>(y), name);
+   log(b);
+}
 /// Records an override set's apply or clear.
 /// @param set    the set
 /// @param apply  applied
@@ -1825,6 +1844,21 @@ void test_menus()
    g_port.menu_at_once = port::kMenuWaiting;
 }
 
+/// C5: counter boxes: show (its cells, its label: the manifest's or its name), update and hide, each with its
+/// variable's value at the call.
+void test_counters()
+{
+   script::clear_all();
+   g_world = World{};
+   script::Context c{};
+   script::start(c, SCRIPT_COUNTERS);
+   CHECK(run(c) == 0);
+   char want[160];
+   std::snprintf(want, sizeof want, "counter 0 %u 250 20,1 Gold;counter 1 %u 75 0,0 ;counter 2 %u 75 0,0 ;"
+                 "counter 0 %u 0 0,0 tokens;", COUNTER_GOLD, COUNTER_GOLD, COUNTER_GOLD, COUNTER_TOKENS);
+   CHECK(std::strcmp(g_world.log, want) == 0);
+}
+
 /// C4: name slots: a text asset, a list entry by index, a number, a kind through game::name_text() (a game's own kind
 /// with a count), an inline text; each cut to the slot's eight characters.
 void test_names()
@@ -2037,6 +2071,7 @@ int main()
    test_combine();
    test_encounter();
    test_spotter_group();
+   test_counters();
    test_names();
    test_menus();
    test_props();

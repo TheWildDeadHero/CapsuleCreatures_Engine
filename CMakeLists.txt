@@ -272,6 +272,7 @@ add_library(capsule_engine STATIC
    src/script/script_empty.cpp
    src/script/script_game_default.cpp
    src/script/script_port_defaults.cpp
+   src/script/script_counter.cpp
    src/script/script_port_hal.cpp
    src/text/font.cpp
    src/text/print.cpp
@@ -904,6 +905,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
       src/script/script_battle_none.cpp
       src/script/field_actions.cpp
       src/script/script_port_defaults.cpp
+      src/script/script_counter.cpp
       ${CAPSULE_SCRIPT_ITEMS_SOURCES}
       src/seq/sequence.cpp
       src/seq/sequence_port_hal.cpp
@@ -1024,6 +1026,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
       src/gfx/sprites.cpp
       src/monster/monster.cpp
       src/script/script_port_hal.cpp
+      src/script/script_counter.cpp
       src/text/font.cpp
       src/text/print.cpp
       src/text/text_layer.cpp

@@ -185,6 +185,30 @@ void menu_list()
    CHECK(press(hal::input::KEY_B) == 127 && !layer::box_open());
 }
 
+/// C5: the default counter box: the banner at its cells, the label, a space, the value; Update prints the new value
+/// over the old (no digit left behind); Hide closes it.
+void counter_box()
+{
+   fresh();
+   constexpr auto kGold = text::encode("Gold");
+   constexpr uint8_t kX = 2;     // the banner's left cell
+   constexpr uint8_t kY = 1;     // its top cell
+   constexpr int kInside = 1;    // the frame's cell before its text
+   constexpr int kValueAt = 5;   // "Gold" and a space
+   constexpr int32_t kShown = 1234;
+   constexpr int32_t kUpdated = 75;
+   script::world::counter(script::CounterOp::Show, 0, kShown, kX, kY, kGold.codes);
+   const int row = kY + kInside;
+   const int col = kX + kInside;
+   CHECK(layer::banner_open() && screen_char(col, row) == 'G' && screen_char(col + kValueAt, row) == '1');
+   CHECK(screen_char(col + kValueAt + 3, row) == '4');
+   script::world::counter(script::CounterOp::Update, 0, kUpdated, 0, 0, nullptr);
+   CHECK(screen_char(col + kValueAt, row) == '7' && screen_char(col + kValueAt + 1, row) == '5');
+   CHECK(screen_char(col + kValueAt + 3, row) != '4');   // the old digits gone
+   script::world::counter(script::CounterOp::Hide, 0, 0, 0, 0, nullptr);
+   CHECK(!layer::banner_open());
+}
+
 /// Message, the box closed by text::layer::reset() (a location preview's end), message.
 void message_after_reset()
 {
@@ -228,6 +252,7 @@ int main()
    message_after_plan_change();
    menu_grid();
    menu_list();
+   counter_box();
    std::printf("script port tests: %d checks, %d failures\n", g_checks, g_failures);
    return g_failures == 0 ? 0 : 1;
 }

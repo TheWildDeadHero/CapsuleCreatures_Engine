@@ -683,6 +683,26 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       set_name(slot, codes);   // cut to the slot's length
       return Outcome::Continue;
    }
+   case Op::Counter:
+   {
+      // kind8, box8, var16, [Show: x8, y8, label text ref]
+      const auto kind = static_cast<CounterOp>(*p++);
+      const uint8_t box = *p++;
+      const int32_t value = var(VarId{load_le16(p)});
+      p += kU16Bytes;
+      uint8_t x = 0;
+      uint8_t y = 0;
+      const text::Code* label = nullptr;
+      if (kind == CounterOp::Show)
+      {
+         x = *p++;
+         y = *p++;
+         label = text_ref(p);
+      }
+      next();
+      world::counter(kind, box, value, x, y, label);
+      return Outcome::Continue;
+   }
    case Op::ObjectOrder:
    {
       // operand (object), fixed8, order8
@@ -1429,6 +1449,7 @@ Outcome execute(Context& c)
    case Op::Prop:
    case Op::ObjectOrder:
    case Op::Name:
+   case Op::Counter:
       return execute_port(c, op, p, base);
    // D-36 package 2: the ops of the bag, boxes, party roles, growth, combination and nursery modules
    case Op::RoleGet:

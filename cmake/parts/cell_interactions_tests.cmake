@@ -48,6 +48,7 @@ add_executable(capsule_cell_interactions_tests
    src/script/script_battle_none.cpp
    src/script/field_actions.cpp
    src/script/script_port_defaults.cpp
+   src/script/script_counter.cpp
    ${CAPSULE_SCRIPT_ITEMS_SOURCES}
    src/seq/sequence.cpp
    src/seq/sequence_port_hal.cpp
