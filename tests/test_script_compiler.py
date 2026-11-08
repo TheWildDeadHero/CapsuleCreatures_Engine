@@ -412,6 +412,49 @@ class Counters(unittest.TestCase):
             sc.game_counters(bad)
 
 
+## C6: the bytes of a variable id after an op (u16).
+VAR_ID_BYTES = 2
+
+
+class Stats(unittest.TestCase):
+   """C6: game statistics."""
+
+   ## A manifest with a stat bound to a variable and one the game's port holds.
+   MANIFEST = {"stats": {"steps": {"var": "v"}, "visits": {}}, "stats_port": True}
+
+   def code(self, body: str, **manifest: Any) -> bytes:
+      """Bytecode of one script.
+      @param body      statements
+      @param manifest  manifest keys (default MANIFEST)
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}", **(manifest or self.MANIFEST))
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """A bound stat is the variable's add (1 by default); a port's stat is Stat with its index and the amount."""
+      self.assertEqual(self.code("stat add steps;"), self.code("var(v) += 1;"))
+      self.assertEqual(self.code("stat add steps var(v);"), self.code("var(v) += var(v);"))
+      add_one = self.code("var(v) += 1;")
+      amount = add_one[1 + VAR_ID_BYTES:-1]   # the operand after AddVar's variable, before End
+      self.assertEqual(self.code("stat add visits;"), bytes([sc.OP["Stat"], 1]) + amount + bytes([sc.OP["End"]]))
+
+   def test_refusals(self) -> None:
+      """An undeclared stat, a missing add, a port's stat without stats_port, malformed stats."""
+      for body, text in (("stat add jumps;", "no statistic"), ("stat steps;", "expected 'add'")):
+         errs = errors(compile_text(f"var v : u16;\nscript s {{ {body} }}", **self.MANIFEST))
+         self.assertTrue(any(text in e for e in errs), (body, errs))
+      with self.assertRaises(sc.ScriptError):
+         sc.game_stats({"visits": {}}, False)
+      for bad in ({"Steps": {"var": "v"}}, {"steps": {"var": "v", "max": 9}}, ["steps"]):
+         with self.assertRaises(sc.ScriptError):
+            sc.game_stats(bad, True)
+      with self.assertRaises(sc.ScriptError):
+         sc.game_stats({}, "yes")
+
+
 class Checks(unittest.TestCase):
    """Build errors and warnings."""
 

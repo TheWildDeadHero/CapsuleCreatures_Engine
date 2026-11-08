@@ -102,6 +102,7 @@ const OpHandler kModuleOps[kOpCount] = {
    nullptr,          // 91 Menu
    nullptr,          // 92 Name
    nullptr,          // 93 Counter
+   nullptr,          // 94 Stat
 };
 
 /// The module waits by wait kind (nullptr: not a module wait, or one no op of the table sets).

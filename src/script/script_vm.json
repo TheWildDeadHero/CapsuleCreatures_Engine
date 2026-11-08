@@ -793,6 +793,14 @@
    "doc": "C5: show, update or hide a counter box (a variable's value beside the messages: money, coins).",
    "bytes": "kind8 (CounterOp), box8 (the manifest's counters index), var16 (its variable), [Show: x8, y8 (cells), label text ref]",
    "does": "C5: world::counter() with the variable's current value (the default: the text layer's banner)"
+  },
+  {
+   "id": 94,
+   "name": "Stat",
+   "kind": "generic",
+   "doc": "C6: add to a game statistic the game's port holds (a stat bound to a variable compiles to AddVar instead).",
+   "bytes": "stat8 (the manifest's stats index), operand (the amount)",
+   "does": "C6: world::add_stat() (the default logs that no port holds the game's stats)"
   }
  ],
  "enums": [
@@ -2142,6 +2150,12 @@
      "type": "int",
      "value": "16",
      "doc": "C5: counter boxes a scripts manifest may declare."
+    },
+    {
+     "name": "kMaxStats",
+     "type": "int",
+     "value": "255",
+     "doc": "C6: game statistics a scripts manifest may declare (a byte each)."
     }
    ]
   }

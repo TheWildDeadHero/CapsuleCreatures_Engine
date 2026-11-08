@@ -703,6 +703,15 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       world::counter(kind, box, value, x, y, label);
       return Outcome::Continue;
    }
+   case Op::Stat:
+   {
+      // stat8, operand (the amount)
+      const uint8_t stat = *p++;
+      const int32_t amount = operand(p);
+      next();
+      world::add_stat(stat, amount);
+      return Outcome::Continue;
+   }
    case Op::ObjectOrder:
    {
       // operand (object), fixed8, order8
@@ -1450,6 +1459,7 @@ Outcome execute(Context& c)
    case Op::ObjectOrder:
    case Op::Name:
    case Op::Counter:
+   case Op::Stat:
       return execute_port(c, op, p, base);
    // D-36 package 2: the ops of the bag, boxes, party roles, growth, combination and nursery modules
    case Op::RoleGet:

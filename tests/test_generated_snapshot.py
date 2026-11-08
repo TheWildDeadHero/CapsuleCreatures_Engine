@@ -1185,6 +1185,13 @@ COUNTER_CHANGES = {name: COUNTER_REASON for name in ("test_script.cpp", "test_sc
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in COUNTER_CHANGES.items()})
 
+## Why the script test outputs changed for C6's game statistics (the stats script, a bound and a port's stat).
+STAT_REASON = "The test scripts gain C6's stat statements (a stat bound to a variable and one the port holds)"
+## The files C6's stats changed, and why.
+STAT_CHANGES = {name: STAT_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in STAT_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

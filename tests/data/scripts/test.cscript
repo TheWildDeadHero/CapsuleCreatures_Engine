@@ -340,6 +340,13 @@ script counters {
     counter hide gold;
     counter show tokens at 0 0;
 }
+script stats {
+    var(v16) = 995;
+    stat add steps 10;
+    stat add visits;
+    var(v8) = 3;
+    stat add visits var(v8);
+}
 script lone_battle {
     battle unowned 25 5 -> var(answer);
     battle scripted 3;

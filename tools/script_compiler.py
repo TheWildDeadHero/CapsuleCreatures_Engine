@@ -17,6 +17,13 @@ variable, with an optional label (else its name): {"money": {"var": "money",
 "label": "Money"}}; the counter statement shows them; script_ids.h names each
 COUNTER_<NAME> (the box world::counter() receives).
 
+"stats" (optional, C6): the game's statistics in its own numbering, each
+bound to a declared variable or held by the game's port: {"steps": {"var":
+"steps"}, "used_center": {}}; `stat add <name> [n];` adds to the variable
+(kept in its range) or calls world::add_stat(); a stat without a variable
+needs "stats_port": true (the game's port holds its stats); script_ids.h
+names each STAT_<NAME> (the stat world::add_stat() receives).
+
 "name_kinds" (optional, C4): the game's own kinds of names for the name
 statement (["decoration", "medal", ...]), after the engine's item, species,
 move and nickname; script_ids.h names each NAME_KIND_<NAME> (the id
@@ -538,7 +545,7 @@ WARP_NOWAIT = VM.constants["kWarpNoWait"]
 ## Statement words of the script ports that are no keywords.
 PORT_WORDS = ("lock", "release", "wait_msg", "remove", "visible", "set_template", "door", "weather", "fade",
             "set_metatile", "respawn", "set_warp", "sound", "wait_sound", "mart", "wait_state", "override", "prop",
-            "order", "menu", "name", "counter")
+            "order", "menu", "name", "counter", "stat")
 ## The override statement's kinds (`override apply NAME;` / `override clear NAME;`) and their apply byte.
 OVERRIDE_KINDS = ("clear", "apply")
 ## C2: the prop statement's kinds (capsule::script::PropOp, in order).
@@ -553,6 +560,10 @@ ORDER_MAX = 0xFF
 COUNTER_KINDS = VM.words("CounterOp")
 ## C5: the most counter boxes a manifest declares, and the largest cell of a shown one (a byte).
 MAX_COUNTERS, COUNTER_CELL_MAX = VM.constants["kMaxCounters"], 0xFF
+## C6: the most game statistics a manifest declares.
+MAX_STATS = VM.constants["kMaxStats"]
+## C6: the stat statement's only kind.
+STAT_ADD_WORD = "add"
 ## C4: the name statement's sources (capsule::script::NameSource, in order).
 NAME_SOURCES = VM.words("NameSource")
 ## C4: the engine's name kinds (capsule::script::NameKind, in order; a manifest's own follow).
@@ -711,6 +722,30 @@ def game_counters(raw: Any) -> dict[str, dict[str, str]]:
       out[str(name)] = {"var": c["var"], "label": c.get("label", str(name))}
    if len(out) > MAX_COUNTERS:
       raise ScriptError(f"counters: at most {MAX_COUNTERS}")
+   return out
+
+
+def game_stats(raw: Any, port: Any) -> dict[str, str | None]:
+   """!C6: a scripts manifest's "stats": its game statistics, each bound to a variable or held by the game's port.
+   @param raw   its value
+   @param port  the manifest's "stats_port" (True: the game's port holds the stats without a variable)
+   @return name -> the variable's name, or None (the port's), in order (the stats' numbers)
+   @throws ScriptError when malformed, too many, or a stat has no variable and no port holds it
+   """
+   if not isinstance(raw, Mapping):
+      raise ScriptError("stats must be an object of name -> {\"var\": ...} or {}")
+   if not isinstance(port, bool):
+      raise ScriptError("stats_port must be true or false")
+   out: dict[str, str | None] = {}
+   for name, s in raw.items():
+      if not re.fullmatch(r"[a-z_][a-z0-9_]*", str(name)) or not isinstance(s, Mapping) or set(s) - {"var"} \
+            or not isinstance(s.get("var", ""), str):
+         raise ScriptError(f"stats: {name!r} needs a lower-case name and {{\"var\": NAME}} or {{}}")
+      if "var" not in s and not port:
+         raise ScriptError(f"stats: {name!r} has no variable and the manifest's stats_port is not true")
+      out[str(name)] = s.get("var")
+   if len(out) > MAX_STATS:
+      raise ScriptError(f"stats: at most {MAX_STATS}")
    return out
 
 
@@ -2495,6 +2530,14 @@ class Parser:
             at = (x, y)
          self.expect(";")
          return Node("counter", t, kind=kind, box=box.text, at=at)
+      if w == "stat":   # C6: add to a game statistic
+         self.expect(STAT_ADD_WORD)
+         stat = self.take()   # a stat may be named by a keyword too (steps)
+         if stat.kind != "name":
+            raise self.error(f"stat add: expected a game statistic's name, found {stat.text or 'end of file'!r}")
+         amount = None if self.at(";") else self.operand()
+         self.expect(";")
+         return Node("stat", t, stat=stat.text, amount=amount)
       if w == "name":   # C4: a name slot from a text, a list entry, a number or a name of a kind
          slot = self.take()
          if slot.kind not in ("ref", "name"):
@@ -2781,6 +2824,8 @@ class Compiler:
       self.name_kinds: list[str] = []
       ## C5: the manifest's counter boxes, in order.
       self.counters: dict[str, dict[str, str]] = {}
+      ## C6: the manifest's game statistics, in order.
+      self.stats: dict[str, str | None] = {}
       ## The first local ID of the game's numbering (the manifest's object_base).
       self.object_base = 0
       ## capsule::script::Bank::vm_flags (the manifest's "vm").
@@ -2838,7 +2883,7 @@ class Compiler:
       m = {k: v for k, v in self.manifest.items() if k != "editor"}
       allowed = {"schema", "sources", "game", "games", "stack_depth", "assets", "world", "placeholders", "terms",
                  "battle", save_shape.HISTORY_KEY, "object_base", "warn_unused", "glitches", "vm", "name_kinds",
-                 "counters"}
+                 "counters", "stats", "stats_port"}
       for k in m:
          if k not in allowed:
             raise ScriptError(f"unknown manifest key {k!r}")
@@ -2865,6 +2910,8 @@ class Compiler:
       self.name_kinds = game_name_kinds(m.get("name_kinds", []))
       ## C5: the manifest's counter boxes (name -> {"var", "label"}).
       self.counters = game_counters(m.get("counters", {}))
+      ## C6: the manifest's game statistics (name -> variable, or None: the game's port holds it).
+      self.stats = game_stats(m.get("stats", {}), m.get("stats_port", False))
       self.vm_flags = vm_flags(m.get("vm", {}))
       if not isinstance(m.get("warn_unused", True), bool):
          raise ScriptError("warn_unused must be true or false")
@@ -4103,6 +4150,21 @@ class Compiler:
             label.update(k="inline", text=c["label"])
             self.emit_text(e, label)
          return True
+      if k == "stat":
+         if s["stat"] not in self.stats:
+            self.err(f"stat: {s['stat']!r} is no statistic of the manifest's stats", s)
+            return True
+         amount = s["amount"] if s["amount"] is not None else Node("num", Token("number", "1", s["line"], s["col"]),
+                                                                     value=1)
+         var = self.stats[s["stat"]]
+         if var is not None:   # bound to a variable: an add, kept in the variable's range
+            e.op("AddVar")
+            e.u16(self.var_id(var, s))
+         else:   # the game's port holds it
+            e.op("Stat")
+            e.u8(list(self.stats).index(s["stat"]))
+         self.emit_operand(e, amount)
+         return True
       if k == "name_set":
          field = self.field
          binding = field.bindings.get(s["slot"]) if field is not None else None
@@ -5054,6 +5116,10 @@ class Compiler:
          L.append("")
          for i, n in enumerate(self.counters):   # C5: the counter boxes (world::counter())
             L.append(f"inline constexpr uint8_t COUNTER_{n.upper()} = {i};   ///< Counter box {n}.")
+      if self.stats:
+         L.append("")
+         for i, n in enumerate(self.stats):   # C6: the game statistics (world::add_stat())
+            L.append(f"inline constexpr uint8_t STAT_{n.upper()} = {i};   ///< Game statistic {n}.")
       L.append("")
       for i, n in enumerate(NAME_KINDS + self.name_kinds):   # C4: the Name op's kinds (game::name_text())
          L.append(f"inline constexpr uint8_t NAME_KIND_{n.upper()} = {i};   ///< Name kind {n}.")

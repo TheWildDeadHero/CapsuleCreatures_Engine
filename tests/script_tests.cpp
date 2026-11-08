@@ -725,6 +725,15 @@ void counter(script::CounterOp op, uint8_t box, int32_t value, uint8_t x, uint8_
                  static_cast<int>(value), static_cast<unsigned>(x), static_cast<unsigned>(y), name);
    log(b);
 }
+/// C6: records a game statistic the port holds.
+/// @param stat    the statistic
+/// @param amount  what is added
+void add_stat(uint8_t stat, int32_t amount)
+{
+   char b[32];
+   std::snprintf(b, sizeof b, "stat %u %d;", static_cast<unsigned>(stat), static_cast<int>(amount));
+   log(b);
+}
 /// Records an override set's apply or clear.
 /// @param set    the set
 /// @param apply  applied
@@ -1859,6 +1868,23 @@ void test_counters()
    CHECK(std::strcmp(g_world.log, want) == 0);
 }
 
+constexpr int32_t kV16Max = 1000;   ///< C6: v16's declared maximum (test.cscript).
+
+/// C6: game statistics: one bound to a variable is added there, kept in its range (no port call); one the port holds
+/// reaches world::add_stat() with 1 by default or the operand's value.
+void test_stats()
+{
+   script::clear_all();
+   g_world = World{};
+   script::Context c{};
+   script::start(c, SCRIPT_STATS);
+   CHECK(run(c) == 0);
+   CHECK(script::var(VAR_V16) == kV16Max);
+   char want[64];
+   std::snprintf(want, sizeof want, "stat %u 1;stat %u 3;", STAT_VISITS, STAT_VISITS);
+   CHECK(std::strcmp(g_world.log, want) == 0);
+}
+
 /// C4: name slots: a text asset, a list entry by index, a number, a kind through game::name_text() (a game's own kind
 /// with a count), an inline text; each cut to the slot's eight characters.
 void test_names()
@@ -2072,6 +2098,7 @@ int main()
    test_encounter();
    test_spotter_group();
    test_counters();
+   test_stats();
    test_names();
    test_menus();
    test_props();
