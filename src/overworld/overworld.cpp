@@ -5,8 +5,10 @@
 
 #include "capsule/core/assert.h"
 #include "capsule/core/memory.h"
+#include "capsule/core/saturate.h"
 #include "capsule/encounter/encounter.h"
 #include "capsule/field/doors.h"
+#include "capsule/field/field.h"
 #include "capsule/script/field_actions.h"
 #include "capsule/script/field_effects.h"
 #include "capsule/script/step_effects.h"
@@ -38,6 +40,8 @@ constexpr uint8_t kNoFade = 0xFF;                ///< State::fade_coef before an
 constexpr int kByteOfBitShift = 3;               ///< Visited bits: location to its byte (loc / 8).
 constexpr int kBitInByteMask = 7;                ///< Visited bits: location's bit in its byte (loc & 7).
 constexpr int32_t kStepsMask = 0x7FFFFFFF;       ///< Query::Steps: the step count as a non-negative int32_t.
+constexpr int32_t kMaxShakePower = 0xFF;          ///< C9: largest shake power (8 bits).
+constexpr int32_t kMaxShakeFrames = 0xFFFF;       ///< C9: longest shake (16-bit frames).
 
 /// @name Banner
 ///@{
@@ -1395,7 +1399,7 @@ CAPSULE_WEAK bool warping()
    return overworld::transitioning();
 }
 
-void set_darkness(uint8_t level)
+CAPSULE_WEAK void set_darkness(uint8_t level)
 {
    const uint8_t darkest = map::kWorld.darkness_level_count;
    overworld::g.darkness = level > darkest ? darkest : level;
@@ -1486,6 +1490,40 @@ void shake(uint8_t power, uint16_t frames)
    auto& s = overworld::g.screen;
    s.shake = power;
    s.shake_t = frames;
+}
+
+// C9: the scene defaults. Weak (CAPSULE_WEAK), so a game with its own camera, layouts or darkness keeps them.
+CAPSULE_WEAK void fade_darkness(uint8_t level)
+{
+   set_darkness(level);   // no gradual change in the engine: at once
+}
+
+CAPSULE_WEAK bool darkness_fading()
+{
+   return false;
+}
+
+CAPSULE_WEAK void set_layout(int32_t n)
+{
+   map::set_layout(n >= 1 && n <= map::kWorld.map_count ? &map::kWorld.maps[n - 1] : nullptr);
+}
+
+CAPSULE_WEAK void camera_detach()
+{
+   field::spawn_camera();
+}
+
+CAPSULE_WEAK void camera_attach()
+{
+   field::remove_camera();
+}
+
+CAPSULE_WEAK void camera_shake(int32_t vertical, int32_t horizontal, int32_t count, int32_t delay)
+{
+   const int32_t power = vertical > horizontal ? vertical : horizontal;
+   const int32_t frames = count * delay;
+   shake(static_cast<uint8_t>(clamp_to<int32_t>(power, 0, overworld::kMaxShakePower)),
+         static_cast<uint16_t>(clamp_to<int32_t>(frames, 0, overworld::kMaxShakeFrames)));
 }
 
 void timer_start(int32_t seconds)

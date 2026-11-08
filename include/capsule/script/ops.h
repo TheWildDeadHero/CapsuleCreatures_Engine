@@ -98,6 +98,10 @@
 /// | Stat | stat8 (the manifest's stats index), operand (the amount) | C6: world::add_stat() (the default does nothing: only a manifest with stats_port emits the op) |
 /// | Party | kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)] | C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone) |
 /// | ItemQuery | kind8 (ItemQueryOp), var16, operand (item), [Room: operand (n)] | C7: var = items::room() (1 when the bag takes n more) or items::pocket() |
+/// | MapView | kind8 (MapViewOp), [Layout: operand (map)] | C9: world::redraw_map() / world::set_layout() |
+/// | Animation | kind8 (AnimationOp), [Arg: operand (index), operand (value)], [Start, Wait: operand (animation)] | C9: world::animation_arg() / animation_start(); Wait waits while world::animation_done() is false |
+/// | Camera | kind8 (CameraOp), [Shake: operand (vertical), operand (horizontal), operand (count), operand (delay)] | C9: world::camera_detach() / camera_attach() / camera_shake() |
+/// | DarknessFade | operand (level) | C9: world::fade_darkness(); waits while world::darkness_fading() |
 #pragma once
 
 #include <cstdint>
@@ -206,6 +210,10 @@ enum class Op : uint8_t
    Stat,   ///< C6: add to a game statistic the game's port holds (a stat bound to a variable compiles to AddVar instead).
    Party,   ///< C7: heal, stash or restore the party, count its members, or find one knowing a move; C8: give a creature or an egg.
    ItemQuery,   ///< C7: whether the bag takes more of an item, or an item's pocket.
+   MapView,   ///< C9: redraw the shown view, or show the shown map with another map's terrain.
+   Animation,   ///< C9: set a visual field animation's argument, start one, or wait for its end.
+   Camera,   ///< C9: the camera follows an invisible mover or the walker again, or shakes.
+   DarknessFade,   ///< C9: change the shown map's darkness level gradually and wait for it.
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -480,6 +488,32 @@ enum class NameKind : uint8_t
    Move,   ///< A move's name.
    Nickname,   ///< A party slot's nickname (party::role_get()).
    NUM_NAME_KINDS   ///< Number of engine kinds.
+};
+
+/// C9: MapView kinds.
+enum class MapViewOp : uint8_t
+{
+   Redraw,   ///< Redraw the shown view.
+   Layout,   ///< Show another map's terrain (0: its own).
+   NUM_MAP_VIEW_OPS   ///< Number of kinds.
+};
+
+/// C9: Animation kinds.
+enum class AnimationOp : uint8_t
+{
+   Arg,   ///< Set an argument the next animations read.
+   Start,   ///< Start an animation.
+   Wait,   ///< Wait until it ends.
+   NUM_ANIMATION_OPS   ///< Number of kinds.
+};
+
+/// C9: Camera kinds.
+enum class CameraOp : uint8_t
+{
+   Detach,   ///< Follow an invisible mover on the walker's cell.
+   Attach,   ///< Follow the walker again.
+   Shake,   ///< Shake the view.
+   NUM_CAMERA_OPS   ///< Number of kinds.
 };
 
 /// C7: Party kinds.

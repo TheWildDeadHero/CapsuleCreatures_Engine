@@ -485,6 +485,95 @@ void set_darkness(uint8_t level)
    std::snprintf(b, sizeof b, "darkness %u;", static_cast<unsigned>(level));
    log(b);
 }
+/// C9: frames an animation runs in the stub (animation_done() turns true after this many polls).
+constexpr int kStubAnimationPolls = 2;
+int g_animation_polls = 0;   ///< C9: animation_done() calls since the start.
+
+/// C9: records a redraw.
+void redraw_map()
+{
+   log("redraw;");
+}
+
+/// C9: records a layout.
+/// @param n  the map
+void set_layout(int32_t n)
+{
+   char b[24];
+   std::snprintf(b, sizeof b, "layout %d;", static_cast<int>(n));
+   log(b);
+}
+
+/// C9: records an animation argument.
+/// @param index  the argument
+/// @param value  its value
+void animation_arg(uint8_t index, int32_t value)
+{
+   char b[24];
+   std::snprintf(b, sizeof b, "arg %u %d;", static_cast<unsigned>(index), static_cast<int>(value));
+   log(b);
+}
+
+/// C9: records an animation's start.
+/// @param id  the animation
+void animation_start(int32_t id)
+{
+   char b[24];
+   std::snprintf(b, sizeof b, "anim %d;", static_cast<int>(id));
+   log(b);
+   g_animation_polls = 0;
+}
+
+/// C9: the animation ends after kStubAnimationPolls polls.
+/// @param id  the animation
+/// @return true when it has
+bool animation_done(int32_t id)
+{
+   (void)id;
+   return ++g_animation_polls > kStubAnimationPolls;
+}
+
+/// C9: records the camera's detach.
+void camera_detach()
+{
+   log("detach;");
+}
+
+/// C9: records the camera's attach.
+void camera_attach()
+{
+   log("attach;");
+}
+
+/// C9: records a shake.
+/// @param vertical    pixels
+/// @param horizontal  pixels
+/// @param count       shakes
+/// @param delay       frames between them
+void camera_shake(int32_t vertical, int32_t horizontal, int32_t count, int32_t delay)
+{
+   char b[32];
+   std::snprintf(b, sizeof b, "shake %d %d %d %d;", static_cast<int>(vertical), static_cast<int>(horizontal),
+                 static_cast<int>(count), static_cast<int>(delay));
+   log(b);
+}
+
+/// C9: records a darkness change (the stub's ends at once).
+/// @param level  the level
+void fade_darkness(uint8_t level)
+{
+   char b[24];
+   std::snprintf(b, sizeof b, "darkfade %u;", static_cast<unsigned>(level));
+   log(b);
+}
+
+/// C9: the stub's changes end at once.
+/// @return false
+bool darkness_fading()
+{
+   return false;
+}
+
 /// Records an escape: the stub warps only when the bank holds a recorded escape point.
 /// @param transition  the transition
 /// @return whether it warped
@@ -1990,6 +2079,19 @@ void test_party()
    CHECK(script::var(VAR_ANSWER) == kStubKnowerSlot && script::var(VAR_V8) == kStubKnowerSpecies);
 }
 
+/// C9: the scene statements reach the world port in order; animation wait waits until the port says it ended.
+void test_scenes()
+{
+   script::clear_all();
+   g_world = World{};
+   script::Context c{};
+   script::start(c, SCRIPT_SCENES);
+   // the animation wait polls at once, then each frame: the stub says it ended at its kStubAnimationPolls + 1st
+   // poll; the darkness fade ends at once in the stub, so it does not wait
+   CHECK(run(c) == script::world::kStubAnimationPolls);
+   CHECK(std::strcmp(g_world.log, "redraw;layout 2;arg 1 7;anim 5;detach;shake 2 3 4 5;attach;darkfade 1;") == 0);
+}
+
 /// C8: party give with constants and an item, with a variable species and no item (0), and an egg; each result
 /// into its variable.
 void test_party_give()
@@ -2245,6 +2347,7 @@ int main()
    test_counters();
    test_stats();
    test_party();
+   test_scenes();
    test_party_give();
    test_item_queries();
    test_names();

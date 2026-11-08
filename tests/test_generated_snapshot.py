@@ -1207,6 +1207,13 @@ GIVE_CHANGES = {name: GIVE_REASON for name in ("test_script.cpp", "test_script_i
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in GIVE_CHANGES.items()})
 
+## Why the script test outputs changed for C9's field scene statements (scenes).
+SCENE_REASON = "The test scripts gain C9's field scene statements"
+## The files C9 changed, and why.
+SCENE_CHANGES = {name: SCENE_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in SCENE_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"
