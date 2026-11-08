@@ -35,6 +35,12 @@ capsule_battle_test(nursery_tests ${CAPSULE_ROOT}/tests/data/combine/battle.json
                             ${CAPSULE_GENERATED_DIR}/combine_script.cpp ${CAPSULE_GENERATED_DIR}/combine_script_ids.h
                     DIR combine_nursery)
 target_include_directories(capsule_nursery_tests PRIVATE ${CAPSULE_GENERATED_DIR})
+
+# C7 / C8: the default party statements (src/script/script_party.cpp: give into the party, the boxes, nowhere; an
+# egg; heal; the counts; the move search) on the combination fixture (boxes and eggs).
+capsule_battle_test(script_party_defaults_tests ${CAPSULE_ROOT}/tests/data/combine/battle.json
+                    SOURCES tests/script_party_defaults_tests.cpp src/script/script_party.cpp
+                    DIR script_party_defaults)
 add_test(NAME battle_nursery_tests
          COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_battle_nursery.py)
 

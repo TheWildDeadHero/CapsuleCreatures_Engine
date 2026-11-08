@@ -920,6 +920,31 @@ int32_t count(bool hatched)
    return hatched ? kStubHatched : kStubPartyCount;
 }
 
+/// C8: records a give; the stub's party is full, so it goes to the boxes.
+/// @param species  the species
+/// @param level    its level
+/// @param item     its held item
+/// @return kGivenBoxes
+int32_t give(uint16_t species, uint8_t level, uint16_t item)
+{
+   char b[32];
+   std::snprintf(b, sizeof b, "give %u %u %u;", static_cast<unsigned>(species), static_cast<unsigned>(level),
+                 static_cast<unsigned>(item));
+   party_log(b);
+   return script::kGivenBoxes;
+}
+
+/// C8: records an egg; it joins the party.
+/// @param species  the species
+/// @return kGivenParty
+int32_t give_egg(uint16_t species)
+{
+   char b[16];
+   std::snprintf(b, sizeof b, "egg %u;", static_cast<unsigned>(species));
+   party_log(b);
+   return script::kGivenParty;
+}
+
 /// C7: the second member knows kStubKnownMove.
 /// @param move     the move
 /// @param slot     its member, or the party's size
@@ -1965,6 +1990,20 @@ void test_party()
    CHECK(script::var(VAR_ANSWER) == kStubKnowerSlot && script::var(VAR_V8) == kStubKnowerSpecies);
 }
 
+/// C8: party give with constants and an item, with a variable species and no item (0), and an egg; each result
+/// into its variable.
+void test_party_give()
+{
+   script::clear_all();
+   g_party_log[0] = '\0';
+   script::Context c{};
+   script::start(c, SCRIPT_PARTY_GIVE);
+   CHECK(run(c) == 0);
+   CHECK(std::strcmp(g_party_log, "give 4 5 7;give 6 9 0;egg 3;") == 0);
+   CHECK(script::var(VAR_ANSWER) == script::kGivenBoxes && script::var(VAR_V8) == script::kGivenBoxes);
+   CHECK(script::var(VAR_V16) == script::kGivenParty);
+}
+
 /// C7: the item queries: room for 5 more (1) and for 200 more (0) of an item, an item's pocket.
 void test_item_queries()
 {
@@ -2206,6 +2245,7 @@ int main()
    test_counters();
    test_stats();
    test_party();
+   test_party_give();
    test_item_queries();
    test_names();
    test_menus();

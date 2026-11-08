@@ -485,6 +485,18 @@ class PartyStatements(unittest.TestCase):
       no_var = sc.NO_VAR.to_bytes(VAR_ID_BYTES, "little")
       self.assertEqual(bare[2 + VAR_ID_BYTES:2 + 2 * VAR_ID_BYTES], no_var)
 
+   def test_give_bytes(self) -> None:
+      """C8: give: the result variable, the species, the level and the item (0 without one); give egg: the result
+      and the species."""
+      op, k = sc.OP["Party"], sc.PARTY_KINDS
+      give = self.code("party give 4 5 item 7 -> var(v);")
+      self.assertEqual(give[:2], bytes([op, k.index("give")]))
+      self.assertEqual(self.code("party give 4 5 -> var(v);"), self.code("party give 4 5 item 0 -> var(v);"))
+      self.assertEqual(self.code("party give egg 4 -> var(v);")[:2], bytes([op, k.index(sc.PARTY_GIVE_EGG)]))
+      for body in ("party give 4 -> var(v);", "party give egg 4;"):   # no level; no result
+         errs = errors(compile_text(f"var v : u16;\nscript s {{ {body} }}"))
+         self.assertTrue(errs, (body, errs))
+
    def test_item_queries(self) -> None:
       """ItemQuery: its kind, the variable, the item and, for room, the count (1 by default)."""
       op, k = sc.OP["ItemQuery"], sc.ITEM_QUERY_KINDS

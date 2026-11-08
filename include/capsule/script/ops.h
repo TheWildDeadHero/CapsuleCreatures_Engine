@@ -96,7 +96,7 @@
 /// | Name | slot8 (the name placeholder's index), source8 (NameSource), [Text: text ref], [Entry: list32 (asset key), operand index], [Number: operand], [Kind: kind8 (NameKind, or kFirstGameNameKind + the manifest's name_kinds index), operand id, counted8 (1: an operand count follows), [operand count]] | C4: script::set_name() of the source's text, cut to the slot's length (a kind: game::name_text(); the engine's kinds' defaults from the battle data and the party) |
 /// | Counter | kind8 (CounterOp), box8 (the manifest's counters index), var16 (its variable), [Show: x8, y8 (cells), label text ref] | C5: world::counter() with the variable's current value (the default: the text layer's banner) |
 /// | Stat | stat8 (the manifest's stats index), operand (the amount) | C6: world::add_stat() (the default does nothing: only a manifest with stats_port emits the op) |
-/// | Party | kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)] | C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species |
+/// | Party | kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)] | C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone) |
 /// | ItemQuery | kind8 (ItemQueryOp), var16, operand (item), [Room: operand (n)] | C7: var = items::room() (1 when the bag takes n more) or items::pocket() |
 #pragma once
 
@@ -204,7 +204,7 @@ enum class Op : uint8_t
    Name,   ///< C4: write a name slot (a name placeholder: STR_VAR-like text buffers) from a text, a list entry, a number or a name of a kind.
    Counter,   ///< C5: show, update or hide a counter box (a variable's value beside the messages: money, coins).
    Stat,   ///< C6: add to a game statistic the game's port holds (a stat bound to a variable compiles to AddVar instead).
-   Party,   ///< C7: heal, stash or restore the party, count its members, or find one knowing a move.
+   Party,   ///< C7: heal, stash or restore the party, count its members, or find one knowing a move; C8: give a creature or an egg.
    ItemQuery,   ///< C7: whether the bag takes more of an item, or an item's pocket.
    NUM_OPS   ///< Number of opcodes.
 };
@@ -490,6 +490,8 @@ enum class PartyOp : uint8_t
    Restore,   ///< Put the stashed party back.
    Count,   ///< Count the members (hatched: eggs left out).
    Find,   ///< The first hatched member knowing a move.
+   Give,   ///< C8: give a new creature (the party, else the boxes).
+   GiveEgg,   ///< C8: give a new egg (`party give egg`).
    NUM_PARTY_OPS   ///< Number of kinds.
 };
 
@@ -575,6 +577,9 @@ inline constexpr int kMaxMenuItems = 16;   ///< C3: options of one Menu (a list 
 inline constexpr uint8_t kFirstGameNameKind = 4;   ///< C4: the first game name kind (a scripts manifest's name_kinds, in order; NameKind's count).
 inline constexpr int kMaxGameNameKinds = 32;   ///< C4: name kinds a scripts manifest may declare.
 inline constexpr int kMaxCounters = 16;   ///< C5: counter boxes a scripts manifest may declare.
+inline constexpr int kGivenParty = 0;   ///< C8: party give's result: the creature joined the party.
+inline constexpr int kGivenBoxes = 1;   ///< C8: party give's result: the party was full, it went to the boxes.
+inline constexpr int kGivenNone = 2;   ///< C8: party give's result: nowhere had room (or it could not be built).
 inline constexpr int kMaxStats = 255;   ///< C6: game statistics a scripts manifest may declare (a byte each).
 ///@}
 

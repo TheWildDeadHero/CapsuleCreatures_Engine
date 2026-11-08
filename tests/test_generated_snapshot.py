@@ -1200,6 +1200,13 @@ PARTY_CHANGES = {name: PARTY_REASON for name in ("test_script.cpp", "test_script
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in PARTY_CHANGES.items()})
 
+## Why the script test outputs changed for C8's party give (party_give).
+GIVE_REASON = "The test scripts gain C8's party give statements"
+## The files C8 changed, and why.
+GIVE_CHANGES = {name: GIVE_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in GIVE_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

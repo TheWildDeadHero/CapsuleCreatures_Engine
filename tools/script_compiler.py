@@ -29,7 +29,10 @@ member's resources full, its status cleared), `party stash;` / `party
 restore;` (a copy of the party kept and put back), `party count [hatched]
 -> var(v);` (hatched: eggs left out), `party find move <move> -> var(slot)
 [species var(s)];` (the first hatched member knowing the move, the party's
-size when none; its species only when found).
+size when none; its species only when found); C8 `party give <species>
+<level> [item <item>] -> var(v);` and `party give egg <species> -> var(v);`
+(v = 0 the party, 1 the boxes, 2 nowhere: ops.h kGivenParty / kGivenBoxes /
+kGivenNone).
 
 "name_kinds" (optional, C4): the game's own kinds of names for the name
 statement (["decoration", "medal", ...]), after the engine's item, species,
@@ -435,6 +438,8 @@ PARTY_WORD = "party"
 PARTY_KINDS = VM.words("PartyOp")
 ## C7: `party count hatched` (eggs left out), `party find move <move>`, `... species var(s)`.
 PARTY_HATCHED_WORD, PARTY_MOVE_WORD, PARTY_SPECIES_WORD = "hatched", "move", "species"
+## C8: `party give egg <species>`, `party give <species> <level> item <item>`, and GiveEgg's kind word.
+PARTY_EGG_WORD, PARTY_ITEM_WORD, PARTY_GIVE_EGG = "egg", "item", "give egg"
 ## The statement word of battles.
 BATTLE_WORD = "battle"
 ## Operands of an unowned battle: species, level, held item (the item may be left out: none).
@@ -1811,17 +1816,25 @@ class Parser:
       self.take()
       kind = self.take().text
       hatched = kind == "count" and self.accept(PARTY_HATCHED_WORD)
-      move = species = result = None
+      move = species = result = given = level = item = None
       if kind == "find":
          self.expect(PARTY_MOVE_WORD)   # the only search so far: a move a member knows
          move = self.operand()
-      if kind in ("count", "find"):
+      if kind == "give":   # C8: a creature (species, level, held item) or an egg (species)
+         if self.accept(PARTY_EGG_WORD):
+            kind = PARTY_GIVE_EGG
+         given = self.operand()
+         if kind == "give":
+            level = self.operand()
+            item = self.operand() if self.accept(PARTY_ITEM_WORD) else None
+      if kind in ("count", "find", "give", PARTY_GIVE_EGG):
          self.expect("->")
          result = self.var_ref().text
          if kind == "find" and self.accept(PARTY_SPECIES_WORD):
             species = self.var_ref().text
       self.expect(";")
-      return Node("party", t, kind=kind, hatched=hatched, move=move, result=result, species=species)
+      return Node("party", t, kind=kind, hatched=hatched, move=move, result=result, species=species, given=given,
+                  level=level, item=item)
 
    def encounter_statement(self, t: Token) -> Node:
       """!Parses an encounter statement (D-36 package 2 C1): `encounter clear|music|mark|continue|after;`,
@@ -3850,6 +3863,13 @@ class Compiler:
             e.u16(self.var_id(s["result"], s))
             e.u16(self.var_id(s["species"], s) if s["species"] is not None else NO_VAR)
             self.emit_operand(e, s["move"])
+         elif s["kind"] in ("give", PARTY_GIVE_EGG):   # C8: the result, the species, [the level, the item]
+            e.u16(self.var_id(s["result"], s))
+            self.emit_operand(e, s["given"])
+            if s["kind"] == "give":
+               self.emit_operand(e, s["level"])
+               none = Node("num", Token("number", "0", s["line"], s["col"]), value=0)
+               self.emit_operand(e, s["item"] if s["item"] is not None else none)
          return True
       if k == "item_op":
          entry = ITEM_STATEMENTS[s["kind"]]
