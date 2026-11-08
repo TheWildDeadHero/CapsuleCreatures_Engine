@@ -472,6 +472,20 @@ int32_t count(bool hatched);
 /// @return true when one knows it
 bool find_move(uint16_t move, int32_t& slot, int32_t& species);
 
+/// C8: gives a new creature (Party Give): the party when it has room, else the boxes. The default builds it with
+/// battle::make_monster() (the gameplay stream) and sets its held item.
+/// @param species  species index
+/// @param level    its level
+/// @param item     its held item (0: none)
+/// @return kGivenParty, kGivenBoxes or kGivenNone
+int32_t give(uint16_t species, uint8_t level, uint16_t item);
+
+/// C8: gives a new egg (Party GiveEgg; the default: built at level 1, then combine::make_egg() with the first
+/// egg-delivering method's cycle steps; kGivenNone without eggs).
+/// @param species  species index
+/// @return kGivenParty, kGivenBoxes or kGivenNone
+int32_t give_egg(uint16_t species);
+
 } // namespace capsule::script::party
 
 /// The bag, shops and move teaching from scripts. The engine's defaults

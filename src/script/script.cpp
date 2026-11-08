@@ -71,6 +71,8 @@ constexpr int32_t kMaxSteps = 0xFFFF;         ///< Most steps of one ObjectMove.
 constexpr int32_t kMaxScrollCells = 255;      ///< Most cells of one Scroll.
 constexpr int32_t kMaxItemId = 0xFFFF;        ///< Largest item id an item operand names (16-bit ids).
 constexpr int32_t kMaxMoveId = 0xFFFF;        ///< C7: largest move index a move operand names (the moves role: 16 bits).
+constexpr int32_t kMaxSpeciesId = 0xFFFF;     ///< C8: largest species a species operand names (16-bit ids).
+constexpr int32_t kMaxLevel = 0xFF;           ///< C8: largest level a level operand names (8 bits).
 constexpr int32_t kMaxTimerSeconds = 5999;    ///< Longest timer, 99:59.
 ///@}
 
@@ -1830,7 +1832,8 @@ Outcome op_item_query(Context& c, [[maybe_unused]] Op op, const uint8_t* p, cons
 Outcome op_party(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
 {
    Frame& f = c.stack[c.depth - 1];
-   // kind8, [Count: hatched8, var16], [Find: var16 (slot), var16 (species or kNoVar), operand (move)]
+   // kind8, [Count: hatched8, var16], [Find: var16 (slot), var16 (species or kNoVar), operand (move)],
+   // [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)]
    const auto kind = static_cast<PartyOp>(*p++);
    switch (kind)
    {
@@ -1865,6 +1868,28 @@ Outcome op_party(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uin
       {
          set_var(VarId{species_var}, species);   // the species only when a member knows it
       }
+      break;
+   }
+   case PartyOp::Give:
+   case PartyOp::GiveEgg:
+   {
+      const VarId v{load_le16(p)};
+      p += kU16Bytes;
+      const auto species = static_cast<uint16_t>(clamp_to<int32_t>(operand(p), 0, kMaxSpeciesId));
+      int32_t result = kGivenNone;
+      if (kind == PartyOp::Give)
+      {
+         const auto level = static_cast<uint8_t>(clamp_to<int32_t>(operand(p), 0, kMaxLevel));
+         const auto item = static_cast<uint16_t>(clamp_to<int32_t>(operand(p), 0, kMaxItemId));
+         advance(f, p, base);
+         result = party::give(species, level, item);
+      }
+      else
+      {
+         advance(f, p, base);
+         result = party::give_egg(species);
+      }
+      set_var(v, result);
       break;
    }
    case PartyOp::NUM_PARTY_OPS:

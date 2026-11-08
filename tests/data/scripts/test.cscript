@@ -360,6 +360,12 @@ script party_find {
     var(v16) = var(answer);
     party find move 33 -> var(answer) species var(v8);
 }
+script party_give {
+    party give 4 5 item 7 -> var(answer);
+    var(v16) = 6;
+    party give var(v16) 9 -> var(v8);
+    party give egg 3 -> var(v16);
+}
 script item_queries {
     item_room(3, 5) -> var(v8);
     item_room(3, 200) -> var(answer);

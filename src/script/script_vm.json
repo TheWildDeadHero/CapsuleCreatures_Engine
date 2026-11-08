@@ -806,9 +806,9 @@
    "id": 95,
    "name": "Party",
    "kind": "generic",
-   "doc": "C7: heal, stash or restore the party, count its members, or find one knowing a move.",
-   "bytes": "kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)]",
-   "does": "C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species",
+   "doc": "C7: heal, stash or restore the party, count its members, or find one knowing a move; C8: give a creature or an egg.",
+   "bytes": "kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)]",
+   "does": "C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone)",
    "module": "party",
    "handler": "op_party"
   },
@@ -1822,6 +1822,16 @@
      "name": "Find",
      "doc": "The first hatched member knowing a move.",
      "word": "find"
+    },
+    {
+     "name": "Give",
+     "doc": "C8: give a new creature (the party, else the boxes).",
+     "word": "give"
+    },
+    {
+     "name": "GiveEgg",
+     "doc": "C8: give a new egg (`party give egg`).",
+     "word": "give egg"
     }
    ],
    "count": {
@@ -2231,6 +2241,24 @@
      "type": "int",
      "value": "16",
      "doc": "C5: counter boxes a scripts manifest may declare."
+    },
+    {
+     "name": "kGivenParty",
+     "type": "int",
+     "value": "0",
+     "doc": "C8: party give's result: the creature joined the party."
+    },
+    {
+     "name": "kGivenBoxes",
+     "type": "int",
+     "value": "1",
+     "doc": "C8: party give's result: the party was full, it went to the boxes."
+    },
+    {
+     "name": "kGivenNone",
+     "type": "int",
+     "value": "2",
+     "doc": "C8: party give's result: nowhere had room (or it could not be built)."
     },
     {
      "name": "kMaxStats",
