@@ -800,7 +800,27 @@
    "kind": "generic",
    "doc": "C6: add to a game statistic the game's port holds (a stat bound to a variable compiles to AddVar instead).",
    "bytes": "stat8 (the manifest's stats index), operand (the amount)",
-   "does": "C6: world::add_stat() (the default logs that no port holds the game's stats)"
+   "does": "C6: world::add_stat() (the default does nothing: only a manifest with stats_port emits the op)"
+  },
+  {
+   "id": 95,
+   "name": "Party",
+   "kind": "generic",
+   "doc": "C7: heal, stash or restore the party, count its members, or find one knowing a move.",
+   "bytes": "kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)]",
+   "does": "C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species",
+   "module": "party",
+   "handler": "op_party"
+  },
+  {
+   "id": 96,
+   "name": "ItemQuery",
+   "kind": "generic",
+   "doc": "C7: whether the bag takes more of an item, or an item's pocket.",
+   "bytes": "kind8 (ItemQueryOp), var16, operand (item), [Room: operand (n)]",
+   "does": "C7: var = items::room() (1 when the bag takes n more) or items::pocket()",
+   "module": "items",
+   "handler": "op_item_query"
   }
  ],
  "enums": [
@@ -1769,6 +1789,67 @@
    "count": {
     "name": "NUM_NAME_KINDS",
     "doc": "Number of engine kinds."
+   }
+  },
+  {
+   "name": "PartyOp",
+   "type": "uint8_t",
+   "doc": [
+    "C7: Party kinds."
+   ],
+   "values": [
+    {
+     "name": "Heal",
+     "doc": "Every member's resources full, its status cleared.",
+     "word": "heal"
+    },
+    {
+     "name": "Stash",
+     "doc": "Keep a copy of the party.",
+     "word": "stash"
+    },
+    {
+     "name": "Restore",
+     "doc": "Put the stashed party back.",
+     "word": "restore"
+    },
+    {
+     "name": "Count",
+     "doc": "Count the members (hatched: eggs left out).",
+     "word": "count"
+    },
+    {
+     "name": "Find",
+     "doc": "The first hatched member knowing a move.",
+     "word": "find"
+    }
+   ],
+   "count": {
+    "name": "NUM_PARTY_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "ItemQueryOp",
+   "type": "uint8_t",
+   "doc": [
+    "C7: ItemQuery kinds."
+   ],
+   "values": [
+    {
+     "name": "Room",
+     "doc": "1 when the bag takes n more of the item.",
+     "word": "room"
+    },
+    {
+     "name": "Pocket",
+     "doc": "The item's pocket.",
+     "word": "pocket"
+    }
+   ],
+   "count": {
+    "name": "NUM_ITEM_QUERY_OPS",
+    "doc": "Number of kinds."
    }
   },
   {

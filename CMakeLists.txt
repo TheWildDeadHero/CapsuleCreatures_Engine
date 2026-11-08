@@ -273,6 +273,8 @@ add_library(capsule_engine STATIC
    src/script/script_game_default.cpp
    src/script/script_port_defaults.cpp
    src/script/script_counter.cpp
+   src/script/script_party.cpp
+   src/script/script_party_stash.cpp
    src/script/script_port_hal.cpp
    src/text/font.cpp
    src/text/print.cpp

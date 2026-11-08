@@ -1192,6 +1192,14 @@ STAT_CHANGES = {name: STAT_REASON for name in ("test_script.cpp", "test_script_i
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in STAT_CHANGES.items()})
 
+## Why the script test outputs changed for C7's party statements and item queries (party_ops, party_find,
+## item_queries).
+PARTY_REASON = "The test scripts gain C7's party statements and item queries"
+## The files C7 changed, and why.
+PARTY_CHANGES = {name: PARTY_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in PARTY_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

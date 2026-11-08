@@ -70,6 +70,7 @@ constexpr uint8_t kSelfSwitchMask = 3;        ///< Self switch letter bits (A-D)
 constexpr int32_t kMaxSteps = 0xFFFF;         ///< Most steps of one ObjectMove.
 constexpr int32_t kMaxScrollCells = 255;      ///< Most cells of one Scroll.
 constexpr int32_t kMaxItemId = 0xFFFF;        ///< Largest item id an item operand names (16-bit ids).
+constexpr int32_t kMaxMoveId = 0xFFFF;        ///< C7: largest move index a move operand names (the moves role: 16 bits).
 constexpr int32_t kMaxTimerSeconds = 5999;    ///< Longest timer, 99:59.
 ///@}
 
@@ -1479,6 +1480,8 @@ Outcome execute(Context& c)
    case Op::Nursery:
    case Op::Encounter:
    case Op::Battle:
+   case Op::Party:
+   case Op::ItemQuery:
       return run_module(c, op, p, base);
    case Op::NUM_OPS:
       break;
@@ -1795,6 +1798,79 @@ Outcome op_item_count(Context& c, [[maybe_unused]] Op op, const uint8_t* p, cons
    const int32_t item = operand(p);
    advance(f, p, base);
    set_var(v, items::count(static_cast<uint16_t>(clamp_to<int32_t>(item, 0, kMaxItemId))));
+   return Outcome::Continue;
+}
+
+/// ItemQuery (C7: a module op, reached through the game's dispatch table): the bag's room for an item, or its pocket.
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_item_query(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   // kind8, var16, operand (item), [Room: operand (n)]
+   const auto kind = static_cast<ItemQueryOp>(*p++);
+   const VarId v{load_le16(p)};
+   p += kU16Bytes;
+   const auto item = static_cast<uint16_t>(clamp_to<int32_t>(operand(p), 0, kMaxItemId));
+   const int32_t n = kind == ItemQueryOp::Room ? operand(p) : 0;
+   advance(f, p, base);
+   set_var(v, kind == ItemQueryOp::Room ? (items::room(item, n) ? 1 : 0) : items::pocket(item));
+   return Outcome::Continue;
+}
+
+/// Party (C7: a module op, reached through the game's dispatch table): heal, stash, restore, count, find a move.
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_party(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   // kind8, [Count: hatched8, var16], [Find: var16 (slot), var16 (species or kNoVar), operand (move)]
+   const auto kind = static_cast<PartyOp>(*p++);
+   switch (kind)
+   {
+   case PartyOp::Heal:
+   case PartyOp::Stash:
+   case PartyOp::Restore:
+      advance(f, p, base);
+      kind == PartyOp::Heal ? party::heal() : kind == PartyOp::Stash ? party::stash() : party::restore();
+      break;
+   case PartyOp::Count:
+   {
+      const bool hatched = *p++ != 0;
+      const VarId v{load_le16(p)};
+      p += kU16Bytes;
+      advance(f, p, base);
+      set_var(v, party::count(hatched));
+      break;
+   }
+   case PartyOp::Find:
+   {
+      const VarId slot{load_le16(p)};
+      p += kU16Bytes;
+      const uint16_t species_var = load_le16(p);
+      p += kU16Bytes;
+      const auto move = static_cast<uint16_t>(clamp_to<int32_t>(operand(p), 0, kMaxMoveId));
+      advance(f, p, base);
+      int32_t at = 0;
+      int32_t species = 0;
+      const bool found = party::find_move(move, at, species);
+      set_var(slot, at);
+      if (species_var != kNoVar && found)
+      {
+         set_var(VarId{species_var}, species);   // the species only when a member knows it
+      }
+      break;
+   }
+   case PartyOp::NUM_PARTY_OPS:
+      advance(f, p, base);
+      break;
+   }
    return Outcome::Continue;
 }
 

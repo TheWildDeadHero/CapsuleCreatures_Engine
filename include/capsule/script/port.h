@@ -448,6 +448,30 @@ void role_set(uint8_t slot, uint8_t role, uint8_t element, int32_t value);
 /// @param records  the party, or nullptr (every role reads 0)
 void attach(monster::Party* records);
 
+/// C7: heals the party (Party Heal): every member's resources full, its status cleared (the default:
+/// battle::fill_resources() and primary_status 0 for each member of the party boxes::attach() gave; every party
+/// default works on that party).
+void heal();
+
+/// C7: keeps a copy of the party (Party Stash; the default: one party in its own buffer,
+/// src/script/script_party_stash.cpp, linked only when the game keeps the default).
+void stash();
+
+/// C7: puts the stashed party back (Party Restore; the default: nothing before a stash).
+void restore();
+
+/// C7: counts the party's members (Party Count).
+/// @param hatched  leave eggs out (the default: combine::is_egg())
+/// @return how many
+int32_t count(bool hatched);
+
+/// C7: finds the first hatched member knowing a move (Party Find).
+/// @param move     move index
+/// @param slot     its slot, or the party's size (monster::kLayout.party_size) when none knows it
+/// @param species  its species (the default: its species_key role's species index), set when one is found
+/// @return true when one knows it
+bool find_move(uint16_t move, int32_t& slot, int32_t& species);
+
 } // namespace capsule::script::party
 
 /// The bag, shops and move teaching from scripts. The engine's defaults
@@ -481,6 +505,17 @@ bool take(uint16_t item, int32_t n);
 /// @param item  item id
 /// @return the count
 int32_t count(uint16_t item);
+
+/// C7: whether the bag takes more of an item (ItemQuery Room; the default: inventory::room_for()).
+/// @param item  item id
+/// @param n     how many
+/// @return true when n more fit
+bool room(uint16_t item, int32_t n);
+
+/// C7: an item's pocket (ItemQuery Pocket; the default: its inventory data's pocket, inventory::kNoPocket for none).
+/// @param item  item id
+/// @return the pocket
+int32_t pocket(uint16_t item);
 
 /// Opens the bag menu (BagOpen).
 void bag_open();
@@ -531,6 +566,10 @@ namespace capsule::script::boxes
 /// @param st     the storage boxes, or nullptr (every move fails, every count is 0)
 /// @param party  the party, or nullptr
 void attach(storage::Storage* st, monster::Party* party);
+
+/// C7: the party attach() gave (the default party statements' party too).
+/// @return it, or nullptr
+monster::Party* party();
 
 /// The attached storage.
 /// @return it, or nullptr
