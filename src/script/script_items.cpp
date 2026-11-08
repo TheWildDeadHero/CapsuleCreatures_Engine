@@ -4,11 +4,12 @@
 /// with the items' names and counts or prices, a page at a time when they are longer than one menu (C6:
 /// capsule/script/menu.h). A game replaces any of them with its own screens by defining them. N1: give(), take() and
 /// count() are weak (CAPSULE_WEAK): a game with its own bag rules (pockets, stack limits) defines them and keeps the
-/// default menus.
+/// default menus; so are C7's room() and pocket().
 #include "capsule/battle/battle.h"
 #include "capsule/battle/data.h"
 #include "capsule/core/memory.h"
 #include "capsule/inventory/bag.h"
+#include "capsule/inventory/data.h"
 #include "capsule/script/menu.h"
 #include "capsule/script/port.h"
 #include "capsule/script/script.h"
@@ -182,6 +183,17 @@ CAPSULE_WEAK bool take(uint16_t item, int32_t n)
 CAPSULE_WEAK int32_t count(uint16_t item)
 {
    return g.bag != nullptr ? static_cast<int32_t>(inventory::count(*g.bag, item)) : 0;
+}
+
+CAPSULE_WEAK bool room(uint16_t item, int32_t n)
+{
+   return g.bag != nullptr && n >= 0 && inventory::room_for(*g.bag, item) >= static_cast<uint32_t>(n);
+}
+
+CAPSULE_WEAK int32_t pocket(uint16_t item)
+{
+   const inventory::ItemInfo* i = inventory::info(item);
+   return i != nullptr ? i->pocket : inventory::kNoPocket;
 }
 
 void bag_open()

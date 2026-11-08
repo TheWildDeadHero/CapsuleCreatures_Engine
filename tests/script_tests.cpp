@@ -849,6 +849,20 @@ RoleCell* role_cell(uint8_t slot, uint8_t role, uint8_t element, bool make)
    g_roles[g_role_count] = RoleCell{slot, role, element, 0};
    return &g_roles[g_role_count++];
 }
+
+constexpr int32_t kStubPartyCount = 3;     ///< C7: the stub party's members.
+constexpr int32_t kStubHatched = 2;        ///< C7: its hatched members.
+constexpr uint16_t kStubKnownMove = 33;    ///< C7: the move its second member knows.
+constexpr int32_t kStubKnowerSlot = 1;     ///< C7: that member.
+constexpr int32_t kStubKnowerSpecies = 25; ///< C7: its species.
+char g_party_log[64] = {};                 ///< C7: the party statements called, in order.
+
+/// C7: appends to the party log.
+/// @param what  the call
+void party_log(const char* what)
+{
+   std::strncat(g_party_log, what, sizeof g_party_log - std::strlen(g_party_log) - 1);
+}
 } // namespace
 
 namespace capsule::script::party
@@ -877,6 +891,50 @@ void role_set(uint8_t slot, uint8_t role, uint8_t element, int32_t value)
    {
       c->value = value;
    }
+}
+
+/// C7: records the heal.
+void heal()
+{
+   party_log("heal;");
+}
+
+/// C7: records the stash.
+void stash()
+{
+   party_log("stash;");
+}
+
+/// C7: records the restore.
+void restore()
+{
+   party_log("restore;");
+}
+
+/// C7: the stub's counts.
+/// @param hatched  eggs left out
+/// @return how many
+int32_t count(bool hatched)
+{
+   party_log(hatched ? "hatched;" : "count;");
+   return hatched ? kStubHatched : kStubPartyCount;
+}
+
+/// C7: the second member knows kStubKnownMove.
+/// @param move     the move
+/// @param slot     its member, or the party's size
+/// @param species  its species
+/// @return true when one knows it
+bool find_move(uint16_t move, int32_t& slot, int32_t& species)
+{
+   if (move != kStubKnownMove)
+   {
+      slot = kPartySlots;
+      return false;
+   }
+   slot = kStubKnowerSlot;
+   species = kStubKnowerSpecies;
+   return true;
 }
 
 } // namespace capsule::script::party
@@ -946,6 +1004,9 @@ constexpr int32_t kBagChoice = 5;     ///< The item the stub's bag menu answers.
 constexpr uint8_t kStubTime = 2;      ///< The stub's time of day.
 int32_t g_items[kStubItems] = {};     ///< Counts per item id.
 int g_bag_polls = 0;                  ///< bag_poll() calls since bag_open().
+constexpr int32_t kStubRoom = 99;     ///< C7: the most of one item the stub's bag holds.
+constexpr uint16_t kItemsPerPocket = 4; ///< C7: item ids per stub pocket.
+constexpr int32_t kPocketItem = 9;    ///< C7: the item test.cscript's item_pocket asks about.
 } // namespace
 
 namespace capsule::script::items
@@ -994,6 +1055,23 @@ bool take(uint16_t item, int32_t n)
 int32_t count(uint16_t item)
 {
    return item < kStubItems ? g_items[item] : 0;
+}
+
+/// C7: room for kStubRoom of each item the stub counts.
+/// @param item  id
+/// @param n     how many more
+/// @return true when they fit
+bool room(uint16_t item, int32_t n)
+{
+   return item < kStubItems && n >= 0 && g_items[item] + n <= kStubRoom;
+}
+
+/// C7: the stub's pockets: kItemsPerPocket ids each.
+/// @param item  id
+/// @return its pocket
+int32_t pocket(uint16_t item)
+{
+   return item / kItemsPerPocket;
 }
 
 /// Starts the stub menu.
@@ -1870,6 +1948,34 @@ void test_counters()
 
 constexpr int32_t kV16Max = 1000;   ///< C6: v16's declared maximum (test.cscript).
 
+/// C7: the party statements: heal, stash, restore and the counts reach the port in order; the move search sets the
+/// slot (the party's size when none knows it) and the species only when one does.
+void test_party()
+{
+   script::clear_all();
+   g_party_log[0] = '\0';
+   script::Context c{};
+   script::start(c, SCRIPT_PARTY_OPS);
+   CHECK(run(c) == 0);
+   CHECK(std::strcmp(g_party_log, "heal;stash;restore;count;hatched;") == 0);
+   CHECK(script::var(VAR_ANSWER) == kStubPartyCount && script::var(VAR_V8) == kStubHatched);
+   script::start(c, SCRIPT_PARTY_FIND);
+   CHECK(run(c) == 0);
+   CHECK(script::var(VAR_V16) == kPartySlots);   // none knows move 34; v8 kept its 7 then
+   CHECK(script::var(VAR_ANSWER) == kStubKnowerSlot && script::var(VAR_V8) == kStubKnowerSpecies);
+}
+
+/// C7: the item queries: room for 5 more (1) and for 200 more (0) of an item, an item's pocket.
+void test_item_queries()
+{
+   script::clear_all();
+   script::Context c{};
+   script::start(c, SCRIPT_ITEM_QUERIES);
+   CHECK(run(c) == 0);
+   CHECK(script::var(VAR_V8) == 1 && script::var(VAR_ANSWER) == 0);
+   CHECK(script::var(VAR_V16) == kPocketItem / kItemsPerPocket);
+}
+
 /// C6: game statistics: one bound to a variable is added there, kept in its range (no port call); one the port holds
 /// reaches world::add_stat() with 1 by default or the operand's value.
 void test_stats()
@@ -2099,6 +2205,8 @@ int main()
    test_spotter_group();
    test_counters();
    test_stats();
+   test_party();
+   test_item_queries();
    test_names();
    test_menus();
    test_props();

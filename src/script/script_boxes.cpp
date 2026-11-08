@@ -82,6 +82,11 @@ storage::Storage* attached()
    return g.storage;
 }
 
+monster::Party* party()
+{
+   return g.party;
+}
+
 int32_t count()
 {
    return g.storage != nullptr ? storage::count(*g.storage) : 0;

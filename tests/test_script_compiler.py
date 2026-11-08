@@ -455,6 +455,52 @@ class Stats(unittest.TestCase):
          sc.game_stats({}, "yes")
 
 
+class PartyStatements(unittest.TestCase):
+   """C7: the party statements and the item queries."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nvar w : u8;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_party_bytes(self) -> None:
+      """Heal / stash / restore: the kind alone; count: hatched and the variable; find: the slot and species
+      variables (kNoVar without species) and the move."""
+      op, k, end = sc.OP["Party"], sc.PARTY_KINDS, sc.OP["End"]
+      self.assertEqual(self.code("party heal; party stash; party restore;"),
+                       bytes([op, k.index("heal"), op, k.index("stash"), op, k.index("restore"), end]))
+      count = self.code("party count hatched -> var(v);")
+      self.assertEqual(count[:3], bytes([op, k.index("count"), 1]))
+      self.assertEqual(self.code("party count -> var(v);")[2], 0)
+      move = self.code("var(v) += 33;")[1 + VAR_ID_BYTES:-1]   # the operand 33
+      find = self.code("party find move 33 -> var(v) species var(w);")
+      self.assertEqual(find[:2], bytes([op, k.index("find")]))
+      self.assertEqual(find[2 + 2 * VAR_ID_BYTES:-1], move)
+      bare = self.code("party find move 33 -> var(v);")
+      no_var = sc.NO_VAR.to_bytes(VAR_ID_BYTES, "little")
+      self.assertEqual(bare[2 + VAR_ID_BYTES:2 + 2 * VAR_ID_BYTES], no_var)
+
+   def test_item_queries(self) -> None:
+      """ItemQuery: its kind, the variable, the item and, for room, the count (1 by default)."""
+      op, k = sc.OP["ItemQuery"], sc.ITEM_QUERY_KINDS
+      self.assertEqual(self.code("item_room(3, 5) -> var(v);")[:2], bytes([op, k.index("room")]))
+      self.assertEqual(self.code("item_room(3) -> var(v);"), self.code("item_room(3, 1) -> var(v);"))
+      self.code("item_room(3, 0) -> var(v);")   # room for none more: allowed (an imported game asks it)
+      self.assertEqual(self.code("item_pocket(3) -> var(v);")[:2], bytes([op, k.index("pocket")]))
+
+   def test_refusals(self) -> None:
+      """A count or find without its variable, a find without `move`, a query without its result."""
+      for body, text in (("party count;", "expected '->'"), ("party find 33 -> var(v);", "expected 'move'"),
+                         ("item_pocket(3);", "needs -> var(v)")):
+         errs = errors(compile_text(f"var v : u16;\nscript s {{ {body} }}"))
+         self.assertTrue(any(text in e for e in errs), (body, errs))
+
+
 class Checks(unittest.TestCase):
    """Build errors and warnings."""
 

@@ -45,4 +45,7 @@ set(CAPSULE_SCRIPT_ITEMS_SOURCES
    src/script/field_effects.cpp
    src/core/clock_minutes_default.cpp
    # F3: the step effects' counters (the overworld runner counts the walker's steps into them)
-   src/script/step_effects.cpp)
+   src/script/step_effects.cpp
+   # C7: the party statements' port of a program without battle data, and the party stash
+   src/script/script_party_none.cpp
+   src/script/script_party_stash.cpp)

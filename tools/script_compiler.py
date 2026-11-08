@@ -24,6 +24,13 @@ bound to a declared variable or held by the game's port: {"steps": {"var":
 needs "stats_port": true (the game's port holds its stats); script_ids.h
 names each STAT_<NAME> (the stat world::add_stat() receives).
 
+C7, the party (capsule/script/port.h namespace party): `party heal;` (every
+member's resources full, its status cleared), `party stash;` / `party
+restore;` (a copy of the party kept and put back), `party count [hatched]
+-> var(v);` (hatched: eggs left out), `party find move <move> -> var(slot)
+[species var(s)];` (the first hatched member knowing the move, the party's
+size when none; its species only when found).
+
 "name_kinds" (optional, C4): the game's own kinds of names for the name
 statement (["decoration", "medal", ...]), after the engine's item, species,
 move and nickname; script_ids.h names each NAME_KIND_<NAME> (the id
@@ -101,7 +108,9 @@ Statements: `label:`, `goto l;`, `call s;`, `call var(x) of [a, b];`,
 `give_item(<item>[, <n>]) [-> var(ok)];`, `take_item(<item>[, <n>]) [-> var(ok)];`,
 `count_item(<item>) -> var(v);` (the bag, the inventory: <item> is an item name of
 the manifest's `battle` as a string, or an operand holding its id; n
-defaults to 1; ok is 1 when all of them moved), `open_bag -> var(v);` (the
+defaults to 1; ok is 1 when all of them moved), C7 `item_room(<item>[, <n>])
+-> var(v);` (1 when the bag takes n more) and `item_pocket(<item>) -> var(v);`
+(its pocket), `open_bag -> var(v);` (the
 bag menu through the script port: the chosen item's id, 0 for none; waits),
 `shop "Name" money var(coins);` (a shop list of the battle manifest's
 `shops` through the script port, paid from the variable; waits),
@@ -328,10 +337,15 @@ DEP_VAR = 0x8000
 WAITING_STATEMENTS = {"msg", "msgbox", "wait_button", "yesno", "choice", "delay", "move", "route", "wait_moves",
                       "input_number", "wait_key", "warp", "scroll", "open_bag", "shop", "open_boxes", "transform",
                       "menu"}
-## The bag statements: name -> {"op": opcode, "counted": takes a count, "result": needs a result variable}.
+## The bag statements: name -> {"op": opcode, "counted": takes a count, "result": needs a result variable, and C7's
+## queries their ItemQueryOp word: "query"}.
 ITEM_STATEMENTS = {"give_item": {"op": "ItemGive", "counted": True, "result": False},
                    "take_item": {"op": "ItemTake", "counted": True, "result": False},
-                   "count_item": {"op": "ItemCount", "counted": False, "result": True}}
+                   "count_item": {"op": "ItemCount", "counted": False, "result": True},
+                   "item_room": {"op": "ItemQuery", "counted": True, "result": True, "query": "room"},
+                   "item_pocket": {"op": "ItemQuery", "counted": False, "result": True, "query": "pocket"}}
+## C7: the item queries' kinds (capsule::script::ItemQueryOp, in order).
+ITEM_QUERY_KINDS = VM.words("ItemQueryOp")
 ## The box statements that move a record: name -> opcode (the operand: a party member / a storage slot).
 BOX_STATEMENTS = {"deposit_box": "BoxDeposit", "withdraw_box": "BoxWithdraw"}
 ## The box statements that only give a value: name -> opcode (`name -> var(v);`).
@@ -415,6 +429,12 @@ ENCOUNTER_LEAVING = ("continue",)
 ENCOUNTER_MODE_WORD = "mode"
 ## Largest Encounter Set mode number (a byte).
 ENCOUNTER_MAX_MODE = 255
+## C7: the statement word of the party statements, their kinds (capsule::script::PartyOp, in order) and words.
+PARTY_WORD = "party"
+## C7: `party KIND ...` kinds.
+PARTY_KINDS = VM.words("PartyOp")
+## C7: `party count hatched` (eggs left out), `party find move <move>`, `... species var(s)`.
+PARTY_HATCHED_WORD, PARTY_MOVE_WORD, PARTY_SPECIES_WORD = "hatched", "move", "species"
 ## The statement word of battles.
 BATTLE_WORD = "battle"
 ## Operands of an unowned battle: species, level, held item (the item may be left out: none).
@@ -1782,6 +1802,27 @@ class Parser:
          return Node("constname", t, name=t.text)
       raise self.error(f"expected a value (number, constant, var(...), yes / no), found {t.text!r}")
 
+   def party_statement(self, t: Token) -> Node:
+      """!C7: `party heal|stash|restore;`, `party count [hatched] -> var(v);`,
+      `party find move <move> -> var(slot) [species var(s)];`.
+      @param t  the statement's first token
+      @return the node
+      """
+      self.take()
+      kind = self.take().text
+      hatched = kind == "count" and self.accept(PARTY_HATCHED_WORD)
+      move = species = result = None
+      if kind == "find":
+         self.expect(PARTY_MOVE_WORD)   # the only search so far: a move a member knows
+         move = self.operand()
+      if kind in ("count", "find"):
+         self.expect("->")
+         result = self.var_ref().text
+         if kind == "find" and self.accept(PARTY_SPECIES_WORD):
+            species = self.var_ref().text
+      self.expect(";")
+      return Node("party", t, kind=kind, hatched=hatched, move=move, result=result, species=species)
+
    def encounter_statement(self, t: Token) -> Node:
       """!Parses an encounter statement (D-36 package 2 C1): `encounter clear|music|mark|continue|after;`,
       `encounter set a|b|c|current <party> <object> [beaten flag(F)] [intro|defeat|cannot <text>]
@@ -2004,6 +2045,8 @@ class Parser:
          return Node("field_action", t, kind=kind, name=name, result=n.text)
       if self.at(ENCOUNTER_WORD) and nxt.text in ENCOUNTER_KINDS:
          return self.encounter_statement(t)
+      if self.at(PARTY_WORD) and nxt.text in PARTY_KINDS:
+         return self.party_statement(t)
       if self.at(BATTLE_WORD) and nxt.text in BATTLE_KINDS:
          # battle party|rematch | unowned <species> <level> [<item>] | scripted <number>  [-> var(v)];
          self.take()
@@ -3797,15 +3840,30 @@ class Compiler:
          e.op("Encounters")
          e.u8(1 if s["on"] else 0)
          return True
+      if k == "party":
+         e.op("Party")
+         e.u8(PARTY_KINDS.index(s["kind"]))
+         if s["kind"] == "count":
+            e.u8(1 if s["hatched"] else 0)
+            e.u16(self.var_id(s["result"], s))
+         elif s["kind"] == "find":
+            e.u16(self.var_id(s["result"], s))
+            e.u16(self.var_id(s["species"], s) if s["species"] is not None else NO_VAR)
+            self.emit_operand(e, s["move"])
+         return True
       if k == "item_op":
-         opcode = ITEM_STATEMENTS[s["kind"]]["op"]
+         entry = ITEM_STATEMENTS[s["kind"]]
+         opcode = entry["op"]
          e.op(opcode)
+         if "query" in entry:   # C7: ItemQuery's kind first
+            e.u8(ITEM_QUERY_KINDS.index(entry["query"]))
          e.u16(self.var_id(s["result"], s) if s["result"] is not None else NO_VAR)
          self.emit_item(e, s["item"], s)
-         if opcode != "ItemCount":
+         if entry["counted"]:
             n = self.value(s["count"])
-            if n is not None and not 1 <= n <= MAX_ITEM_COUNT:
-               self.err(f"{s['kind']}: {n} items (1-{MAX_ITEM_COUNT})", s)
+            least = 0 if "query" in entry else 1   # C7: room for none more is a question too (always yes)
+            if n is not None and not least <= n <= MAX_ITEM_COUNT:
+               self.err(f"{s['kind']}: {n} items ({least}-{MAX_ITEM_COUNT})", s)
             self.emit_operand(e, s["count"])
          return True
       if k == "box_op":

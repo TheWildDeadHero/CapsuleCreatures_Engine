@@ -95,7 +95,9 @@
 /// | Menu | var16, flags8 (kMenu... bits), x8, y8, cursor8, columns8, rows8, delay8 (kMenuStyleDelay: the port's), cancel8, list32 (asset key), style32 (text box asset key, or 0) | C3: port::menu_open() / menu_poll(); waits until it answers; var = the chosen option's index, or cancel (Back with kMenuBack; a menu that cannot open) |
 /// | Name | slot8 (the name placeholder's index), source8 (NameSource), [Text: text ref], [Entry: list32 (asset key), operand index], [Number: operand], [Kind: kind8 (NameKind, or kFirstGameNameKind + the manifest's name_kinds index), operand id, counted8 (1: an operand count follows), [operand count]] | C4: script::set_name() of the source's text, cut to the slot's length (a kind: game::name_text(); the engine's kinds' defaults from the battle data and the party) |
 /// | Counter | kind8 (CounterOp), box8 (the manifest's counters index), var16 (its variable), [Show: x8, y8 (cells), label text ref] | C5: world::counter() with the variable's current value (the default: the text layer's banner) |
-/// | Stat | stat8 (the manifest's stats index), operand (the amount) | C6: world::add_stat() (the default logs that no port holds the game's stats) |
+/// | Stat | stat8 (the manifest's stats index), operand (the amount) | C6: world::add_stat() (the default does nothing: only a manifest with stats_port emits the op) |
+/// | Party | kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)] | C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species |
+/// | ItemQuery | kind8 (ItemQueryOp), var16, operand (item), [Room: operand (n)] | C7: var = items::room() (1 when the bag takes n more) or items::pocket() |
 #pragma once
 
 #include <cstdint>
@@ -202,6 +204,8 @@ enum class Op : uint8_t
    Name,   ///< C4: write a name slot (a name placeholder: STR_VAR-like text buffers) from a text, a list entry, a number or a name of a kind.
    Counter,   ///< C5: show, update or hide a counter box (a variable's value beside the messages: money, coins).
    Stat,   ///< C6: add to a game statistic the game's port holds (a stat bound to a variable compiles to AddVar instead).
+   Party,   ///< C7: heal, stash or restore the party, count its members, or find one knowing a move.
+   ItemQuery,   ///< C7: whether the bag takes more of an item, or an item's pocket.
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -476,6 +480,25 @@ enum class NameKind : uint8_t
    Move,   ///< A move's name.
    Nickname,   ///< A party slot's nickname (party::role_get()).
    NUM_NAME_KINDS   ///< Number of engine kinds.
+};
+
+/// C7: Party kinds.
+enum class PartyOp : uint8_t
+{
+   Heal,   ///< Every member's resources full, its status cleared.
+   Stash,   ///< Keep a copy of the party.
+   Restore,   ///< Put the stashed party back.
+   Count,   ///< Count the members (hatched: eggs left out).
+   Find,   ///< The first hatched member knowing a move.
+   NUM_PARTY_OPS   ///< Number of kinds.
+};
+
+/// C7: ItemQuery kinds.
+enum class ItemQueryOp : uint8_t
+{
+   Room,   ///< 1 when the bag takes n more of the item.
+   Pocket,   ///< The item's pocket.
+   NUM_ITEM_QUERY_OPS   ///< Number of kinds.
 };
 
 /// C5: Counter kinds.
