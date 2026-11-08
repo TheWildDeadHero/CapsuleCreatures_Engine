@@ -395,6 +395,13 @@ void set_order(uint8_t obj, bool fixed, uint8_t order);
 /// @param y      Show: its top cell
 /// @param label  Show: its label (the manifest's, or its name), else nullptr
 void counter(CounterOp op, uint8_t box, int32_t value, uint8_t x, uint8_t y, const text::Code* label);
+
+/// C6: adds to a game statistic the game's port holds (a scripts manifest with "stats_port": its stats without a
+/// variable; a stat bound to a variable is added there by the VM and never reaches the port). The default does
+/// nothing: the compiler emits the statement only for a manifest that declares the game's port holds its stats.
+/// @param stat    the scripts manifest's stats index (script_ids.h STAT_...)
+/// @param amount  what to add (the game keeps its own cap)
+void add_stat(uint8_t stat, int32_t amount);
 ///@}
 
 } // namespace capsule::script::world

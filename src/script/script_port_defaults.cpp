@@ -18,6 +18,7 @@
 /// - Props and draw order (C2): the field's (field::place_prop() with the sprite asset, face_prop(), remove_prop(),
 ///   set_fixed_order()).
 /// - Counter boxes (C5): src/script/script_counter.cpp (the text layer's banner).
+/// - Game statistics held by the game's port (C6): nothing (only a manifest that declares such a port emits them).
 /// - Weather, fades, metatiles, the respawn point, remembered warps, sound, marts and the busy state: nothing, and
 ///   nothing to wait for.
 #include "capsule/script/port.h"
@@ -223,6 +224,10 @@ CAPSULE_WEAK void remove_prop(uint8_t id)
 CAPSULE_WEAK void set_order(uint8_t obj, bool fixed, uint8_t order)
 {
    field::set_fixed_order(obj, fixed, order);
+}
+
+CAPSULE_WEAK void add_stat(uint8_t, int32_t)
+{
 }
 
 } // namespace capsule::script::world
