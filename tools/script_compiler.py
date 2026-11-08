@@ -24,6 +24,12 @@ bound to a declared variable or held by the game's port: {"steps": {"var":
 needs "stats_port": true (the game's port holds its stats); script_ids.h
 names each STAT_<NAME> (the stat world::add_stat() receives).
 
+C9, field scenes (the world port): `map redraw;`, `map layout <n>;` (map n's
+terrain, 0 its own), `animation arg <i> <value>;` / `animation start <id>;` /
+`animation wait <id>;` (a game's visual field animations), `camera detach;` /
+`camera attach;` (an invisible mover / the walker), `camera shake <vertical>
+<horizontal> <count> <delay>;`, `darkness <level> fade;` (gradually, waiting).
+
 C7, the party (capsule/script/port.h namespace party): `party heal;` (every
 member's resources full, its status cleared), `party stash;` / `party
 restore;` (a copy of the party kept and put back), `party count [hatched]
@@ -364,6 +370,18 @@ FLIGHT_KINDS = VM.words("FlightOp")
 FLIGHT_WORD = "flight"
 ## The statement word of the darkness level.
 DARKNESS_WORD = "darkness"
+## C9: `darkness <level> fade;` (the change runs gradually, the script waits).
+DARKNESS_FADE_WORD = "fade"
+## C9: the scene statements' first words and their kinds (capsule::script::MapViewOp, AnimationOp, CameraOp).
+MAP_VIEW_WORD, ANIMATION_WORD, CAMERA_WORD = "map", "animation", "camera"
+## C9: `map redraw|layout`.
+MAP_VIEW_KINDS = VM.words("MapViewOp")
+## C9: `animation arg|start|wait`.
+ANIMATION_KINDS = VM.words("AnimationOp")
+## C9: `camera detach|attach|shake`.
+CAMERA_KINDS = VM.words("CameraOp")
+## C9: `camera shake <vertical> <horizontal> <count> <delay>`.
+CAMERA_SHAKE_OPERANDS = 4
 ## The word after a move's steps that makes it a walk by the field's movement rules (`move OBJ DIR [N] checked
 ## [-> var(ok)];`: every step allowed, or nothing moves; ok = 1 when it walked).
 CHECKED_WORD = "checked"
@@ -2024,8 +2042,28 @@ class Parser:
                                      (nxt.kind == "name" and self.peek(OPERAND_END_AHEAD).text == ";")):
          self.take()
          level = self.operand()
+         fade = self.accept(DARKNESS_FADE_WORD)   # C9: gradually, waiting for it
          self.expect(";")
-         return Node("darkness", t, level=level)
+         return Node("darkness", t, level=level, fade=fade)
+      if self.at(MAP_VIEW_WORD) and nxt.text in MAP_VIEW_KINDS:   # C9
+         self.take()
+         kind = self.take().text
+         n = self.operand() if kind == "layout" else None
+         self.expect(";")
+         return Node("map_view", t, kind=kind, n=n)
+      if self.at(ANIMATION_WORD) and nxt.text in ANIMATION_KINDS:   # C9
+         self.take()
+         kind = self.take().text
+         first = self.operand()
+         value = self.operand() if kind == "arg" else None
+         self.expect(";")
+         return Node("animation", t, kind=kind, first=first, value=value)
+      if self.at(CAMERA_WORD) and nxt.text in CAMERA_KINDS:   # C9
+         self.take()
+         kind = self.take().text
+         shake = [self.operand() for _ in range(CAMERA_SHAKE_OPERANDS)] if kind == "shake" else []
+         self.expect(";")
+         return Node("camera", t, kind=kind, shake=shake)
       if self.at(FLIGHT_WORD) and nxt.text in FLIGHT_KINDS:
          self.take()
          kind = self.take().text
@@ -4010,8 +4048,27 @@ class Compiler:
          darkest = (self.world_field or {}).get("darkness_levels", MAX_DARKNESS)
          if level is not None and not 0 <= level <= darkest:
             self.err(f"darkness: level {level} (0 lit to {darkest}, the world's darkest)", s)
-         e.op("Darkness")
+         e.op("DarknessFade" if s.get("fade") else "Darkness")
          self.emit_operand(e, s["level"])
+         return True
+      if k == "map_view":   # C9
+         e.op("MapView")
+         e.u8(MAP_VIEW_KINDS.index(s["kind"]))
+         if s["n"] is not None:
+            self.emit_operand(e, s["n"])
+         return True
+      if k == "animation":   # C9
+         e.op("Animation")
+         e.u8(ANIMATION_KINDS.index(s["kind"]))
+         self.emit_operand(e, s["first"])
+         if s["value"] is not None:
+            self.emit_operand(e, s["value"])
+         return True
+      if k == "camera":   # C9
+         e.op("Camera")
+         e.u8(CAMERA_KINDS.index(s["kind"]))
+         for o in s["shake"]:
+            self.emit_operand(e, o)
          return True
       if k == "flight":
          points = [fp["name"] for fp in (self.world_field or {}).get("flight_points", [])]

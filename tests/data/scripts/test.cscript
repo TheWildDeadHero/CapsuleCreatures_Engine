@@ -347,6 +347,18 @@ script stats {
     var(v8) = 3;
     stat add visits var(v8);
 }
+script scenes {
+    map redraw;
+    map layout 2;
+    var(v8) = 7;
+    animation arg 1 var(v8);
+    animation start 5;
+    animation wait 5;
+    camera detach;
+    camera shake 2 3 4 5;
+    camera attach;
+    darkness 1 fade;
+}
 script party_ops {
     party heal;
     party stash;

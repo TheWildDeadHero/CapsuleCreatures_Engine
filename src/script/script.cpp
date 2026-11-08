@@ -73,6 +73,8 @@ constexpr int32_t kMaxItemId = 0xFFFF;        ///< Largest item id an item opera
 constexpr int32_t kMaxMoveId = 0xFFFF;        ///< C7: largest move index a move operand names (the moves role: 16 bits).
 constexpr int32_t kMaxSpeciesId = 0xFFFF;     ///< C8: largest species a species operand names (16-bit ids).
 constexpr int32_t kMaxLevel = 0xFF;           ///< C8: largest level a level operand names (8 bits).
+constexpr int32_t kMaxAnimationArg = 0xFF;    ///< C9: largest animation argument index (8 bits).
+constexpr int32_t kMaxAnimationId = 0xFFFF;   ///< C9: largest animation id a wait keeps (result_var: 16 bits).
 constexpr int32_t kMaxTimerSeconds = 5999;    ///< Longest timer, 99:59.
 ///@}
 
@@ -593,6 +595,67 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       next();
       world::weather(kind, value);
       return Outcome::Continue;
+   }
+   case Op::MapView:
+   {
+      // kind8, [Layout: operand (map)]
+      const auto kind = static_cast<MapViewOp>(*p++);
+      const int32_t n = kind == MapViewOp::Layout ? operand(p) : 0;
+      next();
+      kind == MapViewOp::Layout ? world::set_layout(n) : world::redraw_map();
+      return Outcome::Continue;
+   }
+   case Op::Animation:
+   {
+      // kind8, [Arg: operand (index), operand (value)], [Start, Wait: operand (animation)]
+      const auto kind = static_cast<AnimationOp>(*p++);
+      const int32_t first = operand(p);
+      const int32_t value = kind == AnimationOp::Arg ? operand(p) : 0;
+      next();
+      if (kind == AnimationOp::Arg)
+      {
+         world::animation_arg(static_cast<uint8_t>(clamp_to<int32_t>(first, 0, kMaxAnimationArg)), value);
+         return Outcome::Continue;
+      }
+      if (kind == AnimationOp::Start)
+      {
+         world::animation_start(first);
+         return Outcome::Continue;
+      }
+      // polled at once, as a native's wait is: an animation already over does not hold the script a frame
+      const auto id = static_cast<uint16_t>(clamp_to<int32_t>(first, 0, kMaxAnimationId));
+      if (world::animation_done(id))
+      {
+         return Outcome::Continue;
+      }
+      c.result_var = id;   // the one waited for
+      return wait(Wait::Animation);
+   }
+   case Op::Camera:
+   {
+      // kind8, [Shake: operand (vertical), operand (horizontal), operand (count), operand (delay)]
+      const auto kind = static_cast<CameraOp>(*p++);
+      if (kind == CameraOp::Shake)
+      {
+         const int32_t vertical = operand(p);
+         const int32_t horizontal = operand(p);
+         const int32_t count = operand(p);
+         const int32_t delay = operand(p);
+         next();
+         world::camera_shake(vertical, horizontal, count, delay);
+         return Outcome::Continue;
+      }
+      next();
+      kind == CameraOp::Detach ? world::camera_detach() : world::camera_attach();
+      return Outcome::Continue;
+   }
+   case Op::DarknessFade:
+   {
+      // operand (level)
+      const int32_t level = operand(p);
+      next();
+      world::fade_darkness(static_cast<uint8_t>(clamp_to<int32_t>(level, 0, map::kMaxDarkness)));
+      return world::darkness_fading() ? wait(Wait::Darkness) : Outcome::Continue;   // a change done at once: no wait
    }
    case Op::Fade:
    {
@@ -1451,6 +1514,10 @@ Outcome execute(Context& c)
    case Op::Door:
    case Op::Weather:
    case Op::Fade:
+   case Op::MapView:
+   case Op::Animation:
+   case Op::Camera:
+   case Op::DarknessFade:
    case Op::SetMetatile:
    case Op::Respawn:
    case Op::SetWarp:
@@ -1623,6 +1690,18 @@ bool still_waiting(Context& c)
       break;
    case Wait::Fade:
       if (world::fading())
+      {
+         return true;
+      }
+      break;
+   case Wait::Animation:
+      if (!world::animation_done(c.result_var))
+      {
+         return true;
+      }
+      break;
+   case Wait::Darkness:
+      if (world::darkness_fading())
       {
          return true;
       }

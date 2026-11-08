@@ -821,6 +821,38 @@
    "does": "C7: var = items::room() (1 when the bag takes n more) or items::pocket()",
    "module": "items",
    "handler": "op_item_query"
+  },
+  {
+   "id": 97,
+   "name": "MapView",
+   "kind": "generic",
+   "doc": "C9: redraw the shown view, or show the shown map with another map's terrain.",
+   "bytes": "kind8 (MapViewOp), [Layout: operand (map)]",
+   "does": "C9: world::redraw_map() / world::set_layout()"
+  },
+  {
+   "id": 98,
+   "name": "Animation",
+   "kind": "generic",
+   "doc": "C9: set a visual field animation's argument, start one, or wait for its end.",
+   "bytes": "kind8 (AnimationOp), [Arg: operand (index), operand (value)], [Start, Wait: operand (animation)]",
+   "does": "C9: world::animation_arg() / animation_start(); Wait waits while world::animation_done() is false"
+  },
+  {
+   "id": 99,
+   "name": "Camera",
+   "kind": "generic",
+   "doc": "C9: the camera follows an invisible mover or the walker again, or shakes.",
+   "bytes": "kind8 (CameraOp), [Shake: operand (vertical), operand (horizontal), operand (count), operand (delay)]",
+   "does": "C9: world::camera_detach() / camera_attach() / camera_shake()"
+  },
+  {
+   "id": 100,
+   "name": "DarknessFade",
+   "kind": "generic",
+   "doc": "C9: change the shown map's darkness level gradually and wait for it.",
+   "bytes": "operand (level)",
+   "does": "C9: world::fade_darkness(); waits while world::darkness_fading()"
   }
  ],
  "enums": [
@@ -1789,6 +1821,85 @@
    "count": {
     "name": "NUM_NAME_KINDS",
     "doc": "Number of engine kinds."
+   }
+  },
+  {
+   "name": "MapViewOp",
+   "type": "uint8_t",
+   "doc": [
+    "C9: MapView kinds."
+   ],
+   "values": [
+    {
+     "name": "Redraw",
+     "doc": "Redraw the shown view.",
+     "word": "redraw"
+    },
+    {
+     "name": "Layout",
+     "doc": "Show another map's terrain (0: its own).",
+     "word": "layout"
+    }
+   ],
+   "count": {
+    "name": "NUM_MAP_VIEW_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "AnimationOp",
+   "type": "uint8_t",
+   "doc": [
+    "C9: Animation kinds."
+   ],
+   "values": [
+    {
+     "name": "Arg",
+     "doc": "Set an argument the next animations read.",
+     "word": "arg"
+    },
+    {
+     "name": "Start",
+     "doc": "Start an animation.",
+     "word": "start"
+    },
+    {
+     "name": "Wait",
+     "doc": "Wait until it ends.",
+     "word": "wait"
+    }
+   ],
+   "count": {
+    "name": "NUM_ANIMATION_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "CameraOp",
+   "type": "uint8_t",
+   "doc": [
+    "C9: Camera kinds."
+   ],
+   "values": [
+    {
+     "name": "Detach",
+     "doc": "Follow an invisible mover on the walker's cell.",
+     "word": "detach"
+    },
+    {
+     "name": "Attach",
+     "doc": "Follow the walker again.",
+     "word": "attach"
+    },
+    {
+     "name": "Shake",
+     "doc": "Shake the view.",
+     "word": "shake"
+    }
+   ],
+   "count": {
+    "name": "NUM_CAMERA_OPS",
+    "doc": "Number of kinds."
    }
   },
   {

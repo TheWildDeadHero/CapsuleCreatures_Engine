@@ -254,9 +254,57 @@ void encounters(bool on);
 /// @param vehicle  vehicle class (the compiler checks it against the world)
 void set_vehicle(uint8_t vehicle);
 
-/// Sets the shown map's darkness level until the next map (implemented by capsule::overworld).
+/// Sets the shown map's darkness level until the next map (implemented by capsule::overworld; weak, so a game with
+/// its own darkness keeps it).
 /// @param level  0 (lit) to map::kMaxDarkness
 void set_darkness(uint8_t level);
+
+/// C9: changes the darkness level gradually (DarknessFade; the default, capsule::overworld: set_darkness() at once).
+/// @param level  0 (lit) to map::kMaxDarkness
+void fade_darkness(uint8_t level);
+
+/// C9: whether a darkness change still runs (the default: never).
+/// @return true while it does
+bool darkness_fading();
+
+/// C9: redraws the shown view after cell changes (MapView Redraw; the default does nothing: the engine draws its
+/// cell edits at once).
+void redraw_map();
+
+/// C9: shows the shown map with another map's terrain (MapView Layout; the default, capsule::overworld:
+/// map::set_layout() with kWorld map n - 1, 0 its own).
+/// @param n  the map, 1 on, or 0
+void set_layout(int32_t n);
+
+/// C9: sets an argument the next visual field animations read (Animation Arg; the default keeps nothing: the engine
+/// has no visual field animations).
+/// @param index  the argument
+/// @param value  its value
+void animation_arg(uint8_t index, int32_t value);
+
+/// C9: starts a visual field animation (Animation Start; the default runs nothing).
+/// @param id  the game's animation
+void animation_start(int32_t id);
+
+/// C9: whether a visual field animation has ended (Animation Wait polls it; the default: always).
+/// @param id  the game's animation
+/// @return true when it has
+bool animation_done(int32_t id);
+
+/// C9: the camera follows an invisible mover on the walker's cell (Camera Detach; the default, capsule::overworld:
+/// field::spawn_camera()).
+void camera_detach();
+
+/// C9: the camera follows the walker again (Camera Attach; the default: field::remove_camera()).
+void camera_attach();
+
+/// C9: shakes the view (Camera Shake; the default, capsule::overworld: shake() by the larger offset for count x
+/// delay frames).
+/// @param vertical    pixels up and down
+/// @param horizontal  pixels left and right
+/// @param count       shakes
+/// @param delay       frames between them
+void camera_shake(int32_t vertical, int32_t horizontal, int32_t count, int32_t delay);
 
 /// Warps to the recorded escape point (capsule/script/field_actions.h escape_point(); implemented by
 /// capsule::overworld), as `warp` does.

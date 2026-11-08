@@ -513,6 +513,50 @@ class PartyStatements(unittest.TestCase):
          self.assertTrue(any(text in e for e in errs), (body, errs))
 
 
+class SceneStatements(unittest.TestCase):
+   """C9: the field scene statements."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def operand(self, n: int) -> bytes:
+      """The bytes of a constant operand.
+      @param n  the value
+      @return them
+      """
+      return self.code(f"var(v) += {n};")[1 + VAR_ID_BYTES:-1]
+
+   def test_bytes(self) -> None:
+      """Each statement: its op, its kind and its operands in order; `darkness <n> fade` is DarknessFade."""
+      end = bytes([sc.OP["End"]])
+      self.assertEqual(self.code("map redraw;"), bytes([sc.OP["MapView"], sc.MAP_VIEW_KINDS.index("redraw")]) + end)
+      self.assertEqual(self.code("map layout 2;"),
+                       bytes([sc.OP["MapView"], sc.MAP_VIEW_KINDS.index("layout")]) + self.operand(2) + end)
+      self.assertEqual(self.code("animation arg 1 9;"), bytes([sc.OP["Animation"], sc.ANIMATION_KINDS.index("arg")])
+                       + self.operand(1) + self.operand(9) + end)
+      self.assertEqual(self.code("animation wait 5;"),
+                       bytes([sc.OP["Animation"], sc.ANIMATION_KINDS.index("wait")]) + self.operand(5) + end)
+      self.assertEqual(self.code("camera detach;"),
+                       bytes([sc.OP["Camera"], sc.CAMERA_KINDS.index("detach")]) + end)
+      shake = bytes([sc.OP["Camera"], sc.CAMERA_KINDS.index("shake")])
+      operands = b"".join(self.operand(n) for n in (2, 3, 4, 5))
+      self.assertEqual(self.code("camera shake 2 3 4 5;"), shake + operands + end)
+      self.assertEqual(self.code("darkness 1 fade;")[0], sc.OP["DarknessFade"])
+      self.assertEqual(self.code("darkness 1;")[0], sc.OP["Darkness"])
+
+   def test_refusals(self) -> None:
+      """A shake short of its four operands, a layout without its map, an animation without its id."""
+      for body in ("camera shake 2 3;", "map layout;", "animation start;"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
+
 class Checks(unittest.TestCase):
    """Build errors and warnings."""
 

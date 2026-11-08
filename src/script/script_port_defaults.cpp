@@ -230,6 +230,24 @@ CAPSULE_WEAK void add_stat(uint8_t, int32_t)
 {
 }
 
+// C9: the engine has no visual field animations and draws its cell edits at once.
+CAPSULE_WEAK void redraw_map()
+{
+}
+
+CAPSULE_WEAK void animation_arg(uint8_t, int32_t)
+{
+}
+
+CAPSULE_WEAK void animation_start(int32_t)
+{
+}
+
+CAPSULE_WEAK bool animation_done(int32_t)
+{
+   return true;
+}
+
 } // namespace capsule::script::world
 
 namespace capsule::script::audio

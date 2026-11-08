@@ -1598,6 +1598,18 @@ void field_actions()
    run_overworld();
    overworld::update({});
    CHECK(overworld::darkness() == 2 && hal::soft::pending_evy() == 12 && hal::soft::pending_window_width(0) == 64);
+   // C9: the scene defaults: a darkness fade sets the level at once (the engine has no gradual change); the camera
+   // detaches onto the mover and attaches to the walker again; a layout shows another map's terrain, 0 its own
+   script::world::fade_darkness(1);
+   CHECK(overworld::darkness() == 1 && !script::world::darkness_fading());
+   script::world::camera_detach();
+   CHECK(field::camera_spawned());
+   script::world::camera_attach();
+   CHECK(!field::camera_spawned());
+   script::world::set_layout(MAP_TOWN + 1);
+   CHECK(map::terrain() == &map::kWorld.maps[MAP_TOWN]);
+   script::world::set_layout(0);
+   CHECK(map::terrain() == map::current());
    CHECK(overworld::run_script(static_cast<uint16_t>(ids::SCRIPT_GO_LIT), field::kNoObject));
    run_overworld();
    overworld::start(MAP_SMALL, -8, -6, field::DIR_RIGHT);
