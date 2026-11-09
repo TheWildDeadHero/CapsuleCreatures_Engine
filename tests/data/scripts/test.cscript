@@ -347,6 +347,13 @@ script stats {
     var(v8) = 3;
     stat add visits var(v8);
 }
+script battle_setup {
+    battle prepare 4 5;
+    battle scripted 2;
+    battle outcome -> var(v8);
+    battle rematch due -> var(v16);
+    battle rematch ready -> var(answer);
+}
 script scenes {
     map redraw;
     map layout 2;

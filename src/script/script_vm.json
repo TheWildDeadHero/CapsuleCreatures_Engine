@@ -853,6 +853,16 @@
    "doc": "C9: change the shown map's darkness level gradually and wait for it.",
    "bytes": "operand (level)",
    "does": "C9: world::fade_darkness(); waits while world::darkness_fading()"
+  },
+  {
+   "id": 101,
+   "name": "BattleSetup",
+   "kind": "generic",
+   "doc": "C10: prepare an opponent a later battle fights, read the last outcome, or ask about the current side's rematch.",
+   "bytes": "kind8 (BattleSetupOp), [Prepare: operand (species), operand (level), operand (item)], [Outcome, RematchDue, RematchReady: var16]",
+   "does": "C10: battles::prepare(); var = battles::outcome_code() / rematch_due() / rematch_ready()",
+   "module": "battle",
+   "handler": "op_battle_setup"
   }
  ],
  "enums": [
@@ -1821,6 +1831,39 @@
    "count": {
     "name": "NUM_NAME_KINDS",
     "doc": "Number of engine kinds."
+   }
+  },
+  {
+   "name": "BattleSetupOp",
+   "type": "uint8_t",
+   "doc": [
+    "C10: BattleSetup kinds."
+   ],
+   "values": [
+    {
+     "name": "Prepare",
+     "doc": "Make the opponent a later battle fights.",
+     "word": "prepare"
+    },
+    {
+     "name": "Outcome",
+     "doc": "The last battle's outcome.",
+     "word": "outcome"
+    },
+    {
+     "name": "RematchDue",
+     "doc": "Whether the current side's rematch should be fought (`battle rematch due`).",
+     "word": "rematch due"
+    },
+    {
+     "name": "RematchReady",
+     "doc": "Whether the current side's rematch is registered (`battle rematch ready`).",
+     "word": "rematch ready"
+    }
+   ],
+   "count": {
+    "name": "NUM_BATTLE_SETUP_OPS",
+    "doc": "Number of kinds."
    }
   },
   {

@@ -24,6 +24,11 @@ bound to a declared variable or held by the game's port: {"steps": {"var":
 needs "stats_port": true (the game's port holds its stats); script_ids.h
 names each STAT_<NAME> (the stat world::add_stat() receives).
 
+C10, battles (capsule/script/battle_port.h): `battle prepare <species> <level>
+[item <item>];` (the opponent a later `battle scripted` fights), `battle outcome
+-> var(v);` (the game's own number for the last outcome), `battle rematch due
+-> var(v);` / `battle rematch ready -> var(v);` (the current encounter side).
+
 C9, field scenes (the world port): `map redraw;`, `map layout <n>;` (map n's
 terrain, 0 its own), `animation arg <i> <value>;` / `animation start <id>;` /
 `animation wait <id>;` (a game's visual field animations), `camera detach;` /
@@ -460,6 +465,14 @@ PARTY_HATCHED_WORD, PARTY_MOVE_WORD, PARTY_SPECIES_WORD = "hatched", "move", "sp
 PARTY_EGG_WORD, PARTY_ITEM_WORD, PARTY_GIVE_EGG = "egg", "item", "give egg"
 ## The statement word of battles.
 BATTLE_WORD = "battle"
+## C10: `battle prepare|outcome|rematch due|rematch ready` (capsule::script::BattleSetupOp, in order).
+BATTLE_SETUP_KINDS = VM.words("BattleSetupOp")
+## C10: the words after `battle rematch` that make it a query, not a rematch battle.
+BATTLE_REMATCH_QUERIES = ("due", "ready")
+## C10: how far ahead `battle rematch` looks for due / ready (the token after `rematch`).
+BATTLE_QUERY_AHEAD = 2
+## C10: `battle prepare ... item <item>`.
+BATTLE_ITEM_WORD = "item"
 ## Operands of an unowned battle: species, level, held item (the item may be left out: none).
 BATTLE_UNOWNED_OPERANDS = 3
 ## An unowned battle's held item when the statement names none.
@@ -2098,6 +2111,24 @@ class Parser:
          return self.encounter_statement(t)
       if self.at(PARTY_WORD) and nxt.text in PARTY_KINDS:
          return self.party_statement(t)
+      rematch_query = nxt.text == "rematch" and self.peek(BATTLE_QUERY_AHEAD).text in BATTLE_REMATCH_QUERIES
+      if self.at(BATTLE_WORD) and (nxt.text in ("prepare", "outcome") or rematch_query):
+         # C10: battle prepare <species> <level> [item <item>]; | battle outcome|rematch due|rematch ready -> var(v);
+         self.take()
+         kind = self.take().text
+         if kind == "rematch":
+            kind = f"rematch {self.take().text}"
+         args = []
+         result = None
+         if kind == "prepare":
+            args = [self.operand(), self.operand()]
+            if self.accept(BATTLE_ITEM_WORD):
+               args.append(self.operand())
+         else:
+            self.expect("->")
+            result = self.var_ref().text
+         self.expect(";")
+         return Node("battle_setup", t, kind=kind, args=args, result=result)
       if self.at(BATTLE_WORD) and nxt.text in BATTLE_KINDS:
          # battle party|rematch | unowned <species> <level> [<item>] | scripted <number>  [-> var(v)];
          self.take()
@@ -4116,6 +4147,19 @@ class Compiler:
          return True
       if k == "encounter":
          return self.encounter_emit(e, s, ctx)
+      if k == "battle_setup":   # C10
+         e.op("BattleSetup")
+         e.u8(BATTLE_SETUP_KINDS.index(s["kind"]))
+         if s["kind"] == "prepare":
+            args = list(s["args"])
+            if len(args) < BATTLE_UNOWNED_OPERANDS:
+               args.append(Node("num", Token("number", str(BATTLE_NO_ITEM), s["line"], s["col"]),
+                                value=BATTLE_NO_ITEM))
+            for a in args:
+               self.emit_operand(e, a)
+         else:
+            e.u16(self.var_id(s["result"], s))
+         return True
       if k == "battle":
          # A battle through the game's battle port (capsule/script/battle_port.h); waits for its outcome
          e.op("Battle")

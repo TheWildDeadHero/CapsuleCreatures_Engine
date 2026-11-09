@@ -513,6 +513,35 @@ class PartyStatements(unittest.TestCase):
          self.assertTrue(any(text in e for e in errs), (body, errs))
 
 
+class BattleSetupStatements(unittest.TestCase):
+   """C10: battle prepare, battle outcome and the rematch queries."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """Prepare: its kind and three operands (item 0 without one); the queries: their kind and the variable;
+      `battle rematch` alone stays the rematch battle."""
+      op, k = sc.OP["BattleSetup"], sc.BATTLE_SETUP_KINDS
+      self.assertEqual(self.code("battle prepare 4 5;"), self.code("battle prepare 4 5 item 0;"))
+      self.assertEqual(self.code("battle prepare 4 5;")[:2], bytes([op, k.index("prepare")]))
+      for word in ("outcome", "rematch due", "rematch ready"):
+         self.assertEqual(self.code(f"battle {word} -> var(v);")[:2], bytes([op, k.index(word)]), word)
+      self.assertEqual(self.code("battle rematch;")[0], sc.OP["Battle"])
+
+   def test_refusals(self) -> None:
+      """A query without its variable, a prepare without its level."""
+      for body in ("battle outcome;", "battle rematch due;", "battle prepare 4;"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
+
 class SceneStatements(unittest.TestCase):
    """C9: the field scene statements."""
 

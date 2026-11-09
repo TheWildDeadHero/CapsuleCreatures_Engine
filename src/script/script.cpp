@@ -1549,6 +1549,7 @@ Outcome execute(Context& c)
    case Op::Nursery:
    case Op::Encounter:
    case Op::Battle:
+   case Op::BattleSetup:
    case Op::Party:
    case Op::ItemQuery:
       return run_module(c, op, p, base);
@@ -2794,6 +2795,36 @@ Outcome op_battle(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const ui
    }
    c.wait = Wait::Battle;
    return Outcome::Waiting;
+}
+
+/// BattleSetup (C10: a module op): prepare an opponent, read the last outcome, ask about the current side's rematch.
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_battle_setup(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   // kind8, [Prepare: operand (species), operand (level), operand (item)], [Outcome, RematchDue, RematchReady: var16]
+   const auto kind = static_cast<BattleSetupOp>(*p++);
+   if (kind == BattleSetupOp::Prepare)
+   {
+      const int32_t species = operand(p);
+      const int32_t level = operand(p);
+      const int32_t item = operand(p);
+      advance(f, p, base);
+      battles::prepare(species, level, item);
+      return Outcome::Continue;
+   }
+   const VarId v{load_le16(p)};
+   p += kU16Bytes;
+   advance(f, p, base);
+   const int32_t value = kind == BattleSetupOp::Outcome     ? battles::outcome_code()
+                         : kind == BattleSetupOp::RematchDue ? (battles::rematch_due() ? 1 : 0)
+                                                              : (battles::rematch_ready() ? 1 : 0);
+   set_var(v, value);
+   return Outcome::Continue;
 }
 
 /// Wait::Battle (C1: a module wait, polled through the game's dispatch table).

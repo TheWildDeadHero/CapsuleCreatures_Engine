@@ -60,6 +60,7 @@ Outcome op_combine(Context& c, Op op, const uint8_t* p, const uint8_t* base);   
 Outcome op_nursery(Context& c, Op op, const uint8_t* p, const uint8_t* base);       ///< Nursery.
 Outcome op_encounter(Context& c, Op op, const uint8_t* p, const uint8_t* base);     ///< Encounter (C1).
 Outcome op_battle(Context& c, Op op, const uint8_t* p, const uint8_t* base);        ///< Battle (C1).
+Outcome op_battle_setup(Context& c, Op op, const uint8_t* p, const uint8_t* base);  ///< C10: BattleSetup.
 ///@}
 
 /// @name The module waits (src/script/script.cpp)

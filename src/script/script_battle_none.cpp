@@ -25,6 +25,28 @@ CAPSULE_WEAK battle::Outcome outcome()
    return battle::Outcome::Victory;
 }
 
+CAPSULE_WEAK int32_t outcome_code()
+{
+   return static_cast<int32_t>(outcome());
+}
+
+CAPSULE_WEAK void prepare(int32_t species, int32_t level, int32_t item)
+{
+   (void)species;
+   (void)level;
+   (void)item;
+}
+
+CAPSULE_WEAK bool rematch_due()
+{
+   return false;
+}
+
+CAPSULE_WEAK bool rematch_ready()
+{
+   return false;
+}
+
 CAPSULE_WEAK int32_t encounter_music(uint16_t party)
 {
    (void)party;
