@@ -54,6 +54,27 @@ bool busy();
 /// @return it
 battle::Outcome outcome();
 
+/// C10: the last battle's outcome in the game's own numbering (`battle outcome`; a game may tell more outcomes apart
+/// than battle::Outcome: the default is outcome()'s number).
+/// @return it
+int32_t outcome_code();
+
+/// C10: makes the opponent a later battle fights (`battle prepare`: a game's scripted battles fight it; the default
+/// keeps nothing, as it starts no battles).
+/// @param species  species
+/// @param level    its level
+/// @param item     its held item (0: none)
+void prepare(int32_t species, int32_t level, int32_t item);
+
+/// C10: whether the encounter record's current side's rematch should be fought (`battle rematch due`; the default:
+/// never, the engine keeps no rematch rules).
+/// @return true when it should
+bool rematch_due();
+
+/// C10: whether the current side's rematch is registered (`battle rematch ready`; the default: never).
+/// @return true when it is
+bool rematch_ready();
+
 /// The encounter music of a party (Encounter Music).
 /// @param party  the game's party number
 /// @return the music for audio::play(), or kNoMusic

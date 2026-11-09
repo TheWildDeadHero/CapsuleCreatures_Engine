@@ -892,6 +892,41 @@ battle::Outcome outcome()
    return battle::Outcome::Victory;
 }
 
+constexpr int32_t kStubOutcomeCode = 4;   ///< C10: the stub game's own number for the last outcome.
+int32_t g_prepared[3] = {};               ///< C10: the last prepared opponent (species, level, item).
+
+/// C10: the stub game's outcome number.
+/// @return kStubOutcomeCode
+int32_t outcome_code()
+{
+   return kStubOutcomeCode;
+}
+
+/// C10: records the prepared opponent.
+/// @param species  species
+/// @param level    level
+/// @param item     held item
+void prepare(int32_t species, int32_t level, int32_t item)
+{
+   g_prepared[0] = species;
+   g_prepared[1] = level;
+   g_prepared[2] = item;
+}
+
+/// C10: the stub's current side's rematch is due but not registered.
+/// @return true
+bool rematch_due()
+{
+   return true;
+}
+
+/// C10: not registered.
+/// @return false
+bool rematch_ready()
+{
+   return false;
+}
+
 int32_t encounter_music(uint16_t party)
 {
    (void)party;
@@ -2079,6 +2114,24 @@ void test_party()
    CHECK(script::var(VAR_ANSWER) == kStubKnowerSlot && script::var(VAR_V8) == kStubKnowerSpecies);
 }
 
+/// C10: battle prepare keeps the opponent (the item 0 without one); battle outcome reads the game's own number; the
+/// rematch queries ask about the current side; `battle rematch` alone is still a rematch battle.
+void test_battle_setup()
+{
+   constexpr int32_t kSpecies = 4;    // test.cscript's battle_setup: battle prepare 4 5;
+   constexpr int32_t kLevel = 5;
+   constexpr int32_t kScripted = 2;   // battle scripted 2;
+   namespace battles = script::battles;
+   script::clear_all();
+   script::Context c{};
+   script::start(c, SCRIPT_BATTLE_SETUP);
+   run(c);
+   CHECK(battles::g_prepared[0] == kSpecies && battles::g_prepared[1] == kLevel && battles::g_prepared[2] == 0);
+   CHECK(script::var(VAR_V8) == battles::kStubOutcomeCode);
+   CHECK(script::var(VAR_V16) == 1 && script::var(VAR_ANSWER) == 0);
+   CHECK(battles::g_battle_last.kind == script::BattleKind::Scripted && battles::g_battle_last.number == kScripted);
+}
+
 /// C9: the scene statements reach the world port in order; animation wait waits until the port says it ended.
 void test_scenes()
 {
@@ -2348,6 +2401,7 @@ int main()
    test_stats();
    test_party();
    test_scenes();
+   test_battle_setup();
    test_party_give();
    test_item_queries();
    test_names();

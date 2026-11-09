@@ -102,6 +102,7 @@
 /// | Animation | kind8 (AnimationOp), [Arg: operand (index), operand (value)], [Start, Wait: operand (animation)] | C9: world::animation_arg() / animation_start(); Wait waits while world::animation_done() is false |
 /// | Camera | kind8 (CameraOp), [Shake: operand (vertical), operand (horizontal), operand (count), operand (delay)] | C9: world::camera_detach() / camera_attach() / camera_shake() |
 /// | DarknessFade | operand (level) | C9: world::fade_darkness(); waits while world::darkness_fading() |
+/// | BattleSetup | kind8 (BattleSetupOp), [Prepare: operand (species), operand (level), operand (item)], [Outcome, RematchDue, RematchReady: var16] | C10: battles::prepare(); var = battles::outcome_code() / rematch_due() / rematch_ready() |
 #pragma once
 
 #include <cstdint>
@@ -214,6 +215,7 @@ enum class Op : uint8_t
    Animation,   ///< C9: set a visual field animation's argument, start one, or wait for its end.
    Camera,   ///< C9: the camera follows an invisible mover or the walker again, or shakes.
    DarknessFade,   ///< C9: change the shown map's darkness level gradually and wait for it.
+   BattleSetup,   ///< C10: prepare an opponent a later battle fights, read the last outcome, or ask about the current side's rematch.
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -488,6 +490,16 @@ enum class NameKind : uint8_t
    Move,   ///< A move's name.
    Nickname,   ///< A party slot's nickname (party::role_get()).
    NUM_NAME_KINDS   ///< Number of engine kinds.
+};
+
+/// C10: BattleSetup kinds.
+enum class BattleSetupOp : uint8_t
+{
+   Prepare,   ///< Make the opponent a later battle fights.
+   Outcome,   ///< The last battle's outcome.
+   RematchDue,   ///< Whether the current side's rematch should be fought (`battle rematch due`).
+   RematchReady,   ///< Whether the current side's rematch is registered (`battle rematch ready`).
+   NUM_BATTLE_SETUP_OPS   ///< Number of kinds.
 };
 
 /// C9: MapView kinds.
