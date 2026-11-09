@@ -826,9 +826,9 @@
    "id": 97,
    "name": "MapView",
    "kind": "generic",
-   "doc": "C9: redraw the shown view, or show the shown map with another map's terrain.",
+   "doc": "C9: redraw the shown view, or show the shown map with another map's terrain; C12: show the map's name banner.",
    "bytes": "kind8 (MapViewOp), [Layout: operand (map)]",
-   "does": "C9: world::redraw_map() / world::set_layout()"
+   "does": "C9: world::redraw_map() / world::set_layout(); C12: world::show_map_banner()"
   },
   {
    "id": 98,
@@ -863,6 +863,22 @@
    "does": "C10: battles::prepare(); var = battles::outcome_code() / rematch_due() / rematch_ready()",
    "module": "battle",
    "handler": "op_battle_setup"
+  },
+  {
+   "id": 102,
+   "name": "Picture",
+   "kind": "generic",
+   "doc": "C12: show a creature's picture in a framed window, or hide it and wait for it to close.",
+   "bytes": "kind8 (PictureOp), [Show: operand (species), operand (x), operand (y)]",
+   "does": "C12: world::picture_show(); Hide: world::picture_hide(), waits while world::picture_busy()"
+  },
+  {
+   "id": 103,
+   "name": "Screen",
+   "kind": "generic",
+   "doc": "C12: open one of the game's screens and wait until the field is back.",
+   "bytes": "operand (screen)",
+   "does": "C12: world::open_screen(); waits while world::screen_busy()"
   }
  ],
  "enums": [
@@ -1882,6 +1898,11 @@
      "name": "Layout",
      "doc": "Show another map's terrain (0: its own).",
      "word": "layout"
+    },
+    {
+     "name": "Banner",
+     "doc": "C12: show the shown map's name banner.",
+     "word": "banner"
     }
    ],
    "count": {
@@ -2041,6 +2062,29 @@
    ],
    "count": {
     "name": "NUM_COUNTER_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "PictureOp",
+   "type": "uint8_t",
+   "doc": [
+    "C12: Picture kinds."
+   ],
+   "values": [
+    {
+     "name": "Show",
+     "doc": "Show a creature's picture.",
+     "word": "show"
+    },
+    {
+     "name": "Hide",
+     "doc": "Hide it, waiting for its close.",
+     "word": "hide"
+    }
+   ],
+   "count": {
+    "name": "NUM_PICTURE_OPS",
     "doc": "Number of kinds."
    }
   }

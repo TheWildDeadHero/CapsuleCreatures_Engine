@@ -248,6 +248,31 @@ CAPSULE_WEAK bool animation_done(int32_t)
    return true;
 }
 
+// C12: the engine has no picture window and no game screens.
+CAPSULE_WEAK void picture_show(int32_t, int32_t, int32_t)
+{
+}
+
+CAPSULE_WEAK bool picture_hide()
+{
+   return false;
+}
+
+CAPSULE_WEAK bool picture_busy()
+{
+   return false;
+}
+
+CAPSULE_WEAK bool open_screen(int32_t)
+{
+   return false;
+}
+
+CAPSULE_WEAK bool screen_busy()
+{
+   return false;
+}
+
 } // namespace capsule::script::world
 
 namespace capsule::script::audio

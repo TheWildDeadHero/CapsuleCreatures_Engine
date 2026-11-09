@@ -602,8 +602,42 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       const auto kind = static_cast<MapViewOp>(*p++);
       const int32_t n = kind == MapViewOp::Layout ? operand(p) : 0;
       next();
-      kind == MapViewOp::Layout ? world::set_layout(n) : world::redraw_map();
+      switch (kind)
+      {
+      case MapViewOp::Layout:
+         world::set_layout(n);
+         break;
+      case MapViewOp::Banner:   // C12
+         world::show_map_banner();
+         break;
+      default:
+         world::redraw_map();
+         break;
+      }
       return Outcome::Continue;
+   }
+   case Op::Picture:
+   {
+      // C12: kind8, [Show: operand (species), operand (x), operand (y)]
+      const auto kind = static_cast<PictureOp>(*p++);
+      if (kind == PictureOp::Show)
+      {
+         const int32_t species = operand(p);
+         const int32_t x = operand(p);
+         const int32_t y = operand(p);
+         next();
+         world::picture_show(species, x, y);
+         return Outcome::Continue;
+      }
+      next();
+      return world::picture_hide() ? wait(Wait::Picture) : Outcome::Continue;   // nothing to close: no wait
+   }
+   case Op::Screen:
+   {
+      // C12: operand (screen); a screen that does not hold the script goes on at once, as a native's Done
+      const int32_t screen = operand(p);
+      next();
+      return world::open_screen(screen) ? wait(Wait::Screen) : Outcome::Continue;
    }
    case Op::Animation:
    {
@@ -1518,6 +1552,8 @@ Outcome execute(Context& c)
    case Op::Animation:
    case Op::Camera:
    case Op::DarknessFade:
+   case Op::Picture:
+   case Op::Screen:
    case Op::SetMetatile:
    case Op::Respawn:
    case Op::SetWarp:
@@ -1703,6 +1739,18 @@ bool still_waiting(Context& c)
       break;
    case Wait::Darkness:
       if (world::darkness_fading())
+      {
+         return true;
+      }
+      break;
+   case Wait::Picture:
+      if (world::picture_busy())
+      {
+         return true;
+      }
+      break;
+   case Wait::Screen:
+      if (world::screen_busy())
       {
          return true;
       }

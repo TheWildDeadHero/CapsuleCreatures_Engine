@@ -306,6 +306,34 @@ void camera_attach();
 /// @param delay       frames between them
 void camera_shake(int32_t vertical, int32_t horizontal, int32_t count, int32_t delay);
 
+/// C12: shows the shown map's name banner (MapView Banner; the default, capsule::overworld: the location banner a map
+/// shows on arrival, when the map has a location).
+void show_map_banner();
+
+/// C12: shows a creature's picture in a framed window (Picture Show; the default shows nothing: the engine has no
+/// picture window yet).
+/// @param species  the species
+/// @param x        the window's cell column
+/// @param y        its cell row
+void picture_show(int32_t species, int32_t x, int32_t y);
+
+/// C12: hides the picture (Picture Hide; the default: nothing to hide).
+/// @return true when its close holds the script (then picture_busy() is polled from the next frame)
+bool picture_hide();
+
+/// C12: whether the picture's close still runs (polled once a frame while the script waits; the default: never).
+/// @return true while it does
+bool picture_busy();
+
+/// C12: opens one of the game's screens (Screen; the game numbers them; the default opens nothing).
+/// @param screen  the game's screen
+/// @return true when it holds the script until the field is back (then screen_busy() is polled from the next frame)
+bool open_screen(int32_t screen);
+
+/// C12: whether the screen opened last still holds the script (polled once a frame; the default: never).
+/// @return true while it does
+bool screen_busy();
+
 /// Warps to the recorded escape point (capsule/script/field_actions.h escape_point(); implemented by
 /// capsule::overworld), as `warp` does.
 /// @param transition  Transition, or kTransitionDefault

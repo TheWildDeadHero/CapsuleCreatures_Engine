@@ -574,6 +574,64 @@ bool darkness_fading()
    return false;
 }
 
+/// C12: polls a picture's close holds the script in the stub, and a screen's (screen 0 holds nothing).
+constexpr int kStubPicturePolls = 2;
+constexpr int kStubScreenPolls = 3;
+int g_picture_polls = 0;   ///< C12: picture_busy() calls since the hide.
+int g_screen_polls = 0;    ///< C12: screen_busy() calls since the open.
+
+/// C12: records the map banner.
+void show_map_banner()
+{
+   log("banner;");
+}
+
+/// C12: records a picture.
+/// @param species  the species
+/// @param x        column
+/// @param y        row
+void picture_show(int32_t species, int32_t x, int32_t y)
+{
+   char b[32];
+   std::snprintf(b, sizeof b, "pic %d %d %d;", static_cast<int>(species), static_cast<int>(x), static_cast<int>(y));
+   log(b);
+}
+
+/// C12: records the hide; its close holds the script.
+/// @return true
+bool picture_hide()
+{
+   log("hide;");
+   g_picture_polls = 0;
+   return true;
+}
+
+/// C12: the close ends after kStubPicturePolls polls.
+/// @return true while it runs
+bool picture_busy()
+{
+   return ++g_picture_polls <= kStubPicturePolls;
+}
+
+/// C12: records a screen; every screen but 0 holds the script.
+/// @param screen  the screen
+/// @return whether it holds the script
+bool open_screen(int32_t screen)
+{
+   char b[24];
+   std::snprintf(b, sizeof b, "screen %d;", static_cast<int>(screen));
+   log(b);
+   g_screen_polls = 0;
+   return screen != 0;
+}
+
+/// C12: the screen closes after kStubScreenPolls polls.
+/// @return true while it holds the script
+bool screen_busy()
+{
+   return ++g_screen_polls <= kStubScreenPolls;
+}
+
 /// Records an escape: the stub warps only when the bank holds a recorded escape point.
 /// @param transition  the transition
 /// @return whether it warped
@@ -2145,6 +2203,19 @@ void test_scenes()
    CHECK(std::strcmp(g_world.log, "redraw;layout 2;arg 1 7;anim 5;detach;shake 2 3 4 5;attach;darkfade 1;") == 0);
 }
 
+/// C12: the banner, the picture and the screens reach the world port in order; the hide and a screen that holds the
+/// script wait until the port says they ended, screen 0 goes on at once.
+void test_pictures_screens()
+{
+   script::clear_all();
+   g_world = World{};
+   script::Context c{};
+   script::start(c, SCRIPT_PICTURES_SCREENS);
+   // each wait holds the frame it starts in (its port call answered then), then the stub's busy polls
+   CHECK(run(c) == (1 + script::world::kStubPicturePolls) + (1 + script::world::kStubScreenPolls));
+   CHECK(std::strcmp(g_world.log, "banner;pic 25 1 2;hide;screen 0;screen 3;") == 0);
+}
+
 /// C8: party give with constants and an item, with a variable species and no item (0), and an egg; each result
 /// into its variable.
 void test_party_give()
@@ -2401,6 +2472,7 @@ int main()
    test_stats();
    test_party();
    test_scenes();
+   test_pictures_screens();
    test_battle_setup();
    test_party_give();
    test_item_queries();

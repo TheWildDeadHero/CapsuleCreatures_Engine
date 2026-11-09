@@ -542,6 +542,42 @@ class BattleSetupStatements(unittest.TestCase):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 
+class PictureScreenStatements(unittest.TestCase):
+   """C12: map banner, picture show / hide and screen."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def operand(self, n: int) -> bytes:
+      """The bytes of a constant operand.
+      @param n  the value
+      @return them
+      """
+      return self.code(f"var(v) += {n};")[1 + VAR_ID_BYTES:-1]
+
+   def test_bytes(self) -> None:
+      """Each statement: its op, its kind and its operands in order."""
+      end = bytes([sc.OP["End"]])
+      self.assertEqual(self.code("map banner;"), bytes([sc.OP["MapView"], sc.MAP_VIEW_KINDS.index("banner")]) + end)
+      show = bytes([sc.OP["Picture"], sc.PICTURE_KINDS.index("show")])
+      self.assertEqual(self.code("picture show 25 1 2;"), show + b"".join(self.operand(n) for n in (25, 1, 2)) + end)
+      self.assertEqual(self.code("picture hide;"), bytes([sc.OP["Picture"], sc.PICTURE_KINDS.index("hide")]) + end)
+      self.assertEqual(self.code("screen 3;"), bytes([sc.OP["Screen"]]) + self.operand(3) + end)
+      self.assertEqual(self.code("screen var(v);")[0], sc.OP["Screen"])
+
+   def test_refusals(self) -> None:
+      """A picture short of its operands, a screen without its number."""
+      for body in ("picture show 25 1;", "screen;"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
+
 class SceneStatements(unittest.TestCase):
    """C9: the field scene statements."""
 

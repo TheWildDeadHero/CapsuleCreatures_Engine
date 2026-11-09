@@ -110,6 +110,8 @@ const OpHandler kModuleOps[kOpCount] = {
    nullptr,           // 99 Camera
    nullptr,           // 100 DarknessFade
    op_battle_setup,   // 101 BattleSetup
+   nullptr,           // 102 Picture
+   nullptr,           // 103 Screen
 };
 
 /// The module waits by wait kind (nullptr: not a module wait, or one no op of the table sets).
