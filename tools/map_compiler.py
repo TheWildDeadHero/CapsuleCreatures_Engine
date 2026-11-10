@@ -94,6 +94,17 @@ World (`capsule.world/1`):
     a pair spotter two), "order": "nearest" (default) or "local" (local-ID
     order)}. Without it each spotter walks up on its own and its own script
     runs (capsule::map::World::spotter_script).
+  - clock (optional, M6a K1; C-05): the world's clocks (capsule/core/clock.h):
+    {"periods": [start hours, ascending] (the time of day is the period an
+    hour falls in; default [0]), "start": {"hour", "weekday"} (the world
+    clock without a real-time clock; default 10, 0: Sunday), "wait":
+    {"cooldown": seconds or "30m" / "2h" / "1d" (on the economy clock),
+    "max_hours_per_use": 1-167}, "seasons": {"names": [1-12 names], "mode":
+    "fixed_days" (economy days / length_days) or "calendar_month" (the real-
+    time clock's month), "length_days"}}. With it the save gains its Clock
+    section and the game gets time_of_day() and minutes() from the clocks
+    (weak: a game's own win). The generated world always defines
+    clock::settings() (nullptr without a clock).
 
 Tileset (`capsule.tileset/2`):
   - sheets: 8x8-tile sources, each drawn from shapes ("size" + "shapes",
@@ -429,6 +440,26 @@ ANY_DIRECTION, ANY_VEHICLE, NO_CONDITION = 4, 0xFF, 0xFFFF
 MAX_SPOT_POSITIONS, DEFAULT_SPOT_POSITIONS = 3, 1
 ## The spotter orders' words, in capsule::map::SpotOrder order.
 SPOT_ORDERS = ("nearest", "local")
+## M6a K1: the world's clock (capsule/core/clock.h Settings): hours in a day, days in a week.
+CLOCK_HOURS, CLOCK_WEEKDAYS = 24, 7
+## M6a K1: the most periods a day and seasons a world may have (clock::kMaxPeriods, kMaxSeasons).
+CLOCK_MAX_PERIODS, CLOCK_MAX_SEASONS = 8, 12
+## M6a K1: the Wait offset wraps at a week of hours (one Wait adds at most one less).
+CLOCK_WAIT_WRAP = CLOCK_HOURS * CLOCK_WEEKDAYS
+## M6a K1: a clock without periods or a start: one period from midnight, Sunday 10:00.
+CLOCK_DEFAULT_PERIODS, CLOCK_DEFAULT_START = [0], {"hour": 10, "weekday": 0}
+## M6a K1: a clock without wait: a 30-minute cooldown and 23 hours a Wait (C-05c).
+CLOCK_DEFAULT_COOLDOWN, CLOCK_DEFAULT_MAX_WAIT = "30m", 23
+## M6a K1: a season's days without length_days (seasons default to one, of a week).
+CLOCK_DEFAULT_SEASON_DAYS = 7
+## M6a K1: season modes, in capsule::clock::SeasonMode order.
+CLOCK_SEASON_MODES = ("fixed_days", "calendar_month")
+## M6a K1: a cooldown's unit suffixes and their seconds.
+CLOCK_UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+## M6a K1: the longest cooldown (a u32 of seconds).
+CLOCK_MAX_COOLDOWN = 0xFFFFFFFF
+## M6a K1: the longest season (a u16 of days).
+CLOCK_MAX_SEASON_DAYS = 0xFFFF
 ## World's override set pointers (sets, cells, entries) before their count.
 OVERRIDE_POINTERS = 3
 ## capsule::map::kInteractSameLevel, kInteractAfterActions.
@@ -474,8 +505,12 @@ KEYS = {
              "start",
              "map_groups", "battle", "encounter_methods", "encounter_conditions", "encounter_tables", "scripts",
              "step_hooks", "transition", "banner_styles", "locations", "object_kinds", "map_tags", "flight_points",
-             "darkness_levels", "draw_order", "doors", "interactions", "spotters"},
+             "darkness_levels", "draw_order", "doors", "interactions", "spotters", "clock"},
    "spotters": {"script", "positions", "order"},
+   "clock": {"periods", "start", "wait", "seasons"},
+   "clock_start": {"hour", "weekday"},
+   "clock_wait": {"cooldown", "max_hours_per_use"},
+   "clock_seasons": {"names", "mode", "length_days"},
    "interaction": {"behavior", "script", "facing", "vehicle", "flag", "same_level", "after_actions"},
    "draw_order": {"elevation_base", "bias", "row_pixels", "rows", "row_step", "add", "wrap"},
    "door_binding": {"tileset", "metatile", "door"},
@@ -2080,13 +2115,14 @@ def compile_world(path: str | Path, deps: list[Path] | None = None, sources: Sou
    doors = compile_door_bindings(w, maps, world_events["events"])
    interactions = compile_interactions(w, by_name, classes, world_events["names"])
    spotters = compile_spotters(w, world_events["names"])
+   clock = compile_clock(w)
    sets = resolve_override_sets(maps, world_events["names"])
    return {"behaviors": behs, "behavior_walls": walls, "classes": classes, "vehicles": vehicles,
            "elevations": elevations, "maps": maps,
            "start": start, "darkness_levels": darkness,
            "tilesets": tilesets, "encounters": encounters, "events": world_events,
            "map_names": list(map_paths), "locations": locations, "draw_order": draw_order, "doors": doors,
-           "override_sets": sets, "interactions": interactions, "spotters": spotters,
+           "override_sets": sets, "interactions": interactions, "spotters": spotters, "clock": clock,
            "target_saved": sum(ts.target_saved for ts in tilesets.values())}
 
 
@@ -2156,6 +2192,98 @@ def compile_spotters(w: Mapping[str, Any], names: Any) -> dict[str, Any] | None:
    return {"script": script, "positions": positions, "order": SPOT_ORDERS.index(order)}
 
 
+def clock_seconds(value: Any, where: str) -> int:
+   """!M6a K1: a duration: whole seconds, or a number with a unit (s, m, h, d: "30m").
+   @param value  the manifest's value
+   @param where  for errors
+   @return seconds
+   """
+   if isinstance(value, int) and not isinstance(value, bool):
+      seconds = value
+   elif isinstance(value, str) and value[:-1].isdigit() and value[-1:] in CLOCK_UNITS:
+      seconds = int(value[:-1]) * CLOCK_UNITS[value[-1]]
+   else:
+      raise ManifestError(f"{where}: a duration is whole seconds or a number with s, m, h or d (\"30m\")")
+   if not 0 <= seconds <= CLOCK_MAX_COOLDOWN:
+      raise ManifestError(f"{where}: at most {CLOCK_MAX_COOLDOWN} seconds")
+   return seconds
+
+
+def compile_clock(w: Mapping[str, Any]) -> dict[str, Any] | None:
+   """!M6a K1: the world's "clock" (C-05: capsule/core/clock.h Settings): the periods' start hours (ascending, the
+   time of day is the period an hour falls in), the world clock's start without an RTC, Wait's cooldown (economy
+   time) and most hours a use, the seasons (fixed_days: economy days / length_days; calendar_month: the RTC's month).
+   @param w  the world manifest
+   @return {"periods", "start_hour", "start_weekday", "cooldown", "max_wait", "seasons", "mode", "length_days"}, or
+           None without a clock
+   """
+   if "clock" not in w:
+      return None
+   c = w["clock"]
+   where = "world clock"
+   if not isinstance(c, Mapping):
+      raise ManifestError(f"{where}: an object")
+   check_keys(c, "clock", where)
+   periods = c.get("periods", CLOCK_DEFAULT_PERIODS)
+   if not isinstance(periods, list) or not 1 <= len(periods) <= CLOCK_MAX_PERIODS or \
+         any(isinstance(h, bool) or not isinstance(h, int) or not 0 <= h < CLOCK_HOURS for h in periods) or \
+         periods != sorted(set(periods)):
+      raise ManifestError(f"{where}: periods are 1-{CLOCK_MAX_PERIODS} start hours (0-{CLOCK_HOURS - 1}), "
+                          "ascending, each once")
+   start = c.get("start", CLOCK_DEFAULT_START)
+   check_keys(start, "clock_start", f"{where} start")
+   start_hour = integer(start.get("hour", CLOCK_DEFAULT_START["hour"]), 0, CLOCK_HOURS - 1, f"{where} start hour")
+   start_weekday = integer(start.get("weekday", CLOCK_DEFAULT_START["weekday"]), 0, CLOCK_WEEKDAYS - 1,
+                           f"{where} start weekday")
+   wait = c.get("wait", {})
+   check_keys(wait, "clock_wait", f"{where} wait")
+   cooldown = clock_seconds(wait.get("cooldown", CLOCK_DEFAULT_COOLDOWN), f"{where} wait cooldown")
+   max_wait = integer(wait.get("max_hours_per_use", CLOCK_DEFAULT_MAX_WAIT), 1, CLOCK_WAIT_WRAP - 1,
+                      f"{where} wait max_hours_per_use")
+   seasons = c.get("seasons", {})
+   check_keys(seasons, "clock_seasons", f"{where} seasons")
+   names = seasons.get("names", ["season"])
+   if not isinstance(names, list) or not 1 <= len(names) <= CLOCK_MAX_SEASONS or \
+         any(not isinstance(n, str) or not n for n in names) or len(set(names)) != len(names):
+      raise ManifestError(f"{where}: seasons names are 1-{CLOCK_MAX_SEASONS} distinct names")
+   mode = seasons.get("mode", CLOCK_SEASON_MODES[0])
+   if mode not in CLOCK_SEASON_MODES:
+      raise ManifestError(f"{where}: seasons mode must be one of {', '.join(CLOCK_SEASON_MODES)}")
+   length = integer(seasons.get("length_days", CLOCK_DEFAULT_SEASON_DAYS), 1, CLOCK_MAX_SEASON_DAYS,
+                    f"{where} seasons length_days")
+   return {"periods": periods, "start_hour": start_hour, "start_weekday": start_weekday, "cooldown": cooldown,
+           "max_wait": max_wait, "seasons": names, "mode": CLOCK_SEASON_MODES.index(mode), "length_days": length}
+
+
+def emit_clock(clock: Mapping[str, Any] | None) -> list[str]:
+   """!M6a K1: the world's clock data and clock::settings() (nullptr without a clock). With one, also weak
+   clock::time_of_day() (the period of the world clock's hour) and clock::minutes() (economy minutes): a game's own
+   definitions win.
+   @param clock  compile_clock() result, or None
+   @return the source lines (after the map namespace)
+   """
+   L = ["", "namespace capsule::clock {", ""]
+   if clock is None:
+      L += ["const Settings* settings()", "{", "   return nullptr;   // the world declares no clock", "}"]
+   else:
+      starts = ", ".join(str(h) for h in clock["periods"])
+      mode = ["FixedDays", "CalendarMonth"][clock["mode"]]
+      L += ["namespace {", "",
+            f"constexpr uint8_t kPeriodStarts[] = {{{starts}}};",
+            "// periods, start hour and weekday, most Wait hours, cooldown (s), seasons, mode, season days; seasons: "
+            + ", ".join(clock["seasons"]),
+            f"const Settings kWorldClock = {{kPeriodStarts, {len(clock['periods'])}, {clock['start_hour']}, "
+            f"{clock['start_weekday']}, {clock['max_wait']}, {clock['cooldown']}u, {len(clock['seasons'])}, "
+            f"SeasonMode::{mode}, {clock['length_days']}}};",
+            "", "} // namespace", "",
+            "const Settings* settings()", "{", "   return &kWorldClock;", "}", "",
+            "CAPSULE_WEAK uint8_t time_of_day()", "{", "   return period_of_hour(hour());", "}", "",
+            "CAPSULE_WEAK uint32_t minutes()", "{",
+            f"   return economy_seconds() / {CLOCK_UNITS['m']};", "}"]
+   L += ["", "} // namespace capsule::clock", ""]
+   return L
+
+
 def resolve_override_sets(maps: Sequence[dict[str, Any]], names: Any) -> list[dict[str, Any]]:
    """!every map's override sets as the world's list (map order, then the map's order), their names unique the
    world over (scripts name them) and their flags and variables resolved.
@@ -2197,7 +2325,8 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
    @return the source text
    """
    L = [f"// Generated by tools/map_compiler.py from {src_name}. Do not edit.",
-        '#include "capsule/map/map.h"', "", "namespace capsule::map {", "namespace {", "",
+        '#include "capsule/map/map.h"', '#include "capsule/core/clock.h"', '#include "capsule/core/memory.h"', "",
+        "namespace capsule::map {", "namespace {", "",
         "using hal::video::Color;", ""]
 
    def arr(ctype: str, name: str, values: Sequence[int], per_line: int = WORDS_PER_LINE,
@@ -2384,6 +2513,7 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
          f"{{{start_map}, {start_x}, {start_y}, {start_facing}, 0}}, kVehicleClasses, {dark_sym}, {len(dark)}"
          f"{ds1}}};",
          "", "} // namespace capsule::map", ""]
+   L.extend(emit_clock(world.get("clock")))   # M6a K1
    L.extend(lc.emit(world["locations"], ac.words_4bpp))
    return "\n".join(L)
 

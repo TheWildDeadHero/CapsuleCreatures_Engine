@@ -106,6 +106,7 @@
 /// | Picture | kind8 (PictureOp), [Show: operand (species), operand (x), operand (y)] | C12: world::picture_show(); Hide: world::picture_hide(), waits while world::picture_busy() |
 /// | Screen | operand (screen) | C12: world::open_screen(); waits while world::screen_busy() |
 /// | Member | field8 (MemberField), var16, operand (slot) | C13: var = party::member_field() |
+/// | Clock | kind8 (ClockOp), [Hour..Days: var16], [Wait: var16, operand (hours)] | M6a K1: var = world::clock_value() / clock_wait(); world::clock_reset() |
 #pragma once
 
 #include <cstdint>
@@ -222,6 +223,7 @@ enum class Op : uint8_t
    Picture,   ///< C12: show a creature's picture in a framed window, or hide it and wait for it to close.
    Screen,   ///< C12: open one of the game's screens and wait until the field is back.
    Member,   ///< C13: read one party member's data: its species, whether it is an egg, how many moves it knows, its friendship.
+   Clock,   ///< M6a K1: read the world clock (hour, weekday), the season and the economy clock's days; Wait; reset the world clock.
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -584,6 +586,18 @@ enum class MemberField : uint8_t
    Moves,   ///< How many moves it knows.
    Friendship,   ///< Its friendship (the layout's custom role friendship; 0 without one).
    NUM_MEMBER_FIELDS   ///< Number of fields.
+};
+
+/// M6a K1: Clock kinds.
+enum class ClockOp : uint8_t
+{
+   Hour,   ///< The world clock's hour (0-23).
+   Weekday,   ///< The world clock's weekday (0: Sunday).
+   Season,   ///< The season.
+   Days,   ///< Whole days of the economy clock.
+   Wait,   ///< Wait: move the world clock on; 1 when done, 0 refused (`clock wait <hours> -> var(ok);`).
+   Reset,   ///< The world clock back to the real-time clock (`clock reset;`).
+   NUM_CLOCK_OPS   ///< Number of kinds.
 };
 
 /// @name Operand and text-reference tags

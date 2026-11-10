@@ -83,6 +83,7 @@ struct Sdl
 constinit Sdl g_sdl;   ///< The SDL objects.
 uint32_t g_frame[soft::kFramePixels];      ///< Composed frame, ARGB8888.
 uint64_t g_next_frame = 0;                 ///< Performance-counter tick of the next frame.
+uint64_t g_start_counter = 0;              ///< M6a K1: the performance counter at init() (seconds() counts from it).
 uint64_t g_frame_remainder = 0;            ///< Carried remainder of the frame period.
 input::KeyBits g_held = 0;                      ///< Keys read at the last update().
 uint32_t g_frames = 0;                          ///< Frames since init().
@@ -235,6 +236,7 @@ void init()
    soft::reset();
    vram::reset();
    g_next_frame = SDL_GetPerformanceCounter();
+   g_start_counter = g_next_frame;
    rng::set_blank_hook(audio::hook::spend);   // C14a (D-34): modelled lag blanks step the sound too
    rng::seed(entropy());
 }
@@ -296,6 +298,12 @@ bool update()
 uint32_t vblanks()
 {
    return g_frames;   // C11: one blank per update() (the frames are paced: no lag)
+}
+
+uint32_t seconds()
+{
+   // M6a K1: the host's monotonic clock (real time, also while frames are dropped)
+   return static_cast<uint32_t>((SDL_GetPerformanceCounter() - g_start_counter) / SDL_GetPerformanceFrequency());
 }
 
 void assert_failed(const char* expr, const char* file, int line)

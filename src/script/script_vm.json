@@ -889,6 +889,14 @@
    "does": "C13: var = party::member_field()",
    "module": "party",
    "handler": "op_member"
+  },
+  {
+   "id": 105,
+   "name": "Clock",
+   "kind": "generic",
+   "doc": "M6a K1: read the world clock (hour, weekday), the season and the economy clock's days; Wait; reset the world clock.",
+   "bytes": "kind8 (ClockOp), [Hour..Days: var16], [Wait: var16, operand (hours)]",
+   "does": "M6a K1: var = world::clock_value() / clock_wait(); world::clock_reset()"
   }
  ],
  "enums": [
@@ -2144,6 +2152,49 @@
    "count": {
     "name": "NUM_MEMBER_FIELDS",
     "doc": "Number of fields."
+   }
+  },
+  {
+   "name": "ClockOp",
+   "type": "uint8_t",
+   "doc": [
+    "M6a K1: Clock kinds."
+   ],
+   "values": [
+    {
+     "name": "Hour",
+     "doc": "The world clock's hour (0-23).",
+     "word": "hour"
+    },
+    {
+     "name": "Weekday",
+     "doc": "The world clock's weekday (0: Sunday).",
+     "word": "weekday"
+    },
+    {
+     "name": "Season",
+     "doc": "The season.",
+     "word": "season"
+    },
+    {
+     "name": "Days",
+     "doc": "Whole days of the economy clock.",
+     "word": "days"
+    },
+    {
+     "name": "Wait",
+     "doc": "Wait: move the world clock on; 1 when done, 0 refused (`clock wait <hours> -> var(ok);`).",
+     "word": "wait"
+    },
+    {
+     "name": "Reset",
+     "doc": "The world clock back to the real-time clock (`clock reset;`).",
+     "word": "reset"
+    }
+   ],
+   "count": {
+    "name": "NUM_CLOCK_OPS",
+    "doc": "Number of kinds."
    }
   }
  ],

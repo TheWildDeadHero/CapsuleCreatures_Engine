@@ -48,4 +48,6 @@ set(CAPSULE_SCRIPT_ITEMS_SOURCES
    src/script/step_effects.cpp
    # C7: the party statements' port of a program without battle data, and the party stash
    src/script/script_party_none.cpp
-   src/script/script_party_stash.cpp)
+   src/script/script_party_stash.cpp
+   # M6a K1: the Clock statements' port without the engine library's clocks
+   src/script/script_clock_none.cpp)

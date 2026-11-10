@@ -616,6 +616,23 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       }
       return Outcome::Continue;
    }
+   case Op::Clock:
+   {
+      // M6a K1: kind8, [Hour..Days: var16], [Wait: var16, operand (hours)]
+      const auto kind = static_cast<ClockOp>(*p++);
+      if (kind == ClockOp::Reset)
+      {
+         next();
+         world::clock_reset();
+         return Outcome::Continue;
+      }
+      const VarId v{load_le16(p)};
+      p += kU16Bytes;
+      const int32_t hours = kind == ClockOp::Wait ? operand(p) : 0;
+      next();
+      set_var(v, kind == ClockOp::Wait ? (world::clock_wait(hours) ? 1 : 0) : world::clock_value(kind));
+      return Outcome::Continue;
+   }
    case Op::Picture:
    {
       // C12: kind8, [Show: operand (species), operand (x), operand (y)]
@@ -1554,6 +1571,7 @@ Outcome execute(Context& c)
    case Op::DarknessFade:
    case Op::Picture:
    case Op::Screen:
+   case Op::Clock:
    case Op::SetMetatile:
    case Op::Respawn:
    case Op::SetWarp:

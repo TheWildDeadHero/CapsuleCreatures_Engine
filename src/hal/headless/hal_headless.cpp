@@ -55,6 +55,11 @@ uint32_t vblanks()
    return g_frames;   // C11: one blank per update() (the frames are paced: no lag)
 }
 
+uint32_t seconds()
+{
+   return seconds_of_blanks(g_frames);   // M6a K1: deterministic (the frames' GBA time)
+}
+
 void assert_failed(const char* expr, const char* file, int line)
 {
    std::fprintf(stderr, "ENGINE_ASSERT failed: %s\n  at %s:%d\n", expr, file, line);

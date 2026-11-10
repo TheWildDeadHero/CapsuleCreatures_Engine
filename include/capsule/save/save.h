@@ -39,6 +39,8 @@
 ///     - Game (N3): the game's version of its block (2 bytes), the block's bytes (4), then the block as the game gave
 ///       it (capsule::save::GameBlock). Loading copies it when its version and size are the destination's, else the
 ///       read is refused (OtherShape: the game migrates its own blocks before it asks again);
+///     - Clock (M6a K1): capsule::clock::Saved (kClockBytes, little-endian). Loading copies it; the game then calls
+///       clock::resume(). An image without it (a world that had no clock) loads Saved{} (the economy clock at 0);
 ///   A section the image does not have loads empty (an older build without boxes: no boxed records; N3: a game
 ///   block of zeros).
 ///
@@ -67,6 +69,7 @@
 #pragma once
 
 #include "capsule/combine/nursery.h"
+#include "capsule/core/clock.h"
 #include "capsule/inventory/bag.h"
 #include "capsule/monster/monster.h"
 #include "capsule/script/field_effects.h"
@@ -98,6 +101,9 @@ inline constexpr uint32_t kNurseryHeadBytes = 9;      ///< Nursery (B2): record 
 inline constexpr uint32_t kNurserySlotBytes = 5;      ///< Nursery: per used slot its level (1) and gained
                                                       ///< experience (4), before its record.
 inline constexpr uint32_t kGameHeadBytes = 6;         ///< Game (N3): the block's version (2) and bytes (4).
+/// M6a K1: Clock: the economy seconds (4), the latest RTC time seen (4), the last Wait (4), the Wait offset (1), the
+/// flags (1).
+inline constexpr uint32_t kClockBytes = 14;
 ///@}
 
 /// The save budget of this platform (build_settings PLATFORM_LIMITS max_save_bytes; tools/save_layout.py media).
@@ -118,6 +124,7 @@ enum class Section : uint8_t
    Script,       ///< The script bank's flags, variables and name slots.
    Nursery,      ///< The nursery's slots and waiting result (B2; absent without a nursery).
    Game,         ///< N3: the game's own block (absent when the game has none: game_block_bytes() is 0).
+   Clock,        ///< M6a K1: the clock's saved state (absent when the world declares no clock: clock::settings()).
    NUM_SECTIONS  ///< Number of sections.
 };
 /// Number of sections.
@@ -142,6 +149,7 @@ struct Sources
    storage::Storage* storage;    ///< The storage boxes (G3), or nullptr.
    combine::nursery::State* nursery;   ///< The nursery (B2; combine::nursery::state()), or nullptr.
    GameBlock game = {};          ///< N3: the game's block, or none.
+   clock::Saved* clock = nullptr;   ///< M6a K1: the clock's state (clock::saved(); commit() it first), or nullptr.
 };
 
 /// N3: the bytes of the game's block in this build (the game defines it; the engine's default: 0, no Game section).
