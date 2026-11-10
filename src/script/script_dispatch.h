@@ -49,6 +49,7 @@ Outcome op_item_give(Context& c, Op op, const uint8_t* p, const uint8_t* base); 
 Outcome op_item_count(Context& c, Op op, const uint8_t* p, const uint8_t* base);    ///< ItemCount.
 Outcome op_item_query(Context& c, Op op, const uint8_t* p, const uint8_t* base);    ///< C7: ItemQuery.
 Outcome op_party(Context& c, Op op, const uint8_t* p, const uint8_t* base);         ///< C7: Party.
+Outcome op_member(Context& c, Op op, const uint8_t* p, const uint8_t* base);        ///< C13: Member.
 Outcome op_bag_open(Context& c, Op op, const uint8_t* p, const uint8_t* base);      ///< BagOpen.
 Outcome op_shop(Context& c, Op op, const uint8_t* p, const uint8_t* base);          ///< Shop.
 Outcome op_mart(Context& c, Op op, const uint8_t* p, const uint8_t* base);          ///< Mart.

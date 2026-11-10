@@ -48,7 +48,11 @@ restore;` (a copy of the party kept and put back), `party count [hatched]
 size when none; its species only when found); C8 `party give <species>
 <level> [item <item>] -> var(v);` and `party give egg <species> -> var(v);`
 (v = 0 the party, 1 the boxes, 2 nowhere: ops.h kGivenParty / kGivenBoxes /
-kGivenNone).
+kGivenNone). C13 `party lead -> var(v);` (the first hatched member's slot),
+`party count alive [except <slot>] -> var(v);` (hatched members with hit
+points), `party has type <type> -> var(v);` (1 when a hatched member's species
+has it), `member <slot> species|egg|moves|friendship -> var(v);` (one member's
+data, 0 for an empty slot).
 
 "name_kinds" (optional, C4): the game's own kinds of names for the name
 statement (["decoration", "medal", ...]), after the engine's item, species,
@@ -474,6 +478,16 @@ PARTY_KINDS = VM.words("PartyOp")
 PARTY_HATCHED_WORD, PARTY_MOVE_WORD, PARTY_SPECIES_WORD = "hatched", "move", "species"
 ## C8: `party give egg <species>`, `party give <species> <level> item <item>`, and GiveEgg's kind word.
 PARTY_EGG_WORD, PARTY_ITEM_WORD, PARTY_GIVE_EGG = "egg", "item", "give egg"
+## C13: `party count alive [except <slot>]` and `party has type <type>`: the words and the kinds' words.
+PARTY_ALIVE_WORD, PARTY_EXCEPT_WORD, PARTY_HAS_WORD, PARTY_TYPE_WORD = "alive", "except", "has", "type"
+PARTY_COUNT_ALIVE, PARTY_HAS_TYPE = "count alive", "has type"
+## C13: the first words of the party kinds (`has type` starts with `has`).
+PARTY_FIRST_WORDS = {k.split()[0] for k in PARTY_KINDS}
+## C13: `party count alive`'s slot when it leaves no member out (capsule::script::kNoMember).
+PARTY_NO_MEMBER = VM.constants["kNoMember"]
+## C13: `member <slot> <field> -> var(v);` (capsule::script::MemberField, in order).
+MEMBER_WORD = "member"
+MEMBER_FIELDS = VM.words("MemberField")
 ## The statement word of battles.
 BATTLE_WORD = "battle"
 ## C10: `battle prepare|outcome|rematch due|rematch ready` (capsule::script::BattleSetupOp, in order).
@@ -1857,8 +1871,19 @@ class Parser:
       """
       self.take()
       kind = self.take().text
+      if kind == "count" and self.accept(PARTY_ALIVE_WORD):   # C13
+         kind = PARTY_COUNT_ALIVE
+      elif kind == PARTY_HAS_WORD:
+         self.expect(PARTY_TYPE_WORD)
+         kind = PARTY_HAS_TYPE
+      elif kind not in PARTY_KINDS:
+         raise self.error(f"party takes {', '.join(PARTY_KINDS)}, found {kind!r}", t)
       hatched = kind == "count" and self.accept(PARTY_HATCHED_WORD)
       move = species = result = given = level = item = None
+      if kind == PARTY_COUNT_ALIVE:   # C13: one slot left out, or none
+         given = self.operand() if self.accept(PARTY_EXCEPT_WORD) else None
+      if kind == PARTY_HAS_TYPE:
+         given = self.operand()
       if kind == "find":
          self.expect(PARTY_MOVE_WORD)   # the only search so far: a move a member knows
          move = self.operand()
@@ -1869,7 +1894,7 @@ class Parser:
          if kind == "give":
             level = self.operand()
             item = self.operand() if self.accept(PARTY_ITEM_WORD) else None
-      if kind in ("count", "find", "give", PARTY_GIVE_EGG):
+      if kind in ("count", "find", "give", PARTY_GIVE_EGG, "lead", PARTY_COUNT_ALIVE, PARTY_HAS_TYPE):
          self.expect("->")
          result = self.var_ref().text
          if kind == "find" and self.accept(PARTY_SPECIES_WORD):
@@ -2132,8 +2157,19 @@ class Parser:
          return Node("field_action", t, kind=kind, name=name, result=n.text)
       if self.at(ENCOUNTER_WORD) and nxt.text in ENCOUNTER_KINDS:
          return self.encounter_statement(t)
-      if self.at(PARTY_WORD) and nxt.text in PARTY_KINDS:
+      if self.at(PARTY_WORD) and nxt.text in PARTY_FIRST_WORDS:
          return self.party_statement(t)
+      if self.at(MEMBER_WORD) and (nxt.kind == "number" or nxt.text == "var" or   # C13: member <slot> <field>
+                                   (nxt.kind == "name" and self.peek(OPERAND_END_AHEAD).text in MEMBER_FIELDS)):
+         self.take()
+         slot = self.operand()
+         field = self.take()
+         if field.text not in MEMBER_FIELDS:
+            raise self.error(f"member reads {', '.join(MEMBER_FIELDS)}, found {field.text!r}", field)
+         self.expect("->")
+         result = self.var_ref().text
+         self.expect(";")
+         return Node("member", t, slot=slot, field=field.text, result=result)
       rematch_query = nxt.text == "rematch" and self.peek(BATTLE_QUERY_AHEAD).text in BATTLE_REMATCH_QUERIES
       if self.at(BATTLE_WORD) and (nxt.text in ("prepare", "outcome") or rematch_query):
          # C10: battle prepare <species> <level> [item <item>]; | battle outcome|rematch due|rematch ready -> var(v);
@@ -3962,6 +3998,18 @@ class Compiler:
                self.emit_operand(e, s["level"])
                none = Node("num", Token("number", "0", s["line"], s["col"]), value=0)
                self.emit_operand(e, s["item"] if s["item"] is not None else none)
+         elif s["kind"] == "lead":   # C13: the result
+            e.u16(self.var_id(s["result"], s))
+         elif s["kind"] in (PARTY_COUNT_ALIVE, PARTY_HAS_TYPE):   # C13: the result, the slot left out / the type
+            e.u16(self.var_id(s["result"], s))
+            nobody = Node("num", Token("number", str(PARTY_NO_MEMBER), s["line"], s["col"]), value=PARTY_NO_MEMBER)
+            self.emit_operand(e, s["given"] if s["given"] is not None else nobody)
+         return True
+      if k == "member":   # C13: the field, the result, the slot
+         e.op("Member")
+         e.u8(MEMBER_FIELDS.index(s["field"]))
+         e.u16(self.var_id(s["result"], s))
+         self.emit_operand(e, s["slot"])
          return True
       if k == "item_op":
          entry = ITEM_STATEMENTS[s["kind"]]

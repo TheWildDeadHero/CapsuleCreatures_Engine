@@ -542,6 +542,50 @@ class BattleSetupStatements(unittest.TestCase):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 
+class MemberStatements(unittest.TestCase):
+   """C13: party lead / count alive [except] / has type and member."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def operand(self, n: int) -> bytes:
+      """The bytes of a constant operand.
+      @param n  the value
+      @return them
+      """
+      return self.code(f"var(v) += {n};")[1 + VAR_ID_BYTES:-1]
+
+   def test_bytes(self) -> None:
+      """Each statement: its op, its kind or field, the result and the operand."""
+      end = bytes([sc.OP["End"]])
+      var = self.code("var(v) = 0;")[1:1 + VAR_ID_BYTES]
+      party = sc.OP["Party"]
+      self.assertEqual(self.code("party lead -> var(v);"), bytes([party, sc.PARTY_KINDS.index("lead")]) + var + end)
+      alive = bytes([party, sc.PARTY_KINDS.index(sc.PARTY_COUNT_ALIVE)]) + var
+      self.assertEqual(self.code("party count alive -> var(v);"), alive + self.operand(sc.PARTY_NO_MEMBER) + end)
+      self.assertEqual(self.code("party count alive except 2 -> var(v);"), alive + self.operand(2) + end)
+      has = bytes([party, sc.PARTY_KINDS.index(sc.PARTY_HAS_TYPE)]) + var
+      self.assertEqual(self.code("party has type 12 -> var(v);"), has + self.operand(12) + end)
+      for field in sc.MEMBER_FIELDS:
+         self.assertEqual(self.code(f"member 3 {field} -> var(v);"),
+                          bytes([sc.OP["Member"], sc.MEMBER_FIELDS.index(field)]) + var + self.operand(3) + end)
+      self.assertEqual(self.code("member var(v) egg -> var(v);")[0], sc.OP["Member"])
+      self.assertEqual(self.code("party count hatched -> var(v);")[1], sc.PARTY_KINDS.index("count"))
+
+   def test_refusals(self) -> None:
+      """An unknown field, a type without its number, a query without its result, an unknown party kind."""
+      for body in ("member 1 level -> var(v);", "party has type -> var(v);", "party lead;", "party has 3 -> var(v);",
+                   "party sing;"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
+
 class PictureScreenStatements(unittest.TestCase):
    """C12: map banner, picture show / hide and screen."""
 

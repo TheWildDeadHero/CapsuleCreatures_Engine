@@ -392,6 +392,17 @@ script party_give {
     party give var(v16) 9 -> var(v8);
     party give egg 3 -> var(v16);
 }
+var m_moves : u8;
+var m_type : u8;
+var m_species : u16;
+script party_members {
+    party lead -> var(answer);
+    party count alive -> var(v8);
+    party count alive except 1 -> var(v16);
+    member 2 moves -> var(m_moves);
+    party has type 9 -> var(m_type);
+    member var(answer) species -> var(m_species);
+}
 script item_queries {
     item_room(3, 5) -> var(v8);
     item_room(3, 200) -> var(answer);

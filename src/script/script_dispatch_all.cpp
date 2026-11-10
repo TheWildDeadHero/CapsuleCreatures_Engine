@@ -112,6 +112,7 @@ const OpHandler kModuleOps[kOpCount] = {
    op_battle_setup,   // 101 BattleSetup
    nullptr,           // 102 Picture
    nullptr,           // 103 Screen
+   op_member,         // 104 Member
 };
 
 /// The module waits by wait kind (nullptr: not a module wait, or one no op of the table sets).

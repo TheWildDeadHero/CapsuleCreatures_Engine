@@ -562,6 +562,28 @@ int32_t give(uint16_t species, uint8_t level, uint16_t item);
 /// @return kGivenParty, kGivenBoxes or kGivenNone
 int32_t give_egg(uint16_t species);
 
+/// C13: the lead: the first hatched member (Party Lead).
+/// @return its slot, 0 when every member is an egg or the party is empty
+int32_t lead();
+
+/// C13: counts the hatched members with hit points (Party CountAlive; the default reads the CurrentHp role).
+/// @param except  a slot left out, or kNoMember
+/// @return how many
+int32_t count_alive(int32_t except);
+
+/// C13: whether a hatched member's species has a type (Party HasType; the default: the battle data's species types,
+/// in the engine's type numbers).
+/// @param type  the type
+/// @return true when one has it
+bool has_type(int32_t type);
+
+/// C13: one member's data (Member).
+/// @param slot   its party slot
+/// @param field  what: its species (the default: the species_key role's species, an egg's too), 1 for an egg, its
+///               known moves, its friendship (the default: the layout's custom role `friendship`, 0 without one)
+/// @return it, 0 for an empty slot
+int32_t member_field(int32_t slot, MemberField field);
+
 } // namespace capsule::script::party
 
 /// The bag, shops and move teaching from scripts. The engine's defaults
