@@ -1508,6 +1508,16 @@ CAPSULE_WEAK void set_layout(int32_t n)
    map::set_layout(n >= 1 && n <= map::kWorld.map_count ? &map::kWorld.maps[n - 1] : nullptr);
 }
 
+// C12: the location banner a map shows on arrival (none for a map without a location).
+CAPSULE_WEAK void show_map_banner()
+{
+   const uint8_t loc = overworld::location_of(overworld::shown_map());
+   if (loc != map::kNoLocation)
+   {
+      overworld::show_banner(loc);
+   }
+}
+
 CAPSULE_WEAK void camera_detach()
 {
    field::spawn_camera();

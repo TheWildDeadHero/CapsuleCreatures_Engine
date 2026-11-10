@@ -82,6 +82,8 @@ enum class Wait : uint8_t
    Menu,          ///< C3: a positioned menu's answer (port::menu_poll()).
    Animation,     ///< C9: a visual field animation (world::animation_done(); the animation in result_var).
    Darkness,      ///< C9: a darkness change (world::darkness_fading()).
+   Picture,       ///< C12: a creature picture's close (world::picture_busy()).
+   Screen,        ///< C12: a game's screen, until the field is back (world::screen_busy()).
    NUM_WAITS      ///< Number of waits.
 };
 

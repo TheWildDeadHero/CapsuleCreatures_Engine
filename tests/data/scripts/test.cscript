@@ -366,6 +366,13 @@ script scenes {
     camera attach;
     darkness 1 fade;
 }
+script pictures_screens {
+    map banner;
+    picture show 25 1 2;
+    picture hide;
+    screen 0;
+    screen 3;
+}
 script party_ops {
     party heal;
     party stash;

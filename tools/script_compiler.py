@@ -35,6 +35,11 @@ terrain, 0 its own), `animation arg <i> <value>;` / `animation start <id>;` /
 `camera attach;` (an invisible mover / the walker), `camera shake <vertical>
 <horizontal> <count> <delay>;`, `darkness <level> fade;` (gradually, waiting).
 
+C12, pictures and game screens (the world port): `map banner;` (the shown
+map's name banner), `picture show <species> <x> <y>;` / `picture hide;` (a
+creature's picture in a framed window; hide waits for its close), `screen <n>;`
+(the game's screen n; waits until the field is back).
+
 C7, the party (capsule/script/port.h namespace party): `party heal;` (every
 member's resources full, its status cleared), `party stash;` / `party
 restore;` (a copy of the party kept and put back), `party count [hatched]
@@ -387,6 +392,12 @@ ANIMATION_KINDS = VM.words("AnimationOp")
 CAMERA_KINDS = VM.words("CameraOp")
 ## C9: `camera shake <vertical> <horizontal> <count> <delay>`.
 CAMERA_SHAKE_OPERANDS = 4
+## C12: `picture show <species> <x> <y>;` / `picture hide;` (capsule::script::PictureOp) and `screen <n>;`.
+PICTURE_WORD, SCREEN_WORD = "picture", "screen"
+## C12: `picture show|hide`.
+PICTURE_KINDS = VM.words("PictureOp")
+## C12: `picture show`'s operands: the species, the window's column and row.
+PICTURE_SHOW_OPERANDS = 3
 ## The word after a move's steps that makes it a walk by the field's movement rules (`move OBJ DIR [N] checked
 ## [-> var(ok)];`: every step allowed, or nothing moves; ok = 1 when it walked).
 CHECKED_WORD = "checked"
@@ -2077,6 +2088,18 @@ class Parser:
          shake = [self.operand() for _ in range(CAMERA_SHAKE_OPERANDS)] if kind == "shake" else []
          self.expect(";")
          return Node("camera", t, kind=kind, shake=shake)
+      if self.at(PICTURE_WORD) and nxt.text in PICTURE_KINDS:   # C12
+         self.take()
+         kind = self.take().text
+         show = [self.operand() for _ in range(PICTURE_SHOW_OPERANDS)] if kind == "show" else []
+         self.expect(";")
+         return Node("picture", t, kind=kind, show=show)
+      if self.at(SCREEN_WORD) and (nxt.kind == "number" or nxt.text == "var" or   # C12: `screen <n>;`
+                                   (nxt.kind == "name" and self.peek(OPERAND_END_AHEAD).text == ";")):
+         self.take()
+         screen = self.operand()
+         self.expect(";")
+         return Node("screen", t, screen=screen)
       if self.at(FLIGHT_WORD) and nxt.text in FLIGHT_KINDS:
          self.take()
          kind = self.take().text
@@ -4100,6 +4123,16 @@ class Compiler:
          e.u8(CAMERA_KINDS.index(s["kind"]))
          for o in s["shake"]:
             self.emit_operand(e, o)
+         return True
+      if k == "picture":   # C12
+         e.op("Picture")
+         e.u8(PICTURE_KINDS.index(s["kind"]))
+         for o in s["show"]:
+            self.emit_operand(e, o)
+         return True
+      if k == "screen":   # C12
+         e.op("Screen")
+         self.emit_operand(e, s["screen"])
          return True
       if k == "flight":
          points = [fp["name"] for fp in (self.world_field or {}).get("flight_points", [])]
