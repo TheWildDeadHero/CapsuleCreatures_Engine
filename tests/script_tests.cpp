@@ -574,6 +574,33 @@ bool darkness_fading()
    return false;
 }
 
+/// M6a K1: the stub clock's values: kStubClockBase + the kind; a Wait of kStubWaitHours is done.
+constexpr int32_t kStubClockBase = 40;
+constexpr int32_t kStubWaitHours = 5;
+int g_clock_resets = 0;   ///< M6a K1: clock_reset() calls.
+
+/// M6a K1: kStubClockBase + the kind.
+/// @param kind  which
+/// @return it
+int32_t clock_value(ClockOp kind)
+{
+   return kStubClockBase + static_cast<int32_t>(kind);
+}
+
+/// M6a K1: done for kStubWaitHours.
+/// @param hours  the hours
+/// @return whether done
+bool clock_wait(int32_t hours)
+{
+   return hours == kStubWaitHours;
+}
+
+/// M6a K1: counts the resets.
+void clock_reset()
+{
+   ++g_clock_resets;
+}
+
 /// C12: polls a picture's close holds the script in the stub, and a screen's (screen 0 holds nothing).
 constexpr int kStubPicturePolls = 2;
 constexpr int kStubScreenPolls = 3;
@@ -2269,6 +2296,24 @@ void test_party_give()
    CHECK(script::var(VAR_V16) == script::kGivenParty);
 }
 
+/// M6a K1: each clock value into its variable, a Wait's answer, a reset through the port.
+void test_clock_ops()
+{
+   script::clear_all();
+   script::world::g_clock_resets = 0;
+   script::Context c{};
+   script::start(c, SCRIPT_CLOCK_OPS);
+   CHECK(run(c) == 0);
+   using script::ClockOp;
+   const int32_t base = script::world::kStubClockBase;
+   CHECK(script::var(VAR_ANSWER) == base + static_cast<int32_t>(ClockOp::Hour));
+   CHECK(script::var(VAR_V8) == base + static_cast<int32_t>(ClockOp::Weekday));
+   CHECK(script::var(VAR_V16) == base + static_cast<int32_t>(ClockOp::Season));
+   CHECK(script::var(VAR_M_MOVES) == base + static_cast<int32_t>(ClockOp::Days));
+   CHECK(script::var(VAR_M_TYPE) == 1);
+   CHECK(script::world::g_clock_resets == 1);
+}
+
 /// C13: the lead, the living members (all, one left out), a member's moves, a type, the lead's species.
 void test_party_members()
 {
@@ -2532,6 +2577,7 @@ int main()
    test_battle_setup();
    test_party_give();
    test_party_members();
+   test_clock_ops();
    test_item_queries();
    test_names();
    test_menus();

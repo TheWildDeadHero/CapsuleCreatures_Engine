@@ -12,7 +12,9 @@ Sections (most bytes; each section carries its own shape, so a save survives man
     (tools/save_shape.py); absent without script storage;
   - Nursery (B2): 9 (record hash, record bytes, slots, used bits, result waiting), then per slot 5 (its level when
     left, its gained experience) and its record (written: the used ones), then the waiting result's record;
-    absent without a nursery.
+    absent without a nursery;
+  - Clock (M6a K1): 14 (the economy seconds, the latest RTC time seen, the last Wait, the Wait offset, the flags);
+    absent unless the world declares a clock (--world).
 The image adds a 32-byte header and 12 bytes per section in its table.
 
 Media (C6, review4 finding 4): "gba" is the cartridge's 64 KB flash (4 KB sectors, each copy whole sectors),
@@ -28,13 +30,15 @@ Script save shapes (C7): with --scripts, a game that keeps a save history must h
 sub-bank's shape (tools/save_shape.py unrecorded()); the build fails otherwise.
 
 Usage:
-  save_layout.py battle.json [--scripts scripts.json] [--platform P] [--single-copy] [--out report.txt]
+  save_layout.py battle.json [--scripts scripts.json] [--world world.json] [--platform P] [--single-copy]
+                 [--out report.txt]
 prints (and writes) the report; exit status 1 when the image is over the medium, the medium keeps fewer than two
 copies without --single-copy, a script save shape is not recorded in the game's save history, or a manifest is
 invalid.
 """
 from __future__ import annotations
 
+import json
 import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -71,9 +75,11 @@ SUB_BANK_HEAD_BYTES = 7
 ## Bits per byte of the storage's used bits (capsule::storage::kUsedBitsPerByte).
 USED_BITS_PER_BYTE = 8
 ## Section names in id order (capsule::save::Section).
-SECTIONS = ("bag", "party", "boxes", "script", "nursery", "game")
+SECTIONS = ("bag", "party", "boxes", "script", "nursery", "game", "clock")
 ## Each section's version (src/save/save.cpp k*Version).
-SECTION_VERSIONS = {"bag": 1, "party": 1, "boxes": 1, "script": 1, "nursery": 1, "game": 1}
+SECTION_VERSIONS = {"bag": 1, "party": 1, "boxes": 1, "script": 1, "nursery": 1, "game": 1, "clock": 1}
+## M6a K1: the Clock section's bytes (capsule::save::kClockBytes).
+CLOCK_BYTES = 14
 ## N3: the Game section's head: the game's version of its block (2) and its bytes (4).
 GAME_HEAD_BYTES = 6
 ## Copies the medium keeps at most.
@@ -149,12 +155,14 @@ def script_bytes(banks: Sequence[Mapping[str, Any]]) -> int:
 
 
 def sections_of(compiled: Mapping[str, Any], banks: Sequence[Mapping[str, Any]] = (),
-                game_bytes: int = 0) -> dict[str, int]:
+                game_bytes: int = 0, clock: bool = False) -> dict[str, int]:
    """!The most bytes of each section of a compiled battle and its scripts.
    @param compiled    bc.compile_battle() result
    @param banks       script_banks() result
    @param game_bytes  N3: the game's block (capsule::save::game_block_bytes()), 0 without one
-   @return {section: bytes} in id order (0: no such section; "game" only with a game block)
+   @param clock       M6a K1: the world declares a clock
+   @return {section: bytes} in id order (0: no such section; "game" only with a game block, "clock" only with a
+           clock)
    """
    inv = compiled["inventory"]
    lay = compiled["layout"]
@@ -165,7 +173,20 @@ def sections_of(compiled: Mapping[str, Any], banks: Sequence[Mapping[str, Any]] 
           "nursery": nursery_bytes(compiled)}
    if game_bytes:
       out["game"] = GAME_HEAD_BYTES + game_bytes
+   if clock:
+      out["clock"] = CLOCK_BYTES
    return out
+
+
+def world_has_clock(world: str | Path | None) -> bool:
+   """!M6a K1: whether a world manifest declares a clock (its save then has the Clock section).
+   @param world  world.json, or None
+   @return true when it has a "clock"
+   @throws OSError, json.JSONDecodeError for an unreadable manifest
+   """
+   if world is None:
+      return False
+   return "clock" in json.loads(Path(world).read_text(encoding="utf-8"))
 
 
 def nursery_bytes(compiled: Mapping[str, Any]) -> int:
@@ -213,12 +234,13 @@ def medium(platform: str) -> tuple[str, int, int]:
 
 
 def layout(battle: str | Path, scripts: str | Path | None = None, platform: str | None = None,
-           single_copy: bool = False) -> dict[str, Any]:
+           single_copy: bool = False, world: str | Path | None = None) -> dict[str, Any]:
    """!The save image of a game for one save platform.
    @param battle       the battle manifest
    @param scripts      the scripts manifest, or None
    @param platform     a save platform (medium(); None: the GBA's flash)
    @param single_copy  the game opts in to one copy
+   @param world        M6a K1: the world manifest (its clock), or None
    @return {"sections": {name: bytes}, "image": bytes, "budget": the medium's bytes, "unit": its erase unit,
            "slot": a copy's slot, "copies": copies it holds, "platform": name, "single_copy", "unrecorded": the
            script sub-banks whose save shape the game's save history lacks (C7), "ok": the image fits, enough
@@ -231,7 +253,7 @@ def layout(battle: str | Path, scripts: str | Path | None = None, platform: str 
    comp = compile_scripts(scripts) if scripts is not None else None
    banks = save_shape.shapes(comp) if comp is not None else []
    unrecorded = save_shape.unrecorded(comp, comp.save_history) if comp is not None else []
-   sections = sections_of(compiled, banks)
+   sections = sections_of(compiled, banks, clock=world_has_clock(world))
    size = image_bytes(sections)
    copies = copies_of(size, budget, unit)
    needed = 1 if single_copy else REQUIRED_COPIES
@@ -507,7 +529,7 @@ def main(argv: Sequence[str]) -> int:
    if single:
       args.remove("--single-copy")
    opts: dict[str, str] = {}
-   for flag in ("--scripts", "--platform", "--out"):
+   for flag in ("--scripts", "--platform", "--out", "--world"):
       if flag in args:
          i = args.index(flag)
          if i + 1 >= len(args):
@@ -519,8 +541,8 @@ def main(argv: Sequence[str]) -> int:
       print(__doc__)
       return EXIT_USAGE
    try:
-      result = layout(args[0], opts.get("--scripts"), opts.get("--platform"), single)
-   except (bc.ManifestError, build_settings.SettingsError, OSError) as e:
+      result = layout(args[0], opts.get("--scripts"), opts.get("--platform"), single, opts.get("--world"))
+   except (bc.ManifestError, build_settings.SettingsError, OSError, json.JSONDecodeError) as e:
       print(f"error: {e}", file=sys.stderr)
       return EXIT_FAILED
    text = report(result, Path(args[0]).name)

@@ -39,6 +39,25 @@ bool update();
 /// @return the count (wraps at 2^32)
 uint32_t vblanks();
 
+/// M6a K1 (C-05b): the GBA's CPU cycles a frame takes.
+inline constexpr uint64_t kCyclesPerFrame = 280896;
+/// M6a K1 (C-05b): a second's cycles as a shift (2^24: the CPU's clock).
+inline constexpr int kCyclesPerSecondShift = 24;
+
+/// M6a K1 (C-05b): whole seconds some vertical blanks last, exactly (no drift from a rounded frame rate).
+/// @param blanks  vertical blanks
+/// @return seconds
+constexpr uint32_t seconds_of_blanks(uint32_t blanks)
+{
+   return static_cast<uint32_t>((blanks * kCyclesPerFrame) >> kCyclesPerSecondShift);
+}
+
+/// M6a K1 (C-05b): monotonic seconds since init(), what the game's clock counts between real-time clock reads.
+/// GBA, headless and Dreamcast: seconds_of_blanks(vblanks()) (the GBA's from its VBlank interrupt count, lag frames
+/// included); desktop: the host's monotonic clock (real time even when frames are dropped).
+/// @return the seconds
+uint32_t seconds();
+
 /// Raw entropy for seeding the random streams (A-4): GBA: Timer 1 (free
 /// running at 16.78 MHz from init()) as captured by the keypad interrupt at
 /// the first press, and the VBlank count (before any press this is the same

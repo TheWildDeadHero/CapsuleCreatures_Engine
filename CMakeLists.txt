@@ -274,6 +274,10 @@ add_library(capsule_engine STATIC
    src/script/script_port_defaults.cpp
    src/script/script_counter.cpp
    src/script/script_party.cpp
+   # M6a K1: the clocks (capsule/core/clock.h) and the script Clock statements over them
+   src/core/clock.cpp
+   src/script/script_clock.cpp
+   src/hal/common/rtc_calendar.cpp
    src/script/script_party_stash.cpp
    src/script/script_port_hal.cpp
    src/text/font.cpp
@@ -297,18 +301,19 @@ if(CAPSULE_PLATFORM STREQUAL "gba")
    target_include_directories(libgba SYSTEM INTERFACE ${LIBGBA}/include)
    target_link_libraries(capsule_engine PUBLIC libgba)
    target_sources(capsule_engine PRIVATE src/hal/gba/save_gba.cpp)   # the cartridge's flash (or SRAM)
+   target_sources(capsule_engine PRIVATE src/hal/gba/rtc_gba.cpp)    # M6a K1: the cartridge's real-time clock
 else()
    # Every other platform runs the software GBA video model (src/hal/soft).
    target_sources(capsule_engine PRIVATE src/hal/soft/soft_video.cpp)
    # The save medium in RAM, the default a desktop game's file backend (CAPSULE_RUNTIME_SOURCES) replaces
    target_sources(capsule_engine PRIVATE src/hal/common/save_memory.cpp)
    if(CAPSULE_PLATFORM STREQUAL "desktop")
-      target_sources(capsule_engine PRIVATE src/hal/sdl2/hal_sdl2.cpp)
+      target_sources(capsule_engine PRIVATE src/hal/sdl2/hal_sdl2.cpp src/hal/common/rtc_host.cpp)
       target_link_libraries(capsule_engine PRIVATE SDL2::SDL2-static)
    elseif(CAPSULE_PLATFORM STREQUAL "dreamcast")
-      target_sources(capsule_engine PRIVATE src/hal/dc/hal_dc.cpp)
+      target_sources(capsule_engine PRIVATE src/hal/dc/hal_dc.cpp src/hal/common/rtc_host.cpp)
    else()
-      target_sources(capsule_engine PRIVATE src/hal/headless/hal_headless.cpp)
+      target_sources(capsule_engine PRIVATE src/hal/headless/hal_headless.cpp src/hal/headless/rtc_headless.cpp)
    endif()
 endif()
 # The sources that read build settings are compiled per game, with that game's
@@ -597,6 +602,10 @@ function(capsule_game dir)
       if(game_scripts)
          list(APPEND save_args --scripts ${dir}/${game_scripts})
          list(APPEND save_depends ${gen}/scripts.cpp)   # likewise the scripts' sources
+      endif()
+      if(world)   # M6a K1: a world that declares a clock adds the Clock section
+         list(APPEND save_args --world ${dir}/${world})
+         list(APPEND save_depends ${dir}/${world})
       endif()
       add_custom_command(
          OUTPUT  ${gen}/save_layout.txt
@@ -1104,6 +1113,7 @@ endif()
 include(cmake/parts/effect.cmake)   # effect VM
 include(cmake/parts/bench.cmake)    # battle test bench (apps/battle_bench)
 include(cmake/parts/ui.cmake)       # the ui module (menus, lists, key repeat, scroll arrows), its tests, sandbox
+include(cmake/parts/clock.cmake)    # M6a K1: the clocks and the real-time clock HAL, their tests
 include(cmake/parts/screen.cmake)   # full-screen scenes (layers, sprites, tasks, fades, field return)
 include(cmake/parts/vm_ext.cmake)      # VM extension manifests, generated dispatch, checks
 include(cmake/parts/anim.cmake)     # the scene kit's animation-script player, its tests, viewer, sandbox

@@ -395,6 +395,14 @@ script party_give {
 var m_moves : u8;
 var m_type : u8;
 var m_species : u16;
+script clock_ops {
+    clock hour -> var(answer);
+    clock weekday -> var(v8);
+    clock season -> var(v16);
+    clock days -> var(m_moves);
+    clock wait 5 -> var(m_type);
+    clock reset;
+}
 script party_members {
     party lead -> var(answer);
     party count alive -> var(v8);

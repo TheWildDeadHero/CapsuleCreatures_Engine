@@ -611,6 +611,11 @@ uint32_t vblanks()
    return g_vblank_irqs;
 }
 
+uint32_t seconds()
+{
+   return seconds_of_blanks(g_vblank_irqs);   // M6a K1: the blanks' cycles, exactly
+}
+
 // P-15: halt and show the failed expression, file and line on screen, using
 // the engine's default font on BG0.
 void assert_failed(const char* expr, const char* file, int line)

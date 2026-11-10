@@ -45,6 +45,7 @@ constexpr uint8_t kBoxesVersion = 1;      ///< Boxes with their geometry.
 constexpr uint8_t kScriptVersion = 1;     ///< Script sub-banks with their shape hashes.
 constexpr uint8_t kNurseryVersion = 1;    ///< B2: the nursery with its geometry.
 constexpr uint8_t kGameVersion = 1;       ///< N3: the game's block with its own version and size.
+constexpr uint8_t kClockVersion = 1;      ///< M6a K1: the clock's saved state.
 ///@}
 /// Copies of the image a medium keeps at most (the older one takes the next write).
 constexpr int kMaxCopies = 2;
@@ -702,6 +703,44 @@ Status decode_game(Source& s, const GameBlock& g, bool store)
    return Status::Ok;
 }
 
+// -- Clock (M6a K1) ------------------------------------------------------------------------------------------------
+
+/// The clock's saved state (none: Saved{}).
+/// @param s  the sink
+/// @param c  the state, or nullptr
+void encode_clock(Sink& s, const clock::Saved* c)
+{
+   const clock::Saved v = c != nullptr ? *c : clock::Saved{};
+   put_le(s, v.economy_seconds, kU32Bytes);
+   put_le(s, v.last_seen_rtc, kU32Bytes);
+   put_le(s, v.last_wait, kU32Bytes);
+   put_le(s, v.wait_offset_hours, 1);
+   put_le(s, v.flags, 1);
+}
+
+/// Loads (or only checks) the clock's saved state.
+/// @param s    the source over the section
+/// @param dst  the destination, or nullptr (only checked)
+/// @return Ok, or OtherShape (an offset past a week)
+Status decode_clock(Source& s, clock::Saved* dst)
+{
+   clock::Saved v{};
+   v.economy_seconds = next_le(s, kU32Bytes);
+   v.last_seen_rtc = next_le(s, kU32Bytes);
+   v.last_wait = next_le(s, kU32Bytes);
+   v.wait_offset_hours = static_cast<uint8_t>(next_le(s, 1));
+   v.flags = static_cast<uint8_t>(next_le(s, 1));
+   if (v.wait_offset_hours >= clock::kWaitWrapHours)
+   {
+      return Status::OtherShape;
+   }
+   if (dst != nullptr)
+   {
+      *dst = v;
+   }
+   return Status::Ok;
+}
+
 // -- Nursery (B2) --------------------------------------------------------------------------------------------------
 
 /// The build's nursery slots (its data only: a program that saves needs no nursery code).
@@ -1290,6 +1329,8 @@ uint8_t version_of(Section id)
       return kNurseryVersion;
    case Section::Game:
       return kGameVersion;
+   case Section::Clock:
+      return kClockVersion;
    default:
       return kScriptVersion;
    }
@@ -1318,6 +1359,9 @@ void encode(Sink& s, Section id, const Sources& src)
    case Section::Game:
       encode_game(s, src.game);
       break;
+   case Section::Clock:
+      encode_clock(s, src.clock);
+      break;
    default:
       encode_script(s);
       break;
@@ -1342,6 +1386,8 @@ bool has_source(Section id, const Sources& src)
       return src.nursery != nullptr;
    case Section::Game:
       return src.game.bytes != nullptr;
+   case Section::Clock:
+      return src.clock != nullptr;
    default:
       return true;
    }
@@ -1369,6 +1415,8 @@ Status decode(Source& s, Section id, const Sources& dst, bool store, Notes* note
       return decode_nursery(s, store ? dst.nursery : nullptr, store ? notes : nullptr);
    case Section::Game:
       return decode_game(s, dst.game, store);
+   case Section::Clock:
+      return decode_clock(s, store ? dst.clock : nullptr);
    default:
       return decode_script(s, store, notes);
    }
@@ -1398,6 +1446,9 @@ void load_empty(Section id, const Sources& dst)
       {
          dst.game.bytes[b] = 0;   // N3: no block in the image: zeros (the game tells an empty block apart)
       }
+      break;
+   case Section::Clock:
+      *dst.clock = clock::Saved{};   // M6a K1: a save from before the world's clock starts it at 0
       break;
    default:
    {
@@ -1468,6 +1519,8 @@ uint32_t section_size(Section s)
       const uint32_t bytes = game_block_bytes();
       return bytes == 0 ? 0 : kGameHeadBytes + bytes;
    }
+   case Section::Clock:
+      return clock::settings() != nullptr ? kClockBytes : 0;   // M6a K1: only a world with a clock
    case Section::Script:
    {
       uint32_t n = 0;
@@ -1789,4 +1842,12 @@ Status newest(uint32_t& out)
 CAPSULE_WEAK uint32_t capsule::save::game_block_bytes()
 {
    return 0;
+}
+
+/// M6a K1: the engine's default: no clock (the generated world of a world.json that declares `clock` defines it;
+/// here, with the save, because every program that saves needs an answer, a world or not).
+/// @return nullptr
+CAPSULE_WEAK const capsule::clock::Settings* capsule::clock::settings()
+{
+   return nullptr;
 }

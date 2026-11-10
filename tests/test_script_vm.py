@@ -41,7 +41,7 @@ class Table(unittest.TestCase):
       """The compiler's opcode list, kind words and constants come from the manifest."""
       t = script_vm.table()
       self.assertIs(sc.OPS, t.ops)
-      self.assertEqual(sc.OP["Member"], len(t.ops) - 1)   # the last op (C13)
+      self.assertEqual(sc.OP["Clock"], len(t.ops) - 1)   # the last op (M6a K1)
       self.assertEqual(sc.TRANSITIONS, t.words("Transition"))
       self.assertEqual(sc.SOUND_KINDS, t.word_values("SoundOp", "operands"))
       self.assertEqual(sc.OBJECT_PLAYER, t.constants["kObjectPlayer"])

@@ -35,6 +35,12 @@ terrain, 0 its own), `animation arg <i> <value>;` / `animation start <id>;` /
 `camera attach;` (an invisible mover / the walker), `camera shake <vertical>
 <horizontal> <count> <delay>;`, `darkness <level> fade;` (gradually, waiting).
 
+M6a K1, the clocks (capsule/core/clock.h through the world port): `clock
+hour|weekday|season|days -> var(v);` (the world clock's hour and weekday, the
+season, whole economy days), `clock wait <hours> -> var(ok);` (Wait: 1 when
+done, 0 refused: the cooldown runs), `clock reset;` (the world clock back to
+the real-time clock).
+
 C12, pictures and game screens (the world port): `map banner;` (the shown
 map's name banner), `picture show <species> <x> <y>;` / `picture hide;` (a
 creature's picture in a framed window; hide waits for its close), `screen <n>;`
@@ -486,6 +492,10 @@ PARTY_COUNT_ALIVE, PARTY_HAS_TYPE = "count alive", "has type"
 PARTY_FIRST_WORDS = {k.split()[0] for k in PARTY_KINDS}
 ## C13: `party count alive`'s slot when it leaves no member out (capsule::script::kNoMember).
 PARTY_NO_MEMBER = VM.constants["kNoMember"]
+## M6a K1: the statement word of the clock statements.
+CLOCK_WORD = "clock"
+## M6a K1: their kinds (capsule::script::ClockOp, in order).
+CLOCK_KINDS = VM.words("ClockOp")
 ## C13: the statement word of `member <slot> <field> -> var(v);`.
 MEMBER_WORD = "member"
 ## C13: `member`'s fields (capsule::script::MemberField, in order).
@@ -2115,6 +2125,16 @@ class Parser:
          shake = [self.operand() for _ in range(CAMERA_SHAKE_OPERANDS)] if kind == "shake" else []
          self.expect(";")
          return Node("camera", t, kind=kind, shake=shake)
+      if self.at(CLOCK_WORD) and nxt.text in CLOCK_KINDS:   # M6a K1
+         self.take()
+         kind = self.take().text
+         hours = self.operand() if kind == "wait" else None
+         result = None
+         if kind != "reset":
+            self.expect("->")
+            result = self.var_ref().text
+         self.expect(";")
+         return Node("clock", t, kind=kind, hours=hours, result=result)
       if self.at(PICTURE_WORD) and nxt.text in PICTURE_KINDS:   # C12
          self.take()
          kind = self.take().text
@@ -4173,6 +4193,14 @@ class Compiler:
          e.u8(CAMERA_KINDS.index(s["kind"]))
          for o in s["shake"]:
             self.emit_operand(e, o)
+         return True
+      if k == "clock":   # M6a K1: the kind, [the result, [the hours]]
+         e.op("Clock")
+         e.u8(CLOCK_KINDS.index(s["kind"]))
+         if s["result"] is not None:
+            e.u16(self.var_id(s["result"], s))
+         if s["hours"] is not None:
+            self.emit_operand(e, s["hours"])
          return True
       if k == "picture":   # C12
          e.op("Picture")

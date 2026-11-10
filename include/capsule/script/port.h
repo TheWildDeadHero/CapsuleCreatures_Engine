@@ -306,6 +306,20 @@ void camera_attach();
 /// @param delay       frames between them
 void camera_shake(int32_t vertical, int32_t horizontal, int32_t count, int32_t delay);
 
+/// M6a K1: a clock value (Clock Hour / Weekday / Season / Days; the engine library's default:
+/// capsule/core/clock.h, src/script/script_clock.cpp; a program without it: 0, src/script/script_clock_none.cpp).
+/// @param kind  which
+/// @return it
+int32_t clock_value(ClockOp kind);
+
+/// M6a K1: Wait (Clock Wait: clock::wait()).
+/// @param hours  hours to add
+/// @return true when done
+bool clock_wait(int32_t hours);
+
+/// M6a K1: the world clock back to the real-time clock (Clock Reset: clock::reset_wait()).
+void clock_reset();
+
 /// C12: shows the shown map's name banner (MapView Banner; the default, capsule::overworld: the location banner a map
 /// shows on arrival, when the map has a location).
 void show_map_banner();

@@ -542,6 +542,37 @@ class BattleSetupStatements(unittest.TestCase):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 
+class ClockStatements(unittest.TestCase):
+   """M6a K1: clock hour|weekday|season|days -> var(v), clock wait <hours> -> var(v), clock reset."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """The op, the kind, the result (not for reset), the hours (wait)."""
+      end = bytes([sc.OP["End"]])
+      var = self.code("var(v) = 0;")[1:1 + VAR_ID_BYTES]
+      for kind in ("hour", "weekday", "season", "days"):
+         self.assertEqual(self.code(f"clock {kind} -> var(v);"),
+                          bytes([sc.OP["Clock"], sc.CLOCK_KINDS.index(kind)]) + var + end)
+      hours = self.code("var(v) += 6;")[1 + VAR_ID_BYTES:-1]
+      self.assertEqual(self.code("clock wait 6 -> var(v);"),
+                       bytes([sc.OP["Clock"], sc.CLOCK_KINDS.index("wait")]) + var + hours + end)
+      self.assertEqual(self.code("clock reset;"), bytes([sc.OP["Clock"], sc.CLOCK_KINDS.index("reset")]) + end)
+
+   def test_refusals(self) -> None:
+      """A query without its result, a wait without hours, a reset with a result."""
+      for body in ("clock hour;", "clock wait -> var(v);", "clock reset -> var(v);"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
+
 class MemberStatements(unittest.TestCase):
    """C13: party lead / count alive [except] / has type and member."""
 
