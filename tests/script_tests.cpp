@@ -1127,6 +1127,45 @@ int32_t give_egg(uint16_t species)
    return script::kGivenParty;
 }
 
+/// C13: the stub party: the lead is slot kStubLead, kStubAlive members live, a member of type kStubType, and
+/// member_field() answers slot * kStubFieldScale + the field.
+constexpr int32_t kStubLead = 1;
+constexpr int32_t kStubAlive = 3;
+constexpr int32_t kStubType = 9;
+constexpr int32_t kStubFieldScale = 10;
+
+/// C13: the stub's lead.
+/// @return kStubLead
+int32_t lead()
+{
+   return kStubLead;
+}
+
+/// C13: kStubAlive members live, one fewer when a slot is left out.
+/// @param except  the slot left out, or kNoMember
+/// @return how many
+int32_t count_alive(int32_t except)
+{
+   return except == script::kNoMember ? kStubAlive : kStubAlive - 1;
+}
+
+/// C13: a member has kStubType.
+/// @param type  the type
+/// @return whether it is kStubType
+bool has_type(int32_t type)
+{
+   return type == kStubType;
+}
+
+/// C13: slot * kStubFieldScale + the field.
+/// @param slot   the slot
+/// @param field  the field
+/// @return it
+int32_t member_field(int32_t slot, script::MemberField field)
+{
+   return slot * kStubFieldScale + static_cast<int32_t>(field);
+}
+
 /// C7: the second member knows kStubKnownMove.
 /// @param move     the move
 /// @param slot     its member, or the party's size
@@ -2230,6 +2269,23 @@ void test_party_give()
    CHECK(script::var(VAR_V16) == script::kGivenParty);
 }
 
+/// C13: the lead, the living members (all, one left out), a member's moves, a type, the lead's species.
+void test_party_members()
+{
+   script::clear_all();
+   script::Context c{};
+   script::start(c, SCRIPT_PARTY_MEMBERS);
+   CHECK(run(c) == 0);
+   CHECK(script::var(VAR_ANSWER) == script::party::kStubLead);
+   CHECK(script::var(VAR_V8) == script::party::kStubAlive && script::var(VAR_V16) == script::party::kStubAlive - 1);
+   constexpr int32_t kMovesSlot = 2;
+   CHECK(script::var(VAR_M_MOVES) ==
+         kMovesSlot * script::party::kStubFieldScale + static_cast<int32_t>(script::MemberField::Moves));
+   CHECK(script::var(VAR_M_TYPE) == 1);
+   CHECK(script::var(VAR_M_SPECIES) ==
+         script::party::kStubLead * script::party::kStubFieldScale + static_cast<int32_t>(script::MemberField::Species));
+}
+
 /// C7: the item queries: room for 5 more (1) and for 200 more (0) of an item, an item's pocket.
 void test_item_queries()
 {
@@ -2475,6 +2531,7 @@ int main()
    test_pictures_screens();
    test_battle_setup();
    test_party_give();
+   test_party_members();
    test_item_queries();
    test_names();
    test_menus();

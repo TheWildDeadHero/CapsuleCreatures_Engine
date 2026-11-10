@@ -96,7 +96,7 @@
 /// | Name | slot8 (the name placeholder's index), source8 (NameSource), [Text: text ref], [Entry: list32 (asset key), operand index], [Number: operand], [Kind: kind8 (NameKind, or kFirstGameNameKind + the manifest's name_kinds index), operand id, counted8 (1: an operand count follows), [operand count]] | C4: script::set_name() of the source's text, cut to the slot's length (a kind: game::name_text(); the engine's kinds' defaults from the battle data and the party) |
 /// | Counter | kind8 (CounterOp), box8 (the manifest's counters index), var16 (its variable), [Show: x8, y8 (cells), label text ref] | C5: world::counter() with the variable's current value (the default: the text layer's banner) |
 /// | Stat | stat8 (the manifest's stats index), operand (the amount) | C6: world::add_stat() (the default does nothing: only a manifest with stats_port emits the op) |
-/// | Party | kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)] | C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone) |
+/// | Party | kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)], [Lead: var16], [CountAlive: var16, operand (slot left out, or kNoMember)], [HasType: var16, operand (type)] | C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone); C13: var = party::lead() / count_alive() / has_type() |
 /// | ItemQuery | kind8 (ItemQueryOp), var16, operand (item), [Room: operand (n)] | C7: var = items::room() (1 when the bag takes n more) or items::pocket() |
 /// | MapView | kind8 (MapViewOp), [Layout: operand (map)] | C9: world::redraw_map() / world::set_layout(); C12: world::show_map_banner() |
 /// | Animation | kind8 (AnimationOp), [Arg: operand (index), operand (value)], [Start, Wait: operand (animation)] | C9: world::animation_arg() / animation_start(); Wait waits while world::animation_done() is false |
@@ -105,6 +105,7 @@
 /// | BattleSetup | kind8 (BattleSetupOp), [Prepare: operand (species), operand (level), operand (item)], [Outcome, RematchDue, RematchReady: var16] | C10: battles::prepare(); var = battles::outcome_code() / rematch_due() / rematch_ready() |
 /// | Picture | kind8 (PictureOp), [Show: operand (species), operand (x), operand (y)] | C12: world::picture_show(); Hide: world::picture_hide(), waits while world::picture_busy() |
 /// | Screen | operand (screen) | C12: world::open_screen(); waits while world::screen_busy() |
+/// | Member | field8 (MemberField), var16, operand (slot) | C13: var = party::member_field() |
 #pragma once
 
 #include <cstdint>
@@ -211,7 +212,7 @@ enum class Op : uint8_t
    Name,   ///< C4: write a name slot (a name placeholder: STR_VAR-like text buffers) from a text, a list entry, a number or a name of a kind.
    Counter,   ///< C5: show, update or hide a counter box (a variable's value beside the messages: money, coins).
    Stat,   ///< C6: add to a game statistic the game's port holds (a stat bound to a variable compiles to AddVar instead).
-   Party,   ///< C7: heal, stash or restore the party, count its members, or find one knowing a move; C8: give a creature or an egg.
+   Party,   ///< C7: heal, stash or restore the party, count its members, or find one knowing a move; C8: give a creature or an egg.; C13: the lead's slot, count the living members, ask about a type.
    ItemQuery,   ///< C7: whether the bag takes more of an item, or an item's pocket.
    MapView,   ///< C9: redraw the shown view, or show the shown map with another map's terrain; C12: show the map's name banner.
    Animation,   ///< C9: set a visual field animation's argument, start one, or wait for its end.
@@ -220,6 +221,7 @@ enum class Op : uint8_t
    BattleSetup,   ///< C10: prepare an opponent a later battle fights, read the last outcome, or ask about the current side's rematch.
    Picture,   ///< C12: show a creature's picture in a framed window, or hide it and wait for it to close.
    Screen,   ///< C12: open one of the game's screens and wait until the field is back.
+   Member,   ///< C13: read one party member's data: its species, whether it is an egg, how many moves it knows, its friendship.
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -543,6 +545,9 @@ enum class PartyOp : uint8_t
    Find,   ///< The first hatched member knowing a move.
    Give,   ///< C8: give a new creature (the party, else the boxes).
    GiveEgg,   ///< C8: give a new egg (`party give egg`).
+   Lead,   ///< C13: the first hatched member's slot (0 when none).
+   CountAlive,   ///< C13: count the hatched members with hit points, one slot left out or none (`party count alive [except <slot>]`).
+   HasType,   ///< C13: whether a hatched member's species has a type (`party has type <type>`).
    NUM_PARTY_OPS   ///< Number of kinds.
 };
 
@@ -569,6 +574,16 @@ enum class PictureOp : uint8_t
    Show,   ///< Show a creature's picture.
    Hide,   ///< Hide it, waiting for its close.
    NUM_PICTURE_OPS   ///< Number of kinds.
+};
+
+/// C13: Member fields.
+enum class MemberField : uint8_t
+{
+   Species,   ///< Its species (the game's answer for an egg).
+   Egg,   ///< 1 when it is an egg.
+   Moves,   ///< How many moves it knows.
+   Friendship,   ///< Its friendship (the layout's custom role friendship; 0 without one).
+   NUM_MEMBER_FIELDS   ///< Number of fields.
 };
 
 /// @name Operand and text-reference tags
@@ -639,6 +654,7 @@ inline constexpr int kMaxCounters = 16;   ///< C5: counter boxes a scripts manif
 inline constexpr int kGivenParty = 0;   ///< C8: party give's result: the creature joined the party.
 inline constexpr int kGivenBoxes = 1;   ///< C8: party give's result: the party was full, it went to the boxes.
 inline constexpr int kGivenNone = 2;   ///< C8: party give's result: nowhere had room (or it could not be built).
+inline constexpr int kNoMember = 255;   ///< C13: party count alive's slot when it leaves no member out (past every party slot).
 inline constexpr int kMaxStats = 255;   ///< C6: game statistics a scripts manifest may declare (a byte each).
 ///@}
 

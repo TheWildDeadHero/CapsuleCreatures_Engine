@@ -1588,6 +1588,7 @@ Outcome execute(Context& c)
    case Op::BattleSetup:
    case Op::Party:
    case Op::ItemQuery:
+   case Op::Member:
       return run_module(c, op, p, base);
    case Op::NUM_OPS:
       break;
@@ -2020,10 +2021,47 @@ Outcome op_party(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uin
       set_var(v, result);
       break;
    }
+   case PartyOp::Lead:   // C13: var16
+   {
+      const VarId v{load_le16(p)};
+      p += kU16Bytes;
+      advance(f, p, base);
+      set_var(v, party::lead());
+      break;
+   }
+   case PartyOp::CountAlive:   // C13: var16, operand (slot left out, or kNoMember)
+   case PartyOp::HasType:      // C13: var16, operand (type)
+   {
+      const VarId v{load_le16(p)};
+      p += kU16Bytes;
+      const int32_t x = operand(p);
+      advance(f, p, base);
+      set_var(v, kind == PartyOp::CountAlive ? party::count_alive(x) : (party::has_type(x) ? 1 : 0));
+      break;
+   }
    case PartyOp::NUM_PARTY_OPS:
       advance(f, p, base);
       break;
    }
+   return Outcome::Continue;
+}
+
+/// C13: Member (a module op, with Party).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_member(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   // field8 (MemberField), var16, operand (slot)
+   const auto field = static_cast<MemberField>(*p++);
+   const VarId v{load_le16(p)};
+   p += kU16Bytes;
+   const int32_t slot = operand(p);
+   advance(f, p, base);
+   set_var(v, field < MemberField::NUM_MEMBER_FIELDS ? party::member_field(slot, field) : 0);
    return Outcome::Continue;
 }
 

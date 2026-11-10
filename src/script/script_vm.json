@@ -806,9 +806,9 @@
    "id": 95,
    "name": "Party",
    "kind": "generic",
-   "doc": "C7: heal, stash or restore the party, count its members, or find one knowing a move; C8: give a creature or an egg.",
-   "bytes": "kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)]",
-   "does": "C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone)",
+   "doc": "C7: heal, stash or restore the party, count its members, or find one knowing a move; C8: give a creature or an egg.; C13: the lead's slot, count the living members, ask about a type.",
+   "bytes": "kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)], [Lead: var16], [CountAlive: var16, operand (slot left out, or kNoMember)], [HasType: var16, operand (type)]",
+   "does": "C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone); C13: var = party::lead() / count_alive() / has_type()",
    "module": "party",
    "handler": "op_party"
   },
@@ -879,6 +879,16 @@
    "doc": "C12: open one of the game's screens and wait until the field is back.",
    "bytes": "operand (screen)",
    "does": "C12: world::open_screen(); waits while world::screen_busy()"
+  },
+  {
+   "id": 104,
+   "name": "Member",
+   "kind": "generic",
+   "doc": "C13: read one party member's data: its species, whether it is an egg, how many moves it knows, its friendship.",
+   "bytes": "field8 (MemberField), var16, operand (slot)",
+   "does": "C13: var = party::member_field()",
+   "module": "party",
+   "handler": "op_member"
   }
  ],
  "enums": [
@@ -2007,6 +2017,21 @@
      "name": "GiveEgg",
      "doc": "C8: give a new egg (`party give egg`).",
      "word": "give egg"
+    },
+    {
+     "name": "Lead",
+     "doc": "C13: the first hatched member's slot (0 when none).",
+     "word": "lead"
+    },
+    {
+     "name": "CountAlive",
+     "doc": "C13: count the hatched members with hit points, one slot left out or none (`party count alive [except <slot>]`).",
+     "word": "count alive"
+    },
+    {
+     "name": "HasType",
+     "doc": "C13: whether a hatched member's species has a type (`party has type <type>`).",
+     "word": "has type"
     }
    ],
    "count": {
@@ -2086,6 +2111,39 @@
    "count": {
     "name": "NUM_PICTURE_OPS",
     "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "MemberField",
+   "type": "uint8_t",
+   "doc": [
+    "C13: Member fields."
+   ],
+   "values": [
+    {
+     "name": "Species",
+     "doc": "Its species (the game's answer for an egg).",
+     "word": "species"
+    },
+    {
+     "name": "Egg",
+     "doc": "1 when it is an egg.",
+     "word": "egg"
+    },
+    {
+     "name": "Moves",
+     "doc": "How many moves it knows.",
+     "word": "moves"
+    },
+    {
+     "name": "Friendship",
+     "doc": "Its friendship (the layout's custom role friendship; 0 without one).",
+     "word": "friendship"
+    }
+   ],
+   "count": {
+    "name": "NUM_MEMBER_FIELDS",
+    "doc": "Number of fields."
    }
   }
  ],
@@ -2457,6 +2515,12 @@
      "type": "int",
      "value": "2",
      "doc": "C8: party give's result: nowhere had room (or it could not be built)."
+    },
+    {
+     "name": "kNoMember",
+     "type": "int",
+     "value": "255",
+     "doc": "C13: party count alive's slot when it leaves no member out (past every party slot)."
     },
     {
      "name": "kMaxStats",
