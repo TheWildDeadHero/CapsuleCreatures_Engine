@@ -542,6 +542,52 @@ class BattleSetupStatements(unittest.TestCase):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 
+class PlotStatements(unittest.TestCase):
+   """M6a K2: plot <id> plant <crop>; plot <id> water|clear; plot <id> pick|stage|crop|yield -> var(v)."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """The op, the kind, the result (pick and after), the plot, the crop (plant)."""
+      end = bytes([sc.OP["End"]])
+      var = self.code("var(v) = 0;")[1:1 + VAR_ID_BYTES]
+      three = self.code("var(v) += 3;")[1 + VAR_ID_BYTES:-1]   # the operand 3
+      two = self.code("var(v) += 2;")[1 + VAR_ID_BYTES:-1]
+      by_var = self.code("var(v) += var(v);")[1 + VAR_ID_BYTES:-1]   # the operand var(v)
+      op = sc.OP["Plot"]
+      self.assertEqual(self.code("plot 3 plant 2;"), bytes([op, sc.PLOT_KINDS.index("plant")]) + three + two + end)
+      for kind in ("water", "clear"):
+         self.assertEqual(self.code(f"plot 3 {kind};"), bytes([op, sc.PLOT_KINDS.index(kind)]) + three + end)
+      for kind in ("pick", "stage", "crop", "yield"):
+         self.assertEqual(self.code(f"plot var(v) {kind} -> var(v);"),
+                          bytes([op, sc.PLOT_KINDS.index(kind)]) + var + by_var + end)
+
+   def test_names(self) -> None:
+      """A place's name is its id and a crop's id its index + 1 (the world's plots); other names stay constants."""
+      m = {"schema": "capsule.scripts/1", "sources": ["main.cscript"]}
+      text = "var v : u16;\nscript s { plot far plant bar; plot near plant drop; }"
+      comp = sc.Compiler(m, sources={"main.cscript": text})
+      comp.world_field = {"plots": {"places": ["near", "far"], "crops": ["drop", "bar"]}}
+      comp.run()
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      self.assertEqual(comp.result["code"][o:o + n], self.code("plot 1 plant 2; plot 0 plant 1;"))
+      self.assertTrue(errors(compile_text("script s { plot far water; }")))   # no such constant without the world
+
+   def test_refusals(self) -> None:
+      """A query without its result, a plant without its crop, a water with a result."""
+      for body in ("plot 3 pick;", "plot 3 plant;", "plot 3 water -> var(v);", "plot 3 stage var(v);"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
+
 class ClockStatements(unittest.TestCase):
    """M6a K1: clock hour|weekday|season|days -> var(v), clock wait <hours> -> var(v), clock reset."""
 

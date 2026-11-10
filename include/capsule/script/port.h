@@ -320,6 +320,14 @@ bool clock_wait(int32_t hours);
 /// M6a K1: the world clock back to the real-time clock (Clock Reset: clock::reset_wait()).
 void clock_reset();
 
+/// M6a K2: a plot operation (Plot; the engine library's default: capsule/plots/plots.h, src/script/script_plot.cpp;
+/// a program without it: nothing, 0, src/script/script_plot_none.cpp).
+/// @param kind  which
+/// @param id    the plot
+/// @param crop  Plant: the crop (index + 1)
+/// @return Pick: the items picked; Stage / Crop / Yield: the value; the others: 0
+int32_t plot_op(PlotOp kind, int32_t id, int32_t crop);
+
 /// C12: shows the shown map's name banner (MapView Banner; the default, capsule::overworld: the location banner a map
 /// shows on arrival, when the map has a location).
 void show_map_banner();

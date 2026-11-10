@@ -496,6 +496,14 @@ PARTY_NO_MEMBER = VM.constants["kNoMember"]
 CLOCK_WORD = "clock"
 ## M6a K1: their kinds (capsule::script::ClockOp, in order).
 CLOCK_KINDS = VM.words("ClockOp")
+## M6a K2: the statement word of the plot statements (`plot <id> <kind> ...;`).
+PLOT_WORD = "plot"
+## M6a K2: their kinds (capsule::script::PlotOp, in order).
+PLOT_KINDS = VM.words("PlotOp")
+## M6a K2: the kinds that answer into a variable (Pick and after: capsule::script::Op::Plot).
+PLOT_ANSWERS = PLOT_KINDS[PLOT_KINDS.index("pick"):]
+## M6a K2: tokens of a `var(name)` operand (where a plot statement's kind follows it).
+VAR_OPERAND_TOKENS = 4
 ## C13: the statement word of `member <slot> <field> -> var(v);`.
 MEMBER_WORD = "member"
 ## C13: `member`'s fields (capsule::script::MemberField, in order).
@@ -1073,7 +1081,8 @@ def load_world_field(path: str | PathLike[str]) -> dict[str, Any]:
            (map_compiler.compile_flight_points()), "escape" (bool), the field effects: "darkness_levels" (the world's
            darkest level), "dark" (bool: a map starts dark), the doors: "override_sets" (every map's set names in the
            world's order: `override` statements' set ids), "override_persist" ([("flag" | "var", name)] the sets persist
-           through: used names)}
+           through: used names), M6a K2: "plots" ({"places": place names, "crops": crop ids}: `plot` statements'
+           names)}
    @throws ScriptError for a world whose lists are invalid
    """
    import map_compiler as mc
@@ -1089,6 +1098,9 @@ def load_world_field(path: str | PathLike[str]) -> dict[str, Any]:
              "darkness_levels": len(mc.darkness_levels(w)), "dark": False}
    except mc.ManifestError as e:
       raise ScriptError(f"{path.name}: {e}") from None
+   plots = w.get("plots") if isinstance(w.get("plots"), dict) else {}   # M6a K2: the names plot statements use
+   out["plots"] = {"places": [str(pl.get("name")) for pl in plots.get("places", []) if isinstance(pl, dict)],
+                   "crops": [str(c.get("id")) for c in plots.get("crops", []) if isinstance(c, dict)]}
    out["override_sets"] = []   # every map's override sets, in the world's order (map::kWorld.override_sets)
    out["override_persist"] = []   # ("flag" | "var", name) of the sets that persist
    for rel in maps.values():
@@ -2135,6 +2147,17 @@ class Parser:
             result = self.var_ref().text
          self.expect(";")
          return Node("clock", t, kind=kind, hours=hours, result=result)
+      if self.at(PLOT_WORD) and self.peek(1 + (VAR_OPERAND_TOKENS if nxt.text == "var" else 1)).text in PLOT_KINDS:
+         self.take()   # M6a K2: `plot <id> <kind> [<crop>] [-> var(v)];`
+         plot = self.operand()
+         kind = self.take().text
+         crop = self.operand() if kind == "plant" else None
+         result = None
+         if kind in PLOT_ANSWERS:
+            self.expect("->")
+            result = self.var_ref().text
+         self.expect(";")
+         return Node("plot", t, kind=kind, plot=plot, crop=crop, result=result)
       if self.at(PICTURE_WORD) and nxt.text in PICTURE_KINDS:   # C12
          self.take()
          kind = self.take().text
@@ -4202,6 +4225,15 @@ class Compiler:
          if s["hours"] is not None:
             self.emit_operand(e, s["hours"])
          return True
+      if k == "plot":   # M6a K2: the kind, [the result], the plot, [the crop]
+         e.op("Plot")
+         e.u8(PLOT_KINDS.index(s["kind"]))
+         if s["result"] is not None:
+            e.u16(self.var_id(s["result"], s))
+         self.emit_operand(e, self.plot_name(s["plot"], "places"))
+         if s["crop"] is not None:
+            self.emit_operand(e, self.plot_name(s["crop"], "crops"))
+         return True
       if k == "picture":   # C12
          e.op("Picture")
          e.u8(PICTURE_KINDS.index(s["kind"]))
@@ -4593,6 +4625,21 @@ class Compiler:
          ctx["waits"] = True
          return True
       return None
+
+   def plot_name(self, node: Node, kind: str) -> Node:
+      """!M6a K2: a plot statement's plot or crop: a name of the world's plots (a place's name: its id; a crop's id:
+      its index + 1) as a constant, or the operand as it is (a number, a script constant, var(...)).
+      @param node  the operand
+      @param kind  "places" or "crops"
+      @return the operand to emit
+      """
+      if node["k"] != "constname" or node["name"] in self.consts:
+         return node
+      names = ((self.world_field or {}).get("plots") or {}).get(kind, [])
+      if node["name"] not in names:
+         return node   # emit_operand() reports the unknown constant
+      value = names.index(node["name"]) + (1 if kind == "crops" else 0)   # crops count from 1 (0: none)
+      return Node("num", Token("number", str(value), node["line"], node["col"]), value=value)
 
    def emit_item(self, e: Emitter, item: Node, s: Node) -> None:
       """!Emits an item operand: an item name of the battle manifest (its id as a constant) or an operand.

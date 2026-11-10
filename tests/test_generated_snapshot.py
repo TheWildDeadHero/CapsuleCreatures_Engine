@@ -1246,6 +1246,17 @@ CLOCK_CHANGES = {**{name: CLOCK_WORLD_REASON for name in ("sandbox_map/world.cpp
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in CLOCK_CHANGES.items()})
 
+## Why the outputs changed for M6a K2's plots (every generated world includes the plots and field headers and defines
+## plots::data(); the test scripts gain the plot statements).
+PLOTS_WORLD_REASON = "Every generated world defines plots::data() (M6a K2: nullptr without plots)"
+PLOTS_SCRIPT_REASON = "The test scripts gain M6a K2's plot statements"
+## The files M6a K2 changed, and why.
+PLOTS_CHANGES = {**{name: PLOTS_WORLD_REASON for name in ("sandbox_map/world.cpp", "sandbox_screen/world.cpp",
+                                                           "test_world.cpp")},
+                 **{name: PLOTS_SCRIPT_REASON for name in ("test_script.cpp", "test_script_ids.h")}}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in PLOTS_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

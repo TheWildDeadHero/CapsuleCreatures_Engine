@@ -105,6 +105,22 @@ World (`capsule.world/1`):
     section and the game gets time_of_day() and minutes() from the clocks
     (weak: a game's own win). The generated world always defines
     clock::settings() (nullptr without a clock).
+  - plots (optional, M6a K2; B-5): soil, pots and trees that grow a crop on
+    the economy clock (capsule/plots/plots.h): {"storage": "engine"
+    (default: the save keeps a record per place) or "game" (the game keeps
+    its own), "types": [{"id", "stages": 1-8, "water": bool (watering counts
+    toward the yield), "ripe_hours": hours ripe before it regrows (0: until
+    picked), "regrow": cycles it regrows, "replant": bool (picking plants it
+    again: a tree), "sprite": "sprite:NAME" (an empty plot; absent:
+    nothing)}], "crops": [{"id", "item": an item of the world's battle data
+    (or its id), "type", "stage_hours", "yield": n or [min, max] (watered
+    every stage), "sprite": "sprite:NAME" (animation n: stage n, then
+    ripe)}], "places": [{"map", "object": local ID or name, "type", "name"
+    (optional: scripts' `plot NAME ...`), "start": a crop (optional: planted
+    ripe in a new game)}] in the world's map order, then local ID; a plot's
+    id is its place's index}. The generated world always defines
+    plots::data() (nullptr without plots) and, with places,
+    field::game::object_look() (the objects show their plots).
 
 Tileset (`capsule.tileset/2`):
   - sheets: 8x8-tile sources, each drawn from shapes ("size" + "shapes",
@@ -458,6 +474,18 @@ CLOCK_SEASON_MODES = ("fixed_days", "calendar_month")
 CLOCK_UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
 ## M6a K1: the longest cooldown (a u32 of seconds).
 CLOCK_MAX_COOLDOWN = 0xFFFFFFFF
+## M6a K2: the plots' storages (world.json "plots" "storage"): the engine's records (the default) or the game's.
+PLOT_STORAGES = ("engine", "game")
+## M6a K2: the most stages a plot type has (capsule::plots::kMaxStages: a watering bit each).
+PLOT_MAX_STAGES = 8
+## M6a K2: the largest hours, cycles and yields (their fields' widths: 16 bits, 8 bits).
+PLOT_MAX_HOURS, PLOT_MAX_BYTE = 0xFFFF, 0xFF
+## M6a K2: the most crops and places (16-bit ids; capsule::plots::kNoPlot is none).
+PLOT_MAX_IDS = 0xFFFE
+## M6a K2: a crop's yield range: [min, max].
+PLOT_YIELD_BOUNDS = 2
+## M6a K2: the most map objects a map has (local IDs are 8 bits).
+PLOT_MAX_LOCAL = 0xFF
 ## M6a K1: the longest season (a u16 of days).
 CLOCK_MAX_SEASON_DAYS = 0xFFFF
 ## World's override set pointers (sets, cells, entries) before their count.
@@ -505,12 +533,16 @@ KEYS = {
              "start",
              "map_groups", "battle", "encounter_methods", "encounter_conditions", "encounter_tables", "scripts",
              "step_hooks", "transition", "banner_styles", "locations", "object_kinds", "map_tags", "flight_points",
-             "darkness_levels", "draw_order", "doors", "interactions", "spotters", "clock"},
+             "darkness_levels", "draw_order", "doors", "interactions", "spotters", "clock", "plots"},
    "spotters": {"script", "positions", "order"},
    "clock": {"periods", "start", "wait", "seasons"},
    "clock_start": {"hour", "weekday"},
    "clock_wait": {"cooldown", "max_hours_per_use"},
    "clock_seasons": {"names", "mode", "length_days"},
+   "plots": {"storage", "types", "crops", "places"},
+   "plot_type": {"id", "stages", "water", "ripe_hours", "regrow", "replant", "sprite"},
+   "plot_crop": {"id", "item", "type", "stage_hours", "yield", "sprite"},
+   "plot_place": {"map", "object", "type", "name", "start"},
    "interaction": {"behavior", "script", "facing", "vehicle", "flag", "same_level", "after_actions"},
    "draw_order": {"elevation_base", "bias", "row_pixels", "rows", "row_step", "add", "wrap"},
    "door_binding": {"tileset", "metatile", "door"},
@@ -2116,6 +2148,7 @@ def compile_world(path: str | Path, deps: list[Path] | None = None, sources: Sou
    interactions = compile_interactions(w, by_name, classes, world_events["names"])
    spotters = compile_spotters(w, world_events["names"])
    clock = compile_clock(w)
+   plots = compile_plots(w, base, [mp["name"] for mp in maps], world_events["objects"], list(map_paths))
    sets = resolve_override_sets(maps, world_events["names"])
    return {"behaviors": behs, "behavior_walls": walls, "classes": classes, "vehicles": vehicles,
            "elevations": elevations, "maps": maps,
@@ -2123,7 +2156,7 @@ def compile_world(path: str | Path, deps: list[Path] | None = None, sources: Sou
            "tilesets": tilesets, "encounters": encounters, "events": world_events,
            "map_names": list(map_paths), "locations": locations, "draw_order": draw_order, "doors": doors,
            "override_sets": sets, "interactions": interactions, "spotters": spotters, "clock": clock,
-           "target_saved": sum(ts.target_saved for ts in tilesets.values())}
+           "plots": plots, "target_saved": sum(ts.target_saved for ts in tilesets.values())}
 
 
 def compile_interactions(w: Mapping[str, Any], behaviors: Mapping[str, int], classes: Sequence[str],
@@ -2284,6 +2317,206 @@ def emit_clock(clock: Mapping[str, Any] | None) -> list[str]:
    return L
 
 
+def plot_flag(value: Any, where: str) -> int:
+   """!M6a K2: a plot type's true / false (as the 0 or 1 its field holds).
+   @param value  the manifest's value
+   @param where  for errors
+   @return 0 or 1
+   """
+   if not isinstance(value, bool):
+      raise ManifestError(f"{where}: true or false")
+   return int(value)
+
+
+def plot_sprite(value: Any, where: str) -> int:
+   """!M6a K2: a plot's sprite reference ("sprite:NAME") as its asset key.
+   @param value  the manifest's value
+   @param where  for errors
+   @return the key
+   """
+   if not isinstance(value, str) or not value.startswith("sprite:"):
+      raise ManifestError(f"{where}: a sprite asset reference, 'sprite:NAME'")
+   try:
+      return asset_key(value, where)
+   except SequenceManifestError as e:
+      raise ManifestError(str(e)) from None
+
+
+def plot_ids(entries: Any, kind: str, where: str, limit: int) -> list[str]:
+   """!M6a K2: a plots list's entries checked and their distinct ids.
+   @param entries  the list
+   @param kind     its entries' key set (KEYS)
+   @param where    for errors
+   @param limit    the most entries
+   @return the ids, in order
+   """
+   if not isinstance(entries, list) or len(entries) > limit:
+      raise ManifestError(f"{where}: a list of up to {limit}")
+   for i, e in enumerate(entries):
+      check_keys(e, kind, f"{where} {i}")
+      if not isinstance(e.get("id"), str) or not e["id"]:
+         raise ManifestError(f"{where} {i}: needs an id")
+   ids = [e["id"] for e in entries]
+   if len(set(ids)) != len(ids):
+      raise ManifestError(f"{where}: ids must be distinct")
+   return ids
+
+
+def plot_items(w: Mapping[str, Any], base: Path) -> list[str] | None:
+   """!M6a K2: the item names of the world's battle data (crops name their items), or None without one.
+   @param w     the world manifest
+   @param base  the world's folder
+   @return the names in id order from 1
+   """
+   if not isinstance(w.get("battle"), str):
+      return None
+   import script_compiler as sc
+   try:
+      return sc.load_inventory_names(base / w["battle"])[0]
+   except sc.ScriptError as e:
+      raise ManifestError(f"world plots: {e.message}") from None
+
+
+def compile_plots(w: Mapping[str, Any], base: Path, map_names: Sequence[str], objects: Mapping[str, Any],
+                  world_maps: Sequence[str] = ()) -> dict[str, Any] | None:
+   """!M6a K2: the world's "plots" (B-5: capsule/plots/plots.h Data; see the module notes).
+   @param w          the world manifest
+   @param base       the world's folder
+   @param map_names  the compiled maps, in the world's order (map::kWorld.maps)
+   @param objects    the maps' objects (compile_world_events() "objects": {map: {"names": [...]}})
+   @param world_maps every map of the world: places on those not compiled (only_maps) are left out
+   @return {"engine" (bool), "types", "crops", "places" (field dicts, in order), "place_names", "crop_ids"}, or None
+           without plots
+   """
+   if "plots" not in w:
+      return None
+   pl = w["plots"]
+   where = "world plots"
+   check_keys(pl, "plots", where)
+   storage = pl.get("storage", PLOT_STORAGES[0])
+   if storage not in PLOT_STORAGES:
+      raise ManifestError(f"{where}: storage must be one of {', '.join(PLOT_STORAGES)}")
+   type_ids = plot_ids(pl.get("types", []), "plot_type", f"{where} type", PLOT_MAX_BYTE)
+   if not type_ids:
+      raise ManifestError(f"{where}: needs a type")
+   types = []
+   for t in pl["types"]:
+      at = f"{where} type {t['id']!r}"
+      types.append({"stages": integer(t.get("stages"), 1, PLOT_MAX_STAGES, f"{at} stages"),
+                    "water": plot_flag(t.get("water", False), f"{at} water"),
+                    "ripe_hours": integer(t.get("ripe_hours", 0), 0, PLOT_MAX_HOURS, f"{at} ripe_hours"),
+                    "regrow": integer(t.get("regrow", 0), 0, PLOT_MAX_BYTE, f"{at} regrow"),
+                    "replant": plot_flag(t.get("replant", False), f"{at} replant"),
+                    "sprite": plot_sprite(t["sprite"], f"{at} sprite") if "sprite" in t else 0})
+   crop_ids = plot_ids(pl.get("crops", []), "plot_crop", f"{where} crop", PLOT_MAX_IDS)
+   items = plot_items(w, base) if any(isinstance(c.get("item"), str) for c in pl.get("crops", [])) else None
+   crops = []
+   for c in pl.get("crops", []):
+      at = f"{where} crop {c['id']!r}"
+      item = c.get("item")
+      if isinstance(item, str):
+         if items is None or item not in items:
+            raise ManifestError(f"{at}: item {item!r} is no item of the world's battle data")
+         item = items.index(item) + 1   # item ids count from 1 (0: none)
+      else:
+         item = integer(item, 1, PLOT_MAX_HOURS, f"{at} item")
+      if c.get("type") not in type_ids:
+         raise ManifestError(f"{at}: unknown type {c.get('type')!r}")
+      y = c.get("yield", 1)
+      lo, hi = (y, y) if not isinstance(y, list) else (tuple(y) if len(y) == PLOT_YIELD_BOUNDS else (None, None))
+      lo = integer(lo, 0, PLOT_MAX_BYTE, f"{at} yield")
+      hi = integer(hi, lo, PLOT_MAX_BYTE, f"{at} yield (its maximum is at least its minimum)")
+      crops.append({"item": item, "type": type_ids.index(c["type"]),
+                    "stage_hours": integer(c.get("stage_hours"), 1, PLOT_MAX_HOURS, f"{at} stage_hours"),
+                    "yield_min": lo, "yield_max": hi, "sprite": plot_sprite(c.get("sprite"), f"{at} sprite")})
+   raw = pl.get("places", [])
+   if not isinstance(raw, list) or len(raw) > PLOT_MAX_IDS:
+      raise ManifestError(f"{where}: places is a list of up to {PLOT_MAX_IDS}")
+   raw = [p for p in raw if not (isinstance(p, dict) and p.get("map") in world_maps and p["map"] not in map_names)]
+   places = []
+   names: list[str] = []
+   for i, p in enumerate(raw):
+      at = f"{where} place {i}"
+      check_keys(p, "plot_place", at)
+      if p.get("map") not in map_names:
+         raise ManifestError(f"{at}: unknown map {p.get('map')!r}")
+      local = p.get("object")
+      on_map = (objects.get(p["map"]) or {}).get("names", [])
+      if isinstance(local, str):
+         if local not in on_map:
+            raise ManifestError(f"{at}: map {p['map']!r} has no object {local!r}")
+         local = on_map.index(local)
+      else:
+         local = integer(local, 0, PLOT_MAX_LOCAL, f"{at} object")
+         if local >= len(on_map):
+            raise ManifestError(f"{at}: map {p['map']!r} has no object {local}")
+      if p.get("type") not in type_ids:
+         raise ManifestError(f"{at}: unknown type {p.get('type')!r}")
+      start = 0
+      if "start" in p:
+         if p["start"] not in crop_ids:
+            raise ManifestError(f"{at}: unknown start crop {p['start']!r}")
+         start = crop_ids.index(p["start"]) + 1   # crops count from 1 (0: none)
+         if crops[start - 1]["type"] != type_ids.index(p["type"]):
+            raise ManifestError(f"{at}: start crop {p['start']!r} is of another type")
+      name = p.get("name")
+      if name is not None and (not isinstance(name, str) or not name or name in names):
+         raise ManifestError(f"{at}: name must be a distinct name")
+      names.append(name if name is not None else "")
+      places.append({"map": map_names.index(p["map"]), "local": local, "type": type_ids.index(p["type"]),
+                     "start": start, "where": f"{p['map']} object {local}"})
+   keys = [(q["map"], q["local"]) for q in places]
+   if keys != sorted(set(keys)):
+      raise ManifestError(f"{where}: places are listed in the world's map order, then local ID, each object once "
+                          "(a plot's id is its place's index)")
+   return {"engine": storage == PLOT_STORAGES[0], "types": types, "crops": crops, "places": places,
+           "place_names": names, "crop_ids": crop_ids}
+
+
+def emit_plots(plots: Mapping[str, Any] | None) -> list[str]:
+   """!M6a K2: the world's plots and plots::data() (nullptr without plots); with places, also
+   field::game::object_look() (plots::look(): the plots' objects show their crops).
+   @param plots  compile_plots() result, or None
+   @return the source lines
+   """
+   L = ["", "namespace capsule::plots {", ""]
+   if plots is None:
+      L += ["const Data* data()", "{", "   return nullptr;   // the world declares no plots", "}",
+            "", "} // namespace capsule::plots", ""]
+      return L
+   types, crops, places = plots["types"], plots["crops"], plots["places"]
+   L += ["namespace {", "", "// sprite, ripe hours, stages, regrow cycles, water, replant",
+         "const TypeData kPlotTypes[] = {"]
+   L += [f"    {{AssetKey{{0x{t['sprite']:08X}u}}, {t['ripe_hours']}, {t['stages']}, {t['regrow']}, {t['water']}, "
+         f"{t['replant']}, {{}}}}," for t in types]
+   L += ["};"]
+   crops_sym = "nullptr"
+   if crops:
+      crops_sym = "kPlotCrops"
+      L += ["// sprite, item, stage hours, type, yield min, max", "const CropData kPlotCrops[] = {"]
+      L += [f"    {{AssetKey{{0x{c['sprite']:08X}u}}, {c['item']}, {c['stage_hours']}, {c['type']}, "
+            f"{c['yield_min']}, {c['yield_max']}, {{}}}},   // {cid}" for c, cid in zip(crops, plots["crop_ids"])]
+      L += ["};"]
+   places_sym = records = "nullptr"
+   if places:
+      places_sym = "kPlotPlaces"
+      L += ["// map, local ID, type, start crop", "const Place kPlotPlaces[] = {"]
+      L += [f"    {{{q['map']}, {q['local']}, {q['type']}, {q['start']}, {{}}}},   // {i}: {q['where']}"
+            for i, q in enumerate(places)]
+      L += ["};"]
+      if plots["engine"]:
+         records = "g_plot_records"
+         L += [f"PlotRecord g_plot_records[{len(places)}];   // the save's Plots section"]
+   L += [f"const Data kPlots = {{kPlotTypes, {crops_sym}, {places_sym}, {len(types)}, {len(crops)}, {len(places)}, "
+         f"{records}}};", "", "} // namespace", "",
+         "const Data* data()", "{", "   return &kPlots;", "}", "", "} // namespace capsule::plots", ""]
+   if places:
+      L += ["namespace capsule::field::game {", "",
+            "bool object_look(uint16_t map, uint8_t local, AssetKey& sprite, uint8_t& anim)", "{",
+            "   return plots::look(map, local, sprite, anim);", "}", "", "} // namespace capsule::field::game", ""]
+   return L
+
+
 def resolve_override_sets(maps: Sequence[dict[str, Any]], names: Any) -> list[dict[str, Any]]:
    """!every map's override sets as the world's list (map order, then the map's order), their names unique the
    world over (scripts name them) and their flags and variables resolved.
@@ -2325,7 +2558,8 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
    @return the source text
    """
    L = [f"// Generated by tools/map_compiler.py from {src_name}. Do not edit.",
-        '#include "capsule/map/map.h"', '#include "capsule/core/clock.h"', '#include "capsule/core/memory.h"', "",
+        '#include "capsule/map/map.h"', '#include "capsule/core/clock.h"', '#include "capsule/core/memory.h"',
+        '#include "capsule/field/field.h"', '#include "capsule/plots/plots.h"', "",
         "namespace capsule::map {", "namespace {", "",
         "using hal::video::Color;", ""]
 
@@ -2514,6 +2748,7 @@ def emit(src_name: str, world: Mapping[str, Any], debug_names: bool = False) -> 
          f"{ds1}}};",
          "", "} // namespace capsule::map", ""]
    L.extend(emit_clock(world.get("clock")))   # M6a K1
+   L.extend(emit_plots(world.get("plots")))   # M6a K2
    L.extend(lc.emit(world["locations"], ac.words_4bpp))
    return "\n".join(L)
 

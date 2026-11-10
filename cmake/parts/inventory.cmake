@@ -50,4 +50,6 @@ set(CAPSULE_SCRIPT_ITEMS_SOURCES
    src/script/script_party_none.cpp
    src/script/script_party_stash.cpp
    # M6a K1: the Clock statements' port without the engine library's clocks
-   src/script/script_clock_none.cpp)
+   src/script/script_clock_none.cpp
+   # M6a K2: the Plot statements' port without the engine library's plots
+   src/script/script_plot_none.cpp)

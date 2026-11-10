@@ -14,7 +14,10 @@ Sections (most bytes; each section carries its own shape, so a save survives man
     left, its gained experience) and its record (written: the used ones), then the waiting result's record;
     absent without a nursery;
   - Clock (M6a K1): 14 (the economy seconds, the latest RTC time seen, the last Wait, the Wait offset, the flags);
-    absent unless the world declares a clock (--world).
+    absent unless the world declares a clock (--world);
+  - Plots (M6a K2): 2 (record count), then 10 per plot place (the planting time, the crop, the watering bits, the
+    cycle, the stages planted ahead, the modifier); absent unless the world declares plots the engine keeps
+    (--world; "storage": "game" keeps none).
 The image adds a 32-byte header and 12 bytes per section in its table.
 
 Media (C6, review4 finding 4): "gba" is the cartridge's 64 KB flash (4 KB sectors, each copy whole sectors),
@@ -75,11 +78,17 @@ SUB_BANK_HEAD_BYTES = 7
 ## Bits per byte of the storage's used bits (capsule::storage::kUsedBitsPerByte).
 USED_BITS_PER_BYTE = 8
 ## Section names in id order (capsule::save::Section).
-SECTIONS = ("bag", "party", "boxes", "script", "nursery", "game", "clock")
+SECTIONS = ("bag", "party", "boxes", "script", "nursery", "game", "clock", "plots")
 ## Each section's version (src/save/save.cpp k*Version).
-SECTION_VERSIONS = {"bag": 1, "party": 1, "boxes": 1, "script": 1, "nursery": 1, "game": 1, "clock": 1}
+SECTION_VERSIONS = {"bag": 1, "party": 1, "boxes": 1, "script": 1, "nursery": 1, "game": 1, "clock": 1, "plots": 1}
 ## M6a K1: the Clock section's bytes (capsule::save::kClockBytes).
 CLOCK_BYTES = 14
+## M6a K2: the Plots section's head (capsule::save::kPlotsHeadBytes: the record count).
+PLOTS_HEAD_BYTES = 2
+## M6a K2: a plot record's bytes in the image (capsule::plots::kRecordBytes).
+PLOT_RECORD_BYTES = 10
+## M6a K2: the plots' storage that keeps no engine records (world.json "plots" "storage").
+PLOTS_GAME_STORAGE = "game"
 ## N3: the Game section's head: the game's version of its block (2) and its bytes (4).
 GAME_HEAD_BYTES = 6
 ## Copies the medium keeps at most.
@@ -155,14 +164,15 @@ def script_bytes(banks: Sequence[Mapping[str, Any]]) -> int:
 
 
 def sections_of(compiled: Mapping[str, Any], banks: Sequence[Mapping[str, Any]] = (),
-                game_bytes: int = 0, clock: bool = False) -> dict[str, int]:
+                game_bytes: int = 0, clock: bool = False, plots: int = 0) -> dict[str, int]:
    """!The most bytes of each section of a compiled battle and its scripts.
    @param compiled    bc.compile_battle() result
    @param banks       script_banks() result
    @param game_bytes  N3: the game's block (capsule::save::game_block_bytes()), 0 without one
    @param clock       M6a K1: the world declares a clock
+   @param plots       M6a K2: the world's plot places the engine keeps records for (0: none)
    @return {section: bytes} in id order (0: no such section; "game" only with a game block, "clock" only with a
-           clock)
+           clock, "plots" only with engine plot records)
    """
    inv = compiled["inventory"]
    lay = compiled["layout"]
@@ -175,6 +185,8 @@ def sections_of(compiled: Mapping[str, Any], banks: Sequence[Mapping[str, Any]] 
       out["game"] = GAME_HEAD_BYTES + game_bytes
    if clock:
       out["clock"] = CLOCK_BYTES
+   if plots:
+      out["plots"] = PLOTS_HEAD_BYTES + plots * PLOT_RECORD_BYTES
    return out
 
 
@@ -187,6 +199,21 @@ def world_has_clock(world: str | Path | None) -> bool:
    if world is None:
       return False
    return "clock" in json.loads(Path(world).read_text(encoding="utf-8"))
+
+
+def world_plot_places(world: str | Path | None) -> int:
+   """!M6a K2: the plot places a world manifest declares records for (its save then has the Plots section).
+   @param world  world.json, or None
+   @return places (0: no plots, or "storage": "game")
+   @throws OSError, json.JSONDecodeError for an unreadable manifest
+   """
+   if world is None:
+      return 0
+   plots = json.loads(Path(world).read_text(encoding="utf-8")).get("plots")
+   if not isinstance(plots, dict) or plots.get("storage") == PLOTS_GAME_STORAGE:
+      return 0
+   places = plots.get("places", [])
+   return len(places) if isinstance(places, list) else 0
 
 
 def nursery_bytes(compiled: Mapping[str, Any]) -> int:
@@ -240,7 +267,7 @@ def layout(battle: str | Path, scripts: str | Path | None = None, platform: str 
    @param scripts      the scripts manifest, or None
    @param platform     a save platform (medium(); None: the GBA's flash)
    @param single_copy  the game opts in to one copy
-   @param world        M6a K1: the world manifest (its clock), or None
+   @param world        M6a K1: the world manifest (its clock; M6a K2: its plots), or None
    @return {"sections": {name: bytes}, "image": bytes, "budget": the medium's bytes, "unit": its erase unit,
            "slot": a copy's slot, "copies": copies it holds, "platform": name, "single_copy", "unrecorded": the
            script sub-banks whose save shape the game's save history lacks (C7), "ok": the image fits, enough
@@ -253,7 +280,7 @@ def layout(battle: str | Path, scripts: str | Path | None = None, platform: str 
    comp = compile_scripts(scripts) if scripts is not None else None
    banks = save_shape.shapes(comp) if comp is not None else []
    unrecorded = save_shape.unrecorded(comp, comp.save_history) if comp is not None else []
-   sections = sections_of(compiled, banks, clock=world_has_clock(world))
+   sections = sections_of(compiled, banks, clock=world_has_clock(world), plots=world_plot_places(world))
    size = image_bytes(sections)
    copies = copies_of(size, budget, unit)
    needed = 1 if single_copy else REQUIRED_COPIES

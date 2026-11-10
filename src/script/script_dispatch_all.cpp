@@ -114,6 +114,7 @@ const OpHandler kModuleOps[kOpCount] = {
    nullptr,           // 103 Screen
    op_member,         // 104 Member
    nullptr,           // 105 Clock
+   nullptr,           // 106 Plot
 };
 
 /// The module waits by wait kind (nullptr: not a module wait, or one no op of the table sets).

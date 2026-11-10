@@ -41,6 +41,9 @@
 ///       read is refused (OtherShape: the game migrates its own blocks before it asks again);
 ///     - Clock (M6a K1): capsule::clock::Saved (kClockBytes, little-endian). Loading copies it; the game then calls
 ///       clock::resume(). An image without it (a world that had no clock) loads Saved{} (the economy clock at 0);
+///     - Plots (M6a K2): the record count (2), then each capsule::plots::PlotRecord (plots::kRecordBytes). Loading
+///       copies the records the build has places for (plot ids are place indices) and empties the rest; a record
+///       of a crop the build does not have loads empty. Present when the world keeps engine plot records;
 ///   A section the image does not have loads empty (an older build without boxes: no boxed records; N3: a game
 ///   block of zeros).
 ///
@@ -72,6 +75,7 @@
 #include "capsule/core/clock.h"
 #include "capsule/inventory/bag.h"
 #include "capsule/monster/monster.h"
+#include "capsule/plots/plots.h"
 #include "capsule/script/field_effects.h"
 #include "capsule/script/script.h"
 #include "capsule/script/step_effects.h"
@@ -104,6 +108,7 @@ inline constexpr uint32_t kGameHeadBytes = 6;         ///< Game (N3): the block'
 /// M6a K1: Clock: the economy seconds (4), the latest RTC time seen (4), the last Wait (4), the Wait offset (1), the
 /// flags (1).
 inline constexpr uint32_t kClockBytes = 14;
+inline constexpr uint32_t kPlotsHeadBytes = 2;      ///< M6a K2: Plots: the record count.
 ///@}
 
 /// The save budget of this platform (build_settings PLATFORM_LIMITS max_save_bytes; tools/save_layout.py media).
@@ -125,10 +130,13 @@ enum class Section : uint8_t
    Nursery,      ///< The nursery's slots and waiting result (B2; absent without a nursery).
    Game,         ///< N3: the game's own block (absent when the game has none: game_block_bytes() is 0).
    Clock,        ///< M6a K1: the clock's saved state (absent when the world declares no clock: clock::settings()).
+   Plots,        ///< M6a K2: the plots' records (absent without engine plot records: plots::data()). The table's
+                 ///< last free entry (kMaxSections).
    NUM_SECTIONS  ///< Number of sections.
 };
 /// Number of sections.
 inline constexpr int kSectionCount = static_cast<int>(Section::NUM_SECTIONS);
+static_assert(kSectionCount <= kMaxSections, "the section table holds every section");
 
 /// N3: the game's own block of the image (a game keeps state the engine's sections do not hold, e.g. its own party
 /// and boxes): its bytes as they are, with the game's version of their layout. Its size is game_block_bytes().
@@ -150,6 +158,7 @@ struct Sources
    combine::nursery::State* nursery;   ///< The nursery (B2; combine::nursery::state()), or nullptr.
    GameBlock game = {};          ///< N3: the game's block, or none.
    clock::Saved* clock = nullptr;   ///< M6a K1: the clock's state (clock::saved(); commit() it first), or nullptr.
+   plots::PlotRecord* plots = nullptr;   ///< M6a K2: the plots' records (plots::data()->records), or nullptr.
 };
 
 /// N3: the bytes of the game's block in this build (the game defines it; the engine's default: 0, no Game section).

@@ -113,7 +113,7 @@ class ClockSaveLayoutTests(unittest.TestCase):
 
    def test_section(self) -> None:
       """The section's bytes only with a clock; the section list keeps the engine's id order."""
-      self.assertEqual(sl.SECTIONS[-1], "clock")
+      self.assertEqual(sl.SECTIONS[-2:], ("clock", "plots"))
       self.assertEqual(sl.CLOCK_BYTES, 14)
       with tempfile.TemporaryDirectory() as tmp:
          with_clock = Path(tmp) / "with.json"

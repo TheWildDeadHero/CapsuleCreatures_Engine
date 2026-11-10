@@ -278,6 +278,9 @@ add_library(capsule_engine STATIC
    src/core/clock.cpp
    src/script/script_clock.cpp
    src/hal/common/rtc_calendar.cpp
+   # M6a K2: the plots (capsule/plots/plots.h) and the script Plot statements over them
+   src/plots/plots.cpp
+   src/script/script_plot.cpp
    src/script/script_party_stash.cpp
    src/script/script_port_hal.cpp
    src/text/font.cpp
@@ -603,7 +606,7 @@ function(capsule_game dir)
          list(APPEND save_args --scripts ${dir}/${game_scripts})
          list(APPEND save_depends ${gen}/scripts.cpp)   # likewise the scripts' sources
       endif()
-      if(world)   # M6a K1: a world that declares a clock adds the Clock section
+      if(world)   # M6a K1: a world that declares a clock adds the Clock section (M6a K2: plots, the Plots section)
          list(APPEND save_args --world ${dir}/${world})
          list(APPEND save_depends ${dir}/${world})
       endif()
@@ -1114,6 +1117,7 @@ include(cmake/parts/effect.cmake)   # effect VM
 include(cmake/parts/bench.cmake)    # battle test bench (apps/battle_bench)
 include(cmake/parts/ui.cmake)       # the ui module (menus, lists, key repeat, scroll arrows), its tests, sandbox
 include(cmake/parts/clock.cmake)    # M6a K1: the clocks and the real-time clock HAL, their tests
+include(cmake/parts/plots.cmake)    # M6a K2: the plots, their tests
 include(cmake/parts/screen.cmake)   # full-screen scenes (layers, sprites, tasks, fades, field return)
 include(cmake/parts/vm_ext.cmake)      # VM extension manifests, generated dispatch, checks
 include(cmake/parts/anim.cmake)     # the scene kit's animation-script player, its tests, viewer, sandbox

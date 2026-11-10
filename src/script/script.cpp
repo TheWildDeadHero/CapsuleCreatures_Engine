@@ -633,6 +633,23 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       set_var(v, kind == ClockOp::Wait ? (world::clock_wait(hours) ? 1 : 0) : world::clock_value(kind));
       return Outcome::Continue;
    }
+   case Op::Plot:
+   {
+      // M6a K2: kind8, [Pick..Yield: var16], operand (plot), [Plant: operand (crop)]
+      const auto kind = static_cast<PlotOp>(*p++);
+      const bool answers = kind >= PlotOp::Pick;
+      const VarId v{answers ? load_le16(p) : uint16_t{0}};
+      p += answers ? kU16Bytes : 0;
+      const int32_t id = operand(p);
+      const int32_t crop = kind == PlotOp::Plant ? operand(p) : 0;
+      next();
+      const int32_t answer = world::plot_op(kind, id, crop);
+      if (answers)
+      {
+         set_var(v, answer);
+      }
+      return Outcome::Continue;
+   }
    case Op::Picture:
    {
       // C12: kind8, [Show: operand (species), operand (x), operand (y)]
@@ -1572,6 +1589,7 @@ Outcome execute(Context& c)
    case Op::Picture:
    case Op::Screen:
    case Op::Clock:
+   case Op::Plot:
    case Op::SetMetatile:
    case Op::Respawn:
    case Op::SetWarp:
