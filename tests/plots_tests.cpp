@@ -6,12 +6,14 @@
 ///     over), withering;
 ///   - a tree's replant on picking; planting refused (occupied, another type, no such crop);
 ///   - Wait and an RTC set back change nothing;
+///   - K3: a crop's item, the script port's Item and At kinds;
 ///   - the save's Plots section: a round trip, a crop the build lacks, a world without engine records.
 #include "capsule/core/clock.h"
 #include "capsule/hal/rtc.h"
 #include "capsule/hal/system.h"
 #include "capsule/plots/plots.h"
 #include "capsule/save/save.h"
+#include "capsule/script/port.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -176,6 +178,17 @@ void test_pick()
    CHECK(plots::pick(kFarPlot) == kOranMin && plots::state(kFarPlot) == plots::kStageEmpty);
 }
 
+/// M6a K3: a plot's crop's item; the Item and At kinds through the engine library's script port.
+void test_item()
+{
+   new_game();
+   CHECK(plots::item(kTreePlot) == kItemApple && plots::item(kSoilPlot) == 0);
+   CHECK(plots::plant(kSoilPlot, kOran) && plots::item(kSoilPlot) == kItemOran);
+   using capsule::script::PlotOp;
+   CHECK(capsule::script::world::plot_op(PlotOp::Item, kTreePlot, 0) == kItemApple);
+   CHECK(capsule::script::world::plot_op(PlotOp::At, kSoilLocal, 0) == capsule::script::kNoPlot);   // no map shown
+}
+
 /// Wait moves only the world clock; an RTC set back credits nothing.
 void test_economy_only()
 {
@@ -247,6 +260,7 @@ int main()
    test_start();
    test_growth();
    test_pick();
+   test_item();
    test_economy_only();
    test_save();
    std::printf("plots tests: %d checks, %d failures\n", g_checks, g_failures);

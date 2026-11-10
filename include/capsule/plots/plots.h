@@ -116,6 +116,11 @@ uint8_t state(uint16_t id);
 /// @return crop index + 1, or kNoCrop (empty or withered)
 uint16_t crop(uint16_t id);
 
+/// M6a K3: the item of a plot's crop (follows crop(): a game's own storage too).
+/// @param id  the plot
+/// @return the item (the battle data's id), or 0 (empty)
+uint16_t item(uint16_t id);
+
 /// What picking a plot now would yield.
 /// @param id  the plot
 /// @return items (0 unless ripe)

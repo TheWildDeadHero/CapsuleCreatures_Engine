@@ -2350,6 +2350,22 @@ void test_plot_ops()
    CHECK(script::var(VAR_M_TYPE) == base + static_cast<int32_t>(PlotOp::Yield));
 }
 
+/// M6a K3: a crop's item through the port; `plot at` resolves its object first (none: kNoPlot, no port call).
+void test_plot_kinds()
+{
+   script::clear_all();
+   script::world::g_plot_log[0] = '\0';
+   script::Context c{};
+   script::start(c, SCRIPT_PLOT_KINDS);
+   CHECK(run(c) == 0);
+   CHECK(std::strcmp(script::world::g_plot_log, "7 4 0;8 2 0;") == 0);
+   using script::PlotOp;
+   const int32_t base = script::world::kStubPlotBase;
+   CHECK(script::var(VAR_ANSWER) == base + static_cast<int32_t>(PlotOp::Item));
+   CHECK(script::var(VAR_V16) == base + static_cast<int32_t>(PlotOp::At));
+   CHECK(script::var(VAR_M_SPECIES) == script::kNoPlot);   // no self: no object, no plot
+}
+
 /// C13: the lead, the living members (all, one left out), a member's moves, a type, the lead's species.
 void test_party_members()
 {
@@ -2615,6 +2631,7 @@ int main()
    test_party_members();
    test_clock_ops();
    test_plot_ops();
+   test_plot_kinds();
    test_item_queries();
    test_names();
    test_menus();
