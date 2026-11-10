@@ -570,6 +570,21 @@ class PlotStatements(unittest.TestCase):
          self.assertEqual(self.code(f"plot var(v) {kind} -> var(v);"),
                           bytes([op, sc.PLOT_KINDS.index(kind)]) + var + by_var + end)
 
+   def test_kinds(self) -> None:
+      """M6a K3: `plot <id> item -> var(v)`; `plot at <object> -> var(v)` takes an object (self, player, a local ID)."""
+      end = bytes([sc.OP["End"]])
+      var = self.code("var(v) = 0;")[1:1 + VAR_ID_BYTES]
+      three = self.code("var(v) += 3;")[1 + VAR_ID_BYTES:-1]
+      op = sc.OP["Plot"]
+      self.assertEqual(self.code("plot 3 item -> var(v);"),
+                       bytes([op, sc.PLOT_KINDS.index("item")]) + var + three + end)
+      self.assertEqual(self.code("plot at 3 -> var(v);"), bytes([op, sc.PLOT_KINDS.index("at")]) + var + three + end)
+      self_obj = self.code(f"var(v) += {sc.OBJECT_SELF};")[1 + VAR_ID_BYTES:-1]
+      self.assertEqual(self.code("plot at self -> var(v);"),
+                       bytes([op, sc.PLOT_KINDS.index("at")]) + var + self_obj + end)
+      for body in ("plot at self;", "plot 3 at -> var(v);"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
    def test_names(self) -> None:
       """A place's name is its id and a crop's id its index + 1 (the world's plots); other names stay constants."""
       m = {"schema": "capsule.scripts/1", "sources": ["main.cscript"]}

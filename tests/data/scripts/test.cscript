@@ -412,6 +412,11 @@ script plot_ops {
     plot 3 yield -> var(m_type);
     plot 3 clear;
 }
+script plot_kinds {
+    plot 4 item -> var(answer);
+    plot at 2 -> var(v16);
+    plot at self -> var(m_species);
+}
 script party_members {
     party lead -> var(answer);
     party count alive -> var(v8);

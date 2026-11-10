@@ -902,9 +902,9 @@
    "id": 106,
    "name": "Plot",
    "kind": "generic",
-   "doc": "M6a K2: plant, water, pick or clear a plot; read its stage, crop or what picking would yield.",
-   "bytes": "kind8 (PlotOp), [Pick..Yield: var16], operand (plot), [Plant: operand (crop)]",
-   "does": "M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them)"
+   "doc": "M6a K2: plant, water, pick or clear a plot; read its stage, crop, what picking would yield (K3: its crop's item; the plot of a map object).",
+   "bytes": "kind8 (PlotOp), [Pick..: var16], operand (plot; At: the object), [Plant: operand (crop)]",
+   "does": "M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them; K3 At: the object's plot, kNoPlot without one)"
   }
  ],
  "enums": [
@@ -2246,6 +2246,16 @@
      "name": "Yield",
      "doc": "What picking it now would yield.",
      "word": "yield"
+    },
+    {
+     "name": "Item",
+     "doc": "K3: the item of its crop (0: empty; the script gives it, `plot <id> item -> var(v);`).",
+     "word": "item"
+    },
+    {
+     "name": "At",
+     "doc": "K3: the plot of a map object on the shown map (65535: none; `plot at <object> -> var(id);`).",
+     "word": "at"
     }
    ],
    "count": {
@@ -2628,6 +2638,12 @@
      "type": "int",
      "value": "255",
      "doc": "C13: party count alive's slot when it leaves no member out (past every party slot)."
+    },
+    {
+     "name": "kNoPlot",
+     "type": "int32_t",
+     "value": "0xFFFF",
+     "doc": "M6a K3: `plot at`'s answer for an object that is no plot (capsule::plots::kNoPlot)."
     },
     {
      "name": "kMaxStats",

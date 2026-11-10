@@ -256,6 +256,13 @@ CAPSULE_WEAK void clear(uint16_t id)
    }
 }
 
+uint16_t item(uint16_t id)
+{
+   const Data* d = data();
+   const uint16_t c = crop(id);
+   return d != nullptr && c != kNoCrop && c <= d->crop_count ? d->crops[c - 1].item : 0;
+}
+
 uint16_t plot_at(uint16_t map, uint8_t local)
 {
    const Data* d = data();

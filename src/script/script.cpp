@@ -635,15 +635,19 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
    }
    case Op::Plot:
    {
-      // M6a K2: kind8, [Pick..Yield: var16], operand (plot), [Plant: operand (crop)]
+      // M6a K2: kind8, [Pick..: var16], operand (plot; K3 At: the object), [Plant: operand (crop)]
       const auto kind = static_cast<PlotOp>(*p++);
       const bool answers = kind >= PlotOp::Pick;
       const VarId v{answers ? load_le16(p) : uint16_t{0}};
       p += answers ? kU16Bytes : 0;
-      const int32_t id = operand(p);
+      int32_t id = operand(p);
       const int32_t crop = kind == PlotOp::Plant ? operand(p) : 0;
       next();
-      const int32_t answer = world::plot_op(kind, id, crop);
+      if (kind == PlotOp::At)
+      {
+         id = object_of(c, id);   // K3: the object's local ID (kNoSelf: none, and no plot)
+      }
+      const int32_t answer = kind == PlotOp::At && id == kNoSelf ? kNoPlot : world::plot_op(kind, id, crop);
       if (answers)
       {
          set_var(v, answer);

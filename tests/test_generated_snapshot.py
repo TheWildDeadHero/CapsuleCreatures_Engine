@@ -1257,6 +1257,13 @@ PLOTS_CHANGES = {**{name: PLOTS_WORLD_REASON for name in ("sandbox_map/world.cpp
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in PLOTS_CHANGES.items()})
 
+## Why the outputs changed for M6a K3's plot kinds (the test scripts gain `plot <id> item` and `plot at`).
+PLOT_KINDS_REASON = "The test scripts gain M6a K3's plot item and plot at"
+## The files M6a K3 changed, and why.
+PLOT_KINDS_CHANGES = {name: PLOT_KINDS_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in PLOT_KINDS_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

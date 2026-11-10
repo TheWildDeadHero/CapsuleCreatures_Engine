@@ -502,6 +502,8 @@ PLOT_WORD = "plot"
 PLOT_KINDS = VM.words("PlotOp")
 ## M6a K2: the kinds that answer into a variable (Pick and after: capsule::script::Op::Plot).
 PLOT_ANSWERS = PLOT_KINDS[PLOT_KINDS.index("pick"):]
+## M6a K3: the kind that names a map object instead of a plot (`plot at <object> -> var(id);`).
+PLOT_AT = "at"
 ## M6a K2: tokens of a `var(name)` operand (where a plot statement's kind follows it).
 VAR_OPERAND_TOKENS = 4
 ## C13: the statement word of `member <slot> <field> -> var(v);`.
@@ -2147,7 +2149,16 @@ class Parser:
             result = self.var_ref().text
          self.expect(";")
          return Node("clock", t, kind=kind, hours=hours, result=result)
-      if self.at(PLOT_WORD) and self.peek(1 + (VAR_OPERAND_TOKENS if nxt.text == "var" else 1)).text in PLOT_KINDS:
+      if self.at(PLOT_WORD) and nxt.text == PLOT_AT:   # M6a K3: `plot at <object> -> var(id);`
+         self.take()
+         self.take()
+         obj = self.object_ref()
+         self.expect("->")
+         result = self.var_ref().text
+         self.expect(";")
+         return Node("plot", t, kind=PLOT_AT, plot=obj, crop=None, result=result)
+      if self.at(PLOT_WORD) and \
+            self.peek(1 + (VAR_OPERAND_TOKENS if nxt.text == "var" else 1)).text in set(PLOT_KINDS) - {PLOT_AT}:
          self.take()   # M6a K2: `plot <id> <kind> [<crop>] [-> var(v)];`
          plot = self.operand()
          kind = self.take().text
@@ -4230,7 +4241,7 @@ class Compiler:
          e.u8(PLOT_KINDS.index(s["kind"]))
          if s["result"] is not None:
             e.u16(self.var_id(s["result"], s))
-         self.emit_operand(e, self.plot_name(s["plot"], "places"))
+         self.emit_operand(e, s["plot"] if s["kind"] == PLOT_AT else self.plot_name(s["plot"], "places"))
          if s["crop"] is not None:
             self.emit_operand(e, self.plot_name(s["crop"], "crops"))
          return True

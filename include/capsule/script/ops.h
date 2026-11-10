@@ -107,7 +107,7 @@
 /// | Screen | operand (screen) | C12: world::open_screen(); waits while world::screen_busy() |
 /// | Member | field8 (MemberField), var16, operand (slot) | C13: var = party::member_field() |
 /// | Clock | kind8 (ClockOp), [Hour..Days: var16], [Wait: var16, operand (hours)] | M6a K1: var = world::clock_value() / clock_wait(); world::clock_reset() |
-/// | Plot | kind8 (PlotOp), [Pick..Yield: var16], operand (plot), [Plant: operand (crop)] | M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them) |
+/// | Plot | kind8 (PlotOp), [Pick..: var16], operand (plot; At: the object), [Plant: operand (crop)] | M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them; K3 At: the object's plot, kNoPlot without one) |
 #pragma once
 
 #include <cstdint>
@@ -225,7 +225,7 @@ enum class Op : uint8_t
    Screen,   ///< C12: open one of the game's screens and wait until the field is back.
    Member,   ///< C13: read one party member's data: its species, whether it is an egg, how many moves it knows, its friendship.
    Clock,   ///< M6a K1: read the world clock (hour, weekday), the season and the economy clock's days; Wait; reset the world clock.
-   Plot,   ///< M6a K2: plant, water, pick or clear a plot; read its stage, crop or what picking would yield.
+   Plot,   ///< M6a K2: plant, water, pick or clear a plot; read its stage, crop, what picking would yield (K3: its crop's item; the plot of a map object).
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -612,6 +612,8 @@ enum class PlotOp : uint8_t
    Stage,   ///< Its stage (the type's stages: ripe; 255: empty).
    Crop,   ///< Its crop (index + 1; 0: empty).
    Yield,   ///< What picking it now would yield.
+   Item,   ///< K3: the item of its crop (0: empty; the script gives it, `plot <id> item -> var(v);`).
+   At,   ///< K3: the plot of a map object on the shown map (65535: none; `plot at <object> -> var(id);`).
    NUM_PLOT_OPS   ///< Number of kinds.
 };
 
@@ -684,6 +686,7 @@ inline constexpr int kGivenParty = 0;   ///< C8: party give's result: the creatu
 inline constexpr int kGivenBoxes = 1;   ///< C8: party give's result: the party was full, it went to the boxes.
 inline constexpr int kGivenNone = 2;   ///< C8: party give's result: nowhere had room (or it could not be built).
 inline constexpr int kNoMember = 255;   ///< C13: party count alive's slot when it leaves no member out (past every party slot).
+inline constexpr int32_t kNoPlot = 0xFFFF;   ///< M6a K3: `plot at`'s answer for an object that is no plot (capsule::plots::kNoPlot).
 inline constexpr int kMaxStats = 255;   ///< C6: game statistics a scripts manifest may declare (a byte each).
 ///@}
 
