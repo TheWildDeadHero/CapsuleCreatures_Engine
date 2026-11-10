@@ -403,6 +403,15 @@ script clock_ops {
     clock wait 5 -> var(m_type);
     clock reset;
 }
+script plot_ops {
+    plot 3 plant 2;
+    plot 3 water;
+    plot var(v8) pick -> var(answer);
+    plot 3 stage -> var(v16);
+    plot 3 crop -> var(m_moves);
+    plot 3 yield -> var(m_type);
+    plot 3 clear;
+}
 script party_members {
     party lead -> var(answer);
     party count alive -> var(v8);

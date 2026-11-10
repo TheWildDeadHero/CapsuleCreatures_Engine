@@ -562,6 +562,7 @@ int in_place_anim(const asset::Sprite& s, uint8_t pace, uint8_t dir)
 
 /// @cond FORWARD
 void draw_step_object(uint8_t i);   // documented below
+void set_sprite(uint8_t i, AssetKey key);   // documented below (M6a K2: draw_object() uses it)
 /// @endcond
 ///@}
 
@@ -707,7 +708,15 @@ void draw_object(uint8_t i)
    {
       return;   // I3: not spawned (by the view): no sprite slot
    }
-   if (!o.active || !o.visible || o.invisible || o.sprite == nullptr)
+   // M6a K2: an object the game shows otherwise (a plot: its crop and stage)
+   AssetKey look_sprite{};
+   uint8_t look_anim = 0;
+   const bool looked = game::object_look(map::index_of(shown()), i, look_sprite, look_anim);
+   if (looked && look_sprite != AssetKey{})
+   {
+      set_sprite(i, look_sprite);
+   }
+   if (!o.active || !o.visible || o.invisible || o.sprite == nullptr || (looked && look_sprite == AssetKey{}))
    {
       gfx::sprites::show(slot, false);
       return;
@@ -730,7 +739,7 @@ void draw_object(uint8_t i)
    // level; N2: or the sub-priority a script fixed
    gfx::sprites::set_order(slot, o.fixed_order ? o.order : map::sub_priority(sy + sh + o.lift - o.sprite_dy,
                                                                              o.elevation));
-   if (o.sprite->steps != nullptr)
+   if (o.sprite->steps != nullptr && !looked)
    {
       draw_step_object(i);   // I3: step animations (the walk animation paused between steps)
       return;
@@ -738,7 +747,11 @@ void draw_object(uint8_t i)
    const bool walking =
       (o.moving && (o.options & route::kOptionWalkAnim) != 0) || (o.options & route::kOptionStepAnim) != 0;
    uint8_t anim = static_cast<uint8_t>(walking ? kWalkAnimFirst + o.facing : o.facing);
-   if (anim >= o.sprite->animation_count)
+   if (looked)
+   {
+      anim = look_anim < o.sprite->animation_count ? look_anim : 0;   // M6a K2: the game's animation
+   }
+   else if (anim >= o.sprite->animation_count)
    {   // fall back to the idle set
       anim = anim % kAnimSet < o.sprite->animation_count ? anim % kAnimSet : 0;
    }
@@ -4402,3 +4415,19 @@ void set_vehicle(uint8_t vehicle)
 }
 
 }   // namespace capsule::script::world
+
+/// M6a K2: the engine's default: every object shows as usual (the generated world of a world with plots defines
+/// field::game::object_look(); weak, so its definition wins).
+/// @param map     the shown map
+/// @param local   the object's local ID
+/// @param sprite  unchanged
+/// @param anim    unchanged
+/// @return false
+CAPSULE_WEAK bool capsule::field::game::object_look(uint16_t map, uint8_t local, AssetKey& sprite, uint8_t& anim)
+{
+   (void)map;
+   (void)local;
+   (void)sprite;
+   (void)anim;
+   return false;
+}

@@ -107,6 +107,7 @@
 /// | Screen | operand (screen) | C12: world::open_screen(); waits while world::screen_busy() |
 /// | Member | field8 (MemberField), var16, operand (slot) | C13: var = party::member_field() |
 /// | Clock | kind8 (ClockOp), [Hour..Days: var16], [Wait: var16, operand (hours)] | M6a K1: var = world::clock_value() / clock_wait(); world::clock_reset() |
+/// | Plot | kind8 (PlotOp), [Pick..Yield: var16], operand (plot), [Plant: operand (crop)] | M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them) |
 #pragma once
 
 #include <cstdint>
@@ -224,6 +225,7 @@ enum class Op : uint8_t
    Screen,   ///< C12: open one of the game's screens and wait until the field is back.
    Member,   ///< C13: read one party member's data: its species, whether it is an egg, how many moves it knows, its friendship.
    Clock,   ///< M6a K1: read the world clock (hour, weekday), the season and the economy clock's days; Wait; reset the world clock.
+   Plot,   ///< M6a K2: plant, water, pick or clear a plot; read its stage, crop or what picking would yield.
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -598,6 +600,19 @@ enum class ClockOp : uint8_t
    Wait,   ///< Wait: move the world clock on; 1 when done, 0 refused (`clock wait <hours> -> var(ok);`).
    Reset,   ///< The world clock back to the real-time clock (`clock reset;`).
    NUM_CLOCK_OPS   ///< Number of kinds.
+};
+
+/// M6a K2: Plot kinds (capsule/plots/plots.h).
+enum class PlotOp : uint8_t
+{
+   Plant,   ///< Plant a crop in an empty plot (`plot <id> plant <crop>;`).
+   Water,   ///< Water a growing plot's current stage (`plot <id> water;`).
+   Clear,   ///< Empty a plot (`plot <id> clear;`).
+   Pick,   ///< Pick a ripe plot: how many items (0: not ripe; `plot <id> pick -> var(n);`).
+   Stage,   ///< Its stage (the type's stages: ripe; 255: empty).
+   Crop,   ///< Its crop (index + 1; 0: empty).
+   Yield,   ///< What picking it now would yield.
+   NUM_PLOT_OPS   ///< Number of kinds.
 };
 
 /// @name Operand and text-reference tags

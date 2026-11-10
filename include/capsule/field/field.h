@@ -864,6 +864,16 @@ bool route_step(uint8_t mover, uint8_t step, uint8_t arg);
 /// @return the positions (map::kMaxSpotPositions or more: no limit)
 uint8_t spot_positions();
 
+/// M6a K2: what a map object shows in place of its own sprite and facing (a plot: its crop's sprite, the stage its
+/// animation; capsule/plots/plots.h look()). Asked each frame the object is drawn. The default (src/field/field.cpp,
+/// weak) changes nothing; the generated world of a world that declares plots defines it.
+/// @param map     the shown map (index into map::kWorld.maps)
+/// @param local   the object's local ID
+/// @param sprite  its sprite (AssetKey{}: hidden)
+/// @param anim    its animation
+/// @return false: it shows as usual
+bool object_look(uint16_t map, uint8_t local, AssetKey& sprite, uint8_t& anim);
+
 } // namespace game
 
 } // namespace capsule::field

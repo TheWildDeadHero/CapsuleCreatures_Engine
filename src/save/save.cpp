@@ -46,6 +46,7 @@ constexpr uint8_t kScriptVersion = 1;     ///< Script sub-banks with their shape
 constexpr uint8_t kNurseryVersion = 1;    ///< B2: the nursery with its geometry.
 constexpr uint8_t kGameVersion = 1;       ///< N3: the game's block with its own version and size.
 constexpr uint8_t kClockVersion = 1;      ///< M6a K1: the clock's saved state.
+constexpr uint8_t kPlotsVersion = 1;      ///< M6a K2: the plots' records.
 ///@}
 /// Copies of the image a medium keeps at most (the older one takes the next write).
 constexpr int kMaxCopies = 2;
@@ -741,6 +742,64 @@ Status decode_clock(Source& s, clock::Saved* dst)
    return Status::Ok;
 }
 
+// -- Plots (M6a K2) ------------------------------------------------------------------------------------------------
+
+/// The build's plot places (0 without engine records).
+/// @return places
+uint16_t plot_places()
+{
+   const plots::Data* d = plots::data();
+   return d != nullptr && d->records != nullptr ? d->place_count : 0;
+}
+
+/// The plots' records (none: every record empty).
+/// @param s  the sink
+/// @param r  plot_places() records, or nullptr
+void encode_plots(Sink& s, const plots::PlotRecord* r)
+{
+   const uint16_t n = plot_places();
+   put_le(s, n, kU16Bytes);
+   for (uint16_t i = 0; i < n; ++i)
+   {
+      const plots::PlotRecord v = r != nullptr ? r[i] : plots::PlotRecord{};
+      put_le(s, v.planted, kU32Bytes);
+      put_le(s, v.crop, kU16Bytes);
+      put_le(s, v.watered, 1);
+      put_le(s, v.cycle, 1);
+      put_le(s, v.start_stage, 1);
+      put_le(s, v.modifier, 1);
+   }
+}
+
+/// Loads (or only checks) the plots' records: the build's places in order, the rest empty; records past them and
+/// records of crops the build does not have are dropped.
+/// @param s    the source over the section
+/// @param dst  plot_places() records, or nullptr (only checked)
+void decode_plots(Source& s, plots::PlotRecord* dst)
+{
+   const plots::Data* d = plots::data();
+   const uint16_t have = plot_places();
+   const uint16_t n = static_cast<uint16_t>(next_le(s, kU16Bytes));
+   for (uint16_t i = 0; i < n; ++i)
+   {
+      plots::PlotRecord v{};
+      v.planted = next_le(s, kU32Bytes);
+      v.crop = static_cast<uint16_t>(next_le(s, kU16Bytes));
+      v.watered = static_cast<uint8_t>(next_le(s, 1));
+      v.cycle = static_cast<uint8_t>(next_le(s, 1));
+      v.start_stage = static_cast<uint8_t>(next_le(s, 1));
+      v.modifier = static_cast<uint8_t>(next_le(s, 1));
+      if (dst != nullptr && i < have)
+      {
+         dst[i] = v.crop <= d->crop_count ? v : plots::PlotRecord{};
+      }
+   }
+   for (uint16_t i = n; dst != nullptr && i < have; ++i)
+   {
+      dst[i] = plots::PlotRecord{};   // places the image has no record for
+   }
+}
+
 // -- Nursery (B2) --------------------------------------------------------------------------------------------------
 
 /// The build's nursery slots (its data only: a program that saves needs no nursery code).
@@ -1331,6 +1390,8 @@ uint8_t version_of(Section id)
       return kGameVersion;
    case Section::Clock:
       return kClockVersion;
+   case Section::Plots:
+      return kPlotsVersion;
    default:
       return kScriptVersion;
    }
@@ -1362,6 +1423,9 @@ void encode(Sink& s, Section id, const Sources& src)
    case Section::Clock:
       encode_clock(s, src.clock);
       break;
+   case Section::Plots:
+      encode_plots(s, src.plots);
+      break;
    default:
       encode_script(s);
       break;
@@ -1388,6 +1452,8 @@ bool has_source(Section id, const Sources& src)
       return src.game.bytes != nullptr;
    case Section::Clock:
       return src.clock != nullptr;
+   case Section::Plots:
+      return src.plots != nullptr;
    default:
       return true;
    }
@@ -1417,6 +1483,9 @@ Status decode(Source& s, Section id, const Sources& dst, bool store, Notes* note
       return decode_game(s, dst.game, store);
    case Section::Clock:
       return decode_clock(s, store ? dst.clock : nullptr);
+   case Section::Plots:
+      decode_plots(s, store ? dst.plots : nullptr);
+      return Status::Ok;
    default:
       return decode_script(s, store, notes);
    }
@@ -1449,6 +1518,12 @@ void load_empty(Section id, const Sources& dst)
       break;
    case Section::Clock:
       *dst.clock = clock::Saved{};   // M6a K1: a save from before the world's clock starts it at 0
+      break;
+   case Section::Plots:
+      for (uint16_t i = 0; i < plot_places(); ++i)
+      {
+         dst.plots[i] = plots::PlotRecord{};   // M6a K2: a save from before the world's plots: every plot empty
+      }
       break;
    default:
    {
@@ -1521,6 +1596,11 @@ uint32_t section_size(Section s)
    }
    case Section::Clock:
       return clock::settings() != nullptr ? kClockBytes : 0;   // M6a K1: only a world with a clock
+   case Section::Plots:
+   {
+      const uint32_t places = plot_places();   // M6a K2: only a world with engine plot records
+      return places == 0 ? 0 : kPlotsHeadBytes + places * plots::kRecordBytes;
+   }
    case Section::Script:
    {
       uint32_t n = 0;
@@ -1848,6 +1928,14 @@ CAPSULE_WEAK uint32_t capsule::save::game_block_bytes()
 /// here, with the save, because every program that saves needs an answer, a world or not).
 /// @return nullptr
 CAPSULE_WEAK const capsule::clock::Settings* capsule::clock::settings()
+{
+   return nullptr;
+}
+
+/// M6a K2: the engine's default: no plots (the generated world of a world.json that declares `plots` defines it;
+/// here, with the save, like clock::settings()).
+/// @return nullptr
+CAPSULE_WEAK const capsule::plots::Data* capsule::plots::data()
 {
    return nullptr;
 }

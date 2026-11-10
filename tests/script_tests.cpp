@@ -601,6 +601,24 @@ void clock_reset()
    ++g_clock_resets;
 }
 
+/// M6a K2: the stub plots' log ("kind id crop;" per call) and answers: kStubPlotBase + the kind.
+constexpr std::size_t kPlotLogBytes = 96;   ///< M6a K2: the log's room.
+char g_plot_log[kPlotLogBytes] = {};   ///< M6a K2: the plot calls, in order.
+constexpr int32_t kStubPlotBase = 60;        ///< M6a K2: the stub's answers start here.
+
+/// M6a K2: logs the call; kStubPlotBase + the kind.
+/// @param kind  which
+/// @param id    the plot
+/// @param crop  the crop
+/// @return the answer
+int32_t plot_op(PlotOp kind, int32_t id, int32_t crop)
+{
+   const std::size_t at = std::strlen(g_plot_log);
+   std::snprintf(g_plot_log + at, sizeof(g_plot_log) - at, "%d %d %d;", static_cast<int>(kind), static_cast<int>(id),
+                 static_cast<int>(crop));
+   return kStubPlotBase + static_cast<int32_t>(kind);
+}
+
 /// C12: polls a picture's close holds the script in the stub, and a screen's (screen 0 holds nothing).
 constexpr int kStubPicturePolls = 2;
 constexpr int kStubScreenPolls = 3;
@@ -2314,6 +2332,24 @@ void test_clock_ops()
    CHECK(script::world::g_clock_resets == 1);
 }
 
+/// M6a K2: each plot kind through the port, its plot and crop; the answers into their variables.
+void test_plot_ops()
+{
+   script::clear_all();
+   script::world::g_plot_log[0] = '\0';
+   script::set_var(VAR_V8, 3);
+   script::Context c{};
+   script::start(c, SCRIPT_PLOT_OPS);
+   CHECK(run(c) == 0);
+   CHECK(std::strcmp(script::world::g_plot_log, "0 3 2;1 3 0;3 3 0;4 3 0;5 3 0;6 3 0;2 3 0;") == 0);
+   using script::PlotOp;
+   const int32_t base = script::world::kStubPlotBase;
+   CHECK(script::var(VAR_ANSWER) == base + static_cast<int32_t>(PlotOp::Pick));
+   CHECK(script::var(VAR_V16) == base + static_cast<int32_t>(PlotOp::Stage));
+   CHECK(script::var(VAR_M_MOVES) == base + static_cast<int32_t>(PlotOp::Crop));
+   CHECK(script::var(VAR_M_TYPE) == base + static_cast<int32_t>(PlotOp::Yield));
+}
+
 /// C13: the lead, the living members (all, one left out), a member's moves, a type, the lead's species.
 void test_party_members()
 {
@@ -2578,6 +2614,7 @@ int main()
    test_party_give();
    test_party_members();
    test_clock_ops();
+   test_plot_ops();
    test_item_queries();
    test_names();
    test_menus();
