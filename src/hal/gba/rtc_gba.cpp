@@ -57,14 +57,15 @@ constexpr uint8_t kNibbleMask = 0x0F;          ///< BCD: a digit.
 constexpr uint8_t kDecimalBase = 10;           ///< BCD: digits are decimal.
 constexpr int kSetupWrites = 3;                ///< Port writes a clock low phase lasts (the chip's setup time).
 
-/// @name Positions in the date and time registers
+/// @name Positions in the date and time registers (3, the weekday, is not read: the engine works it out from the
+/// date)
 ///@{
-constexpr int kYear = 0;
-constexpr int kMonth = 1;
-constexpr int kDay = 2;
-constexpr int kHour = 4;      // (3: the weekday, which the engine works out from the date)
-constexpr int kMinute = 5;
-constexpr int kSecond = 6;
+constexpr int kYear = 0;     ///< The year in the century.
+constexpr int kMonth = 1;    ///< The month.
+constexpr int kDay = 2;      ///< The day of the month.
+constexpr int kHour = 4;     ///< The hour (with the afternoon flag).
+constexpr int kMinute = 5;   ///< The minute.
+constexpr int kSecond = 6;   ///< The second.
 ///@}
 
 /// A port register.
