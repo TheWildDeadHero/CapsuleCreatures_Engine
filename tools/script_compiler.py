@@ -478,15 +478,17 @@ PARTY_KINDS = VM.words("PartyOp")
 PARTY_HATCHED_WORD, PARTY_MOVE_WORD, PARTY_SPECIES_WORD = "hatched", "move", "species"
 ## C8: `party give egg <species>`, `party give <species> <level> item <item>`, and GiveEgg's kind word.
 PARTY_EGG_WORD, PARTY_ITEM_WORD, PARTY_GIVE_EGG = "egg", "item", "give egg"
-## C13: `party count alive [except <slot>]` and `party has type <type>`: the words and the kinds' words.
+## C13: `party count alive [except <slot>]` and `party has type <type>`: their words.
 PARTY_ALIVE_WORD, PARTY_EXCEPT_WORD, PARTY_HAS_WORD, PARTY_TYPE_WORD = "alive", "except", "has", "type"
+## C13: the CountAlive and HasType kinds' words (capsule::script::PartyOp).
 PARTY_COUNT_ALIVE, PARTY_HAS_TYPE = "count alive", "has type"
 ## C13: the first words of the party kinds (`has type` starts with `has`).
 PARTY_FIRST_WORDS = {k.split()[0] for k in PARTY_KINDS}
 ## C13: `party count alive`'s slot when it leaves no member out (capsule::script::kNoMember).
 PARTY_NO_MEMBER = VM.constants["kNoMember"]
-## C13: `member <slot> <field> -> var(v);` (capsule::script::MemberField, in order).
+## C13: the statement word of `member <slot> <field> -> var(v);`.
 MEMBER_WORD = "member"
+## C13: `member`'s fields (capsule::script::MemberField, in order).
 MEMBER_FIELDS = VM.words("MemberField")
 ## The statement word of battles.
 BATTLE_WORD = "battle"
