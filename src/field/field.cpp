@@ -4416,13 +4416,8 @@ void set_vehicle(uint8_t vehicle)
 
 }   // namespace capsule::script::world
 
-/// M6a K2: the engine's default: every object shows as usual (the generated world of a world with plots defines
-/// field::game::object_look(); weak, so its definition wins).
-/// @param map     the shown map
-/// @param local   the object's local ID
-/// @param sprite  unchanged
-/// @param anim    unchanged
-/// @return false
+// M6a K2: the engine's default of field::game::object_look() (documented in capsule/field/field.h): every object
+// shows as usual. The generated world of a world with plots defines it; weak, so that definition wins.
 CAPSULE_WEAK bool capsule::field::game::object_look(uint16_t map, uint8_t local, AssetKey& sprite, uint8_t& anim)
 {
    (void)map;
