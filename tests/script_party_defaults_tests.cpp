@@ -1,7 +1,8 @@
 /// @file
 /// C7 / C8: the engine's default party statements (src/script/script_party.cpp) on a real ruleset with boxes and
 /// eggs (tests/data/combine): give into the party, then the boxes when the party is full, then nowhere without
-/// boxes; an egg (left out of the hatched count); heal clearing the status; the move search with its species.
+/// boxes (C16: a boxed egg left out of boxes::hatched()); an egg (left out of the hatched count); heal clearing
+/// the status; the move search with its species.
 #include "capsule/battle/battle.h"
 #include "capsule/monster/monster.h"
 #include "capsule/script/ops.h"
@@ -71,7 +72,8 @@ constexpr uint32_t kSleeping = 1;    ///< A status the heal clears.
 constexpr uint16_t kUnknownMove = 0xFFF0; ///< A move no member knows.
 constexpr uint16_t kGiven = SPECIES_PUPKIN;   ///< The species given.
 
-/// Gives until the party is full, then once more into the boxes; without boxes, nowhere.
+/// Gives until the party is full, then once more into the boxes (C16: and an egg, not hatched); without boxes,
+/// nowhere.
 void test_give()
 {
    g_party = monster::Party{};
@@ -84,7 +86,10 @@ void test_give()
    CHECK(g_party.count == monster::kLayout.party_size);
    CHECK(script::party::give(kGiven, kLevel, 0) == script::kGivenBoxes);
    CHECK(storage::count(g_boxes) == 1);
+   CHECK(script::party::give_egg(kGiven) == script::kGivenBoxes);
+   CHECK(script::boxes::hatched() == 1);   // C16: the egg left out
    g_attached = nullptr;
+   CHECK(script::boxes::hatched() == 0);   // no boxes
    CHECK(script::party::give(kGiven, kLevel, 0) == script::kGivenNone);
    CHECK(script::party::give_egg(kGiven) == script::kGivenNone);   // nowhere for it either
 }

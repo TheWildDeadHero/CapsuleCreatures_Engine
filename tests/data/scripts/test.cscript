@@ -434,6 +434,11 @@ script member_data {
     party find species 25 -> var(v8);
     party find species 26 -> var(v16);
 }
+script boxes_queries {
+    boxes hatched -> var(v8);
+    boxes free -> var(v16);
+    boxes current -> var(answer);
+}
 script item_queries {
     item_room(3, 5) -> var(v8);
     item_room(3, 200) -> var(answer);

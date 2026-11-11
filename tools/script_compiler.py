@@ -500,6 +500,10 @@ CLOCK_WORD = "clock"
 CLOCK_KINDS = VM.words("ClockOp")
 ## M6a K4: the clock kind whose result is optional (`clock events [-> var(days)];`).
 CLOCK_EVENTS = "events"
+## C16: the statement word of the storage queries (`boxes <kind> -> var(v);`).
+BOXES_WORD = "boxes"
+## C16: their kinds (capsule::script::BoxesOp, in order).
+BOXES_KINDS = VM.words("BoxesOp")
 ## M6a K2: the statement word of the plot statements (`plot <id> <kind> ...;`).
 PLOT_WORD = "plot"
 ## M6a K2: their kinds (capsule::script::PlotOp, in order).
@@ -2159,6 +2163,13 @@ class Parser:
             result = self.var_ref().text
          self.expect(";")
          return Node("clock", t, kind=kind, hours=hours, result=result)
+      if self.at(BOXES_WORD) and nxt.text in BOXES_KINDS:   # C16: `boxes hatched|free|current -> var(v);`
+         self.take()
+         kind = self.take().text
+         self.expect("->")
+         result = self.var_ref().text
+         self.expect(";")
+         return Node("boxes", t, kind=kind, result=result)
       if self.at(PLOT_WORD) and nxt.text == PLOT_AT:   # M6a K3: `plot at <object> -> var(id);`
          self.take()
          self.take()
@@ -4253,6 +4264,11 @@ class Compiler:
             e.u16(self.var_id(s["result"], s))
          if s["hours"] is not None:
             self.emit_operand(e, s["hours"])
+         return True
+      if k == "boxes":   # C16: the kind, the result
+         e.op("Boxes")
+         e.u8(BOXES_KINDS.index(s["kind"]))
+         e.u16(self.var_id(s["result"], s))
          return True
       if k == "plot":   # M6a K2: the kind, [the result], the plot, [the crop]
          e.op("Plot")

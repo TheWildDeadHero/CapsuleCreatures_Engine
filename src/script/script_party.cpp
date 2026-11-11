@@ -1,7 +1,7 @@
 /// @file
 /// C7: the engine's default party statements (capsule/script/port.h namespace party: heal(), count(),
 /// find_move(); C8: give(), give_egg(); C13: lead(), count_alive(), has_type(), member_field(); C15: member_data(),
-/// find_species()) over the party the
+/// find_species(); C16: boxes::hatched()) over the party the
 /// box statements were given. Weak (CAPSULE_WEAK): a game
 /// that keeps its own party defines them. The stash is in src/script/script_party_stash.cpp, so a game with its own
 /// does not link the default's buffer.
@@ -244,3 +244,24 @@ CAPSULE_WEAK int32_t member_field(int32_t slot, MemberField field)
 }
 
 } // namespace capsule::script::party
+
+namespace capsule::script::boxes
+{
+
+CAPSULE_WEAK int32_t hatched()
+{
+   // C16: here rather than in src/script/script_boxes.cpp, as eggs need the battle data
+   const storage::Storage* st = attached();
+   int32_t n = 0;
+   for (int slot = 0; st != nullptr && slot < storage::slot_count(); ++slot)
+   {
+      monster::Record rec{};
+      if (storage::read(*st, slot, rec) && !combine::is_egg(rec))
+      {
+         ++n;
+      }
+   }
+   return n;
+}
+
+} // namespace capsule::script::boxes
