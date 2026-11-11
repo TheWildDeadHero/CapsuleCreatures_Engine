@@ -905,6 +905,16 @@
    "doc": "M6a K2: plant, water, pick or clear a plot; read its stage, crop, what picking would yield (K3: its crop's item; the plot of a map object).",
    "bytes": "kind8 (PlotOp), [Pick..: var16], operand (plot; At: the object), [Plant: operand (crop)]",
    "does": "M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them; K3 At: the object's plot, kNoPlot without one)"
+  },
+  {
+   "id": 107,
+   "name": "Boxes",
+   "kind": "generic",
+   "doc": "C16: ask the storage boxes for the records that are not eggs, the free slots or the current box.",
+   "bytes": "kind8 (BoxesOp), var16",
+   "does": "C16: var = boxes::hatched() / free() / current()",
+   "module": "boxes",
+   "handler": "op_boxes"
   }
  ],
  "enums": [
@@ -2275,6 +2285,34 @@
    ],
    "count": {
     "name": "NUM_PLOT_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "BoxesOp",
+   "type": "uint8_t",
+   "doc": [
+    "C16: Boxes kinds."
+   ],
+   "values": [
+    {
+     "name": "Hatched",
+     "doc": "The boxed records that are not eggs (`boxes hatched -> var(v);`).",
+     "word": "hatched"
+    },
+    {
+     "name": "Free",
+     "doc": "The free slots (`boxes free -> var(v);`).",
+     "word": "free"
+    },
+    {
+     "name": "Current",
+     "doc": "The current box, the one a deposit tries first (`boxes current -> var(v);`).",
+     "word": "current"
+    }
+   ],
+   "count": {
+    "name": "NUM_BOXES_OPS",
     "doc": "Number of kinds."
    }
   }

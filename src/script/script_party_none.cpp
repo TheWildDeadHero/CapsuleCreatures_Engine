@@ -3,7 +3,7 @@
 /// heal() has no maxima to fill and does nothing; count() counts every member of the party boxes::attach() gave
 /// (no eggs without battle data); find_move() finds nothing (no move table); C8's give() and give_egg() give
 /// nothing (no species data); C13: lead() is slot 0, count_alive() and has_type() find nothing and member_field()
-/// reads 0 (no species or eggs without battle data). Weak (CAPSULE_WEAK), as the engine
+/// reads 0 (no species or eggs without battle data); C16: boxes::hatched() counts every boxed record. Weak (CAPSULE_WEAK), as the engine
 /// library's defaults (src/script/script_party.cpp), which programs with the battle modules link instead.
 #include "capsule/core/memory.h"
 #include "capsule/monster/monster.h"
@@ -84,3 +84,13 @@ CAPSULE_WEAK int32_t member_field(int32_t slot, MemberField field)
 }
 
 } // namespace capsule::script::party
+
+namespace capsule::script::boxes
+{
+
+CAPSULE_WEAK int32_t hatched()
+{
+   return count();   // C16: no eggs without battle data
+}
+
+} // namespace capsule::script::boxes

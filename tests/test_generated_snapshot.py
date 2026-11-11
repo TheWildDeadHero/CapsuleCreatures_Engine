@@ -1278,6 +1278,13 @@ MEMBER_DATA_CHANGES = {name: MEMBER_DATA_REASON for name in ("test_script.cpp", 
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in MEMBER_DATA_CHANGES.items()})
 
+## Why the C16 outputs changed: the test scripts gain the storage queries.
+BOXES_QUERIES_REASON = "The test scripts gain C16's boxes hatched, free and current"
+## The files C16 changed, and why.
+BOXES_QUERIES_CHANGES = {name: BOXES_QUERIES_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in BOXES_QUERIES_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

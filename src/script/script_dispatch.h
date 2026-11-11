@@ -56,6 +56,7 @@ Outcome op_mart(Context& c, Op op, const uint8_t* p, const uint8_t* base);      
 Outcome op_box_count(Context& c, Op op, const uint8_t* p, const uint8_t* base);     ///< BoxCount.
 Outcome op_box_deposit(Context& c, Op op, const uint8_t* p, const uint8_t* base);   ///< BoxDeposit / BoxWithdraw.
 Outcome op_boxes_open(Context& c, Op op, const uint8_t* p, const uint8_t* base);    ///< BoxesOpen.
+Outcome op_boxes(Context& c, Op op, const uint8_t* p, const uint8_t* base);         ///< C16: Boxes.
 Outcome op_transform(Context& c, Op op, const uint8_t* p, const uint8_t* base);     ///< Transform.
 Outcome op_combine(Context& c, Op op, const uint8_t* p, const uint8_t* base);       ///< Combine.
 Outcome op_nursery(Context& c, Op op, const uint8_t* p, const uint8_t* base);       ///< Nursery.

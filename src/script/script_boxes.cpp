@@ -2,7 +2,8 @@
 /// The engine's default boxes port (capsule/script/port.h namespace boxes, G3): the box statements move records
 /// between the party and the storage given to attach(); the boxes menu is the port's choice menu (the text box)
 /// with each box's name and how many records it holds, a page at a time beyond one menu (C6: capsule/script/menu.h).
-/// A game replaces any of them with its own screens by defining them.
+/// A game replaces any of them with its own screens by defining them; C16: count(), free() and current() are weak,
+/// for a game that keeps its own storage.
 #include "capsule/core/memory.h"
 #include "capsule/script/menu.h"
 #include "capsule/script/port.h"
@@ -87,9 +88,25 @@ monster::Party* party()
    return g.party;
 }
 
-int32_t count()
+CAPSULE_WEAK int32_t count()
 {
    return g.storage != nullptr ? storage::count(*g.storage) : 0;
+}
+
+CAPSULE_WEAK int32_t free()
+{
+   if (g.storage == nullptr)
+   {
+      return 0;
+   }
+   const int32_t slots = storage::slot_count();
+   const int32_t used = storage::count(*g.storage);
+   return slots > used ? slots - used : 0;
+}
+
+CAPSULE_WEAK int32_t current()
+{
+   return g.storage != nullptr ? g.storage->current : 0;
 }
 
 bool deposit(int32_t member)

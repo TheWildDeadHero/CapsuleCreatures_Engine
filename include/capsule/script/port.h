@@ -727,9 +727,22 @@ monster::Party* party();
 /// @return it, or nullptr
 storage::Storage* attached();
 
-/// Records the boxes hold (BoxCount).
+/// Records the boxes hold (BoxCount; C16: weak, as the queries below).
 /// @return the count
 int32_t count();
+
+/// C16: the boxed records that are not eggs (Boxes Hatched). The engine library's default reads the attached
+/// storage (src/script/script_party.cpp: eggs need the battle data); without battle data every record counts.
+/// @return the count, 0 without storage
+int32_t hatched();
+
+/// C16: the free slots of the boxes (Boxes Free; src/script/script_boxes.cpp).
+/// @return the count, 0 without storage
+int32_t free();
+
+/// C16: the current box, the one a deposit tries first (Boxes Current; src/script/script_boxes.cpp).
+/// @return it, 0 without storage
+int32_t current();
 
 /// Moves a party member into the first free slot (BoxDeposit; the party keeps at least one member).
 /// @param member  party member index

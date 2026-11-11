@@ -638,6 +638,33 @@ class ClockStatements(unittest.TestCase):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 
+class BoxesStatements(unittest.TestCase):
+   """C16: boxes hatched|free|current -> var(v)."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """The op, the kind, the result."""
+      end = bytes([sc.OP["End"]])
+      var = self.code("var(v) = 0;")[1:1 + VAR_ID_BYTES]
+      for kind in sc.BOXES_KINDS:
+         self.assertEqual(self.code(f"boxes {kind} -> var(v);"),
+                          bytes([sc.OP["Boxes"], sc.BOXES_KINDS.index(kind)]) + var + end)
+
+   def test_refusals(self) -> None:
+      """A query without its result, an unknown kind."""
+      for body in ("boxes free;", "boxes hatched var(v);", "boxes empty -> var(v);"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
+
 class MemberStatements(unittest.TestCase):
    """C13: party lead / count alive [except] / has type and member."""
 

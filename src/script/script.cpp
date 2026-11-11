@@ -1634,6 +1634,7 @@ Outcome execute(Context& c)
    case Op::BoxDeposit:
    case Op::BoxWithdraw:
    case Op::BoxesOpen:
+   case Op::Boxes:
    case Op::Transform:
    case Op::Combine:
    case Op::Nursery:
@@ -2225,6 +2226,39 @@ Outcome op_boxes_open(Context& c, [[maybe_unused]] Op op, const uint8_t* p, cons
    boxes::open();
    c.wait = Wait::Boxes;
    return Outcome::Waiting;
+}
+
+/// C16: Boxes (D-36 package 2: a module op, reached through the game's dispatch table).
+/// @param c     the context
+/// @param op    the opcode
+/// @param p     the position after the opcode
+/// @param base  the running script's first byte
+/// @return what happened
+Outcome op_boxes(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
+{
+   Frame& f = c.stack[c.depth - 1];
+   // A storage query through the boxes port: the hatched records, the free slots or the current box
+   const auto kind = static_cast<BoxesOp>(*p++);
+   const VarId v{load_le16(p)};
+   p += kU16Bytes;
+   advance(f, p, base);
+   int32_t answer = 0;
+   switch (kind)
+   {
+   case BoxesOp::Hatched:
+      answer = boxes::hatched();
+      break;
+   case BoxesOp::Free:
+      answer = boxes::free();
+      break;
+   case BoxesOp::Current:
+      answer = boxes::current();
+      break;
+   case BoxesOp::NUM_BOXES_OPS:
+      break;
+   }
+   set_var(v, answer);
+   return Outcome::Continue;
 }
 
 /// Transform (D-36 package 2: a module op, reached through the game's dispatch table).

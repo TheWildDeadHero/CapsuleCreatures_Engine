@@ -1465,6 +1465,9 @@ constexpr int kBoxPolls = 1;          ///< poll() calls before the stub's boxes 
 constexpr int32_t kBoxChoice = 2;     ///< The box (+ 1) the stub's boxes menu answers.
 int32_t g_boxed = 0;                  ///< Records the stub holds.
 int g_box_polls = 0;                  ///< poll() calls since open().
+constexpr int32_t kStubBoxedHatched = 4;   ///< C16: the boxed records the stub's hatched() answers.
+constexpr int32_t kStubFree = 9;           ///< C16: the free slots the stub's free() answers.
+constexpr int32_t kStubCurrent = 3;        ///< C16: the box the stub's current() answers.
 } // namespace
 
 namespace capsule::script::boxes
@@ -1488,6 +1491,24 @@ storage::Storage* attached()
 int32_t count()
 {
    return g_boxed;
+}
+
+/// @return kStubBoxedHatched
+int32_t hatched()
+{
+   return kStubBoxedHatched;
+}
+
+/// @return kStubFree
+int32_t free()
+{
+   return kStubFree;
+}
+
+/// @return kStubCurrent
+int32_t current()
+{
+   return kStubCurrent;
 }
 
 /// @param member  a member below kStubMembers goes in
@@ -2441,6 +2462,18 @@ void test_member_data()
    CHECK(script::var(VAR_V16) == kPartySlots);
 }
 
+/// C16: the storage queries: the hatched records, the free slots, the current box.
+void test_boxes_queries()
+{
+   script::clear_all();
+   script::Context c{};
+   script::start(c, SCRIPT_BOXES_QUERIES);
+   CHECK(run(c) == 0);
+   CHECK(script::var(VAR_V8) == kStubBoxedHatched);
+   CHECK(script::var(VAR_V16) == kStubFree);
+   CHECK(script::var(VAR_ANSWER) == kStubCurrent);
+}
+
 /// C7: the item queries: room for 5 more (1) and for 200 more (0) of an item, an item's pocket.
 void test_item_queries()
 {
@@ -2688,6 +2721,7 @@ int main()
    test_party_give();
    test_party_members();
    test_member_data();
+   test_boxes_queries();
    test_clock_ops();
    test_clock_events();
    test_plot_ops();
