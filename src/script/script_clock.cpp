@@ -47,4 +47,9 @@ CAPSULE_WEAK void clock_reset()
    clock::reset_wait();
 }
 
+CAPSULE_WEAK int32_t clock_events()
+{
+   return static_cast<int32_t>(clock::events());   // K4
+}
+
 } // namespace capsule::script::world

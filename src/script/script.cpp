@@ -618,12 +618,26 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
    }
    case Op::Clock:
    {
-      // M6a K1: kind8, [Hour..Days: var16], [Wait: var16, operand (hours)]
+      // M6a K1: kind8, [Hour..Days: var16], [Wait: var16, operand (hours)], [K4 Events: u8, [var16]]
       const auto kind = static_cast<ClockOp>(*p++);
       if (kind == ClockOp::Reset)
       {
          next();
          world::clock_reset();
+         return Outcome::Continue;
+      }
+      if (kind == ClockOp::Events)
+      {
+         // K4: u8 (1: a result), [var16]
+         const bool answers = *p++ != 0;
+         const VarId days{answers ? load_le16(p) : uint16_t{0}};
+         p += answers ? kU16Bytes : 0;
+         next();
+         const int32_t passed = world::clock_events();
+         if (answers)
+         {
+            set_var(days, passed);
+         }
          return Outcome::Continue;
       }
       const VarId v{load_le16(p)};

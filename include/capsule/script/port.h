@@ -328,6 +328,11 @@ void clock_reset();
 /// @return Pick: the items picked; Stage / Crop / Yield: the value; the others: 0
 int32_t plot_op(PlotOp kind, int32_t id, int32_t crop);
 
+/// M6a K4: the time events' day (Clock Events; the engine library's default: clock::events(); a game with its own
+/// clock runs its time events here; a program without the engine library: 0).
+/// @return the days passed since they last ran
+int32_t clock_events();
+
 /// C12: shows the shown map's name banner (MapView Banner; the default, capsule::overworld: the location banner a map
 /// shows on arrival, when the map has a location).
 void show_map_banner();

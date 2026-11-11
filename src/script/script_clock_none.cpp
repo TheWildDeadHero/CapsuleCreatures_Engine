@@ -24,4 +24,9 @@ CAPSULE_WEAK void clock_reset()
 {
 }
 
+CAPSULE_WEAK int32_t clock_events()
+{
+   return 0;   // M6a K4: no clock, no days
+}
+
 } // namespace capsule::script::world

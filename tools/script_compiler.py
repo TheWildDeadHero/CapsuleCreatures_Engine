@@ -496,6 +496,8 @@ PARTY_NO_MEMBER = VM.constants["kNoMember"]
 CLOCK_WORD = "clock"
 ## M6a K1: their kinds (capsule::script::ClockOp, in order).
 CLOCK_KINDS = VM.words("ClockOp")
+## M6a K4: the clock kind whose result is optional (`clock events [-> var(days)];`).
+CLOCK_EVENTS = "events"
 ## M6a K2: the statement word of the plot statements (`plot <id> <kind> ...;`).
 PLOT_WORD = "plot"
 ## M6a K2: their kinds (capsule::script::PlotOp, in order).
@@ -2144,7 +2146,7 @@ class Parser:
          kind = self.take().text
          hours = self.operand() if kind == "wait" else None
          result = None
-         if kind != "reset":
+         if kind != "reset" and (kind != CLOCK_EVENTS or self.at("->")):   # K4: events' result is optional
             self.expect("->")
             result = self.var_ref().text
          self.expect(";")
@@ -4231,6 +4233,8 @@ class Compiler:
       if k == "clock":   # M6a K1: the kind, [the result, [the hours]]
          e.op("Clock")
          e.u8(CLOCK_KINDS.index(s["kind"]))
+         if s["kind"] == CLOCK_EVENTS:
+            e.u8(int(s["result"] is not None))   # K4: whether a result follows
          if s["result"] is not None:
             e.u16(self.var_id(s["result"], s))
          if s["hours"] is not None:

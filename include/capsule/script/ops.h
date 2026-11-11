@@ -106,7 +106,7 @@
 /// | Picture | kind8 (PictureOp), [Show: operand (species), operand (x), operand (y)] | C12: world::picture_show(); Hide: world::picture_hide(), waits while world::picture_busy() |
 /// | Screen | operand (screen) | C12: world::open_screen(); waits while world::screen_busy() |
 /// | Member | field8 (MemberField), var16, operand (slot) | C13: var = party::member_field() |
-/// | Clock | kind8 (ClockOp), [Hour..Days: var16], [Wait: var16, operand (hours)] | M6a K1: var = world::clock_value() / clock_wait(); world::clock_reset() |
+/// | Clock | kind8 (ClockOp), [Hour..Days: var16], [Wait: var16, operand (hours)], [Events: u8 (1: a result), [var16]] | M6a K1: var = world::clock_value() / clock_wait(); world::clock_reset(); K4: [var =] world::clock_events() |
 /// | Plot | kind8 (PlotOp), [Pick..: var16], operand (plot; At: the object), [Plant: operand (crop)] | M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them; K3 At: the object's plot, kNoPlot without one) |
 #pragma once
 
@@ -224,7 +224,7 @@ enum class Op : uint8_t
    Picture,   ///< C12: show a creature's picture in a framed window, or hide it and wait for it to close.
    Screen,   ///< C12: open one of the game's screens and wait until the field is back.
    Member,   ///< C13: read one party member's data: its species, whether it is an egg, how many moves it knows, its friendship.
-   Clock,   ///< M6a K1: read the world clock (hour, weekday), the season and the economy clock's days; Wait; reset the world clock.
+   Clock,   ///< M6a K1: read the world clock (hour, weekday), the season and the economy clock's days; Wait; reset the world clock (K4: the time events' days).
    Plot,   ///< M6a K2: plant, water, pick or clear a plot; read its stage, crop, what picking would yield (K3: its crop's item; the plot of a map object).
    NUM_OPS   ///< Number of opcodes.
 };
@@ -599,6 +599,7 @@ enum class ClockOp : uint8_t
    Days,   ///< Whole days of the economy clock.
    Wait,   ///< Wait: move the world clock on; 1 when done, 0 refused (`clock wait <hours> -> var(ok);`).
    Reset,   ///< The world clock back to the real-time clock (`clock reset;`).
+   Events,   ///< K4: the economy days since the time events last ran, today recorded (`clock events [-> var(days)];`).
    NUM_CLOCK_OPS   ///< Number of kinds.
 };
 

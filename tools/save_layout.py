@@ -13,7 +13,8 @@ Sections (most bytes; each section carries its own shape, so a save survives man
   - Nursery (B2): 9 (record hash, record bytes, slots, used bits, result waiting), then per slot 5 (its level when
     left, its gained experience) and its record (written: the used ones), then the waiting result's record;
     absent without a nursery;
-  - Clock (M6a K1): 14 (the economy seconds, the latest RTC time seen, the last Wait, the Wait offset, the flags);
+  - Clock (M6a K1): 18 (the economy seconds, the latest RTC time seen, the last Wait, the Wait offset, the flags;
+    M6a K4, version 2: the last time events day);
     absent unless the world declares a clock (--world);
   - Plots (M6a K2): 2 (record count), then 10 per plot place (the planting time, the crop, the watering bits, the
     cycle, the stages planted ahead, the modifier); absent unless the world declares plots the engine keeps
@@ -80,9 +81,9 @@ USED_BITS_PER_BYTE = 8
 ## Section names in id order (capsule::save::Section).
 SECTIONS = ("bag", "party", "boxes", "script", "nursery", "game", "clock", "plots")
 ## Each section's version (src/save/save.cpp k*Version).
-SECTION_VERSIONS = {"bag": 1, "party": 1, "boxes": 1, "script": 1, "nursery": 1, "game": 1, "clock": 1, "plots": 1}
+SECTION_VERSIONS = {"bag": 1, "party": 1, "boxes": 1, "script": 1, "nursery": 1, "game": 1, "clock": 2, "plots": 1}
 ## M6a K1: the Clock section's bytes (capsule::save::kClockBytes).
-CLOCK_BYTES = 14
+CLOCK_BYTES = 18
 ## M6a K2: the Plots section's head (capsule::save::kPlotsHeadBytes: the record count).
 PLOTS_HEAD_BYTES = 2
 ## M6a K2: a plot record's bytes in the image (capsule::plots::kRecordBytes).

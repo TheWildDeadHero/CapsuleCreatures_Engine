@@ -225,4 +225,16 @@ void notice_shown()
    g_saved.flags = static_cast<uint8_t>(g_saved.flags | kNoticeShown);
 }
 
+uint32_t events()
+{
+   if (settings() == nullptr)
+   {
+      return 0;
+   }
+   const uint32_t today = economy_days();
+   const uint32_t last = g_saved.last_events_day;
+   g_saved.last_events_day = today;
+   return last == kNever || today < last ? 0 : today - last;   // a first run, or (never) a clock run backwards: 0
+}
+
 } // namespace capsule::clock
