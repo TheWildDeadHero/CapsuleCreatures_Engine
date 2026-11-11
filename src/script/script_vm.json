@@ -807,8 +807,8 @@
    "name": "Party",
    "kind": "generic",
    "doc": "C7: heal, stash or restore the party, count its members, or find one knowing a move; C8: give a creature or an egg.; C13: the lead's slot, count the living members, ask about a type.",
-   "bytes": "kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)], [Lead: var16], [CountAlive: var16, operand (slot left out, or kNoMember)], [HasType: var16, operand (type)]",
-   "does": "C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone); C13: var = party::lead() / count_alive() / has_type()",
+   "bytes": "kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)], [Lead: var16], [CountAlive: var16, operand (slot left out, or kNoMember)], [HasType: var16, operand (type)], [FindSpecies: var16 (slot), operand (species)]",
+   "does": "C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone); C13: var = party::lead() / count_alive() / has_type(); C15: slot var = party::find_species() (the party's size when none)",
    "module": "party",
    "handler": "op_party"
   },
@@ -884,9 +884,9 @@
    "id": 104,
    "name": "Member",
    "kind": "generic",
-   "doc": "C13: read one party member's data: its species, whether it is an egg, how many moves it knows, its friendship.",
-   "bytes": "field8 (MemberField), var16, operand (slot)",
-   "does": "C13: var = party::member_field()",
+   "doc": "C13: read one party member's data: its species, whether it is an egg, how many moves it knows, its friendship (C15: a game field by its id).",
+   "bytes": "field8 (MemberField), var16, operand (slot), [Data: operand (the field's id)]",
+   "does": "C13: var = party::member_field(); C15 Data: var = party::member_data()",
    "module": "party",
    "handler": "op_member"
   },
@@ -2048,6 +2048,11 @@
      "name": "HasType",
      "doc": "C13: whether a hatched member's species has a type (`party has type <type>`).",
      "word": "has type"
+    },
+    {
+     "name": "FindSpecies",
+     "doc": "C15: the first member of a species (`party find species <species> -> var(slot)`; an egg is none).",
+     "word": "find species"
     }
    ],
    "count": {
@@ -2155,6 +2160,11 @@
      "name": "Friendship",
      "doc": "Its friendship (the layout's custom role friendship; 0 without one).",
      "word": "friendship"
+    },
+    {
+     "name": "Data",
+     "doc": "C15: a field of the game's record by its id (`member <slot> data <id>`; the engine's default: a monster role id, element 0).",
+     "word": "data"
     }
    ],
    "count": {

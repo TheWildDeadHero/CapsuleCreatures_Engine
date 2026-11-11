@@ -611,6 +611,19 @@ bool has_type(int32_t type);
 /// @return it, 0 for an empty slot
 int32_t member_field(int32_t slot, MemberField field);
 
+/// C15: a field of a party member's record by the game's id (Member Data: `member <slot> data <id>`). The engine
+/// library's default reads id as a monster role id (capsule/monster/monster.h RoleId, element 0); a game whose
+/// records are its own answers its own ids.
+/// @param slot  its party slot
+/// @param id    the field's id
+/// @return it, 0 for an empty slot or an unknown field
+int32_t member_data(int32_t slot, int32_t id);
+
+/// C15: the first party member of a species (`party find species`; an egg is none).
+/// @param species  the species
+/// @return its slot, or the party's size (monster::kLayout.party_size) when none is
+int32_t find_species(int32_t species);
+
 } // namespace capsule::script::party
 
 /// The bag, shops and move teaching from scripts. The engine's defaults

@@ -63,6 +63,19 @@ CAPSULE_WEAK bool has_type(int32_t type)
    return false;
 }
 
+CAPSULE_WEAK int32_t member_data(int32_t slot, int32_t id)
+{
+   (void)slot;
+   (void)id;
+   return 0;   // C15: no records
+}
+
+CAPSULE_WEAK int32_t find_species(int32_t species)
+{
+   (void)species;
+   return monster::kLayout.party_size;   // C15: no party, none found
+}
+
 CAPSULE_WEAK int32_t member_field(int32_t slot, MemberField field)
 {
    (void)slot;

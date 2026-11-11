@@ -1271,6 +1271,13 @@ CLOCK_EVENTS_CHANGES = {name: CLOCK_EVENTS_REASON for name in ("test_script.cpp"
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in CLOCK_EVENTS_CHANGES.items()})
 
+## Why the outputs changed for C15 (the test scripts gain `member <slot> data <id>` and `party find species`).
+MEMBER_DATA_REASON = "The test scripts gain C15's member data and party find species"
+## The files C15 changed, and why.
+MEMBER_DATA_CHANGES = {name: MEMBER_DATA_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in MEMBER_DATA_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"
