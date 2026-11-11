@@ -604,7 +604,8 @@ class PlotStatements(unittest.TestCase):
 
 
 class ClockStatements(unittest.TestCase):
-   """M6a K1: clock hour|weekday|season|days -> var(v), clock wait <hours> -> var(v), clock reset."""
+   """M6a K1: clock hour|weekday|season|days -> var(v), clock wait <hours> -> var(v), clock reset (K4: clock events
+   [-> var(v)])."""
 
    def code(self, body: str) -> bytes:
       """Bytecode of one script.
@@ -627,10 +628,13 @@ class ClockStatements(unittest.TestCase):
       self.assertEqual(self.code("clock wait 6 -> var(v);"),
                        bytes([sc.OP["Clock"], sc.CLOCK_KINDS.index("wait")]) + var + hours + end)
       self.assertEqual(self.code("clock reset;"), bytes([sc.OP["Clock"], sc.CLOCK_KINDS.index("reset")]) + end)
+      events = bytes([sc.OP["Clock"], sc.CLOCK_KINDS.index("events")])   # M6a K4: whether a result follows
+      self.assertEqual(self.code("clock events;"), events + bytes([0]) + end)
+      self.assertEqual(self.code("clock events -> var(v);"), events + bytes([1]) + var + end)
 
    def test_refusals(self) -> None:
       """A query without its result, a wait without hours, a reset with a result."""
-      for body in ("clock hour;", "clock wait -> var(v);", "clock reset -> var(v);"):
+      for body in ("clock hour;", "clock wait -> var(v);", "clock reset -> var(v);", "clock events var(v);"):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 

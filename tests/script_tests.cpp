@@ -601,6 +601,17 @@ void clock_reset()
    ++g_clock_resets;
 }
 
+constexpr int32_t kStubEventDays = 3;   ///< M6a K4: the stub's days passed.
+int g_clock_events = 0;                 ///< M6a K4: clock_events() calls.
+
+/// M6a K4: counts the calls; kStubEventDays.
+/// @return the days passed
+int32_t clock_events()
+{
+   ++g_clock_events;
+   return kStubEventDays;
+}
+
 /// M6a K2: the stub plots' log ("kind id crop;" per call) and answers: kStubPlotBase + the kind.
 constexpr std::size_t kPlotLogBytes = 96;   ///< M6a K2: the log's room.
 char g_plot_log[kPlotLogBytes] = {};   ///< M6a K2: the plot calls, in order.
@@ -2332,6 +2343,18 @@ void test_clock_ops()
    CHECK(script::world::g_clock_resets == 1);
 }
 
+/// M6a K4: `clock events;` and `clock events -> var(days);` each run the port once; the second keeps its answer.
+void test_clock_events()
+{
+   script::clear_all();
+   script::world::g_clock_events = 0;
+   script::Context c{};
+   script::start(c, SCRIPT_CLOCK_EVENTS);
+   CHECK(run(c) == 0);
+   CHECK(script::world::g_clock_events == 2);
+   CHECK(script::var(VAR_M_SPECIES) == script::world::kStubEventDays);
+}
+
 /// M6a K2: each plot kind through the port, its plot and crop; the answers into their variables.
 void test_plot_ops()
 {
@@ -2630,6 +2653,7 @@ int main()
    test_party_give();
    test_party_members();
    test_clock_ops();
+   test_clock_events();
    test_plot_ops();
    test_plot_kinds();
    test_item_queries();

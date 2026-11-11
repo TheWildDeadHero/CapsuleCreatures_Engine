@@ -39,7 +39,8 @@
 ///     - Game (N3): the game's version of its block (2 bytes), the block's bytes (4), then the block as the game gave
 ///       it (capsule::save::GameBlock). Loading copies it when its version and size are the destination's, else the
 ///       read is refused (OtherShape: the game migrates its own blocks before it asks again);
-///     - Clock (M6a K1): capsule::clock::Saved (kClockBytes, little-endian). Loading copies it; the game then calls
+///     - Clock (M6a K1): capsule::clock::Saved (kClockBytes, little-endian; M6a K4: version 2 adds the last events
+///       day, and a version-1 section loads with none). Loading copies it; the game then calls
 ///       clock::resume(). An image without it (a world that had no clock) loads Saved{} (the economy clock at 0);
 ///     - Plots (M6a K2): the record count (2), then each capsule::plots::PlotRecord (plots::kRecordBytes). Loading
 ///       copies the records the build has places for (plot ids are place indices) and empties the rest; a record
@@ -107,7 +108,8 @@ inline constexpr uint32_t kNurserySlotBytes = 5;      ///< Nursery: per used slo
 inline constexpr uint32_t kGameHeadBytes = 6;         ///< Game (N3): the block's version (2) and bytes (4).
 /// M6a K1: Clock: the economy seconds (4), the latest RTC time seen (4), the last Wait (4), the Wait offset (1), the
 /// flags (1).
-inline constexpr uint32_t kClockBytes = 14;
+inline constexpr uint32_t kClockBytes = 18;
+inline constexpr uint32_t kClockBytesNoEvents = 14;   ///< M6a K4: a version-1 Clock section (no last events day).
 inline constexpr uint32_t kPlotsHeadBytes = 2;      ///< M6a K2: Plots: the record count.
 ///@}
 

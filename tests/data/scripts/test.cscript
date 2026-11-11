@@ -403,6 +403,10 @@ script clock_ops {
     clock wait 5 -> var(m_type);
     clock reset;
 }
+script clock_events {
+    clock events;
+    clock events -> var(m_species);
+}
 script plot_ops {
     plot 3 plant 2;
     plot 3 water;

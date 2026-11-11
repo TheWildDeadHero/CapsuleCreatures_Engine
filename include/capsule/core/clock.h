@@ -79,6 +79,7 @@ struct Saved
    uint32_t last_wait = kNever;           ///< The economy clock at the last Wait, or kNever.
    uint8_t wait_offset_hours = 0;         ///< The Wait offset (0 to kWaitWrapHours - 1).
    uint8_t flags = 0;                     ///< kNoticeShown.
+   uint32_t last_events_day = kNever;     ///< M6a K4: the economy day events() last ran, or kNever.
 };
 
 /// Saved::flags: the missing-RTC notice was shown for this save.
@@ -145,5 +146,10 @@ bool notice_pending();
 
 /// The game told the player (saved with the save).
 void notice_shown();
+
+/// M6a K4: the time events' day (the script's `clock events`): the economy days passed since it last ran, and today
+/// recorded. The first run of a save answers 0 (nothing to catch up on); an economy clock never runs backwards.
+/// @return days passed (0: the same day, a first run, or no clock)
+uint32_t events();
 
 } // namespace capsule::clock

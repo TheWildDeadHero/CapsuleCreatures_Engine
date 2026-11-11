@@ -45,7 +45,8 @@ constexpr uint8_t kBoxesVersion = 1;      ///< Boxes with their geometry.
 constexpr uint8_t kScriptVersion = 1;     ///< Script sub-banks with their shape hashes.
 constexpr uint8_t kNurseryVersion = 1;    ///< B2: the nursery with its geometry.
 constexpr uint8_t kGameVersion = 1;       ///< N3: the game's block with its own version and size.
-constexpr uint8_t kClockVersion = 1;      ///< M6a K1: the clock's saved state.
+constexpr uint8_t kClockVersion = 2;      ///< M6a K1: the clock's saved state (M6a K4: the last events day).
+constexpr uint8_t kClockVersionNoEvents = 1;   ///< M6a K4: the Clock section before the last events day (loads).
 constexpr uint8_t kPlotsVersion = 1;      ///< M6a K2: the plots' records.
 ///@}
 /// Copies of the image a medium keeps at most (the older one takes the next write).
@@ -717,13 +718,15 @@ void encode_clock(Sink& s, const clock::Saved* c)
    put_le(s, v.last_wait, kU32Bytes);
    put_le(s, v.wait_offset_hours, 1);
    put_le(s, v.flags, 1);
+   put_le(s, v.last_events_day, kU32Bytes);   // M6a K4
 }
 
 /// Loads (or only checks) the clock's saved state.
-/// @param s    the source over the section
-/// @param dst  the destination, or nullptr (only checked)
+/// @param s        the source over the section
+/// @param dst      the destination, or nullptr (only checked)
+/// @param version  the section's version (M6a K4: kClockVersionNoEvents has no last events day)
 /// @return Ok, or OtherShape (an offset past a week)
-Status decode_clock(Source& s, clock::Saved* dst)
+Status decode_clock(Source& s, clock::Saved* dst, uint8_t version)
 {
    clock::Saved v{};
    v.economy_seconds = next_le(s, kU32Bytes);
@@ -731,6 +734,10 @@ Status decode_clock(Source& s, clock::Saved* dst)
    v.last_wait = next_le(s, kU32Bytes);
    v.wait_offset_hours = static_cast<uint8_t>(next_le(s, 1));
    v.flags = static_cast<uint8_t>(next_le(s, 1));
+   if (version != kClockVersionNoEvents)
+   {
+      v.last_events_day = next_le(s, kU32Bytes);   // M6a K4 (a version-1 section: none, Saved's kNever)
+   }
    if (v.wait_offset_hours >= clock::kWaitWrapHours)
    {
       return Status::OtherShape;
@@ -1459,14 +1466,24 @@ bool has_source(Section id, const Sources& src)
    }
 }
 
+/// Whether this build loads a section's version: its own, or (M6a K4) a version-1 Clock section.
+/// @param id       the section
+/// @param version  the image's version of it
+/// @return true when it loads
+bool accepted_version(Section id, uint8_t version)
+{
+   return version == version_of(id) || (id == Section::Clock && version == kClockVersionNoEvents);
+}
+
 /// Decodes a section (store: into its destination; else only checks that it loads).
 /// @param s      the source over the section
 /// @param id     section
 /// @param dst    the destinations
 /// @param store  false: only checked
 /// @param notes  what migrating changed, or nullptr
+/// @param version  the section's version in the image (accepted_version())
 /// @return Ok or why it does not load
-Status decode(Source& s, Section id, const Sources& dst, bool store, Notes* notes)
+Status decode(Source& s, Section id, const Sources& dst, bool store, Notes* notes, uint8_t version)
 {
    switch (id)
    {
@@ -1482,7 +1499,7 @@ Status decode(Source& s, Section id, const Sources& dst, bool store, Notes* note
    case Section::Game:
       return decode_game(s, dst.game, store);
    case Section::Clock:
-      return decode_clock(s, store ? dst.clock : nullptr);
+      return decode_clock(s, store ? dst.clock : nullptr, version);
    case Section::Plots:
       decode_plots(s, store ? dst.plots : nullptr);
       return Status::Ok;
@@ -1808,7 +1825,7 @@ Status read(const Sources& dst, Notes* notes, const Stage& stage)
       {
          continue;
       }
-      if (en.version != version_of(static_cast<Section>(en.id)))
+      if (!accepted_version(static_cast<Section>(en.id), en.version))
       {
          return Status::OtherVersion;
       }
@@ -1856,7 +1873,7 @@ Status read(const Sources& dst, Notes* notes, const Stage& stage)
       }
       Source s{};
       open(s, home[e], 0, t.entries[e].size);
-      const Status st = decode(s, static_cast<Section>(t.entries[e].id), dst, false, nullptr);
+      const Status st = decode(s, static_cast<Section>(t.entries[e].id), dst, false, nullptr, t.entries[e].version);
       if (st != Status::Ok)
       {
          return st;
@@ -1884,7 +1901,7 @@ Status read(const Sources& dst, Notes* notes, const Stage& stage)
       const uint8_t e = static_cast<uint8_t>(en - t.entries);
       Source s{};
       open(s, home[e], 0, en->size);
-      const Status st = decode(s, sec, dst, true, notes);
+      const Status st = decode(s, sec, dst, true, notes, en->version);
       if (st != Status::Ok)
       {
          return st;   // not reached: the same bytes loaded in the check above
