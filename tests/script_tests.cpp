@@ -1239,6 +1239,27 @@ bool find_move(uint16_t move, int32_t& slot, int32_t& species)
    return true;
 }
 
+constexpr int32_t kStubDataScale = 100;   ///< C15: member_data() answers slot * kStubDataScale + the id.
+constexpr int32_t kStubFoundSpecies = 25; ///< C15: find_species() finds this one ...
+constexpr int32_t kStubFoundSlot = 4;     ///< ... in this slot.
+
+/// C15: slot * kStubDataScale + the id.
+/// @param slot  the slot
+/// @param id    the field's id
+/// @return it
+int32_t member_data(int32_t slot, int32_t id)
+{
+   return slot * kStubDataScale + id;
+}
+
+/// C15: kStubFoundSpecies is in kStubFoundSlot, no other.
+/// @param species  the species
+/// @return its slot, or kPartySlots
+int32_t find_species(int32_t species)
+{
+   return species == kStubFoundSpecies ? kStubFoundSlot : kPartySlots;
+}
+
 } // namespace capsule::script::party
 
 namespace capsule::script::game
@@ -2406,6 +2427,20 @@ void test_party_members()
          script::party::kStubLead * script::party::kStubFieldScale + static_cast<int32_t>(script::MemberField::Species));
 }
 
+/// C15: a member's game field by id, and the species search (found, not found).
+void test_member_data()
+{
+   script::clear_all();
+   script::Context c{};
+   script::start(c, SCRIPT_MEMBER_DATA);
+   CHECK(run(c) == 0);
+   constexpr int32_t kSlot = 2;
+   constexpr int32_t kId = 7;
+   CHECK(script::var(VAR_ANSWER) == kSlot * script::party::kStubDataScale + kId);
+   CHECK(script::var(VAR_V8) == script::party::kStubFoundSlot);
+   CHECK(script::var(VAR_V16) == kPartySlots);
+}
+
 /// C7: the item queries: room for 5 more (1) and for 200 more (0) of an item, an item's pocket.
 void test_item_queries()
 {
@@ -2652,6 +2687,7 @@ int main()
    test_battle_setup();
    test_party_give();
    test_party_members();
+   test_member_data();
    test_clock_ops();
    test_clock_events();
    test_plot_ops();

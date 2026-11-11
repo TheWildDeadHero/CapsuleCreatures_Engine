@@ -96,7 +96,7 @@
 /// | Name | slot8 (the name placeholder's index), source8 (NameSource), [Text: text ref], [Entry: list32 (asset key), operand index], [Number: operand], [Kind: kind8 (NameKind, or kFirstGameNameKind + the manifest's name_kinds index), operand id, counted8 (1: an operand count follows), [operand count]] | C4: script::set_name() of the source's text, cut to the slot's length (a kind: game::name_text(); the engine's kinds' defaults from the battle data and the party) |
 /// | Counter | kind8 (CounterOp), box8 (the manifest's counters index), var16 (its variable), [Show: x8, y8 (cells), label text ref] | C5: world::counter() with the variable's current value (the default: the text layer's banner) |
 /// | Stat | stat8 (the manifest's stats index), operand (the amount) | C6: world::add_stat() (the default does nothing: only a manifest with stats_port emits the op) |
-/// | Party | kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)], [Lead: var16], [CountAlive: var16, operand (slot left out, or kNoMember)], [HasType: var16, operand (type)] | C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone); C13: var = party::lead() / count_alive() / has_type() |
+/// | Party | kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)], [Lead: var16], [CountAlive: var16, operand (slot left out, or kNoMember)], [HasType: var16, operand (type)], [FindSpecies: var16 (slot), operand (species)] | C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone); C13: var = party::lead() / count_alive() / has_type(); C15: slot var = party::find_species() (the party's size when none) |
 /// | ItemQuery | kind8 (ItemQueryOp), var16, operand (item), [Room: operand (n)] | C7: var = items::room() (1 when the bag takes n more) or items::pocket() |
 /// | MapView | kind8 (MapViewOp), [Layout: operand (map)] | C9: world::redraw_map() / world::set_layout(); C12: world::show_map_banner() |
 /// | Animation | kind8 (AnimationOp), [Arg: operand (index), operand (value)], [Start, Wait: operand (animation)] | C9: world::animation_arg() / animation_start(); Wait waits while world::animation_done() is false |
@@ -105,7 +105,7 @@
 /// | BattleSetup | kind8 (BattleSetupOp), [Prepare: operand (species), operand (level), operand (item)], [Outcome, RematchDue, RematchReady: var16] | C10: battles::prepare(); var = battles::outcome_code() / rematch_due() / rematch_ready() |
 /// | Picture | kind8 (PictureOp), [Show: operand (species), operand (x), operand (y)] | C12: world::picture_show(); Hide: world::picture_hide(), waits while world::picture_busy() |
 /// | Screen | operand (screen) | C12: world::open_screen(); waits while world::screen_busy() |
-/// | Member | field8 (MemberField), var16, operand (slot) | C13: var = party::member_field() |
+/// | Member | field8 (MemberField), var16, operand (slot), [Data: operand (the field's id)] | C13: var = party::member_field(); C15 Data: var = party::member_data() |
 /// | Clock | kind8 (ClockOp), [Hour..Days: var16], [Wait: var16, operand (hours)], [Events: u8 (1: a result), [var16]] | M6a K1: var = world::clock_value() / clock_wait(); world::clock_reset(); K4: [var =] world::clock_events() |
 /// | Plot | kind8 (PlotOp), [Pick..: var16], operand (plot; At: the object), [Plant: operand (crop)] | M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them; K3 At: the object's plot, kNoPlot without one) |
 #pragma once
@@ -223,7 +223,7 @@ enum class Op : uint8_t
    BattleSetup,   ///< C10: prepare an opponent a later battle fights, read the last outcome, or ask about the current side's rematch.
    Picture,   ///< C12: show a creature's picture in a framed window, or hide it and wait for it to close.
    Screen,   ///< C12: open one of the game's screens and wait until the field is back.
-   Member,   ///< C13: read one party member's data: its species, whether it is an egg, how many moves it knows, its friendship.
+   Member,   ///< C13: read one party member's data: its species, whether it is an egg, how many moves it knows, its friendship (C15: a game field by its id).
    Clock,   ///< M6a K1: read the world clock (hour, weekday), the season and the economy clock's days; Wait; reset the world clock (K4: the time events' days).
    Plot,   ///< M6a K2: plant, water, pick or clear a plot; read its stage, crop, what picking would yield (K3: its crop's item; the plot of a map object).
    NUM_OPS   ///< Number of opcodes.
@@ -552,6 +552,7 @@ enum class PartyOp : uint8_t
    Lead,   ///< C13: the first hatched member's slot (0 when none).
    CountAlive,   ///< C13: count the hatched members with hit points, one slot left out or none (`party count alive [except <slot>]`).
    HasType,   ///< C13: whether a hatched member's species has a type (`party has type <type>`).
+   FindSpecies,   ///< C15: the first member of a species (`party find species <species> -> var(slot)`; an egg is none).
    NUM_PARTY_OPS   ///< Number of kinds.
 };
 
@@ -587,6 +588,7 @@ enum class MemberField : uint8_t
    Egg,   ///< 1 when it is an egg.
    Moves,   ///< How many moves it knows.
    Friendship,   ///< Its friendship (the layout's custom role friendship; 0 without one).
+   Data,   ///< C15: a field of the game's record by its id (`member <slot> data <id>`; the engine's default: a monster role id, element 0).
    NUM_MEMBER_FIELDS   ///< Number of fields.
 };
 

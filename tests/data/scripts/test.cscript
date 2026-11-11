@@ -429,6 +429,11 @@ script party_members {
     party has type 9 -> var(m_type);
     member var(answer) species -> var(m_species);
 }
+script member_data {
+    member 2 data 7 -> var(answer);
+    party find species 25 -> var(v8);
+    party find species 26 -> var(v16);
+}
 script item_queries {
     item_room(3, 5) -> var(v8);
     item_room(3, 200) -> var(answer);

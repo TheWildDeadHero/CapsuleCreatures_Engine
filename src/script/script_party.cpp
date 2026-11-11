@@ -1,6 +1,7 @@
 /// @file
 /// C7: the engine's default party statements (capsule/script/port.h namespace party: heal(), count(),
-/// find_move(); C8: give(), give_egg(); C13: lead(), count_alive(), has_type(), member_field()) over the party the
+/// find_move(); C8: give(), give_egg(); C13: lead(), count_alive(), has_type(), member_field(); C15: member_data(),
+/// find_species()) over the party the
 /// box statements were given. Weak (CAPSULE_WEAK): a game
 /// that keeps its own party defines them. The stash is in src/script/script_party_stash.cpp, so a game with its own
 /// does not link the default's buffer.
@@ -179,6 +180,31 @@ CAPSULE_WEAK bool has_type(int32_t type)
    return false;
 }
 
+CAPSULE_WEAK int32_t member_data(int32_t slot, int32_t id)
+{
+   const monster::Party* p = boxes::party();
+   if (p == nullptr || slot < 0 || slot >= p->count || slot >= monster::kMaxPartySize || id < 0 ||
+       id >= monster::kNoRole)
+   {
+      return 0;
+   }
+   return static_cast<int32_t>(monster::get(p->members[slot], static_cast<monster::RoleId>(id)));   // C15
+}
+
+CAPSULE_WEAK int32_t find_species(int32_t species)
+{
+   const monster::Party* p = boxes::party();
+   for (int i = 0; p != nullptr && i < p->count && i < monster::kMaxPartySize; ++i)
+   {
+      const monster::Record& rec = p->members[i];
+      if (!combine::is_egg(rec) && static_cast<int32_t>(species_of(rec)) == species)
+      {
+         return i;   // C15: an egg is no species yet
+      }
+   }
+   return monster::kLayout.party_size;
+}
+
 CAPSULE_WEAK int32_t member_field(int32_t slot, MemberField field)
 {
    const monster::Party* p = boxes::party();
@@ -210,6 +236,7 @@ CAPSULE_WEAK int32_t member_field(int32_t slot, MemberField field)
       const monster::RoleId role = monster::find_custom(kFriendshipRole);
       return role != monster::kNoRole ? static_cast<int32_t>(monster::get(rec, role)) : 0;
    }
+   case MemberField::Data:   // C15: member_data()
    case MemberField::NUM_MEMBER_FIELDS:
       break;
    }

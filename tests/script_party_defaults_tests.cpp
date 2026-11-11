@@ -99,7 +99,7 @@ void test_egg()
    CHECK(script::party::count(false) == 2 && script::party::count(true) == 1);
 }
 
-/// The counts, the move search and the heal on a party of one.
+/// The counts, the move search and the heal on a party of one (C15: the species search, a member's field).
 void test_queries()
 {
    g_party = monster::Party{};
@@ -114,6 +114,14 @@ void test_queries()
    monster::set(g_party.members[0], Role::PrimaryStatus, kSleeping);
    script::party::heal();
    CHECK(monster::get(g_party.members[0], Role::PrimaryStatus) == 0);
+   // C15: the species search (an egg is none) and a member's field by role id
+   CHECK(script::party::find_species(kGiven) == 0);
+   CHECK(script::party::find_species(kGiven + 1) == monster::kLayout.party_size);
+   CHECK(script::party::member_data(0, static_cast<int32_t>(Role::Moves)) == known);
+   CHECK(script::party::member_data(1, static_cast<int32_t>(Role::Moves)) == 0);   // an empty slot
+   CHECK(script::party::give_egg(kGiven) == script::kGivenParty);
+   g_party.members[0] = g_party.members[1];   // the egg first: the search goes past it
+   CHECK(script::party::find_species(kGiven) == monster::kLayout.party_size);
 }
 
 } // namespace

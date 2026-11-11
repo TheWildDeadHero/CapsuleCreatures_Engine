@@ -669,7 +669,12 @@ class MemberStatements(unittest.TestCase):
       self.assertEqual(self.code("party count alive except 2 -> var(v);"), alive + self.operand(2) + end)
       has = bytes([party, sc.PARTY_KINDS.index(sc.PARTY_HAS_TYPE)]) + var
       self.assertEqual(self.code("party has type 12 -> var(v);"), has + self.operand(12) + end)
-      for field in sc.MEMBER_FIELDS:
+      # C15: a member's game field by id; the species search
+      member = bytes([sc.OP["Member"], sc.MEMBER_FIELDS.index(sc.MEMBER_DATA)]) + var
+      self.assertEqual(self.code("member 1 data 33 -> var(v);"), member + self.operand(1) + self.operand(33) + end)
+      find = bytes([party, sc.PARTY_KINDS.index(sc.PARTY_FIND_SPECIES)]) + var
+      self.assertEqual(self.code("party find species 25 -> var(v);"), find + self.operand(25) + end)
+      for field in (f for f in sc.MEMBER_FIELDS if f != sc.MEMBER_DATA):   # C15: data takes an id
          self.assertEqual(self.code(f"member 3 {field} -> var(v);"),
                           bytes([sc.OP["Member"], sc.MEMBER_FIELDS.index(field)]) + var + self.operand(3) + end)
       self.assertEqual(self.code("member var(v) egg -> var(v);")[0], sc.OP["Member"])

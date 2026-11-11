@@ -2053,6 +2053,16 @@ Outcome op_party(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uin
       }
       break;
    }
+   case PartyOp::FindSpecies:
+   {
+      // C15: var16 (slot), operand (species)
+      const VarId slot{load_le16(p)};
+      p += kU16Bytes;
+      const int32_t species = operand(p);
+      advance(f, p, base);
+      set_var(slot, party::find_species(species));
+      break;
+   }
    case PartyOp::Give:
    case PartyOp::GiveEgg:
    {
@@ -2109,13 +2119,21 @@ Outcome op_party(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uin
 Outcome op_member(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
 {
    Frame& f = c.stack[c.depth - 1];
-   // field8 (MemberField), var16, operand (slot)
+   // field8 (MemberField), var16, operand (slot), [C15 Data: operand (the field's id)]
    const auto field = static_cast<MemberField>(*p++);
    const VarId v{load_le16(p)};
    p += kU16Bytes;
    const int32_t slot = operand(p);
+   const int32_t id = field == MemberField::Data ? operand(p) : 0;
    advance(f, p, base);
-   set_var(v, field < MemberField::NUM_MEMBER_FIELDS ? party::member_field(slot, field) : 0);
+   if (field == MemberField::Data)
+   {
+      set_var(v, party::member_data(slot, id));
+   }
+   else
+   {
+      set_var(v, field < MemberField::NUM_MEMBER_FIELDS ? party::member_field(slot, field) : 0);
+   }
    return Outcome::Continue;
 }
 
