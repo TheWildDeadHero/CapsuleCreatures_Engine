@@ -138,7 +138,8 @@ class ConnectorTests(unittest.TestCase):
       self.assertIn("case 1: return Mood(2);", source)
       deps = (self.root / "out/ext.d").read_text()
       for needed in (self.project, self.battle, self.cave, self.game / "plugins/party_moods/party_moods/connector.py"):
-         self.assertIn(str(needed.resolve()), deps)
+         # The depfile writes "/" on every host (Ninja and make read it on Windows too).
+         self.assertIn(needed.resolve().as_posix(), deps)
       # Unchanged outputs keep their time stamps; a file no longer written goes.
       stamp = (out / SAMPLE_ID / "party_moods.cpp").stat().st_mtime_ns
       (out / SAMPLE_ID / "stale.h").write_text("old")
