@@ -440,6 +440,10 @@ void set_metatile(int16_t x, int16_t y, int32_t tile, bool solid);
 /// @param value  the game's numbering
 void set_respawn(int32_t value);
 
+/// C18: the respawn point (the `respawn` query; the default answers 0, as the engine keeps none of its own).
+/// @return the game's numbering, 0 for none
+int32_t respawn();
+
 /// Remembers a warp destination (the default: nothing).
 /// @param slot  WarpSlot
 /// @param map   the map's asset key

@@ -251,6 +251,8 @@ enum class Query : uint8_t
    MapIndex,   ///< The shown map's index (world_ids.h MAP_...).
    Steps,   ///< The player's steps.
    Timer,   ///< Seconds left on the countdown timer (0 when stopped).
+   Respawn,   ///< C18: the respawn point in the game's numbering (world::respawn(); 0 for none).
+   Vehicle,   ///< C18: the walker's vehicle class index (0 on foot; the index `vehicle N;` sets).
    NUM_QUERIES   ///< Number of queries.
 };
 

@@ -1375,6 +1375,10 @@ int32_t query(Query q, uint8_t obj)
       return static_cast<int32_t>(field::walker().steps & overworld::kStepsMask);
    case Query::Timer:
       return overworld::timer_seconds();
+   case Query::Respawn:   // C18: the game's numbering, through its port
+      return respawn();
+   case Query::Vehicle:   // C18: the class `vehicle N;` set
+      return field::walker().vehicle_class;
    case Query::NUM_QUERIES:
       break;
    }
