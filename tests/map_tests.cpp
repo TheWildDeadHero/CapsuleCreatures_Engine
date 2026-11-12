@@ -1546,11 +1546,14 @@ void field_actions()
    CHECK(!field::take_event(&e));
    // Swimming, the water can be entered: nobody is asked.
    field::set_vehicle(1);
+   CHECK(script::world::query(script::Query::Vehicle, script::kObjectPlayer) == 1);   // C18: the vehicle query
+   CHECK(script::world::query(script::Query::Respawn, script::kObjectPlayer) == 0);   // C18: the default port
    const int asked = g_action_asks;
    press_a();
    CHECK(!field::take_event(&e) && g_action_asks == asked);
    // The paddle class steps off the water as on foot.
    field::set_vehicle(2);
+   CHECK(script::world::query(script::Query::Vehicle, script::kObjectPlayer) == 2);
    field::place(10, 0, field::DIR_LEFT);
    step(field::DIR_LEFT);
    CHECK(field::walker().x == 9 && field::walker().vehicle_class == 0);

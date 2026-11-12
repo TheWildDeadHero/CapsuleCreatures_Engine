@@ -500,6 +500,8 @@ CLOCK_WORD = "clock"
 CLOCK_KINDS = VM.words("ClockOp")
 ## M6a K4: the clock kind whose result is optional (`clock events [-> var(days)];`).
 CLOCK_EVENTS = "events"
+## C18: the operand naming a map's index (`map(Name)`, the numbering the map_index query answers).
+MAP_REF_WORD = "map"
 ## C16: the statement word of the storage queries (`boxes <kind> -> var(v);`).
 BOXES_WORD = "boxes"
 ## C16: their kinds (capsule::script::BoxesOp, in order).
@@ -1110,6 +1112,7 @@ def load_world_field(path: str | PathLike[str]) -> dict[str, Any]:
              "darkness_levels": len(mc.darkness_levels(w)), "dark": False}
    except mc.ManifestError as e:
       raise ScriptError(f"{path.name}: {e}") from None
+   out["maps"] = [str(name) for name in maps]   # C18: `map(Name)`'s numbering (map::index_of(), map_index)
    plots = w.get("plots") if isinstance(w.get("plots"), dict) else {}   # M6a K2: the names plot statements use
    out["plots"] = {"places": [str(pl.get("name")) for pl in plots.get("places", []) if isinstance(pl, dict)],
                    "crops": [str(c.get("id")) for c in plots.get("crops", []) if isinstance(c, dict)]}
@@ -1873,6 +1876,13 @@ class Parser:
       if self.at("var") and self.peek(1).text == "(":
          n = self.var_ref()
          return Node("varop", t, name=n.text)
+      if self.at(MAP_REF_WORD) and self.peek(1).text == "(":
+         # C18: a map's index as a constant (what the map_index query answers)
+         self.take()
+         self.expect("(")
+         n = self.name("a map name")
+         self.expect(")")
+         return Node("mapref", t, name=n.text)
       if self.at("script") and self.peek(1).text == "(":
          # A script's ID as a constant (a native's callback)
          self.take()
@@ -3361,6 +3371,15 @@ class Compiler:
             return 0
          # The unsigned key as the signed 32-bit value the operand stores.
          return key - U32_RANGE if key >= INT32_LIMIT else key
+      if k == "mapref":   # C18: the map's index in the world manifest's map order
+         if self.world_field is None:
+            self.err("map(...) needs the world manifest (its map order)", node)
+            return 0
+         names = self.world_field.get("maps") or []
+         if node["name"] not in names:
+            self.err(f"unknown map {node['name']!r}", node)
+            return 0
+         return names.index(node["name"])
       if k == "scriptref":
          if node["name"] not in self.scripts:
             self.err(f"unknown script {node['name']!r}", node)

@@ -665,6 +665,43 @@ class BoxesStatements(unittest.TestCase):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 
+class MapRefs(unittest.TestCase):
+   """C18: map(Name), a map's index in the world manifest's order; the respawn and vehicle queries."""
+
+   def compiled(self, body: str, maps: list[str] | None) -> sc.Compiler:
+      """Compiles one script with or without a world's map list.
+      @param body  statements
+      @param maps  the world's map names, or None for no world
+      @return the Compiler
+      """
+      m = {"schema": "capsule.scripts/1", "sources": ["main.cscript"]}
+      comp = sc.Compiler(m, sources={"main.cscript": f"var v : u16;\nscript s {{ {body} }}"})
+      comp.world_field = {"maps": maps} if maps is not None else None
+      return comp.run()
+
+   def test_index(self) -> None:
+      """The map's position in the world's map order, the constant an `==` with map_index reads."""
+      comp = self.compiled("var(v) = map(Cave);", ["Town", "Route", "Cave"])
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      plain = self.compiled("var(v) = 2;", [])
+      po, pn, _ = plain.result["scripts"][0]
+      self.assertEqual(comp.result["code"][o:o + n], plain.result["code"][po:po + pn])
+
+   def test_refusals(self) -> None:
+      """An unknown map, and map() without a world."""
+      self.assertTrue(errors(self.compiled("var(v) = map(Lake);", ["Town"])))
+      self.assertTrue(errors(self.compiled("var(v) = map(Town);", None)))
+
+   def test_queries(self) -> None:
+      """respawn and vehicle are object-free queries."""
+      for word in ("respawn", "vehicle"):
+         self.assertIn(word, sc.QUERIES)
+         self.assertFalse(sc.QUERIES[word])
+         self.assertEqual(errors(compile_text(f"var v : u16;\nscript s {{ if {word} == 1 {{ var(v) = 0; }} }}")),
+                          [])
+
+
 class MemberStatements(unittest.TestCase):
    """C13: party lead / count alive [except] / has type and member."""
 

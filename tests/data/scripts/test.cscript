@@ -434,6 +434,10 @@ script member_data {
     party find species 25 -> var(v8);
     party find species 26 -> var(v16);
 }
+script respawn_vehicle {
+    var(v8) = respawn;
+    var(v16) = vehicle;
+}
 script boxes_queries {
     boxes hatched -> var(v8);
     boxes free -> var(v16);

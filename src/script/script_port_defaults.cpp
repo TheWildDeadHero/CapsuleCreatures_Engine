@@ -166,6 +166,11 @@ CAPSULE_WEAK void set_respawn(int32_t value)
    (void)value;
 }
 
+CAPSULE_WEAK int32_t respawn()
+{
+   return 0;
+}
+
 CAPSULE_WEAK void set_warp(WarpSlot slot, AssetKey map, int32_t x, int32_t y)
 {
    (void)slot;

@@ -354,7 +354,11 @@ void set_self_switch(uint8_t obj, uint8_t letter, bool on)
    const uint32_t bit = 1u << (obj * 4 + letter);
    g_world.self = on ? (g_world.self | bit) : (g_world.self & ~bit);
 }
-/// Queries: x = 10 + obj, y = 20 + obj, facing 3, map 7, steps 99, timer 5.
+
+constexpr int32_t kStubRespawn = 15;   ///< C18: the respawn the stub's query answers.
+constexpr int32_t kStubVehicle = 2;    ///< C18: the vehicle class the stub's query answers.
+
+/// Queries: x = 10 + obj, y = 20 + obj, facing 3, map 7, steps 99, C18: respawn 15, vehicle 2, timer 5.
 /// @param q    query
 /// @param obj  object
 /// @return the value
@@ -372,6 +376,10 @@ int32_t query(Query q, uint8_t obj)
       return 7;
    case Query::Steps:
       return 99;
+   case Query::Respawn:
+      return kStubRespawn;
+   case Query::Vehicle:
+      return kStubVehicle;
    default:
       return 5;
    }
@@ -2462,6 +2470,17 @@ void test_member_data()
    CHECK(script::var(VAR_V16) == kPartySlots);
 }
 
+/// C18: the respawn and vehicle queries.
+void test_respawn_vehicle()
+{
+   script::clear_all();
+   script::Context c{};
+   script::start(c, SCRIPT_RESPAWN_VEHICLE);
+   CHECK(run(c) == 0);
+   CHECK(script::var(VAR_V8) == script::world::kStubRespawn);
+   CHECK(script::var(VAR_V16) == script::world::kStubVehicle);
+}
+
 /// C16: the storage queries: the hatched records, the free slots, the current box.
 void test_boxes_queries()
 {
@@ -2722,6 +2741,7 @@ int main()
    test_party_members();
    test_member_data();
    test_boxes_queries();
+   test_respawn_vehicle();
    test_clock_ops();
    test_clock_events();
    test_plot_ops();

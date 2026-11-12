@@ -1285,6 +1285,13 @@ BOXES_QUERIES_CHANGES = {name: BOXES_QUERIES_REASON for name in ("test_script.cp
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in BOXES_QUERIES_CHANGES.items()})
 
+## Why the C18 outputs changed: the test scripts gain the respawn and vehicle queries.
+MAP_QUERIES_REASON = "The test scripts gain C18's respawn and vehicle queries"
+## The files C18 changed, and why.
+MAP_QUERIES_CHANGES = {name: MAP_QUERIES_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in MAP_QUERIES_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"
