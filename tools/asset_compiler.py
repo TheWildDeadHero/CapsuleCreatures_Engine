@@ -106,6 +106,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bitmap  # noqa: E402
+import connectors  # noqa: E402
 import manifest_paths  # noqa: E402
 import screen_assets  # noqa: E402
 import text_encoder  # noqa: E402
@@ -1912,6 +1913,7 @@ def compile_manifest(manifest: JsonDict, base: str | PathLike[str] | None = None
    if manifest.get("schema") != "capsule.assets/1":
       raise ManifestError("schema must be 'capsule.assets/1'")
    m, table_texts = expand_manifest(manifest, Path(base or "."), deps)
+   m = connectors.without_ext(m, "assets")   # connector blocks (D-10 §4) are tools/connectors.py's
    table_texts = select_language(table_texts, m, language)
    named = m.get("palettes", {})
    entries, bgs, sprites, texts, lists, seen = [], [], [], [], [], {}

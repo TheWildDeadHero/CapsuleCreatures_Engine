@@ -5,6 +5,10 @@ versions, `YYYY.MM.DD.MMMM` (the UTC date and the minutes since midnight).
 
 ## Unreleased
 
+- **Connectors** (`tools/connectors.py`, [Connectors](docs/CONNECTORS.md)): plugins (API 3) add typed data blocks
+  to the project, world, maps, cells, layers, battle entries and assets, check them with hooks and write code or
+  data the game links. `capsule_game()` runs them before the other compilers; the map, battle and asset compilers
+  take the blocks off at the attach points. Sample `samples/plugins/party_moods`.
 - **Battle script machine** (`capsule/battle/vm.h`): bytecode banks with labels and references, a game-supplied
   command table, waits on the presentation, and the **controller channel** (`capsule/battle/controller.h`): the
   logic emits commands, the presentation runs and acknowledges them through exec flags. Bank writer and reader
