@@ -150,6 +150,9 @@ endif()
 # Text (C-2): every compiler that writes text encodes it with
 # tools/text_encoder.py and a code page; without one, the engine's ASCII page.
 set(CAPSULE_TEXT_DEPENDS ${CAPSULE_ROOT}/tools/text_encoder.py ${CAPSULE_ROOT}/assets/text/ascii.codepage.json)
+# The compilers that read records with attach points take the connector blocks off with tools/connectors.py (D-10
+# section 4); every compiler step lists CAPSULE_TEXT_DEPENDS, so it reruns when that module changes too.
+list(APPEND CAPSULE_TEXT_DEPENDS ${CAPSULE_ROOT}/tools/connectors.py)
 
 # P-1: the default font is compiled from its asset at build time.
 set(CAPSULE_GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
@@ -669,6 +672,21 @@ function(capsule_game dir)
       set_source_files_properties(${gen}/script_dispatch.cpp PROPERTIES INCLUDE_DIRECTORIES ${CAPSULE_ROOT}/src/script)
    endif()
 
+   # Connectors (D-10 section 4): the project data of the game's plugins ("plugins" in project.json), checked
+   # against each connector's schema and compiled by its hooks (tools/connectors.py). Every game runs it: a block a
+   # compiler leaves for it, of a plugin the game does not load, fails here. The C++ sources the plugins write
+   # (generated/<name>/ext/<plugin id>/) compile through ext/connectors.cpp; the game includes their headers as
+   # "ext/<plugin id>/<file>".
+   add_custom_command(
+      OUTPUT  ${gen}/ext/connectors.cpp
+      COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/connectors.py build ${manifest} --out-dir ${gen}/ext
+            --depfile ${gen}/ext.d
+      DEPENDS ${CAPSULE_ROOT}/tools/connectors.py ${CAPSULE_ROOT}/tools/sequence_compiler.py
+            ${CAPSULE_BATTLE_COMPILER_DEPENDS} ${manifest}
+      DEPFILE ${gen}/ext.d   # the manifests with blocks and the plugins' files
+      COMMENT "Checking the connector data of ${name}")
+   target_sources(${target} PRIVATE ${gen}/ext/connectors.cpp)
+
    string(JSON n ERROR_VARIABLE err LENGTH "${json}" sequences)
    if(NOT err AND n GREATER 0)
       math(EXPR last "${n} - 1")
@@ -943,6 +961,9 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_map_compiler.py)
    add_test(NAME encounter_compiler_tests
             COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_encounter_compiler.py)
+   # Connectors (D-10 section 4): attach points, schemas, the compilers' ids, hooks, outputs (tools/connectors.py)
+   add_test(NAME connectors_tests
+            COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_connectors.py)
 
    # Battle engine, creature records and goldens (cmake/parts/battle_tests.cmake).
    include(cmake/parts/battle_tests.cmake)

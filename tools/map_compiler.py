@@ -239,6 +239,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import asset_compiler as ac  # noqa: E402
 import bitmap  # noqa: E402
+import connectors  # noqa: E402
 import manifest_paths  # noqa: E402
 import encounter_compiler as ec  # noqa: E402
 import event_compiler as evc  # noqa: E402
@@ -1100,7 +1101,8 @@ def compile_map(name: str, path: str | Path, tilesets: Mapping[str, Tileset], be
    """
    where = f"{where_prefix} {name!r}"
    behaviors = behaviors or ["normal"]
-   m = load_json(path, where, sources)
+   # connector blocks (D-10 §4) are tools/connectors.py's: off before the key checks
+   m = connectors.without_ext(load_json(path, where, sources), "map")
    check_keys(m, "map", where)
    if m.get("schema") != MAP_SCHEMA:
       raise ManifestError(f"{where}: schema must be '{MAP_SCHEMA}'")
@@ -1623,7 +1625,7 @@ def load_world(path: str | Path,
            {tileset name: Path}, {map name: Path})
    """
    path = Path(path).resolve()
-   w = load_json(path, "world", sources)
+   w = connectors.without_ext(load_json(path, "world", sources), "world")   # connector blocks: connectors.py's
    check_keys(w, "world", "world")
    base = path.parent
    tilesets = {n: (base / rel).resolve() for n, rel in (w.get("tilesets") or {}).items()}
@@ -2026,7 +2028,7 @@ def compile_world(path: str | Path, deps: list[Path] | None = None, sources: Sou
    """
    deps = [] if deps is None else deps
    path = Path(path).resolve()
-   w = load_json(path, "world", sources)
+   w = connectors.without_ext(load_json(path, "world", sources), "world")   # connector blocks: connectors.py's
    check_keys(w, "world", "world")
    if w.get("schema") != "capsule.world/1":
       raise ManifestError("world: schema must be 'capsule.world/1'")

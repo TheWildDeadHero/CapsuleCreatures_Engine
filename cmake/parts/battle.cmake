@@ -53,6 +53,7 @@ set(CAPSULE_BATTLE_SOURCES
 file(GLOB CAPSULE_BATTLEC_MODULES CONFIGURE_DEPENDS ${CAPSULE_ROOT}/tools/battlec/*.py)
 set(CAPSULE_BATTLE_COMPILER_DEPENDS
    ${CAPSULE_ROOT}/tools/battle_compiler.py
+   ${CAPSULE_ROOT}/tools/connectors.py   # battlec/manifest.py takes the connector blocks off (D-10 section 4)
    ${CAPSULE_BATTLEC_MODULES}
    ${CAPSULE_ROOT}/tools/ruleset_compiler.py
    ${CAPSULE_ROOT}/tools/effect_compiler.py

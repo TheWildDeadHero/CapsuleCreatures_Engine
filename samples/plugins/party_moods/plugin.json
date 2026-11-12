@@ -1,0 +1,13 @@
+{
+  "schema": "capsule.plugin/1",
+  "id": "sample.party_moods",
+  "version": "2026.11.12.1080",
+  "api": 3,
+  "title": "Party moods (sample plugin)",
+  "extension": {
+    "module": "party_moods.studio"
+  },
+  "connector": {
+    "module": "party_moods.connector"
+  }
+}

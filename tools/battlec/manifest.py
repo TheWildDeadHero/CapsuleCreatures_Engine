@@ -28,6 +28,8 @@ import json
 from collections.abc import Mapping
 from pathlib import Path
 
+import connectors
+
 from .common import Json, ManifestError, Sources, check_keys, register_keys, strip
 
 ## Schema of the content manifest (battle.json).
@@ -184,18 +186,22 @@ def merge(battle: Mapping[str, Json], structure: Mapping[str, Json]) -> Json:
 
 
 def read_battle(path: str | Path, sources: Sources | None = None,
-                deps: list[Path] | None = None) -> tuple[Json, Path]:
-   """!The merged view of a battle manifest and its structure (read_parts() + merge()).
-   @param path     battle.json
-   @param sources  {Path: data} replacing files, or None
-   @param deps     list collecting the files read (both), or None
+                deps: list[Path] | None = None, keep_ext: bool = False) -> tuple[Json, Path]:
+   """!The merged view of a battle manifest and its structure (read_parts() + merge()). The connector blocks of the
+   species, moves, items, parties and presenters (D-10 §4, tools/connectors.py) are taken off unless keep_ext, so the
+   sections' key checks never see them.
+   @param path      battle.json
+   @param sources   {Path: data} replacing files, or None
+   @param deps      list collecting the files read (both), or None
+   @param keep_ext  keep the connector blocks (tools/connectors.py reads them)
    @return (merged view, structure path)
    @throws ManifestError
    """
    battle, structure, st_path = read_parts(path, sources)
    if deps is not None:
       deps += [Path(path).resolve(), st_path]
-   return merge(battle, structure), st_path
+   merged = merge(battle, structure)
+   return (merged if keep_ext else connectors.without_ext(merged, "battle")), st_path
 
 
 def split_manifest(merged: Mapping[str, Json], structure_name: str) -> tuple[Json, Json]:
