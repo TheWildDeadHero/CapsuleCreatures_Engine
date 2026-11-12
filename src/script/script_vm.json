@@ -998,6 +998,18 @@
      "doc": "Seconds left on the countdown timer (0 when stopped).",
      "word": "timer",
      "object": false
+    },
+    {
+     "name": "Respawn",
+     "doc": "C18: the respawn point in the game's numbering (world::respawn(); 0 for none).",
+     "word": "respawn",
+     "object": false
+    },
+    {
+     "name": "Vehicle",
+     "doc": "C18: the walker's vehicle class index (0 on foot; the index `vehicle N;` sets).",
+     "word": "vehicle",
+     "object": false
     }
    ],
    "count": {

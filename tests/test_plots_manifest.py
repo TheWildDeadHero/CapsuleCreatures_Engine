@@ -122,6 +122,7 @@ class PlotsManifestTests(unittest.TestCase):
       self.with_plots(PLOTS)
       field = sc.load_world_field(self.s.dir / "world.json")
       self.assertEqual(field["plots"], {"places": ["town_soil", "None", "plaza_soil"], "crops": ["drop", "bar"]})
+      self.assertEqual(field["maps"], list(json.loads((self.s.dir / "world.json").read_text())["maps"]))   # C18
 
 
 class PlotsSaveLayoutTests(unittest.TestCase):
