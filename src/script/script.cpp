@@ -336,6 +336,50 @@ int copy_codes(const text::Code* t, text::Code* out, int capacity)
    return n;
 }
 
+/// C20: a Menu without kMenuShow shows every entry.
+constexpr uint32_t kAllMenuEntries = 0xFFFFFFFFu;
+
+/// C20: the list index of a menu's answer: the shown entry at that position (the answer as it is past the shown
+/// entries: cancel, or every entry shown).
+/// @param shown   the shown entries' mask
+/// @param answer  the port's answer (a position among the shown entries, or cancel)
+/// @return the list index, or @p answer
+int32_t menu_entry(uint32_t shown, int16_t answer)
+{
+   int16_t position = 0;
+   for (int i = 0; answer >= 0 && i < kMenuShowBits; ++i)
+   {
+      if ((shown & (1u << i)) == 0)
+      {
+         continue;
+      }
+      if (position == answer)
+      {
+         return i;
+      }
+      ++position;
+   }
+   return answer;
+}
+
+/// C20: a list entry's position among a menu's shown entries (the cursor's; 0 for an entry not shown).
+/// @param shown  the shown entries' mask
+/// @param entry  the list index
+/// @return its position
+uint8_t menu_position(uint32_t shown, uint8_t entry)
+{
+   if (entry >= kMenuShowBits || (shown & (1u << entry)) == 0)
+   {
+      return 0;
+   }
+   uint8_t position = 0;
+   for (uint8_t i = 0; i < entry; ++i)
+   {
+      position = static_cast<uint8_t>(position + ((shown >> i) & 1u));
+   }
+   return position;
+}
+
 /// Reads one text reference and advances past it.
 /// @param p  read position; advanced
 /// @return the text (a "?" stand-in when the asset is missing)
@@ -1150,26 +1194,40 @@ Outcome execute(Context& c)
       p += kU32Bytes;
       r.back = (flags & kMenuBack) != 0;
       r.fade_wait = (flags & kMenuFadeWait) != 0;
+      r.anchor_end = (flags & kMenuAnchorEnd) != 0;
+      // C20: the shown entries (every entry without kMenuShow)
+      const uint32_t shown = (flags & kMenuShow) != 0 ? static_cast<uint32_t>(operand(p)) : kAllMenuEntries;
       next();
-      // The list's texts (its first kMaxMenuItems; a missing text shows as text_ref()'s); a missing or empty list
-      // answers the cancel value at once
+      // The list's shown texts (its first kMaxMenuItems; a missing text shows as text_ref()'s); a missing or empty
+      // list, or a mask showing none, answers the cancel value at once
       static constexpr text::Code kMissingOption[] = {'?', text::kCodeEnd};
       const text::Code* items[kMaxMenuItems] = {};
+      const text::Code* every[kMaxMenuItems] = {};   // C20: every entry, for kMenuWidthAll's sizing
       const asset::List* l = asset::list(list);
       uint8_t n = 0;
-      for (uint16_t i = 0; l != nullptr && i < l->count && n < kMaxMenuItems; ++i)
+      uint8_t all = 0;
+      for (uint16_t i = 0; l != nullptr && i < l->count && i < kMenuShowBits && all < kMaxMenuItems; ++i)
       {
          const text::Code* t = asset::text(l->items[i]);
-         items[n++] = t != nullptr ? t : kMissingOption;
+         every[all++] = t != nullptr ? t : kMissingOption;
+         if ((shown & (1u << i)) != 0 && n < kMaxMenuItems)
+         {
+            items[n++] = every[all - 1];
+         }
       }
       r.items = items;
       r.count = n;
+      r.cursor = menu_position(shown, r.cursor);   // C20: the cursor names a list entry too
+      const bool width_all = (flags & kMenuWidthAll) != 0;
+      r.sizing = width_all ? every : items;
+      r.sizing_count = width_all ? all : n;
       const int16_t a = n > 0 ? port::menu_open(r) : static_cast<int16_t>(r.cancel);
       if (a != port::kMenuWaiting)
       {
-         set_var(VarId{c.result_var}, a);
+         set_var(VarId{c.result_var}, menu_entry(shown, a));
          return Outcome::Continue;
       }
+      c.delay = shown;   // the answer's entry is looked up when the port answers
       c.wait = Wait::Menu;
       return Outcome::Waiting;
    }
@@ -1711,7 +1769,8 @@ bool still_waiting(Context& c)
       {
          return true;
       }
-      set_var(VarId{c.result_var}, a);
+      set_var(VarId{c.result_var}, menu_entry(c.delay, a));   // C20: the shown mask (c.delay)
+      c.delay = 0;
       break;
    }
    case Wait::Native:

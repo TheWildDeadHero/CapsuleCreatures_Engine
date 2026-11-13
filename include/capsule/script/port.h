@@ -88,6 +88,10 @@ struct MenuRequest
    uint8_t cancel;                   ///< The answer for Back (with back) and for a menu that cannot open.
    bool back;                        ///< Back answers cancel (else it does nothing).
    bool fade_wait;                   ///< Input waits while the screen fades.
+   bool anchor_end;                  ///< C20: x and y are the frame's bottom-right cell (a window growing from it).
+   const text::Code* const* sizing;  ///< C20: the texts whose widest sizes the window (items, or with kMenuWidthAll
+                                     ///< every list entry).
+   uint8_t sizing_count;             ///< C20: their number.
    AssetKey style;                   ///< A text box style (asset::TextBox) for the port, or AssetKey{} (its own).
 };
 

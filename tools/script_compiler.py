@@ -700,10 +700,14 @@ MENU_NUMBERS = {"default": "cursor", "columns": "columns", "rows": "rows", "dela
 MENU_BYTE_MAX = 0xFF
 ## C3: the largest menu delay a statement may give.
 MENU_DELAY_MAX = VM.constants["kMenuStyleDelay"] - 1
-## C3: the menu statement's flag words and their bits.
-MENU_FLAG_WORDS = {"fadewait": VM.constants["kMenuFadeWait"]}
+## C3: the menu statement's flag words and their bits (C20: `wide`, the window sized by every list entry).
+MENU_FLAG_WORDS = {"fadewait": VM.constants["kMenuFadeWait"], "wide": VM.constants["kMenuWidthAll"]}
 ## C3: the menu statement's word that keeps Back from answering.
 MENU_NOBACK_WORD = "noback"
+## C20: the menu field naming the shown entries' mask (`show <operand>`) and its flag.
+MENU_SHOW_WORD, MENU_SHOW = "show", VM.constants["kMenuShow"]
+## C20: the menu fields placing the frame's bottom-right cell at `at x y` (`anchor end`) and its flag.
+MENU_ANCHOR_WORDS, MENU_ANCHOR_END = ("anchor", "end"), VM.constants["kMenuAnchorEnd"]
 ## C3: the menu statement's grid, rows and delay defaults (a column, every row, the port's delay).
 MENU_DEFAULTS = {"cursor": 0, "columns": 1, "rows": 0, "delay": VM.constants["kMenuStyleDelay"], "cancel": None}
 
@@ -2856,7 +2860,7 @@ class Parser:
          if ref.kind != "ref" or not ref.text.startswith("list:"):
             raise self.error(f"menu: expected a list:NAME, found {ref.text or 'end of file'!r}")
          fields: dict[str, Any] = dict(MENU_DEFAULTS)
-         fields.update({"at": None, "flags": 0, "back": True, "style": None})
+         fields.update({"at": None, "flags": 0, "back": True, "style": None, "show": None})
          while not self.at("->"):
             if self.accept("at"):
                x, x_tok = self.number()
@@ -2880,6 +2884,13 @@ class Parser:
             if self.accept(MENU_NOBACK_WORD):
                fields["back"] = False
                continue
+            if self.accept(MENU_SHOW_WORD):   # C20: only the mask's entries show; the answer stays the list index
+               fields["show"] = self.operand()
+               continue
+            if self.accept(MENU_ANCHOR_WORDS[0]):   # C20: `at` places the bottom-right cell
+               self.expect(MENU_ANCHOR_WORDS[1])
+               fields["flags"] |= MENU_ANCHOR_END
+               continue
             if self.accept("style"):
                st = self.take()
                if st.kind != "ref" or not st.text.startswith("text_box:"):
@@ -2893,6 +2904,8 @@ class Parser:
          self.expect(";")
          if fields["columns"] < 1:
             raise self.error("menu: columns must be 1 or more")
+         if fields["flags"] & MENU_ANCHOR_END and fields["at"] is None:
+            raise self.error("menu: anchor end needs at x y (the bottom-right cell)")
          return Node("menu", t, list=ref.text, name=n.text, **fields)
       if w == "order":   # C2: an object's draw order among the sprites
          obj = self.object_ref()
@@ -4635,6 +4648,8 @@ class Compiler:
             flags |= VM.constants["kMenuBack"]
          if s["at"] is not None:
             flags |= VM.constants["kMenuAt"]
+         if s["show"] is not None:
+            flags |= MENU_SHOW
          x, y = s["at"] if s["at"] is not None else (0, 0)
          e.op("Menu")
          e.u16(self.var_id(s["name"], s))
@@ -4648,6 +4663,8 @@ class Compiler:
          e.u8(NO_CANCEL if cancel is None else cancel)
          e.u32(keys[0])
          e.u32(keys[1])
+         if s["show"] is not None:   # C20: the shown entries' mask
+            self.emit_operand(e, s["show"])
          ctx["waits"] = True
          return True
       if k == "order":
