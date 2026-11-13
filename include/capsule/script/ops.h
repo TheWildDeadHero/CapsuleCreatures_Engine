@@ -92,7 +92,7 @@
 /// | Battle | kind8 (BattleKind), [Unowned: operand species, operand level, operand item], [Scripted: operand number], var16 (or kNoVar) | C1: the battle (capsule/script/battle_port.h; Party / Rematch take the encounter record's sides); waits until it ends; var = its capsule::battle::Outcome |
 /// | Prop | kind8 (PropOp), id8, [Place: sprite32 (asset key), operand x, operand y, elevation8, facing8], [Face: facing8] | C2: world::place_prop() / face_prop() / remove_prop() (capsule/field/field.h props; gone at the next map) |
 /// | ObjectOrder | operand (object), fixed8 (1 fixed, 0 the world's rule), order8 | C2: world::set_order() (field::set_fixed_order(); the walker as player) |
-/// | Menu | var16, flags8 (kMenu... bits), x8, y8, cursor8, columns8, rows8, delay8 (kMenuStyleDelay: the port's), cancel8, list32 (asset key), style32 (text box asset key, or 0) | C3: port::menu_open() / menu_poll(); waits until it answers; var = the chosen option's index, or cancel (Back with kMenuBack; a menu that cannot open) |
+/// | Menu | var16, flags8 (kMenu... bits), x8, y8, cursor8, columns8, rows8, delay8 (kMenuStyleDelay: the port's), cancel8, list32 (asset key), style32 (text box asset key, or 0), [kMenuShow: operand (the shown entries' mask)] | C3: port::menu_open() / menu_poll(); waits until it answers; var = the chosen option's index, or cancel (Back with kMenuBack; a menu that cannot open); C20: with kMenuShow only the mask's entries show and the cursor and var are list indices |
 /// | Name | slot8 (the name placeholder's index), source8 (NameSource), [Text: text ref], [Entry: list32 (asset key), operand index], [Number: operand], [Kind: kind8 (NameKind, or kFirstGameNameKind + the manifest's name_kinds index), operand id, counted8 (1: an operand count follows), [operand count]] | C4: script::set_name() of the source's text, cut to the slot's length (a kind: game::name_text(); the engine's kinds' defaults from the battle data and the party) |
 /// | Counter | kind8 (CounterOp), box8 (the manifest's counters index), var16 (its variable), [Show: x8, y8 (cells), label text ref] | C5: world::counter() with the variable's current value (the default: the text layer's banner) |
 /// | Stat | stat8 (the manifest's stats index), operand (the amount) | C6: world::add_stat() (the default does nothing: only a manifest with stats_port emits the op) |
@@ -685,6 +685,9 @@ inline constexpr uint8_t kEncounterNoMusic = 4;   ///< C1: Encounter mode bit: n
 inline constexpr uint8_t kMenuBack = 1;   ///< C3: Menu flag: Back answers the cancel value (else Back does nothing).
 inline constexpr uint8_t kMenuFadeWait = 2;   ///< C3: Menu flag: input waits while the screen fades.
 inline constexpr uint8_t kMenuAt = 4;   ///< C3: Menu flag: x and y place it (its frame's top-left cell); else the port's place.
+inline constexpr uint8_t kMenuShow = 8;   ///< C20: Menu flag: a mask operand follows; bit i shows list entry i (the first 32), the answer stays the list index.
+inline constexpr uint8_t kMenuAnchorEnd = 16;   ///< C20: Menu flag: x and y place the frame's bottom-right cell (with kMenuAt).
+inline constexpr uint8_t kMenuWidthAll = 32;   ///< C20: Menu flag: the port sizes the window by every list entry, shown or not (MenuRequest::sizing).
 inline constexpr uint8_t kMenuStyleDelay = 0xFF;   ///< C3: Menu delay: the port's (its style's) frames before input.
 ///@}
 
@@ -696,6 +699,7 @@ inline constexpr int kMaxChoices = 8;   ///< Options of one Choice.
 inline constexpr int kMaxTriggers = 16;   ///< On-frame triggers armed at once (one map).
 inline constexpr int kMaxTriggerDeps = 8;   ///< Flags and variables one trigger reads.
 inline constexpr int kMaxMenuItems = 16;   ///< C3: options of one Menu (a list asset's first ones).
+inline constexpr int kMenuShowBits = 32;   ///< C20: list entries a Menu's show mask covers.
 inline constexpr uint8_t kFirstGameNameKind = 4;   ///< C4: the first game name kind (a scripts manifest's name_kinds, in order; NameKind's count).
 inline constexpr int kMaxGameNameKinds = 32;   ///< C4: name kinds a scripts manifest may declare.
 inline constexpr int kMaxCounters = 16;   ///< C5: counter boxes a scripts manifest may declare.

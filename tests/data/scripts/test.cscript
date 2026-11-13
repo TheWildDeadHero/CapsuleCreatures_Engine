@@ -322,6 +322,12 @@ script menus {
     menu list:MENU_COLORS columns 3 cancel 127 noback -> var(v8);
     menu list:MENU_COLORS rows 2 style text_box:MENU_STYLE -> var(v16);
 }
+// C20: hidden options (Red and Blue shown: the answer is the list index), a window anchored at its bottom-right cell
+// and sized by every entry, its cursor on Blue (the list index), a mask showing nothing
+script menus_shown {
+    menu list:MENU_COLORS at 20 12 anchor end show 5 wide default 2 cancel 127 -> var(answer);
+    menu list:MENU_COLORS show 0 cancel 127 -> var(v8);
+}
 // C4: name slots from every source
 script names {
     name str:1 = text:MENU_BLUE;

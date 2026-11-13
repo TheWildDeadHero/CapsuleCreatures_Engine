@@ -775,8 +775,8 @@
    "name": "Menu",
    "kind": "generic",
    "doc": "C3: a positioned menu of a list asset's texts (a column, a grid or a scrolling list).",
-   "bytes": "var16, flags8 (kMenu... bits), x8, y8, cursor8, columns8, rows8, delay8 (kMenuStyleDelay: the port's), cancel8, list32 (asset key), style32 (text box asset key, or 0)",
-   "does": "C3: port::menu_open() / menu_poll(); waits until it answers; var = the chosen option's index, or cancel (Back with kMenuBack; a menu that cannot open)"
+   "bytes": "var16, flags8 (kMenu... bits), x8, y8, cursor8, columns8, rows8, delay8 (kMenuStyleDelay: the port's), cancel8, list32 (asset key), style32 (text box asset key, or 0), [kMenuShow: operand (the shown entries' mask)]",
+   "does": "C3: port::menu_open() / menu_poll(); waits until it answers; var = the chosen option's index, or cancel (Back with kMenuBack; a menu that cannot open); C20: with kMenuShow only the mask's entries show and the cursor and var are list indices"
   },
   {
    "id": 92,
@@ -2622,6 +2622,24 @@
      "doc": "C3: Menu flag: x and y place it (its frame's top-left cell); else the port's place."
     },
     {
+     "name": "kMenuShow",
+     "type": "uint8_t",
+     "value": "8",
+     "doc": "C20: Menu flag: a mask operand follows; bit i shows list entry i (the first 32), the answer stays the list index."
+    },
+    {
+     "name": "kMenuAnchorEnd",
+     "type": "uint8_t",
+     "value": "16",
+     "doc": "C20: Menu flag: x and y place the frame's bottom-right cell (with kMenuAt)."
+    },
+    {
+     "name": "kMenuWidthAll",
+     "type": "uint8_t",
+     "value": "32",
+     "doc": "C20: Menu flag: the port sizes the window by every list entry, shown or not (MenuRequest::sizing)."
+    },
+    {
      "name": "kMenuStyleDelay",
      "type": "uint8_t",
      "value": "0xFF",
@@ -2667,6 +2685,12 @@
      "type": "int",
      "value": "16",
      "doc": "C3: options of one Menu (a list asset's first ones)."
+    },
+    {
+     "name": "kMenuShowBits",
+     "type": "int",
+     "value": "32",
+     "doc": "C20: list entries a Menu's show mask covers."
     },
     {
      "name": "kFirstGameNameKind",

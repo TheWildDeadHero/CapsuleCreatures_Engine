@@ -318,6 +318,22 @@ class Menus(unittest.TestCase):
       # noback: the cancel value stays (a menu that cannot open), Back does nothing
       self.assertEqual(self.code("menu list:MULTI_X cancel 127 noback -> var(v);")[3], 0)
 
+   def test_show_and_anchor(self) -> None:
+      """C20: show's mask operand after the style key, with kMenuShow; anchor end's and wide's flags."""
+      op = sc.OP
+      c = sc.VM.constants
+      lst = sc.asset_key("list:MULTI_X", "test").to_bytes(4, "little")
+      code = self.code("menu list:MULTI_X at 20 12 anchor end show 5 -> var(v);")
+      flags = c["kMenuAt"] | c["kMenuShow"] | c["kMenuAnchorEnd"]
+      self.assertEqual(code[:4], bytes([op["Menu"], 0, 0, flags]))
+      self.assertEqual(code[11:15], lst)
+      self.assertEqual(code[19:], bytes([c["kOpConst8"], 5, op["End"]]))
+      self.assertEqual(self.code("menu list:MULTI_X show var(v) -> var(v);")[19], c["kOpVar"])
+      self.assertEqual(self.code("menu list:MULTI_X wide -> var(v);")[3], c["kMenuWidthAll"])
+      # anchor end places the bottom-right cell, so it needs `at`
+      self.assertTrue(errors(compile_text("var v : u8;\nscript s { menu list:MULTI_X anchor end -> var(v); }")))
+      self.assertTrue(errors(compile_text("var v : u8;\nscript s { menu list:MULTI_X at 1 1 anchor -> var(v); }")))
+
    def test_refusals(self) -> None:
       """No list, an unknown field, a value past a byte, a delay of the port's own value, no columns, no style."""
       for body, text in (("menu text:a.b -> var(v);", "list:NAME"), ("menu list:A spin 3 -> var(v);", "unknown field"),

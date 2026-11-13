@@ -2298,6 +2298,33 @@ void test_menus()
    g_port.menu_at_once = port::kMenuWaiting;
 }
 
+/// C20: a menu's shown entries: the port gets only Red and Blue, the bottom-right anchor, all three to size by; its
+/// second option answers Blue's list index; a mask showing nothing answers cancel without opening.
+void test_menus_shown()
+{
+   namespace port = script::port;
+   constexpr int16_t kSecondShown = 1;   // the port's answer: the second shown option ...
+   constexpr int32_t kBlue = 2;          // ... is the list's third entry
+   constexpr int32_t kCancel = 127;      // the statements' cancel
+   script::clear_all();
+   g_port.menus = 0;
+   g_port.menu_at_once = port::kMenuWaiting;
+   g_port.menu_answer = port::kMenuWaiting;
+   script::Context c{};
+   script::start(c, SCRIPT_MENUS_SHOWN);
+   run(c);
+   const port::MenuRequest& m = g_port.menu;
+   CHECK(g_port.menus == 1 && c.wait == script::Wait::Menu);
+   CHECK(m.count == 2 && m.anchor_end && m.x == 20 && m.y == 12);
+   CHECK(m.sizing_count == 3);   // wide: every entry sizes the window
+   CHECK(m.cursor == 1);         // default 2 (Blue) is the second shown option
+   CHECK(std::strcmp(g_port.menu_option1, "Blue") == 0);
+   g_port.menu_answer = kSecondShown;
+   run(c);
+   CHECK(script::var(VAR_ANSWER) == kBlue);
+   CHECK(g_port.menus == 1 && script::var(VAR_V8) == kCancel && c.depth == 0);
+}
+
 /// C5: counter boxes: show (its cells, its label: the manifest's or its name), update and hide, each with its
 /// variable's value at the call.
 void test_counters()
@@ -2781,6 +2808,7 @@ int main()
    test_item_queries();
    test_names();
    test_menus();
+   test_menus_shown();
    test_props();
    test_field_effects();
    test_f2();

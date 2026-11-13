@@ -99,7 +99,7 @@ CAPSULE_POD(Frame, 4);
 struct Context
 {
    Frame stack[kMaxStack];   ///< stack[depth - 1] is the running script.
-   uint32_t delay;           ///< Frames left of a Delay.
+   uint32_t delay;           ///< Frames left of a Delay; C20: while a Menu waits, its shown entries' mask.
    uint16_t result_var;      ///< YesNo / Choice / Native: where the answer goes.
    uint8_t depth;            ///< Frames in use; 0 = idle.
    Wait wait;                ///< What it waits for.
