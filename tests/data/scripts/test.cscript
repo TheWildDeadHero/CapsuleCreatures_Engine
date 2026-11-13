@@ -434,6 +434,11 @@ script member_data {
     party find species 25 -> var(v8);
     party find species 26 -> var(v16);
 }
+// C19: a game text buffer as a text: a name slot and a message
+script text_buffers {
+    name str:1 = buffer(4);
+    msg buffer(4);
+}
 script respawn_vehicle {
     var(v8) = respawn;
     var(v16) = vehicle;

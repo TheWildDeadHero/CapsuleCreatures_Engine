@@ -1292,6 +1292,13 @@ MAP_QUERIES_CHANGES = {name: MAP_QUERIES_REASON for name in ("test_script.cpp", 
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in MAP_QUERIES_CHANGES.items()})
 
+## Why the C19 outputs changed: the test scripts gain a game text buffer as a text.
+TEXT_BUFFERS_REASON = "The test scripts gain C19's buffer(N) texts"
+## The files C19 changed, and why.
+TEXT_BUFFERS_CHANGES = {name: TEXT_BUFFERS_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in TEXT_BUFFERS_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

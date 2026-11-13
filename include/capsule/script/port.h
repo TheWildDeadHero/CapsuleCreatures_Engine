@@ -444,6 +444,12 @@ void set_respawn(int32_t value);
 /// @return the game's numbering, 0 for none
 int32_t respawn();
 
+/// C19: a text the game builds at run time (a `buffer(N)` text: kTextBuffer). The default (src/script/script.cpp)
+/// answers the empty text, as the engine keeps no buffers of its own.
+/// @param index  the game's buffer number
+/// @return its codes, kCodeEnd-terminated (never null)
+const text::Code* text_buffer(int32_t index);
+
 /// Remembers a warp destination (the default: nothing).
 /// @param slot  WarpSlot
 /// @param map   the map's asset key

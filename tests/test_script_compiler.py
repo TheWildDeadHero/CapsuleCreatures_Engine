@@ -665,6 +665,37 @@ class BoxesStatements(unittest.TestCase):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 
+class TextBuffers(unittest.TestCase):
+   """C19: buffer(N), a game text buffer wherever a text is taken."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """The text reference: the buffer tag and the index's 4 bytes."""
+      ref = bytes([sc.TEXT_BUFFER]) + (4).to_bytes(4, "little")
+      self.assertIn(ref, self.code("msg buffer(4);"))
+      self.assertTrue(self.code("msg buffer(4) nowait;").startswith(bytes([sc.OP["MessageEx"]])))
+
+   def test_places(self) -> None:
+      """A message box of each kind, a choice and a name slot take it too."""
+      for body in ("msgbox buffer(4);", "msgbox yesno buffer(4) -> var(v);", "msgbox sign buffer(4);",
+                   "choice [buffer(1), \"No\"] -> var(v);"):
+         self.assertIn(bytes([sc.TEXT_BUFFER]), self.code(body), body)
+
+   def test_refusals(self) -> None:
+      """A buffer named by a variable, or without its index."""
+      for body in ("msg buffer(var(v));", "msg buffer();"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
+
 class MapRefs(unittest.TestCase):
    """C18: map(Name), a map's index in the world manifest's order; the respawn and vehicle queries."""
 
