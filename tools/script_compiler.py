@@ -356,6 +356,12 @@ OPND_CONST8, OPND_CONST16, OPND_CONST32, OPND_VAR = (VM.constants[k] for k in ("
                                                                                   "kOpConst32", "kOpVar"))
 ## Text reference tags.
 TEXT_ASSET, TEXT_INLINE = VM.constants["kTextAsset"], VM.constants["kTextInline"]
+## C19: the text tag of a game text buffer (`buffer(N)`: world::text_buffer()).
+TEXT_BUFFER = VM.constants["kTextBuffer"]
+## C19: the word of a game text buffer as a text (`buffer(N)`).
+TEXT_BUFFER_WORD = "buffer"
+## C19: the largest text buffer index (its 4 bytes).
+MAX_TEXT_BUFFER = 0xFFFFFFFF
 ## Native without a result variable.
 NO_VAR = VM.constants["kNoVar"]
 ## Choice without a cancel index.
@@ -2073,8 +2079,17 @@ class Parser:
       self.expect(";")
       return Node("name_set", t, slot=slot.text, **fields)
 
+   def at_text(self, ahead: int = 0) -> bool:
+      """!Whether a text starts at a token (a string literal, text:key or C19's `buffer(N)`).
+      @param ahead  how many tokens ahead
+      @return True for a text
+      """
+      t = self.peek(ahead)
+      return (t.kind == "string" or (t.kind == "ref" and t.text.startswith("text:"))
+              or (t.text == TEXT_BUFFER_WORD and self.peek(ahead + 1).text == "("))
+
    def text_ref(self) -> Node:
-      """!Parses a text: a string literal or text:key.
+      """!Parses a text: a string literal, text:key or (C19) `buffer(N)`, a game text buffer.
       @return its node
       """
       t = self.peek()
@@ -2084,7 +2099,13 @@ class Parser:
       if t.kind == "ref" and t.text.startswith("text:"):
          self.take()
          return Node("textkey", t, ref=t.text)
-      raise self.error("expected a text: \"...\" or text:key")
+      if t.text == TEXT_BUFFER_WORD and self.peek(1).text == "(":
+         self.take()
+         self.expect("(")
+         index, _ = self.number()
+         self.expect(")")
+         return Node("textbuffer", t, index=index)
+      raise self.error("expected a text: \"...\", text:key or buffer(N)")
 
    def condition(self) -> Node:
       """!Parses a condition (|| of && of unary).
@@ -2417,7 +2438,7 @@ class Parser:
       if self.at("msg") or self.at("msgbox"):
          box = self.take().text == "msgbox"
          kind = None
-         if box and self.peek().text in MSGBOX_KINDS and self.peek(1).kind in ("string", "ref"):
+         if box and self.peek().text in MSGBOX_KINDS and self.at_text(1):
             kind = self.take().text   # a message box kind
          text = self.text_ref()
          flags = 0
@@ -2816,7 +2837,7 @@ class Parser:
             raise self.error(f"name: expected a name placeholder, found {slot.text or 'end of file'!r}")
          self.expect("=")
          src = self.peek()
-         if src.kind == "ref" and src.text.startswith("text:") or src.kind == "string":
+         if self.at_text():   # a string, text:key or (C19) buffer(N)
             return self.end_name(t, slot, source="text", text=self.text_ref())
          if src.kind == "ref" and src.text.startswith("list:"):
             self.take()
@@ -3510,6 +3531,12 @@ class Compiler:
       @param node  inline or textkey node
       @return None
       """
+      if node["k"] == "textbuffer":   # C19: the game's buffer, read when the statement runs
+         if not 0 <= node["index"] <= MAX_TEXT_BUFFER:
+            self.err(f"buffer({node['index']}) is past a text buffer's index", node)
+         e.u8(TEXT_BUFFER)
+         e.u32(node["index"] & MAX_TEXT_BUFFER)
+         return
       if node["k"] == "inline":
          try:
             if self.field is not None and self.field.declared:

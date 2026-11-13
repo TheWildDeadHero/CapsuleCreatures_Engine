@@ -16,7 +16,8 @@
 /// | kOpQuery | 2 bytes | a game value: Query8, object8 (D-17) |
 ///
 /// A **text reference** is a tag byte (kTextAsset: 4-byte asset key of a text
-/// asset; kTextInline: 4-byte offset into Bank::text) and its 4 bytes.
+/// asset; kTextInline: 4-byte offset into Bank::text; C19 kTextBuffer: 4-byte
+/// index of a game text buffer, world::text_buffer()) and its 4 bytes.
 ///
 /// The opcodes (Op), their bytes after the opcode, the kind enums their operands select and the operand
 /// constants are generated from src/script/script_vm.json into capsule/script/ops.h (D-36 package 2:

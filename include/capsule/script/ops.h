@@ -645,6 +645,7 @@ inline constexpr uint8_t kTransitionDefault = 0xFF;   ///< Warp: the default tra
 inline constexpr uint8_t kKeepFacing = 4;   ///< Warp / Place: facing kept.
 inline constexpr uint8_t kTextAsset = 0;   ///< 4-byte asset key of a text asset.
 inline constexpr uint8_t kTextInline = 1;   ///< 4-byte offset into Bank::text.
+inline constexpr uint8_t kTextBuffer = 2;   ///< C19: 4-byte index of a game text buffer (world::text_buffer()).
 inline constexpr uint16_t kNoVar = 0xFFFF;   ///< Native without a result variable.
 inline constexpr uint8_t kNoCancel = 0xFF;   ///< Choice: Back does nothing.
 inline constexpr uint8_t kObjectSelf = 254;   ///< Object operand: the context's own object.

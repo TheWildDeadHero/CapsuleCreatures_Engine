@@ -349,6 +349,10 @@ const text::Code* text_ref(const uint8_t*& p)
    {
       return bank().text + v;
    }
+   if (tag == kTextBuffer)
+   {
+      return world::text_buffer(static_cast<int32_t>(v));   // C19: a game-built text
+   }
    const text::Code* t = asset::text(AssetKey{v});
    ENGINE_ASSERT(t != nullptr);
    return t != nullptr ? t : kMissing;
@@ -3492,3 +3496,16 @@ void disarm_triggers()
 }
 
 } // namespace capsule::script
+
+namespace capsule::script::world
+{
+
+CAPSULE_WEAK const text::Code* text_buffer(int32_t index)
+{
+   // C19: no buffers of the engine's own; a game with run-time texts defines this
+   static constexpr text::Code kEmpty[1] = {text::kCodeEnd};
+   (void)index;
+   return kEmpty;
+}
+
+} // namespace capsule::script::world

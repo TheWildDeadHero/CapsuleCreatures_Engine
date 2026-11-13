@@ -355,6 +355,21 @@ void set_self_switch(uint8_t obj, uint8_t letter, bool on)
    g_world.self = on ? (g_world.self | bit) : (g_world.self & ~bit);
 }
 
+/// C19: the text the stub's text_buffer() answers ("Built").
+constexpr text::Code kStubBuffer[] = {'B', 'u', 'i', 'l', 't', text::kCodeEnd};
+constexpr int kStubBufferCodes = 5;         ///< C19: its codes before kCodeEnd.
+constexpr int32_t kStubBufferIndex = 4;     ///< C19: the buffer the test script names.
+int32_t g_buffer_asked = -1;                ///< C19: text_buffer()'s last index.
+
+/// C19: the game's text buffers (one: kStubBuffer).
+/// @param index  the buffer
+/// @return its codes
+const text::Code* text_buffer(int32_t index)
+{
+   g_buffer_asked = index;
+   return kStubBuffer;
+}
+
 constexpr int32_t kStubRespawn = 15;   ///< C18: the respawn the stub's query answers.
 constexpr int32_t kStubVehicle = 2;    ///< C18: the vehicle class the stub's query answers.
 
@@ -2470,6 +2485,22 @@ void test_member_data()
    CHECK(script::var(VAR_V16) == kPartySlots);
 }
 
+/// C19: `buffer(4)` as a name slot's text and as a message's.
+void test_text_buffers()
+{
+   script::clear_all();
+   g_port = Port{};
+   script::world::g_buffer_asked = -1;
+   script::Context c{};
+   script::start(c, SCRIPT_TEXT_BUFFERS);
+   run(c);
+   CHECK(script::world::g_buffer_asked == script::world::kStubBufferIndex);
+   CHECK(std::strcmp(g_port.last, "Built") == 0);
+   text::Code out[text::kMaxPlaceholderCodes] = {};
+   const int n = script::placeholder_text(PLACEHOLDER_STR_1, out, text::kMaxPlaceholderCodes);
+   CHECK(n == script::world::kStubBufferCodes && out[0] == 'B');
+}
+
 /// C18: the respawn and vehicle queries.
 void test_respawn_vehicle()
 {
@@ -2742,6 +2773,7 @@ int main()
    test_member_data();
    test_boxes_queries();
    test_respawn_vehicle();
+   test_text_buffers();
    test_clock_ops();
    test_clock_events();
    test_plot_ops();

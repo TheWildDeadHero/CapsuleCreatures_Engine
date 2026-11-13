@@ -2394,6 +2394,12 @@
      "doc": "4-byte offset into Bank::text."
     },
     {
+     "name": "kTextBuffer",
+     "type": "uint8_t",
+     "value": "2",
+     "doc": "C19: 4-byte index of a game text buffer (world::text_buffer())."
+    },
+    {
      "name": "kNoVar",
      "type": "uint16_t",
      "value": "0xFFFF",
