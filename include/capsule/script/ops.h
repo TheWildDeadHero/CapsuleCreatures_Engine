@@ -109,6 +109,7 @@
 /// | Clock | kind8 (ClockOp), [Hour..Days: var16], [Wait: var16, operand (hours)], [Events: u8 (1: a result), [var16]] | M6a K1: var = world::clock_value() / clock_wait(); world::clock_reset(); K4: [var =] world::clock_events() |
 /// | Plot | kind8 (PlotOp), [Pick..: var16], operand (plot; At: the object), [Plant: operand (crop)] | M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them; K3 At: the object's plot, kNoPlot without one) |
 /// | Boxes | kind8 (BoxesOp), var16 | C16: var = boxes::hatched() / free() / current() |
+/// | Dex | kind8 (DexOp), regional8 (1: the regional list), [not EnableNational: var16], [SeenSpecies / CaughtSpecies: operand (species)] | C21: dex::count() / species() / complete() / national() into var; EnableNational: dex::enable_national() |
 #pragma once
 
 #include <cstdint>
@@ -228,6 +229,7 @@ enum class Op : uint8_t
    Clock,   ///< M6a K1: read the world clock (hour, weekday), the season and the economy clock's days; Wait; reset the world clock (K4: the time events' days).
    Plot,   ///< M6a K2: plant, water, pick or clear a plot; read its stage, crop, what picking would yield (K3: its crop's item; the plot of a map object).
    Boxes,   ///< C16: ask the storage boxes for the records that are not eggs, the free slots or the current box.
+   Dex,   ///< C21: the dex's counts, a species' record, completion and national mode, through the game's dex port.
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -631,6 +633,19 @@ enum class BoxesOp : uint8_t
    Free,   ///< The free slots (`boxes free -> var(v);`).
    Current,   ///< The current box, the one a deposit tries first (`boxes current -> var(v);`).
    NUM_BOXES_OPS   ///< Number of kinds.
+};
+
+/// C21: Dex kinds.
+enum class DexOp : uint8_t
+{
+   Seen,   ///< The species seen (`dex seen [regional] -> var(v);`).
+   Caught,   ///< The species caught (`dex caught [regional] -> var(v);`).
+   SeenSpecies,   ///< Whether one species was seen (`dex seen species <s> -> var(v);`).
+   CaughtSpecies,   ///< Whether one species was caught (`dex caught species <s> -> var(v);`).
+   Complete,   ///< Whether the game's completion rule holds (`dex complete [regional] -> var(v);`).
+   National,   ///< Whether national mode is on (`dex national -> var(v);`).
+   EnableNational,   ///< Turns national mode on (`dex enable national;`).
+   NUM_DEX_OPS   ///< Number of kinds.
 };
 
 /// @name Operand and text-reference tags

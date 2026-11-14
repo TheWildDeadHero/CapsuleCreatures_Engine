@@ -777,6 +777,37 @@ int32_t poll();
 
 } // namespace capsule::script::boxes
 
+/// C21: the species records, which the game owns (the Dex statement). The defaults (the end of src/script/script.cpp)
+/// answer none: the engine keeps no records yet. "Regional" and "complete" are the game's own rules.
+namespace capsule::script::dex
+{
+
+/// The species seen or caught.
+/// @param caught    caught (else seen)
+/// @param regional  only the game's regional list (else every species)
+/// @return the count
+int32_t count(bool caught, bool regional);
+
+/// Whether one species was seen or caught.
+/// @param caught   caught (else seen)
+/// @param id       the species id
+/// @return 1 or 0
+int32_t species(bool caught, int32_t id);
+
+/// Whether the game's completion rule holds.
+/// @param regional  the regional list's rule (else the whole dex's)
+/// @return 1 or 0
+int32_t complete(bool regional);
+
+/// Whether national mode is on.
+/// @return 1 or 0
+int32_t national();
+
+/// Turns national mode on.
+void enable_national();
+
+} // namespace capsule::script::dex
+
 /// The game's natives.
 namespace capsule::script::game
 {

@@ -506,6 +506,10 @@ CLOCK_WORD = "clock"
 CLOCK_KINDS = VM.words("ClockOp")
 ## M6a K4: the clock kind whose result is optional (`clock events [-> var(days)];`).
 CLOCK_EVENTS = "events"
+## C21: the dex statement's word, its kinds (capsule::script::DexOp, in order) and its regional word.
+DEX_WORD, DEX_KINDS, DEX_REGIONAL = "dex", VM.words("DexOp"), "regional"
+## C21: the dex kinds that answer one species, and the one that answers nothing.
+DEX_SPECIES_KINDS, DEX_ENABLE = ("seen species", "caught species"), "enable national"
 ## C18: the operand naming a map's index (`map(Name)`, the numbering the map_index query answers).
 MAP_REF_WORD = "map"
 ## C16: the statement word of the storage queries (`boxes <kind> -> var(v);`).
@@ -2092,6 +2096,33 @@ class Parser:
       return (t.kind == "string" or (t.kind == "ref" and t.text.startswith("text:"))
               or (t.text == TEXT_BUFFER_WORD and self.peek(ahead + 1).text == "("))
 
+   def dex_statement(self, t: Token) -> Node:
+      """!C21: `dex seen|caught [regional] -> var(v);`, `dex seen|caught species <s> -> var(v);`,
+      `dex complete [regional] -> var(v);`, `dex national -> var(v);` or `dex enable national;`.
+      @param t  the statement's first token
+      @return its node
+      """
+      self.take()
+      first = self.take().text
+      kind = first
+      species = None
+      regional = False
+      if first in ("seen", "caught") and self.accept("species"):
+         kind = f"{first} species"
+         species = self.operand()
+      elif first == DEX_ENABLE.split()[0]:
+         self.expect(DEX_ENABLE.split()[1])
+         self.expect(";")
+         return Node("dex", t, kind=DEX_ENABLE, regional=False, species=None, result=None)
+      elif first in ("seen", "caught", "complete"):
+         regional = self.accept(DEX_REGIONAL) is not None
+      if kind not in DEX_KINDS:
+         raise self.error(f"dex: unknown kind {kind!r}")
+      self.expect("->")
+      result = self.var_ref().text
+      self.expect(";")
+      return Node("dex", t, kind=kind, regional=regional, species=species, result=result)
+
    def text_ref(self) -> Node:
       """!Parses a text: a string literal, text:key or (C19) `buffer(N)`, a game text buffer.
       @return its node
@@ -2198,6 +2229,8 @@ class Parser:
             result = self.var_ref().text
          self.expect(";")
          return Node("clock", t, kind=kind, hours=hours, result=result)
+      if self.at(DEX_WORD) and any(k.split()[0] == nxt.text for k in DEX_KINDS):   # C21: the dex
+         return self.dex_statement(t)
       if self.at(BOXES_WORD) and nxt.text in BOXES_KINDS:   # C16: `boxes hatched|free|current -> var(v);`
          self.take()
          kind = self.take().text
@@ -4323,6 +4356,15 @@ class Compiler:
             e.u16(self.var_id(s["result"], s))
          if s["hours"] is not None:
             self.emit_operand(e, s["hours"])
+         return True
+      if k == "dex":   # C21: the kind, regional, [the result], [the species]
+         e.op("Dex")
+         e.u8(DEX_KINDS.index(s["kind"]))
+         e.u8(1 if s["regional"] else 0)
+         if s["result"] is not None:
+            e.u16(self.var_id(s["result"], s))
+         if s["species"] is not None:
+            self.emit_operand(e, s["species"])
          return True
       if k == "boxes":   # C16: the kind, the result
          e.op("Boxes")

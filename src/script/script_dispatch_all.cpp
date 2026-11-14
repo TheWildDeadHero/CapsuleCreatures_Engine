@@ -116,6 +116,7 @@ const OpHandler kModuleOps[kOpCount] = {
    nullptr,           // 105 Clock
    nullptr,           // 106 Plot
    op_boxes,          // 107 Boxes
+   nullptr,           // 108 Dex
 };
 
 /// The module waits by wait kind (nullptr: not a module wait, or one no op of the table sets).

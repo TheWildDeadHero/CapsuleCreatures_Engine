@@ -1306,6 +1306,13 @@ MENU_SHOW_CHANGES = {name: MENU_SHOW_REASON for name in ("test_script.cpp", "tes
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in MENU_SHOW_CHANGES.items()})
 
+## Why the C21 outputs changed: the test scripts gain the dex statement.
+DEX_QUERIES_REASON = "The test scripts gain C21's dex statement"
+## The files C21 changed, and why.
+DEX_QUERIES_CHANGES = {name: DEX_QUERIES_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in DEX_QUERIES_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

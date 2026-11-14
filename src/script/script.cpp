@@ -716,6 +716,46 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       }
       return Outcome::Continue;
    }
+   case Op::Dex:
+   {
+      // C21: kind8, regional8, [not EnableNational: var16], [SeenSpecies / CaughtSpecies: operand (species)]
+      const auto kind = static_cast<DexOp>(*p++);
+      const bool regional = *p++ != 0;
+      if (kind == DexOp::EnableNational)
+      {
+         next();
+         dex::enable_national();
+         return Outcome::Continue;
+      }
+      const VarId v{load_le16(p)};
+      p += kU16Bytes;
+      const bool one = kind == DexOp::SeenSpecies || kind == DexOp::CaughtSpecies;
+      const int32_t species = one ? operand(p) : 0;
+      next();
+      int32_t answer = 0;
+      switch (kind)
+      {
+      case DexOp::Seen:
+      case DexOp::Caught:
+         answer = dex::count(kind == DexOp::Caught, regional);
+         break;
+      case DexOp::SeenSpecies:
+      case DexOp::CaughtSpecies:
+         answer = dex::species(kind == DexOp::CaughtSpecies, species);
+         break;
+      case DexOp::Complete:
+         answer = dex::complete(regional);
+         break;
+      case DexOp::National:
+         answer = dex::national();
+         break;
+      case DexOp::EnableNational:
+      case DexOp::NUM_DEX_OPS:
+         break;
+      }
+      set_var(v, answer);
+      return Outcome::Continue;
+   }
    case Op::Picture:
    {
       // C12: kind8, [Show: operand (species), operand (x), operand (y)]
@@ -1670,6 +1710,7 @@ Outcome execute(Context& c)
    case Op::Screen:
    case Op::Clock:
    case Op::Plot:
+   case Op::Dex:
    case Op::SetMetatile:
    case Op::Respawn:
    case Op::SetWarp:
@@ -3568,3 +3609,39 @@ CAPSULE_WEAK const text::Code* text_buffer(int32_t index)
 }
 
 } // namespace capsule::script::world
+
+namespace capsule::script::dex
+{
+
+// C21: the engine keeps no dex records yet, so the defaults answer none; a game with records defines these
+
+CAPSULE_WEAK int32_t count(bool caught, bool regional)
+{
+   (void)caught;
+   (void)regional;
+   return 0;
+}
+
+CAPSULE_WEAK int32_t species(bool caught, int32_t id)
+{
+   (void)caught;
+   (void)id;
+   return 0;
+}
+
+CAPSULE_WEAK int32_t complete(bool regional)
+{
+   (void)regional;
+   return 0;
+}
+
+CAPSULE_WEAK int32_t national()
+{
+   return 0;
+}
+
+CAPSULE_WEAK void enable_national()
+{
+}
+
+} // namespace capsule::script::dex
