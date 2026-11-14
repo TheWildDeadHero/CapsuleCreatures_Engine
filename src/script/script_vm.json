@@ -355,9 +355,9 @@
    "id": 43,
    "name": "Encounters",
    "kind": "generic",
-   "doc": "Encounters on or off.",
-   "bytes": "on8",
-   "does": "encounters on or off"
+   "doc": "Encounters on or off; C22: roll a script encounter method.",
+   "bytes": "on8 (0 off, 1 on, kEncountersRoll), [kEncountersRoll: operand (method), var16]",
+   "does": "encounters on or off; C22 roll: var = battles::roll() (1 when an encounter starts)"
   },
   {
    "id": 44,
@@ -859,7 +859,7 @@
    "name": "BattleSetup",
    "kind": "generic",
    "doc": "C10: prepare an opponent a later battle fights, read the last outcome, or ask about the current side's rematch.",
-   "bytes": "kind8 (BattleSetupOp), [Prepare: operand (species), operand (level), operand (item)], [Outcome, RematchDue, RematchReady: var16]",
+   "bytes": "kind8 (BattleSetupOp), [Prepare: operand (species), operand (level), operand (item), flags8 (kPrepare... bits)], [Outcome, RematchDue, RematchReady: var16]",
    "does": "C10: battles::prepare(); var = battles::outcome_code() / rematch_due() / rematch_ready()",
    "module": "battle",
    "handler": "op_battle_setup"
@@ -1914,7 +1914,7 @@
    "values": [
     {
      "name": "Prepare",
-     "doc": "Make the opponent a later battle fights.",
+     "doc": "Make the opponent a later battle fights (C22: with kPrepare... flags).",
      "word": "prepare"
     },
     {
@@ -2700,6 +2700,18 @@
      "type": "uint8_t",
      "value": "0xFF",
      "doc": "C3: Menu delay: the port's (its style's) frames before input."
+    },
+    {
+     "name": "kPrepareEvent",
+     "type": "uint8_t",
+     "value": "1",
+     "doc": "C22: BattleSetup Prepare flag: the creature was met at a scripted event (the game's mark)."
+    },
+    {
+     "name": "kEncountersRoll",
+     "type": "uint8_t",
+     "value": "2",
+     "doc": "C22: Encounters: roll a script method (0 and 1 turn step encounters off and on)."
     }
    ]
   },

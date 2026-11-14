@@ -454,6 +454,12 @@ script dex_queries {
     dex enable national;
     dex national -> var(out);
 }
+script battle_events {
+    battle prepare 4 5 item 6 event;
+    encounters roll 3 -> var(v8);
+    encounters roll 1 -> var(v16);
+    encounters on;
+}
 script respawn_vehicle {
     var(v8) = respawn;
     var(v16) = vehicle;

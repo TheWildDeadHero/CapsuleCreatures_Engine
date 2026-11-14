@@ -64,7 +64,15 @@ int32_t outcome_code();
 /// @param species  species
 /// @param level    its level
 /// @param item     its held item (0: none)
-void prepare(int32_t species, int32_t level, int32_t item);
+/// @param flags    C22: kPrepare... bits (kPrepareEvent: met at a scripted event, the game's mark)
+void prepare(int32_t species, int32_t level, int32_t item, uint8_t flags);
+
+/// C22: rolls a script encounter method of the shown map at the walker's cell (`encounters roll <method> -> var(v);`,
+/// the world's encounter_methods). A game may start the battle at once; its script then waits with `wait_state`. The
+/// default answers false, as it starts no battles.
+/// @param method  the world's encounter method
+/// @return true when an encounter starts
+bool roll(int32_t method);
 
 /// C10: whether the encounter record's current side's rematch should be fought (`battle rematch due`; the default:
 /// never, the engine keeps no rematch rules).

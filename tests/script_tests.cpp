@@ -1088,7 +1088,18 @@ battle::Outcome outcome()
 }
 
 constexpr int32_t kStubOutcomeCode = 4;   ///< C10: the stub game's own number for the last outcome.
-int32_t g_prepared[3] = {};               ///< C10: the last prepared opponent (species, level, item).
+/// C10: the last prepared opponent's fields in g_prepared (C22: its flags).
+enum Prepared : uint8_t
+{
+   kPreparedSpecies,   ///< Its species.
+   kPreparedLevel,     ///< Its level.
+   kPreparedItem,      ///< Its held item.
+   kPreparedFlags,     ///< C22: its kPrepare... bits.
+   kPreparedFields     ///< Number of fields.
+};
+int32_t g_prepared[kPreparedFields] = {};   ///< C10: the last prepared opponent.
+constexpr int32_t kStubRollMethod = 3;      ///< C22: the one method whose roll starts an encounter.
+int32_t g_rolled = -1;                      ///< C22: the last method rolled.
 
 /// C10: the stub game's outcome number.
 /// @return kStubOutcomeCode
@@ -1101,11 +1112,22 @@ int32_t outcome_code()
 /// @param species  species
 /// @param level    level
 /// @param item     held item
-void prepare(int32_t species, int32_t level, int32_t item)
+/// @param flags    C22: kPrepare... bits
+void prepare(int32_t species, int32_t level, int32_t item, uint8_t flags)
 {
-   g_prepared[0] = species;
-   g_prepared[1] = level;
-   g_prepared[2] = item;
+   g_prepared[kPreparedSpecies] = species;
+   g_prepared[kPreparedLevel] = level;
+   g_prepared[kPreparedItem] = item;
+   g_prepared[kPreparedFlags] = flags;
+}
+
+/// C22: records the method; only kStubRollMethod starts an encounter.
+/// @param method  the method
+/// @return true for kStubRollMethod
+bool roll(int32_t method)
+{
+   g_rolled = method;
+   return method == kStubRollMethod;
 }
 
 /// C10: the stub's current side's rematch is due but not registered.
@@ -2429,7 +2451,9 @@ void test_battle_setup()
    script::Context c{};
    script::start(c, SCRIPT_BATTLE_SETUP);
    run(c);
-   CHECK(battles::g_prepared[0] == kSpecies && battles::g_prepared[1] == kLevel && battles::g_prepared[2] == 0);
+   CHECK(battles::g_prepared[battles::kPreparedSpecies] == kSpecies
+         && battles::g_prepared[battles::kPreparedLevel] == kLevel);
+   CHECK(battles::g_prepared[battles::kPreparedItem] == 0 && battles::g_prepared[battles::kPreparedFlags] == 0);
    CHECK(script::var(VAR_V8) == battles::kStubOutcomeCode);
    CHECK(script::var(VAR_V16) == 1 && script::var(VAR_ANSWER) == 0);
    CHECK(battles::g_battle_last.kind == script::BattleKind::Scripted && battles::g_battle_last.number == kScripted);
@@ -2583,6 +2607,24 @@ void test_dex_queries()
    CHECK(script::var(VAR_ANSWER) == 1);
    CHECK(script::var(VAR_NUM) == 1);
    CHECK(script::dex::g_national && script::var(VAR_OUT) == 1);
+}
+
+/// C22: `battle prepare ... event` passes kPrepareEvent; `encounters roll` answers the port's roll; `encounters on`
+/// still turns step encounters on.
+void test_battle_events()
+{
+   constexpr int32_t kItem = 6;            // test.cscript's battle_events: battle prepare 4 5 item 6 event;
+   constexpr int32_t kOtherMethod = 1;     // encounters roll 1
+   namespace battles = script::battles;
+   script::clear_all();
+   g_world = World{};
+   script::Context c{};
+   script::start(c, SCRIPT_BATTLE_EVENTS);
+   CHECK(run(c) == 0);
+   CHECK(battles::g_prepared[battles::kPreparedItem] == kItem
+         && battles::g_prepared[battles::kPreparedFlags] == script::kPrepareEvent);
+   CHECK(script::var(VAR_V8) == 1 && script::var(VAR_V16) == 0 && battles::g_rolled == kOtherMethod);
+   CHECK(std::strcmp(g_world.log, "enc on;") == 0);
 }
 
 /// C19: `buffer(4)` as a name slot's text and as a message's.
@@ -2875,6 +2917,7 @@ int main()
    test_respawn_vehicle();
    test_text_buffers();
    test_dex_queries();
+   test_battle_events();
    test_clock_ops();
    test_clock_events();
    test_plot_ops();
