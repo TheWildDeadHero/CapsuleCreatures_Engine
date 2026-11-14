@@ -1547,9 +1547,23 @@ Outcome execute(Context& c)
       world::timer_stop();
       return Outcome::Continue;
    case Op::Encounters:
-      world::encounters(*p++ != 0);
+   {
+      // on8 (0 off, 1 on, kEncountersRoll), [kEncountersRoll: operand (method), var16]
+      const uint8_t mode = *p++;
+      if (mode != kEncountersRoll)
+      {
+         next();
+         world::encounters(mode != 0);
+         return Outcome::Continue;
+      }
+      const int32_t method = operand(p);
+      const VarId v{load_le16(p)};
+      p += kU16Bytes;
       next();
+      // C22: the game's port rolls the method (and may start the battle; the script waits with wait_state)
+      set_var(v, battles::roll(method) ? 1 : 0);
       return Outcome::Continue;
+   }
    case Op::Vehicle:
       world::set_vehicle(*p++);
       next();
@@ -3102,15 +3116,17 @@ Outcome op_battle(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const ui
 Outcome op_battle_setup(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
 {
    Frame& f = c.stack[c.depth - 1];
-   // kind8, [Prepare: operand (species), operand (level), operand (item)], [Outcome, RematchDue, RematchReady: var16]
+   // kind8, [Prepare: operand (species), operand (level), operand (item), flags8], [Outcome, RematchDue,
+   // RematchReady: var16]
    const auto kind = static_cast<BattleSetupOp>(*p++);
    if (kind == BattleSetupOp::Prepare)
    {
       const int32_t species = operand(p);
       const int32_t level = operand(p);
       const int32_t item = operand(p);
+      const uint8_t flags = *p++;   // C22: kPrepare... bits
       advance(f, p, base);
-      battles::prepare(species, level, item);
+      battles::prepare(species, level, item, flags);
       return Outcome::Continue;
    }
    const VarId v{load_le16(p)};

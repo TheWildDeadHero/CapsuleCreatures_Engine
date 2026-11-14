@@ -1312,6 +1312,13 @@ DEX_QUERIES_REASON = "The test scripts gain C21's dex statement"
 DEX_QUERIES_CHANGES = {name: DEX_QUERIES_REASON for name in ("test_script.cpp", "test_script_ids.h")}
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in DEX_QUERIES_CHANGES.items()})
+## Why the script outputs changed (C22: battle prepare's flags byte and `event`, `encounters roll`).
+BATTLE_EVENTS_REASON = ("Every `battle prepare` gains its flags byte; the test scripts gain C22's `battle prepare ... "
+                        "event` and `encounters roll`")
+## The files C22 changed, and why.
+BATTLE_EVENTS_CHANGES = {name: BATTLE_EVENTS_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in BATTLE_EVENTS_CHANGES.items()})
 
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).

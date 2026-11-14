@@ -30,11 +30,18 @@ CAPSULE_WEAK int32_t outcome_code()
    return static_cast<int32_t>(outcome());
 }
 
-CAPSULE_WEAK void prepare(int32_t species, int32_t level, int32_t item)
+CAPSULE_WEAK void prepare(int32_t species, int32_t level, int32_t item, uint8_t flags)
 {
    (void)species;
    (void)level;
    (void)item;
+   (void)flags;
+}
+
+CAPSULE_WEAK bool roll(int32_t method)
+{
+   (void)method;
+   return false;
 }
 
 CAPSULE_WEAK bool rematch_due()

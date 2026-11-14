@@ -558,6 +558,39 @@ class BattleSetupStatements(unittest.TestCase):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 
+class BattleEventStatements(unittest.TestCase):
+   """C22: battle prepare ... event; encounters roll <method> -> var(v)."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """Prepare's flags byte after the item (kPrepareEvent with `event`); the roll's mode, method and variable;
+      on and off unchanged."""
+      op, c = sc.OP, sc.VM.constants
+      end = bytes([op["End"]])
+      var = self.code("var(v) = 0;")[1:1 + VAR_ID_BYTES]
+      prepare = bytes([op["BattleSetup"], sc.BATTLE_SETUP_KINDS.index("prepare"), c["kOpConst8"], 4, c["kOpConst8"], 5,
+                       c["kOpConst8"], 6])
+      self.assertEqual(self.code("battle prepare 4 5 item 6;"), prepare + bytes([0]) + end)
+      self.assertEqual(self.code("battle prepare 4 5 item 6 event;"), prepare + bytes([c["kPrepareEvent"]]) + end)
+      self.assertEqual(self.code("encounters roll 3 -> var(v);"),
+                       bytes([op["Encounters"], c["kEncountersRoll"], c["kOpConst8"], 3]) + var + end)
+      self.assertEqual(self.code("encounters on;"), bytes([op["Encounters"], 1]) + end)
+
+   def test_refusals(self) -> None:
+      """`event` twice, a roll without its result or its method."""
+      for body in ("battle prepare 4 5 event event;", "encounters roll 3;", "encounters roll -> var(v);"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
+
 class PlotStatements(unittest.TestCase):
    """M6a K2: plot <id> plant <crop>; plot <id> water|clear; plot <id> pick|stage|crop|yield -> var(v)."""
 

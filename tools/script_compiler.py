@@ -25,7 +25,8 @@ needs "stats_port": true (the game's port holds its stats); script_ids.h
 names each STAT_<NAME> (the stat world::add_stat() receives).
 
 C10, battles (capsule/script/battle_port.h): `battle prepare <species> <level>
-[item <item>];` (the opponent a later `battle scripted` fights), `battle outcome
+[item <item>] [event];` (the opponent a later `battle scripted` fights; C22
+`event`: met at a scripted event, the game's mark), `battle outcome
 -> var(v);` (the game's own number for the last outcome), `battle rematch due
 -> var(v);` / `battle rematch ready -> var(v);` (the current encounter side).
 
@@ -542,6 +543,10 @@ BATTLE_REMATCH_QUERIES = ("due", "ready")
 BATTLE_QUERY_AHEAD = 2
 ## C10: `battle prepare ... item <item>`.
 BATTLE_ITEM_WORD = "item"
+## C22: `battle prepare ... event` and its flag (capsule::script::kPrepareEvent).
+BATTLE_EVENT_WORD, BATTLE_PREPARE_EVENT = "event", VM.constants["kPrepareEvent"]
+## C22: `encounters roll <method> -> var(v);` and its mode byte (capsule::script::kEncountersRoll).
+ENCOUNTERS_ROLL_WORD, ENCOUNTERS_ROLL = "roll", VM.constants["kEncountersRoll"]
 ## Operands of an unowned battle: species, level, held item (the item may be left out: none).
 BATTLE_UNOWNED_OPERANDS = 3
 ## An unowned battle's held item when the statement names none.
@@ -2318,22 +2323,26 @@ class Parser:
          return Node("member", t, slot=slot, field=field.text, result=result, data=data)
       rematch_query = nxt.text == "rematch" and self.peek(BATTLE_QUERY_AHEAD).text in BATTLE_REMATCH_QUERIES
       if self.at(BATTLE_WORD) and (nxt.text in ("prepare", "outcome") or rematch_query):
-         # C10: battle prepare <species> <level> [item <item>]; | battle outcome|rematch due|rematch ready -> var(v);
+         # C10: battle prepare <species> <level> [item <item>] [event]; | battle outcome|rematch due|rematch ready
+         # -> var(v);
          self.take()
          kind = self.take().text
          if kind == "rematch":
             kind = f"rematch {self.take().text}"
          args = []
          result = None
+         flags = 0
          if kind == "prepare":
             args = [self.operand(), self.operand()]
             if self.accept(BATTLE_ITEM_WORD):
                args.append(self.operand())
+            if self.accept(BATTLE_EVENT_WORD):   # C22
+               flags |= BATTLE_PREPARE_EVENT
          else:
             self.expect("->")
             result = self.var_ref().text
          self.expect(";")
-         return Node("battle_setup", t, kind=kind, args=args, result=result)
+         return Node("battle_setup", t, kind=kind, args=args, result=result, flags=flags)
       if self.at(BATTLE_WORD) and nxt.text in BATTLE_KINDS:
          # battle party|rematch | unowned <species> <level> [<item>] | scripted <number>  [-> var(v)];
          self.take()
@@ -2641,9 +2650,16 @@ class Parser:
          self.expect(";")
          return Node("timer", t, start=what == "start", seconds=secs)
       if self.accept("encounters"):
+         if self.accept(ENCOUNTERS_ROLL_WORD):
+            # C22: encounters roll <method> -> var(v);
+            method = self.operand()
+            self.expect("->")
+            result = self.var_ref().text
+            self.expect(";")
+            return Node("encounters", t, on=False, method=method, result=result)
          on = self.direction(("on", "off"))
          self.expect(";")
-         return Node("encounters", t, on=on == "on")
+         return Node("encounters", t, on=on == "on", method=None, result=None)
       # The bag statements are read by their first word only where the next token fits (no keywords: older
       # scripts may use the names)
       if self.peek().kind == "name" and self.peek().text in ITEM_STATEMENTS and self.peek(1).text == "(":
@@ -4149,6 +4165,11 @@ class Compiler:
          return True
       if k == "encounters":
          e.op("Encounters")
+         if s["method"] is not None:   # C22: kEncountersRoll, operand (method), var16
+            e.u8(ENCOUNTERS_ROLL)
+            self.emit_operand(e, s["method"])
+            e.u16(self.var_id(s["result"], s))
+            return True
          e.u8(1 if s["on"] else 0)
          return True
       if k == "party":
@@ -4446,6 +4467,7 @@ class Compiler:
                                 value=BATTLE_NO_ITEM))
             for a in args:
                self.emit_operand(e, a)
+            e.u8(s["flags"])   # C22: kPrepare... bits
          else:
             e.u16(self.var_id(s["result"], s))
          return True

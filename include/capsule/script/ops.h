@@ -45,7 +45,7 @@
 /// | Shake | power8, frames16 | shakes the screen |
 /// | TimerStart | operand (seconds) | starts the countdown timer, shown on screen |
 /// | TimerStop | — | stops it |
-/// | Encounters | on8 | encounters on or off |
+/// | Encounters | on8 (0 off, 1 on, kEncountersRoll), [kEncountersRoll: operand (method), var16] | encounters on or off; C22 roll: var = battles::roll() (1 when an encounter starts) |
 /// | Vehicle | class8 | the walker's vehicle class (A2, field::set_vehicle()) |
 /// | RoleGet | var16, operand (slot), role8, operand (element) | var = an element of a party record's role (party::role_get(); clamps to the variable's range) |
 /// | RoleSet | operand (slot), role8, operand (element), operand (value) | writes it (party::role_set(); truncated to the role's width) |
@@ -102,7 +102,7 @@
 /// | Animation | kind8 (AnimationOp), [Arg: operand (index), operand (value)], [Start, Wait: operand (animation)] | C9: world::animation_arg() / animation_start(); Wait waits while world::animation_done() is false |
 /// | Camera | kind8 (CameraOp), [Shake: operand (vertical), operand (horizontal), operand (count), operand (delay)] | C9: world::camera_detach() / camera_attach() / camera_shake() |
 /// | DarknessFade | operand (level) | C9: world::fade_darkness(); waits while world::darkness_fading() |
-/// | BattleSetup | kind8 (BattleSetupOp), [Prepare: operand (species), operand (level), operand (item)], [Outcome, RematchDue, RematchReady: var16] | C10: battles::prepare(); var = battles::outcome_code() / rematch_due() / rematch_ready() |
+/// | BattleSetup | kind8 (BattleSetupOp), [Prepare: operand (species), operand (level), operand (item), flags8 (kPrepare... bits)], [Outcome, RematchDue, RematchReady: var16] | C10: battles::prepare(); var = battles::outcome_code() / rematch_due() / rematch_ready() |
 /// | Picture | kind8 (PictureOp), [Show: operand (species), operand (x), operand (y)] | C12: world::picture_show(); Hide: world::picture_hide(), waits while world::picture_busy() |
 /// | Screen | operand (screen) | C12: world::open_screen(); waits while world::screen_busy() |
 /// | Member | field8 (MemberField), var16, operand (slot), [Data: operand (the field's id)] | C13: var = party::member_field(); C15 Data: var = party::member_data() |
@@ -163,7 +163,7 @@ enum class Op : uint8_t
    Shake,   ///< Shake the screen.
    TimerStart,   ///< Start the countdown timer.
    TimerStop,   ///< Stop it.
-   Encounters,   ///< Encounters on or off.
+   Encounters,   ///< Encounters on or off; C22: roll a script encounter method.
    Vehicle,   ///< Change the walker's vehicle class.
    RoleGet,   ///< Read a party record's role (D-22 decision 2).
    RoleSet,   ///< Write a party record's role.
@@ -511,7 +511,7 @@ enum class NameKind : uint8_t
 /// C10: BattleSetup kinds.
 enum class BattleSetupOp : uint8_t
 {
-   Prepare,   ///< Make the opponent a later battle fights.
+   Prepare,   ///< Make the opponent a later battle fights (C22: with kPrepare... flags).
    Outcome,   ///< The last battle's outcome.
    RematchDue,   ///< Whether the current side's rematch should be fought (`battle rematch due`).
    RematchReady,   ///< Whether the current side's rematch is registered (`battle rematch ready`).
@@ -704,6 +704,8 @@ inline constexpr uint8_t kMenuShow = 8;   ///< C20: Menu flag: a mask operand fo
 inline constexpr uint8_t kMenuAnchorEnd = 16;   ///< C20: Menu flag: x and y place the frame's bottom-right cell (with kMenuAt).
 inline constexpr uint8_t kMenuWidthAll = 32;   ///< C20: Menu flag: the port sizes the window by every list entry, shown or not (MenuRequest::sizing).
 inline constexpr uint8_t kMenuStyleDelay = 0xFF;   ///< C3: Menu delay: the port's (its style's) frames before input.
+inline constexpr uint8_t kPrepareEvent = 1;   ///< C22: BattleSetup Prepare flag: the creature was met at a scripted event (the game's mark).
+inline constexpr uint8_t kEncountersRoll = 2;   ///< C22: Encounters: roll a script method (0 and 1 turn step encounters off and on).
 ///@}
 
 /// @name Limits
