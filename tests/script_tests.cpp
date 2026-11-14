@@ -361,6 +361,64 @@ constexpr int kStubBufferCodes = 5;         ///< C19: its codes before kCodeEnd.
 constexpr int32_t kStubBufferIndex = 4;     ///< C19: the buffer the test script names.
 int32_t g_buffer_asked = -1;                ///< C19: text_buffer()'s last index.
 
+} // namespace capsule::script::world
+
+namespace capsule::script::dex
+{
+
+/// C21: the stub's records: seen 40 regional / 90 all, caught 30 / 70, species 25 caught, complete 1 regional,
+/// national mode once enabled.
+constexpr int32_t kRegionalSeen = 40;   ///< The regional list's seen.
+constexpr int32_t kAllCaught = 70;      ///< Every species' caught.
+constexpr int32_t kStubCaughtSpecies = 25;   ///< The one species caught.
+bool g_national = false;                ///< enable_national() ran.
+
+/// @param caught  caught, else seen
+/// @param regional  the regional list
+/// @return the stub's count
+int32_t count(bool caught, bool regional)
+{
+   constexpr int32_t kRegionalCaught = 30;
+   constexpr int32_t kAllSeen = 90;
+   if (caught)
+   {
+      return regional ? kRegionalCaught : kAllCaught;
+   }
+   return regional ? kRegionalSeen : kAllSeen;
+}
+
+/// @param caught  caught, else seen
+/// @param id  the species
+/// @return 1 for kStubCaughtSpecies caught
+int32_t species(bool caught, int32_t id)
+{
+   return caught && id == kStubCaughtSpecies ? 1 : 0;
+}
+
+/// @param regional  the regional rule
+/// @return 1 regional
+int32_t complete(bool regional)
+{
+   return regional ? 1 : 0;
+}
+
+/// @return 1 once enabled
+int32_t national()
+{
+   return g_national ? 1 : 0;
+}
+
+/// Turns the stub's national mode on.
+void enable_national()
+{
+   g_national = true;
+}
+
+} // namespace capsule::script::dex
+
+namespace capsule::script::world
+{
+
 /// C19: the game's text buffers (one: kStubBuffer).
 /// @param index  the buffer
 /// @return its codes
@@ -2512,6 +2570,21 @@ void test_member_data()
    CHECK(script::var(VAR_V16) == kPartySlots);
 }
 
+/// C21: the dex statement's kinds through the stubbed port.
+void test_dex_queries()
+{
+   script::clear_all();
+   script::dex::g_national = false;
+   script::Context c{};
+   script::start(c, SCRIPT_DEX_QUERIES);
+   CHECK(run(c) == 0);
+   CHECK(script::var(VAR_V8) == script::dex::kRegionalSeen);
+   CHECK(script::var(VAR_V16) == script::dex::kAllCaught);
+   CHECK(script::var(VAR_ANSWER) == 1);
+   CHECK(script::var(VAR_NUM) == 1);
+   CHECK(script::dex::g_national && script::var(VAR_OUT) == 1);
+}
+
 /// C19: `buffer(4)` as a name slot's text and as a message's.
 void test_text_buffers()
 {
@@ -2801,6 +2874,7 @@ int main()
    test_boxes_queries();
    test_respawn_vehicle();
    test_text_buffers();
+   test_dex_queries();
    test_clock_ops();
    test_clock_events();
    test_plot_ops();

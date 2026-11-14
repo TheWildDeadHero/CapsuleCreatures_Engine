@@ -915,6 +915,14 @@
    "does": "C16: var = boxes::hatched() / free() / current()",
    "module": "boxes",
    "handler": "op_boxes"
+  },
+  {
+   "id": 108,
+   "name": "Dex",
+   "kind": "generic",
+   "doc": "C21: the dex's counts, a species' record, completion and national mode, through the game's dex port.",
+   "bytes": "kind8 (DexOp), regional8 (1: the regional list), [not EnableNational: var16], [SeenSpecies / CaughtSpecies: operand (species)]",
+   "does": "C21: dex::count() / species() / complete() / national() into var; EnableNational: dex::enable_national()"
   }
  ],
  "enums": [
@@ -2325,6 +2333,54 @@
    ],
    "count": {
     "name": "NUM_BOXES_OPS",
+    "doc": "Number of kinds."
+   }
+  },
+  {
+   "name": "DexOp",
+   "type": "uint8_t",
+   "doc": [
+    "C21: Dex kinds."
+   ],
+   "values": [
+    {
+     "name": "Seen",
+     "doc": "The species seen (`dex seen [regional] -> var(v);`).",
+     "word": "seen"
+    },
+    {
+     "name": "Caught",
+     "doc": "The species caught (`dex caught [regional] -> var(v);`).",
+     "word": "caught"
+    },
+    {
+     "name": "SeenSpecies",
+     "doc": "Whether one species was seen (`dex seen species <s> -> var(v);`).",
+     "word": "seen species"
+    },
+    {
+     "name": "CaughtSpecies",
+     "doc": "Whether one species was caught (`dex caught species <s> -> var(v);`).",
+     "word": "caught species"
+    },
+    {
+     "name": "Complete",
+     "doc": "Whether the game's completion rule holds (`dex complete [regional] -> var(v);`).",
+     "word": "complete"
+    },
+    {
+     "name": "National",
+     "doc": "Whether national mode is on (`dex national -> var(v);`).",
+     "word": "national"
+    },
+    {
+     "name": "EnableNational",
+     "doc": "Turns national mode on (`dex enable national;`).",
+     "word": "enable national"
+    }
+   ],
+   "count": {
+    "name": "NUM_DEX_OPS",
     "doc": "Number of kinds."
    }
   }

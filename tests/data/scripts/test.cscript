@@ -445,6 +445,15 @@ script text_buffers {
     name str:1 = buffer(4);
     msg buffer(4);
 }
+// C21: the dex statement through the stubbed dex port
+script dex_queries {
+    dex seen regional -> var(v8);
+    dex caught -> var(v16);
+    dex caught species 25 -> var(answer);
+    dex complete regional -> var(num);
+    dex enable national;
+    dex national -> var(out);
+}
 script respawn_vehicle {
     var(v8) = respawn;
     var(v16) = vehicle;

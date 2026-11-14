@@ -681,6 +681,40 @@ class BoxesStatements(unittest.TestCase):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 
+class DexStatements(unittest.TestCase):
+   """C21: dex seen|caught [regional|species <s>], complete [regional], national, enable national."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """The op, the kind, regional, the result, the species operand; enable national has no result."""
+      op, c = sc.OP, sc.VM.constants
+      end = bytes([op["End"]])
+      var = self.code("var(v) = 0;")[1:1 + VAR_ID_BYTES]
+      kind = sc.DEX_KINDS.index
+      self.assertEqual(self.code("dex seen regional -> var(v);"), bytes([op["Dex"], kind("seen"), 1]) + var + end)
+      self.assertEqual(self.code("dex caught -> var(v);"), bytes([op["Dex"], kind("caught"), 0]) + var + end)
+      self.assertEqual(self.code("dex caught species 25 -> var(v);"),
+                       bytes([op["Dex"], kind("caught species"), 0]) + var + bytes([c["kOpConst8"], 25]) + end)
+      self.assertEqual(self.code("dex complete regional -> var(v);")[1:3], bytes([kind("complete"), 1]))
+      self.assertEqual(self.code("dex national -> var(v);")[1], kind("national"))
+      self.assertEqual(self.code("dex enable national;"), bytes([op["Dex"], kind("enable national"), 0]) + end)
+
+   def test_refusals(self) -> None:
+      """No result, a result for enable, an unknown kind, regional on one species."""
+      for body in ("dex seen;", "dex enable national -> var(v);", "dex hatched -> var(v);",
+                   "dex seen species 1 regional -> var(v);"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
+
 class TextBuffers(unittest.TestCase):
    """C19: buffer(N), a game text buffer wherever a text is taken."""
 
