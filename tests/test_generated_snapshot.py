@@ -1331,6 +1331,12 @@ SAVE_REASON = "The test scripts gain C25's `save` statement and the bit operator
 SAVE_CHANGES = {name: SAVE_REASON for name in ("test_script.cpp", "test_script_ids.h")}
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in SAVE_CHANGES.items()})
+## Why the script outputs changed (C26: `camera shake ... silent`, the `dynamic_warp_map` query).
+CAMERA_FLOORS_REASON = "The test scripts gain C26's silent camera shake and the dynamic warp's map query"
+## The files C26 changed, and why.
+CAMERA_FLOORS_CHANGES = {"test_script.cpp": CAMERA_FLOORS_REASON}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in CAMERA_FLOORS_CHANGES.items()})
 
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).

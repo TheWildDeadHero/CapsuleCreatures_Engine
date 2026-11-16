@@ -850,8 +850,8 @@ class MapRefs(unittest.TestCase):
       self.assertTrue(errors(self.compiled("var(v) = map(Town);", None)))
 
    def test_queries(self) -> None:
-      """respawn and vehicle are object-free queries."""
-      for word in ("respawn", "vehicle"):
+      """respawn, vehicle and C26's dynamic_warp_map are object-free queries."""
+      for word in ("respawn", "vehicle", "dynamic_warp_map"):
          self.assertIn(word, sc.QUERIES)
          self.assertFalse(sc.QUERIES[word])
          self.assertEqual(errors(compile_text(f"var v : u16;\nscript s {{ if {word} == 1 {{ var(v) = 0; }} }}")),
@@ -978,12 +978,15 @@ class SceneStatements(unittest.TestCase):
       shake = bytes([sc.OP["Camera"], sc.CAMERA_KINDS.index("shake")])
       operands = b"".join(self.operand(n) for n in (2, 3, 4, 5))
       self.assertEqual(self.code("camera shake 2 3 4 5;"), shake + operands + end)
+      silent = bytes([sc.OP["Camera"], sc.CAMERA_KINDS.index(sc.CAMERA_SHAKE_SILENT)])
+      self.assertEqual(self.code("camera shake 2 3 4 5 silent;"), silent + operands + end)   # C26
       self.assertEqual(self.code("darkness 1 fade;")[0], sc.OP["DarknessFade"])
       self.assertEqual(self.code("darkness 1;")[0], sc.OP["Darkness"])
 
    def test_refusals(self) -> None:
       """A shake short of its four operands, a layout without its map, an animation without its id."""
-      for body in ("camera shake 2 3;", "map layout;", "animation start;"):
+      for body in ("camera shake 2 3;", "map layout;", "animation start;", "camera attach silent;",
+                   "camera shake 2 3 4 5 silent silent;"):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 

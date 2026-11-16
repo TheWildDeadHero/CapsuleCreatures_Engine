@@ -445,6 +445,7 @@ const text::Code* text_buffer(int32_t index)
 }
 
 constexpr int32_t kStubRespawn = 15;   ///< C18: the respawn the stub's query answers.
+constexpr int32_t kStubWarpMap = 6;    ///< C26: the dynamic warp's map the stub's query answers.
 constexpr int32_t kStubVehicle = 2;    ///< C18: the vehicle class the stub's query answers.
 
 /// Queries: x = 10 + obj, y = 20 + obj, facing 3, map 7, steps 99, C18: respawn 15, vehicle 2, timer 5.
@@ -467,6 +468,8 @@ int32_t query(Query q, uint8_t obj)
       return 99;
    case Query::Respawn:
       return kStubRespawn;
+   case Query::DynamicWarpMap:
+      return kStubWarpMap;
    case Query::Vehicle:
       return kStubVehicle;
    default:
@@ -647,11 +650,12 @@ void camera_attach()
 /// @param horizontal  pixels
 /// @param count       shakes
 /// @param delay       frames between them
-void camera_shake(int32_t vertical, int32_t horizontal, int32_t count, int32_t delay)
+/// @param sound       C26: with its sound (else logged as "quiet")
+void camera_shake(int32_t vertical, int32_t horizontal, int32_t count, int32_t delay, bool sound)
 {
-   char b[32];
-   std::snprintf(b, sizeof b, "shake %d %d %d %d;", static_cast<int>(vertical), static_cast<int>(horizontal),
-                 static_cast<int>(count), static_cast<int>(delay));
+   char b[40];
+   std::snprintf(b, sizeof b, "shake %d %d %d %d%s;", static_cast<int>(vertical), static_cast<int>(horizontal),
+                 static_cast<int>(count), static_cast<int>(delay), sound ? "" : " quiet");
    log(b);
 }
 
@@ -2485,7 +2489,7 @@ void test_scenes()
    // the animation wait polls at once, then each frame: the stub says it ended at its kStubAnimationPolls + 1st
    // poll; the darkness fade ends at once in the stub, so it does not wait
    CHECK(run(c) == script::world::kStubAnimationPolls);
-   CHECK(std::strcmp(g_world.log, "redraw;layout 2;arg 1 7;anim 5;detach;shake 2 3 4 5;attach;darkfade 1;") == 0);
+   CHECK(std::strcmp(g_world.log, "redraw;layout 2;arg 1 7;anim 5;detach;shake 2 3 4 5;shake 2 0 50 5 quiet;attach;darkfade 1;") == 0);
 }
 
 /// C12: the banner, the picture and the screens reach the world port in order; the hide and a screen that holds the
@@ -2690,7 +2694,7 @@ void test_text_buffers()
    CHECK(n == script::world::kStubBufferCodes && out[0] == 'B');
 }
 
-/// C18: the respawn and vehicle queries.
+/// C18: the respawn and vehicle queries; C26: the dynamic warp's map.
 void test_respawn_vehicle()
 {
    script::clear_all();
@@ -2699,6 +2703,7 @@ void test_respawn_vehicle()
    CHECK(run(c) == 0);
    CHECK(script::var(VAR_V8) == script::world::kStubRespawn);
    CHECK(script::var(VAR_V16) == script::world::kStubVehicle);
+   CHECK(script::var(VAR_ANSWER) == script::world::kStubWarpMap);
 }
 
 /// C16: the storage queries: the hatched records, the free slots, the current box.

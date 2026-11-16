@@ -94,7 +94,7 @@
     "test_input_map_snes.cpp": "dbc38554b89276b7ca291209f75ff899b8236f315367b822a808b929e65f0831",
     "test_map_script_ids.h": "fecef61c006bff4584fd605ca52b2e76d2d6729a043d131c768953d0d138699c",
     "test_map_scripts.cpp": "bcfaf68e0ecf8ffb7370e2497c3529920c895b06355d0fb6afd65b4d29f6283f",
-    "test_script.cpp": "5e271080aaa187295316b4529a2b7d69a7049d9d757d1360f16cadca74589371",
+    "test_script.cpp": "9231343a0cb49a93adcc54d11a332c38bd862608bb58494f0bc36158b86cbdb0",
     "test_script/script_ids.h": "561bcc47c619381d4d220e1a64dd89600572018d4d3720130766dbd64269eb88",
     "test_script/scripts.cpp": "35b3f2c80427668b70398c6011cd8582af8148c1c1ca75ca00a042fd178e5b87",
     "test_script_assets.cpp": "280881f6df1edcdbbf6328abf4bb62538ea39a05de411a0888b22fb45b7f0fb3",

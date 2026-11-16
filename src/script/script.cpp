@@ -822,16 +822,16 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
    }
    case Op::Camera:
    {
-      // kind8, [Shake: operand (vertical), operand (horizontal), operand (count), operand (delay)]
+      // kind8, [Shake, ShakeSilent: operand (vertical), operand (horizontal), operand (count), operand (delay)]
       const auto kind = static_cast<CameraOp>(*p++);
-      if (kind == CameraOp::Shake)
+      if (kind == CameraOp::Shake || kind == CameraOp::ShakeSilent)
       {
          const int32_t vertical = operand(p);
          const int32_t horizontal = operand(p);
          const int32_t count = operand(p);
          const int32_t delay = operand(p);
          next();
-         world::camera_shake(vertical, horizontal, count, delay);
+         world::camera_shake(vertical, horizontal, count, delay, kind == CameraOp::Shake);   // C26: the sound
          return Outcome::Continue;
       }
       next();

@@ -843,8 +843,8 @@
    "name": "Camera",
    "kind": "generic",
    "doc": "C9: the camera follows an invisible mover or the walker again, or shakes.",
-   "bytes": "kind8 (CameraOp), [Shake: operand (vertical), operand (horizontal), operand (count), operand (delay)]",
-   "does": "C9: world::camera_detach() / camera_attach() / camera_shake()"
+   "bytes": "kind8 (CameraOp), [Shake, ShakeSilent: operand (vertical), operand (horizontal), operand (count), operand (delay)]",
+   "does": "C9: world::camera_detach() / camera_attach() / camera_shake() (C26: its sound flag)"
   },
   {
    "id": 100,
@@ -1025,6 +1025,12 @@
      "name": "Vehicle",
      "doc": "C18: the walker's vehicle class index (0 on foot; the index `vehicle N;` sets).",
      "word": "vehicle",
+     "object": false
+    },
+    {
+     "name": "DynamicWarpMap",
+     "doc": "C26: the dynamic warp's map index (world::warp_map(); 65535 for none).",
+     "word": "dynamic_warp_map",
      "object": false
     }
    ],
@@ -2033,6 +2039,11 @@
      "name": "Shake",
      "doc": "Shake the view.",
      "word": "shake"
+    },
+    {
+     "name": "ShakeSilent",
+     "doc": "C26: shake the view without its sound (`camera shake ... silent;`).",
+     "word": "shake silent"
     }
    ],
    "count": {
