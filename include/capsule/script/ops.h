@@ -107,7 +107,7 @@
 /// | Screen | operand (screen) | C12: world::open_screen(); waits while world::screen_busy() |
 /// | Member | field8 (MemberField), var16, operand (slot), [Data: operand (the field's id)] | C13: var = party::member_field(); C15 Data: var = party::member_data() |
 /// | Clock | kind8 (ClockOp), [Hour..Days: var16], [Wait: var16, operand (hours)], [Events: u8 (1: a result), [var16]] | M6a K1: var = world::clock_value() / clock_wait(); world::clock_reset(); K4: [var =] world::clock_events() |
-/// | Plot | kind8 (PlotOp), [Pick..: var16], operand (plot; At: the object), [Plant: operand (crop)] | M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them; K3 At: the object's plot, kNoPlot without one) |
+/// | Plot | kind8 (PlotOp), [Pick.. but Visit: var16], operand (plot; At: the object), [Plant: operand (crop)] | M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them; K3 At: the object's plot, kNoPlot without one) |
 /// | Boxes | kind8 (BoxesOp), var16 | C16: var = boxes::hatched() / free() / current() |
 /// | Dex | kind8 (DexOp), regional8 (1: the regional list), [not EnableNational: var16], [SeenSpecies / CaughtSpecies: operand (species)] | C21: dex::count() / species() / complete() / national() into var; EnableNational: dex::enable_national() |
 #pragma once
@@ -227,7 +227,7 @@ enum class Op : uint8_t
    Screen,   ///< C12: open one of the game's screens and wait until the field is back.
    Member,   ///< C13: read one party member's data: its species, whether it is an egg, how many moves it knows, its friendship (C15: a game field by its id).
    Clock,   ///< M6a K1: read the world clock (hour, weekday), the season and the economy clock's days; Wait; reset the world clock (K4: the time events' days).
-   Plot,   ///< M6a K2: plant, water, pick or clear a plot; read its stage, crop, what picking would yield (K3: its crop's item; the plot of a map object).
+   Plot,   ///< M6a K2: plant, water, pick or clear a plot; read its stage, crop, what picking would yield (K3: its crop's item; the plot of a map object; C23: its stages watered, its growth effect, a visit).
    Boxes,   ///< C16: ask the storage boxes for the records that are not eggs, the free slots or the current box.
    Dex,   ///< C21: the dex's counts, a species' record, completion and national mode, through the game's dex port.
    NUM_OPS   ///< Number of opcodes.
@@ -623,6 +623,9 @@ enum class PlotOp : uint8_t
    Yield,   ///< What picking it now would yield.
    Item,   ///< K3: the item of its crop (0: empty; the script gives it, `plot <id> item -> var(v);`).
    At,   ///< K3: the plot of a map object on the shown map (65535: none; `plot at <object> -> var(id);`).
+   Watered,   ///< C23: the stages of its current cycle watered (`plot <id> watered -> var(v);`).
+   Changing,   ///< C23: 1 while its look changes in view, a game's growth effect (`plot <id> changing -> var(v);`).
+   Visit,   ///< C23: the player is at it; a game may resume paused growth (`plot <id> visit;`).
    NUM_PLOT_OPS   ///< Number of kinds.
 };
 

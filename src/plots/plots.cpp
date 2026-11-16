@@ -247,6 +247,29 @@ CAPSULE_WEAK uint8_t pick(uint16_t id)
    return n;
 }
 
+CAPSULE_WEAK uint8_t watered(uint16_t id)
+{
+   const PlotRecord* r = record(id);
+   const CropData* c = r != nullptr ? crop_of(*r) : nullptr;
+   if (c == nullptr)
+   {
+      return 0;
+   }
+   const Where w = where(*r);
+   return w.stage == kStageEmpty ? uint8_t{0} : watered_stages(*r, w, data()->types[c->type]);
+}
+
+CAPSULE_WEAK bool changing(uint16_t id)
+{
+   (void)id;
+   return false;   // the engine draws no growth effect
+}
+
+CAPSULE_WEAK void visit(uint16_t id)
+{
+   (void)id;   // the engine pauses no growth
+}
+
 CAPSULE_WEAK void clear(uint16_t id)
 {
    PlotRecord* r = record(id);

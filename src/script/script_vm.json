@@ -902,8 +902,8 @@
    "id": 106,
    "name": "Plot",
    "kind": "generic",
-   "doc": "M6a K2: plant, water, pick or clear a plot; read its stage, crop, what picking would yield (K3: its crop's item; the plot of a map object).",
-   "bytes": "kind8 (PlotOp), [Pick..: var16], operand (plot; At: the object), [Plant: operand (crop)]",
+   "doc": "M6a K2: plant, water, pick or clear a plot; read its stage, crop, what picking would yield (K3: its crop's item; the plot of a map object; C23: its stages watered, its growth effect, a visit).",
+   "bytes": "kind8 (PlotOp), [Pick.. but Visit: var16], operand (plot; At: the object), [Plant: operand (crop)]",
    "does": "M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them; K3 At: the object's plot, kNoPlot without one)"
   },
   {
@@ -2301,6 +2301,21 @@
      "name": "At",
      "doc": "K3: the plot of a map object on the shown map (65535: none; `plot at <object> -> var(id);`).",
      "word": "at"
+    },
+    {
+     "name": "Watered",
+     "doc": "C23: the stages of its current cycle watered (`plot <id> watered -> var(v);`).",
+     "word": "watered"
+    },
+    {
+     "name": "Changing",
+     "doc": "C23: 1 while its look changes in view, a game's growth effect (`plot <id> changing -> var(v);`).",
+     "word": "changing"
+    },
+    {
+     "name": "Visit",
+     "doc": "C23: the player is at it; a game may resume paused growth (`plot <id> visit;`).",
+     "word": "visit"
     }
    ],
    "count": {

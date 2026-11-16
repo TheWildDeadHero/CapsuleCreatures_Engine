@@ -146,6 +146,22 @@ uint8_t pick(uint16_t id);
 /// @param id  the plot
 void clear(uint16_t id);
 
+/// D-36 C23: the stages of a plot's current cycle that were watered (`plot <id> watered`).
+/// @param id  the plot
+/// @return how many (0: empty, or a type without water)
+uint8_t watered(uint16_t id);
+
+/// D-36 C23: whether a plot's look is changing in view now: a game's growth effect (`plot <id> changing`). The engine
+/// draws none, so its default answers false.
+/// @param id  the plot
+/// @return true while it changes
+bool changing(uint16_t id);
+
+/// D-36 C23: the player is at a plot (`plot <id> visit;`). A game may resume growth it paused until then; the
+/// engine's default does nothing.
+/// @param id  the plot
+void visit(uint16_t id);
+
 /// The plot a map object is.
 /// @param map    the map
 /// @param local  the object's local ID

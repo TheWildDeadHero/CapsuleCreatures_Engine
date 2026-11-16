@@ -634,6 +634,19 @@ class PlotStatements(unittest.TestCase):
       for body in ("plot at self;", "plot 3 at -> var(v);"):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
+   def test_hooks(self) -> None:
+      """D-36 C23: `plot <id> watered|changing -> var(v)` answer; `plot <id> visit;` does not."""
+      end = bytes([sc.OP["End"]])
+      var = self.code("var(v) = 0;")[1:1 + VAR_ID_BYTES]
+      three = self.code("var(v) += 3;")[1 + VAR_ID_BYTES:-1]
+      op = sc.OP["Plot"]
+      for kind in ("watered", "changing"):
+         self.assertEqual(self.code(f"plot 3 {kind} -> var(v);"),
+                          bytes([op, sc.PLOT_KINDS.index(kind)]) + var + three + end)
+      self.assertEqual(self.code("plot 3 visit;"), bytes([op, sc.PLOT_KINDS.index("visit")]) + three + end)
+      for body in ("plot 3 visit -> var(v);", "plot 3 watered;", "plot 3 changing;"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
    def test_names(self) -> None:
       """A place's name is its id and a crop's id its index + 1 (the world's plots); other names stay constants."""
       m = {"schema": "capsule.scripts/1", "sources": ["main.cscript"]}

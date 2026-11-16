@@ -2563,6 +2563,21 @@ void test_plot_kinds()
    CHECK(script::var(VAR_M_SPECIES) == script::kNoPlot);   // no self: no object, no plot
 }
 
+/// C23: `plot <id> visit` reaches the port and answers nothing; watered and changing answer.
+void test_plot_hooks()
+{
+   script::clear_all();
+   script::world::g_plot_log[0] = '\0';
+   script::Context c{};
+   script::start(c, SCRIPT_PLOT_HOOKS);
+   CHECK(run(c) == 0);
+   CHECK(std::strcmp(script::world::g_plot_log, "11 3 0;9 3 0;10 3 0;") == 0);
+   using script::PlotOp;
+   const int32_t base = script::world::kStubPlotBase;
+   CHECK(script::var(VAR_ANSWER) == base + static_cast<int32_t>(PlotOp::Watered));
+   CHECK(script::var(VAR_V16) == base + static_cast<int32_t>(PlotOp::Changing));
+}
+
 /// C13: the lead, the living members (all, one left out), a member's moves, a type, the lead's species.
 void test_party_members()
 {
@@ -2922,6 +2937,7 @@ int main()
    test_clock_events();
    test_plot_ops();
    test_plot_kinds();
+   test_plot_hooks();
    test_item_queries();
    test_names();
    test_menus();

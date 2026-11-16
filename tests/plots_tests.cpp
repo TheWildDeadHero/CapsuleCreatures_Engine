@@ -145,8 +145,11 @@ void test_growth()
    CHECK(plots::state(kSoilPlot) == 1);
    pass(kOranHours);
    CHECK(plots::state(kSoilPlot) == 2 && plots::water(kSoilPlot));   // stage 2
+   CHECK(plots::watered(kSoilPlot) == 2);               // C23: stages 0 and 2
    pass(2 * kOranHours);
    CHECK(plots::state(kSoilPlot) == kSoilStages && !plots::water(kSoilPlot));   // ripe: no more watering
+   plots::visit(kSoilPlot);                             // C23: the engine pauses no growth, draws no effect
+   CHECK(plots::watered(kSoilPlot) == 2 && !plots::changing(kSoilPlot));
    CHECK(plots::yield(kSoilPlot) == kOranMin + (kOranMax - kOranMin) * 2 / kSoilStages);
    AssetKey sprite{};
    uint8_t anim = 0;
@@ -154,6 +157,7 @@ void test_growth()
    // left ripe past its ripe time: it regrows, unwatered
    pass(kSoilRipeHours);
    CHECK(plots::state(kSoilPlot) == 0 && plots::crop(kSoilPlot) == kOran);
+   CHECK(plots::watered(kSoilPlot) == 0);               // C23: a new cycle's stages are unwatered
    pass(kSoilStages * kOranHours);
    CHECK(plots::state(kSoilPlot) == kSoilStages && plots::yield(kSoilPlot) == kOranMin);
    // its last cycle's ripe time over: withered, and it can be planted again

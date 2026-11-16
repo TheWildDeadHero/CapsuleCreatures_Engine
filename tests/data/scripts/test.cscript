@@ -427,6 +427,11 @@ script plot_kinds {
     plot at 2 -> var(v16);
     plot at self -> var(m_species);
 }
+script plot_hooks {
+    plot 3 visit;
+    plot 3 watered -> var(answer);
+    plot 3 changing -> var(v16);
+}
 script party_members {
     party lead -> var(answer);
     party count alive -> var(v8);

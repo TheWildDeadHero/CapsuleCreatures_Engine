@@ -697,9 +697,10 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
    }
    case Op::Plot:
    {
-      // M6a K2: kind8, [Pick..: var16], operand (plot; K3 At: the object), [Plant: operand (crop)]
+      // M6a K2: kind8, [Pick..: var16], operand (plot; K3 At: the object), [Plant: operand (crop)]; C23: Visit
+      // answers nothing
       const auto kind = static_cast<PlotOp>(*p++);
-      const bool answers = kind >= PlotOp::Pick;
+      const bool answers = kind >= PlotOp::Pick && kind != PlotOp::Visit;
       const VarId v{answers ? load_le16(p) : uint16_t{0}};
       p += answers ? kU16Bytes : 0;
       int32_t id = operand(p);
