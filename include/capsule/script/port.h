@@ -320,7 +320,8 @@ void camera_attach();
 /// @param horizontal  pixels left and right
 /// @param count       shakes
 /// @param delay       frames between them
-void camera_shake(int32_t vertical, int32_t horizontal, int32_t count, int32_t delay);
+/// @param sound       C26: the shake's sound plays (`silent`: none)
+void camera_shake(int32_t vertical, int32_t horizontal, int32_t count, int32_t delay, bool sound);
 
 /// M6a K1: a clock value (Clock Hour / Weekday / Season / Days; the engine library's default:
 /// capsule/core/clock.h, src/script/script_clock.cpp; a program without it: 0, src/script/script_clock_none.cpp).
@@ -472,6 +473,15 @@ const text::Code* text_buffer(int32_t index);
 /// @param x     column (or the game's warp number)
 /// @param y     row
 void set_warp(WarpSlot slot, AssetKey map, int32_t x, int32_t y);
+
+/// C26: the `dynamic_warp_map` query's answer: none remembered.
+inline constexpr int32_t kNoWarpMap = 0xFFFF;
+
+/// C26: the map a remembered warp leads to (the `dynamic_warp_map` query). The default answers kNoWarpMap, as the
+/// engine keeps no warp slots of its own (set_warp() is the game's).
+/// @param slot  WarpSlot
+/// @return the map's index (world_ids.h MAP_...), or kNoWarpMap
+int32_t warp_map(WarpSlot slot);
 
 /// C1b: the spotter group the field last formed (the spotters that saw the walker together, in approach order;
 /// encounter load reads it; the default: field::spotters()).

@@ -179,6 +179,12 @@ CAPSULE_WEAK void set_warp(WarpSlot slot, AssetKey map, int32_t x, int32_t y)
    (void)y;
 }
 
+CAPSULE_WEAK int32_t warp_map(WarpSlot slot)
+{
+   (void)slot;
+   return kNoWarpMap;
+}
+
 CAPSULE_WEAK uint8_t spotters(uint8_t* objects, uint16_t* scripts, uint8_t max)
 {
    const field::SpotterGroup& group = field::spotters();

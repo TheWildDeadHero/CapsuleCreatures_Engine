@@ -1379,6 +1379,8 @@ int32_t query(Query q, uint8_t obj)
       return respawn();
    case Query::Vehicle:   // C18: the class `vehicle N;` set
       return field::walker().vehicle_class;
+   case Query::DynamicWarpMap:   // C26: the game's remembered dynamic warp, through its port
+      return warp_map(WarpSlot::Dynamic);
    case Query::NUM_QUERIES:
       break;
    }
@@ -1532,8 +1534,9 @@ CAPSULE_WEAK void camera_attach()
    field::remove_camera();
 }
 
-CAPSULE_WEAK void camera_shake(int32_t vertical, int32_t horizontal, int32_t count, int32_t delay)
+CAPSULE_WEAK void camera_shake(int32_t vertical, int32_t horizontal, int32_t count, int32_t delay, bool sound)
 {
+   (void)sound;   // the engine's shake has no sound of its own
    const int32_t power = vertical > horizontal ? vertical : horizontal;
    const int32_t frames = count * delay;
    shake(static_cast<uint8_t>(clamp_to<int32_t>(power, 0, overworld::kMaxShakePower)),

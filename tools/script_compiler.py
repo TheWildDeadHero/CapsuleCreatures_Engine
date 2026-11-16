@@ -409,6 +409,8 @@ ANIMATION_KINDS = VM.words("AnimationOp")
 CAMERA_KINDS = VM.words("CameraOp")
 ## C9: `camera shake <vertical> <horizontal> <count> <delay>`.
 CAMERA_SHAKE_OPERANDS = 4
+## C26: `camera shake ... silent` (CameraOp ShakeSilent: no sound) and its kind's word.
+CAMERA_SILENT_WORD, CAMERA_SHAKE_SILENT = "silent", "shake silent"
 ## C12: `picture show <species> <x> <y>;` / `picture hide;` (capsule::script::PictureOp) and `screen <n>;`.
 PICTURE_WORD, SCREEN_WORD = "picture", "screen"
 ## C12: `picture show|hide`.
@@ -2226,6 +2228,8 @@ class Parser:
          self.take()
          kind = self.take().text
          shake = [self.operand() for _ in range(CAMERA_SHAKE_OPERANDS)] if kind == "shake" else []
+         if shake and self.accept(CAMERA_SILENT_WORD):
+            kind = CAMERA_SHAKE_SILENT   # C26
          self.expect(";")
          return Node("camera", t, kind=kind, shake=shake)
       if self.at(CLOCK_WORD) and nxt.text in CLOCK_KINDS:   # M6a K1

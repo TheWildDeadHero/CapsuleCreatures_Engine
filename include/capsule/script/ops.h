@@ -100,7 +100,7 @@
 /// | ItemQuery | kind8 (ItemQueryOp), var16, operand (item), [Room: operand (n)] | C7: var = items::room() (1 when the bag takes n more) or items::pocket() |
 /// | MapView | kind8 (MapViewOp), [Layout: operand (map)] | C9: world::redraw_map() / world::set_layout(); C12: world::show_map_banner() |
 /// | Animation | kind8 (AnimationOp), [Arg: operand (index), operand (value)], [Start, Wait: operand (animation)] | C9: world::animation_arg() / animation_start(); Wait waits while world::animation_done() is false |
-/// | Camera | kind8 (CameraOp), [Shake: operand (vertical), operand (horizontal), operand (count), operand (delay)] | C9: world::camera_detach() / camera_attach() / camera_shake() |
+/// | Camera | kind8 (CameraOp), [Shake, ShakeSilent: operand (vertical), operand (horizontal), operand (count), operand (delay)] | C9: world::camera_detach() / camera_attach() / camera_shake() (C26: its sound flag) |
 /// | DarknessFade | operand (level) | C9: world::fade_darkness(); waits while world::darkness_fading() |
 /// | BattleSetup | kind8 (BattleSetupOp), [Prepare: operand (species), operand (level), operand (item), flags8 (kPrepare... bits)], [Outcome, RematchDue, RematchReady: var16] | C10: battles::prepare(); var = battles::outcome_code() / rematch_due() / rematch_ready() |
 /// | Picture | kind8 (PictureOp), [Show: operand (species), operand (x), operand (y)] | C12: world::picture_show(); Hide: world::picture_hide(), waits while world::picture_busy() |
@@ -257,6 +257,7 @@ enum class Query : uint8_t
    Timer,   ///< Seconds left on the countdown timer (0 when stopped).
    Respawn,   ///< C18: the respawn point in the game's numbering (world::respawn(); 0 for none).
    Vehicle,   ///< C18: the walker's vehicle class index (0 on foot; the index `vehicle N;` sets).
+   DynamicWarpMap,   ///< C26: the dynamic warp's map index (world::warp_map(); 65535 for none).
    NUM_QUERIES   ///< Number of queries.
 };
 
@@ -546,6 +547,7 @@ enum class CameraOp : uint8_t
    Detach,   ///< Follow an invisible mover on the walker's cell.
    Attach,   ///< Follow the walker again.
    Shake,   ///< Shake the view.
+   ShakeSilent,   ///< C26: shake the view without its sound (`camera shake ... silent;`).
    NUM_CAMERA_OPS   ///< Number of kinds.
 };
 
