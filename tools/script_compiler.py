@@ -509,6 +509,8 @@ CLOCK_KINDS = VM.words("ClockOp")
 CLOCK_EVENTS = "events"
 ## C21: the dex statement's word, its kinds (capsule::script::DexOp, in order) and its regional word.
 DEX_WORD, DEX_KINDS, DEX_REGIONAL = "dex", VM.words("DexOp"), "regional"
+## C25: `save -> var(v);` (the game's save dialog: 1 saved, 0 not).
+SAVE_WORD = "save"
 ## C21: the dex kinds that answer one species, and the one that answers nothing.
 DEX_SPECIES_KINDS, DEX_ENABLE = ("seen species", "caught species"), "enable national"
 ## C18: the operand naming a map's index (`map(Name)`, the numbering the map_index query answers).
@@ -1464,7 +1466,7 @@ TOKEN_RE = re.compile(r"""
         (?:"(?:[^"\\\n]|\\.)*"|(?!(?:WORDS)(?![A-Za-z0-9_.'-]))[A-Za-z0-9_][A-Za-z0-9_.'-]*)) |
     (?P<number>-?(?:0[xX][0-9A-Fa-f]+|[0-9]+)) |
     (?P<name>[A-Za-z_][A-Za-z0-9_]*) |
-    (?P<sym>->|==|!=|<=|>=|\+=|-=|\*=|/=|%=|&&|\|\||\.\.|[{}()\[\];,:=<>!])
+    (?P<sym>->|==|!=|<=|>=|\+=|-=|\*=|/=|%=|\|=|&=|&&|\|\||\.\.|[{}()\[\];,:=<>!])
 """.replace("WORDS", _WORDS_RE), re.VERBOSE | re.DOTALL)
 
 
@@ -2238,6 +2240,12 @@ class Parser:
          return Node("clock", t, kind=kind, hours=hours, result=result)
       if self.at(DEX_WORD) and any(k.split()[0] == nxt.text for k in DEX_KINDS):   # C21: the dex
          return self.dex_statement(t)
+      if self.at(SAVE_WORD) and nxt.text == "->":   # C25: `save -> var(v);`
+         self.take()
+         self.take()
+         result = self.var_ref().text
+         self.expect(";")
+         return Node("save", t, result=result)
       if self.at(BOXES_WORD) and nxt.text in BOXES_KINDS:   # C16: `boxes hatched|free|current -> var(v);`
          self.take()
          kind = self.take().text
@@ -2470,8 +2478,8 @@ class Parser:
       if self.at("var") and self.peek(1).text == "(":
          n = self.var_ref()
          op = self.peek()
-         if op.text not in ("=", "+=", "-=", "*=", "/=", "%="):
-            raise self.error("expected =, +=, -=, *=, /= or %=")
+         if op.text not in ("=", "+=", "-=", "*=", "/=", "%=", "|=", "&="):
+            raise self.error("expected =, +=, -=, *=, /=, %=, |= or &=")
          self.take()
          if op.text == "=" and self.at("random"):
             self.take()
@@ -4379,6 +4387,10 @@ class Compiler:
             e.u16(self.var_id(s["result"], s))
          if s["hours"] is not None:
             self.emit_operand(e, s["hours"])
+         return True
+      if k == "save":   # C25: the result
+         e.op("Save")
+         e.u16(self.var_id(s["result"], s))
          return True
       if k == "dex":   # C21: the kind, regional, [the result], [the species]
          e.op("Dex")

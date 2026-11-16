@@ -780,6 +780,20 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       next();
       return world::open_screen(screen) ? wait(Wait::Screen) : Outcome::Continue;
    }
+   case Op::Save:
+   {
+      // C25: var16; the dialog's first frame runs now, as a native's first call does
+      c.result_var = load_le16(p);
+      p += kU16Bytes;
+      next();
+      const int8_t a = port::save_open();
+      if (a != port::kSaveWaiting)
+      {
+         set_var(VarId{c.result_var}, a);
+         return Outcome::Continue;
+      }
+      return wait(Wait::Save);
+   }
    case Op::Animation:
    {
       // kind8, [Arg: operand (index), operand (value)], [Start, Wait: operand (animation)]
@@ -1435,7 +1449,11 @@ Outcome execute(Context& c)
       const int32_t x = operand(p);
       next();
       const int32_t cur = var(v);
-      if (kind == VarOpKind::Mul)
+      if (kind == VarOpKind::Or || kind == VarOpKind::And)
+      {
+         set_var(v, kind == VarOpKind::Or ? (cur | x) : (cur & x));   // C25: the bits
+      }
+      else if (kind == VarOpKind::Mul)
       {
          const int64_t r = static_cast<int64_t>(cur) * x;
          set_var(v, r > INT32_MAX ? INT32_MAX : (r < INT32_MIN ? INT32_MIN : static_cast<int32_t>(r)));
@@ -1723,6 +1741,7 @@ Outcome execute(Context& c)
    case Op::DarknessFade:
    case Op::Picture:
    case Op::Screen:
+   case Op::Save:
    case Op::Clock:
    case Op::Plot:
    case Op::Dex:
@@ -1930,6 +1949,16 @@ bool still_waiting(Context& c)
          return true;
       }
       break;
+   case Wait::Save:
+   {
+      const int8_t a = port::save_poll();   // C25
+      if (a == port::kSaveWaiting)
+      {
+         return true;
+      }
+      set_var(VarId{c.result_var}, a);
+      break;
+   }
    case Wait::Sound:
       if (audio::playing(static_cast<SoundWait>(c.result_var)))
       {
@@ -3662,3 +3691,21 @@ CAPSULE_WEAK void enable_national()
 }
 
 } // namespace capsule::script::dex
+
+namespace capsule::script::port
+{
+
+// C25: the engine has no save dialog, so the default answers "not saved" at once; an app or a game with one defines
+// these
+
+CAPSULE_WEAK int8_t save_open()
+{
+   return 0;
+}
+
+CAPSULE_WEAK int8_t save_poll()
+{
+   return 0;
+}
+
+} // namespace capsule::script::port

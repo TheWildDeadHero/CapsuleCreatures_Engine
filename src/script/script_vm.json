@@ -259,9 +259,9 @@
    "id": 31,
    "name": "VarOp",
    "kind": "generic",
-   "doc": "Multiply, divide or take the remainder of a variable.",
+   "doc": "Multiply, divide or take the remainder of a variable; C25: or / and its bits.",
    "bytes": "kind8 (VarOpKind), var16, operand",
-   "does": "*=, /=, %= (dividing by 0 changes nothing)"
+   "does": "*=, /=, %= (dividing by 0 changes nothing); C25: |=, &="
   },
   {
    "id": 32,
@@ -923,6 +923,14 @@
    "doc": "C21: the dex's counts, a species' record, completion and national mode, through the game's dex port.",
    "bytes": "kind8 (DexOp), regional8 (1: the regional list), [not EnableNational: var16], [SeenSpecies / CaughtSpecies: operand (species)]",
    "does": "C21: dex::count() / species() / complete() / national() into var; EnableNational: dex::enable_national()"
+  },
+  {
+   "id": 109,
+   "name": "Save",
+   "kind": "generic",
+   "doc": "C25: ask the game to save (its save dialog) and wait for the answer.",
+   "bytes": "var16",
+   "does": "C25: port::save_open(), then port::save_poll() each frame while it waits; var = 1 saved, 0 not"
   }
  ],
  "enums": [
@@ -1046,6 +1054,16 @@
      "name": "Mod",
      "doc": "%= (by 0: unchanged)",
      "word": "%="
+    },
+    {
+     "name": "Or",
+     "doc": "C25: `|=` (the bits of both).",
+     "word": "|="
+    },
+    {
+     "name": "And",
+     "doc": "C25: `&=` (the bits both share).",
+     "word": "&="
     }
    ],
    "count": {

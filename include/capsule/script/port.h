@@ -104,6 +104,18 @@ int16_t menu_open(const MenuRequest& request);
 /// C3: one frame of the menu menu_open() opened (the VM calls it once per frame while it waits).
 /// @return kMenuWaiting while waiting, else the chosen option's index or the cancel value
 int16_t menu_poll();
+
+/// C25: save_open() / save_poll(): no answer yet.
+inline constexpr int8_t kSaveWaiting = -1;
+
+/// C25: asks the game to save (`save -> var(v);`): its save dialog, from its first frame. The default answers 0 at
+/// once, as the engine has no save dialog; an app or a game that has one defines save_open() and save_poll().
+/// @return kSaveWaiting while the dialog runs, or the answer at once: 1 saved, 0 not (declined, or failed)
+int8_t save_open();
+
+/// C25: one frame of the dialog save_open() opened (the VM calls it once per frame while it waits).
+/// @return kSaveWaiting while it runs, else 1 saved or 0 not
+int8_t save_poll();
 /// Sets where the box shows from the next message on.
 /// @param pos  0 bottom, 1 middle, 2 top
 void message_position(uint8_t pos);

@@ -1325,6 +1325,12 @@ PLOT_HOOKS_REASON = "The test scripts gain C23's `plot <id> watered`, `changing`
 PLOT_HOOKS_CHANGES = {name: PLOT_HOOKS_REASON for name in ("test_script.cpp", "test_script_ids.h")}
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in PLOT_HOOKS_CHANGES.items()})
+## Why the script outputs changed (C25: `save -> var(v);`, `|=` and `&=`).
+SAVE_REASON = "The test scripts gain C25's `save` statement and the bit operators"
+## The files C25 changed, and why.
+SAVE_CHANGES = {name: SAVE_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in SAVE_CHANGES.items()})
 
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).

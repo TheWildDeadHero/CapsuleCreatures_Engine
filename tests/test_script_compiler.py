@@ -727,6 +727,35 @@ class BoxesStatements(unittest.TestCase):
          self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
 
 
+class SaveStatements(unittest.TestCase):
+   """C25: save -> var(v); var(v) |= / &= x."""
+
+   def code(self, body: str) -> bytes:
+      """Bytecode of one script.
+      @param body  statements
+      @return bytes
+      """
+      comp = compile_text(f"var v : u16;\nscript s {{ {body} }}")
+      self.assertEqual(errors(comp), [])
+      o, n, _ = comp.result["scripts"][0]
+      return comp.result["code"][o:o + n]
+
+   def test_bytes(self) -> None:
+      """Save's result variable; the bit operators as VarOp's Or and And."""
+      end = bytes([sc.OP["End"]])
+      var = self.code("var(v) = 0;")[1:1 + VAR_ID_BYTES]
+      four = self.code("var(v) += 4;")[1 + VAR_ID_BYTES:-1]
+      self.assertEqual(self.code("save -> var(v);"), bytes([sc.OP["Save"]]) + var + end)
+      for word in ("|=", "&="):
+         self.assertEqual(self.code(f"var(v) {word} 4;"),
+                          bytes([sc.OP["VarOp"], sc.VAR_OPS.index(word)]) + var + four + end)
+
+   def test_refusals(self) -> None:
+      """A save without its result, a bit operator without a value."""
+      for body in ("save;", "save -> ;", "var(v) |= ;"):
+         self.assertTrue(errors(compile_text(f"var v : u16;\nscript s {{ {body} }}")), body)
+
+
 class DexStatements(unittest.TestCase):
    """C21: dex seen|caught [regional|species <s>], complete [regional], national, enable national."""
 

@@ -33,7 +33,7 @@
 /// | WaitMoves | — | waits until no route started by a script (without repeat) runs |
 /// | SelfSwitch | letter8 (0-3 = A-D), on8 | sets a self switch of the context's object |
 /// | IfSelfSet / IfSelfClear | letter8, off16 | jumps on a self switch of the context's object |
-/// | VarOp | kind8 (VarOpKind), var16, operand | *=, /=, %= (dividing by 0 changes nothing) |
+/// | VarOp | kind8 (VarOpKind), var16, operand | *=, /=, %= (dividing by 0 changes nothing); C25: |=, &= |
 /// | InputNumber | var16, digits8 | number entry; waits for the answer |
 /// | WaitKey | var16 | waits for a key press; var = 1 A, 2 B, 3 Select, 4 Start, 5 Right, 6 Left, 7 Up, 8 Down, 9 R, 10 L |
 /// | MessagePos | pos8 (0 bottom, 1 middle, 2 top) | where the next messages show |
@@ -110,6 +110,7 @@
 /// | Plot | kind8 (PlotOp), [Pick.. but Visit: var16], operand (plot; At: the object), [Plant: operand (crop)] | M6a K2: world::plot_op(); var = its answer (Pick: the items picked, the script gives them; K3 At: the object's plot, kNoPlot without one) |
 /// | Boxes | kind8 (BoxesOp), var16 | C16: var = boxes::hatched() / free() / current() |
 /// | Dex | kind8 (DexOp), regional8 (1: the regional list), [not EnableNational: var16], [SeenSpecies / CaughtSpecies: operand (species)] | C21: dex::count() / species() / complete() / national() into var; EnableNational: dex::enable_national() |
+/// | Save | var16 | C25: port::save_open(), then port::save_poll() each frame while it waits; var = 1 saved, 0 not |
 #pragma once
 
 #include <cstdint>
@@ -151,7 +152,7 @@ enum class Op : uint8_t
    SelfSwitch,   ///< Set or clear a self switch of the context's object.
    IfSelfSet,   ///< Jump if a self switch is on.
    IfSelfClear,   ///< Jump if a self switch is off.
-   VarOp,   ///< Multiply, divide or take the remainder of a variable.
+   VarOp,   ///< Multiply, divide or take the remainder of a variable; C25: or / and its bits.
    InputNumber,   ///< Number entry.
    WaitKey,   ///< Wait for a key press.
    MessagePos,   ///< Text box position.
@@ -230,6 +231,7 @@ enum class Op : uint8_t
    Plot,   ///< M6a K2: plant, water, pick or clear a plot; read its stage, crop, what picking would yield (K3: its crop's item; the plot of a map object; C23: its stages watered, its growth effect, a visit).
    Boxes,   ///< C16: ask the storage boxes for the records that are not eggs, the free slots or the current box.
    Dex,   ///< C21: the dex's counts, a species' record, completion and national mode, through the game's dex port.
+   Save,   ///< C25: ask the game to save (its save dialog) and wait for the answer.
    NUM_OPS   ///< Number of opcodes.
 };
 
@@ -264,6 +266,8 @@ enum class VarOpKind : uint8_t
    Mul,   ///< *= (saturating)
    Div,   ///< /= (truncating; by 0: unchanged)
    Mod,   ///< %= (by 0: unchanged)
+   Or,   ///< C25: `|=` (the bits of both).
+   And,   ///< C25: `&=` (the bits both share).
    NUM_VAR_OPS   ///< Number of operations.
 };
 
