@@ -427,6 +427,13 @@ script plot_kinds {
     plot at 2 -> var(v16);
     plot at self -> var(m_species);
 }
+script save_game {
+    var(v8) = 5;
+    var(v8) |= 2;
+    var(v16) = 6;
+    var(v16) &= 3;
+    save -> var(answer);
+}
 script plot_hooks {
     plot 3 visit;
     plot 3 watered -> var(answer);

@@ -149,6 +149,22 @@ int16_t menu_open(const MenuRequest& r)
    g_port.menu_option1[n] = '\0';
    return g_port.menu_at_once;
 }
+constexpr int8_t kStubSavePolls = 3;   ///< C25: the save dialog's frames after its first.
+int8_t g_save_at_once = kSaveWaiting;   ///< C25: save_open()'s answer.
+int g_save_polls = 0;                   ///< C25: save_poll() calls.
+/// C25: opens the stub save dialog.
+/// @return g_save_at_once
+int8_t save_open()
+{
+   g_save_polls = 0;
+   return g_save_at_once;
+}
+/// C25: saved after kStubSavePolls frames.
+/// @return kSaveWaiting, then 1
+int8_t save_poll()
+{
+   return ++g_save_polls < kStubSavePolls ? kSaveWaiting : int8_t{1};
+}
 /// C3: the queued answer, once.
 /// @return it
 int16_t menu_poll()
@@ -2563,6 +2579,22 @@ void test_plot_kinds()
    CHECK(script::var(VAR_M_SPECIES) == script::kNoPlot);   // no self: no object, no plot
 }
 
+/// C25: `|=` and `&=`; `save` waits while the port's dialog runs, then answers; an answer at once does not wait.
+void test_save_game()
+{
+   constexpr int32_t kOred = 7;    // 5 |= 2
+   constexpr int32_t kAnded = 2;   // 6 &= 3
+   script::clear_all();
+   script::Context c{};
+   script::start(c, SCRIPT_SAVE_GAME);
+   CHECK(run(c) == script::port::kStubSavePolls);   // waits a frame per poll until the one that answers
+   CHECK(script::var(VAR_V8) == kOred && script::var(VAR_V16) == kAnded && script::var(VAR_ANSWER) == 1);
+   script::port::g_save_at_once = 0;
+   script::start(c, SCRIPT_SAVE_GAME);
+   CHECK(run(c) == 0 && script::var(VAR_ANSWER) == 0);
+   script::port::g_save_at_once = script::port::kSaveWaiting;
+}
+
 /// C23: `plot <id> visit` reaches the port and answers nothing; watered and changing answer.
 void test_plot_hooks()
 {
@@ -2938,6 +2970,7 @@ int main()
    test_plot_ops();
    test_plot_kinds();
    test_plot_hooks();
+   test_save_game();
    test_item_queries();
    test_names();
    test_menus();
