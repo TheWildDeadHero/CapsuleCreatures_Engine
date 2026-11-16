@@ -521,8 +521,10 @@ BOXES_KINDS = VM.words("BoxesOp")
 PLOT_WORD = "plot"
 ## M6a K2: their kinds (capsule::script::PlotOp, in order).
 PLOT_KINDS = VM.words("PlotOp")
-## M6a K2: the kinds that answer into a variable (Pick and after: capsule::script::Op::Plot).
-PLOT_ANSWERS = PLOT_KINDS[PLOT_KINDS.index("pick"):]
+## D-36 C23: the kind that answers nothing though it follows Pick (`plot <id> visit;`).
+PLOT_VISIT = "visit"
+## M6a K2: the kinds that answer into a variable (Pick and after but Visit: capsule::script::Op::Plot).
+PLOT_ANSWERS = [k for k in PLOT_KINDS[PLOT_KINDS.index("pick"):] if k != PLOT_VISIT]
 ## M6a K3: the kind that names a map object instead of a plot (`plot at <object> -> var(id);`).
 PLOT_AT = "at"
 ## M6a K2: tokens of a `var(name)` operand (where a plot statement's kind follows it).

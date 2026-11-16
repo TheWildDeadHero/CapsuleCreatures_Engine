@@ -54,6 +54,13 @@ CAPSULE_WEAK int32_t plot_op(PlotOp kind, int32_t id, int32_t crop)
       return plots::yield(plot);
    case PlotOp::Item:
       return plots::item(plot);
+   case PlotOp::Watered:   // C23
+      return plots::watered(plot);
+   case PlotOp::Changing:
+      return plots::changing(plot) ? 1 : 0;
+   case PlotOp::Visit:
+      plots::visit(plot);
+      return 0;
    default:
       return 0;
    }

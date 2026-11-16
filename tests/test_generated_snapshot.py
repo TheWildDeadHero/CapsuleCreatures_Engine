@@ -1319,6 +1319,12 @@ BATTLE_EVENTS_REASON = ("Every `battle prepare` gains its flags byte; the test s
 BATTLE_EVENTS_CHANGES = {name: BATTLE_EVENTS_REASON for name in ("test_script.cpp", "test_script_ids.h")}
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in BATTLE_EVENTS_CHANGES.items()})
+## Why the script outputs changed (C23: the plot kinds watered, changing and visit).
+PLOT_HOOKS_REASON = "The test scripts gain C23's `plot <id> watered`, `changing` and `visit`"
+## The files C23 changed, and why.
+PLOT_HOOKS_CHANGES = {name: PLOT_HOOKS_REASON for name in ("test_script.cpp", "test_script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in PLOT_HOOKS_CHANGES.items()})
 
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
