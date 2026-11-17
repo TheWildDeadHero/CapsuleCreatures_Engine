@@ -370,7 +370,7 @@ enum class SoundOp : uint8_t
    Fanfare,   ///< A fanfare (the music pauses).
    Cry,   ///< A cry (species, mode).
    FadeMap,   ///< C28: fade the map's music out at the game's speed (a game may hold the script until it stops: a `wait_state` waits).
-   SeRepeat,   ///< C28: a sound effect now, then again every <frames> frames until it has played <times> times (se, times, frames); the script goes on.
+   SeRepeat,   ///< C28: a sound effect now, then again every `frames` frames until it has played `times` times (se, times, frames); the script goes on.
    NUM_SOUND_OPS   ///< Number of kinds.
 };
 

@@ -1448,7 +1448,7 @@
     },
     {
      "name": "SeRepeat",
-     "doc": "C28: a sound effect now, then again every <frames> frames until it has played <times> times (se, times, frames); the script goes on.",
+     "doc": "C28: a sound effect now, then again every `frames` frames until it has played `times` times (se, times, frames); the script goes on.",
      "word": "se_repeat",
      "operands": 3
     }
