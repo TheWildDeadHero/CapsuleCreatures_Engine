@@ -913,6 +913,25 @@ void set_metatile(int16_t x, int16_t y, int32_t tile, bool solid)
    std::snprintf(b, sizeof b, "metatile %d %d %d %d;", x, y, static_cast<int>(tile), solid ? 1 : 0);
    log(b);
 }
+/// C27: records a change by behavior.
+/// @param behavior  the behavior
+/// @param tile      metatile
+/// @param solid     collision
+void set_metatiles(int32_t behavior, int32_t tile, bool solid)
+{
+   char b[40];
+   std::snprintf(b, sizeof b, "metatiles %d %d %d;", static_cast<int>(behavior), static_cast<int>(tile), solid ? 1 : 0);
+   log(b);
+}
+/// C27: records a flicker.
+/// @param f  the flicker
+void flicker_metatile(const Flicker& f)
+{
+   char b[64];
+   std::snprintf(b, sizeof b, "flicker %d %d %d %d %d %d %d;", f.x, f.y, static_cast<int>(f.first),
+                 static_cast<int>(f.second), static_cast<int>(f.times), static_cast<int>(f.frames), f.solid ? 1 : 0);
+   log(b);
+}
 /// Records the respawn point.
 /// @param value  value
 void set_respawn(int32_t value)
@@ -2913,7 +2932,7 @@ void test_port_statements()
    char want[256];
    std::snprintf(want, sizeof want,
                  "lockall;route 2 5 0;remove 2;visible 2 0;template 2 0 3 4;door 0 1 2;weather 0 3;fade 0 0 0;"
-                 "metatile 1 2 5 1;respawn 4;setwarp 1 %08X 1 2;sound 6 1 9;mart 0 2;releaseall;",
+                 "metatile 1 2 5 1;metatiles 7 8 1;flicker 3 4 10 11 5 6 1;respawn 4;setwarp 1 %08X 1 2;sound 6 1 9;mart 0 2;releaseall;",
                  static_cast<unsigned>(asset::key_v1("map:TOWN")));
    CHECK(std::strcmp(g_world.log, want) == 0);
    if (std::strcmp(g_world.log, want) != 0)

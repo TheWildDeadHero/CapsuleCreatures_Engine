@@ -1000,6 +1000,31 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       world::set_metatile(x, y, tile, solid);
       return Outcome::Continue;
    }
+   case Op::SetMetatiles:
+   {
+      // C27: operand (behavior), operand (metatile), operand (solid)
+      const int32_t behavior = operand(p);
+      const int32_t tile = operand(p);
+      const bool solid = operand(p) != 0;
+      next();
+      world::set_metatiles(behavior, tile, solid);
+      return Outcome::Continue;
+   }
+   case Op::FlickerMetatile:
+   {
+      // C27: x, y, first, second, times, frames, solid; the flicker runs in the background
+      world::Flicker flicker{};
+      flicker.x = cell_operand(p);
+      flicker.y = cell_operand(p);
+      flicker.first = operand(p);
+      flicker.second = operand(p);
+      flicker.times = operand(p);
+      flicker.frames = operand(p);
+      flicker.solid = operand(p) != 0;
+      next();
+      world::flicker_metatile(flicker);
+      return Outcome::Continue;
+   }
    case Op::Respawn:
       world::set_respawn(operand(p));
       next();
@@ -1746,6 +1771,8 @@ Outcome execute(Context& c)
    case Op::Plot:
    case Op::Dex:
    case Op::SetMetatile:
+   case Op::SetMetatiles:
+   case Op::FlickerMetatile:
    case Op::Respawn:
    case Op::SetWarp:
    case Op::Sound:

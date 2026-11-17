@@ -453,6 +453,30 @@ bool fading();
 /// @param solid   collision on
 void set_metatile(int16_t x, int16_t y, int32_t tile, bool solid);
 
+/// C27: changes every cell of the shown map with a behavior until the next map, without drawing (`set_metatiles`; the
+/// default: nothing, as set_metatile()'s). A game decides which cells the map covers (its border too).
+/// @param behavior  the world's behavior index
+/// @param tile      the game's metatile number
+/// @param solid     collision on
+void set_metatiles(int32_t behavior, int32_t tile, bool solid);
+
+/// C27: a cell flipped between two metatiles in the background (`flicker_metatile`).
+struct Flicker
+{
+   int16_t x = 0;        ///< Column.
+   int16_t y = 0;        ///< Row.
+   int32_t first = 0;    ///< The metatile it starts from (the second shows at the first flip).
+   int32_t second = 0;   ///< The other metatile.
+   int32_t times = 0;    ///< Flips: an odd count ends on the second.
+   int32_t frames = 0;   ///< Frames between flips.
+   bool solid = false;   ///< Collision on.
+};
+
+/// C27: starts a flicker (the view drawn at each flip); the script goes on at once. The default shows the last state at
+/// once through set_metatile(), as the engine runs no field tasks for it.
+/// @param f  the flicker
+void flicker_metatile(const Flicker& f);
+
 /// Sets the respawn point (the default: nothing).
 /// @param value  the game's numbering
 void set_respawn(int32_t value);
