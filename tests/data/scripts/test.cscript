@@ -226,6 +226,9 @@ script ports {
     respawn 4;
     set_warp dynamic town 1 2;
     sound se 9;
+    sound fade_map;
+    sound se_repeat 9 3 35;
+    weather wait;
     wait_sound se;
     mart port_mart;
     wait_state;
