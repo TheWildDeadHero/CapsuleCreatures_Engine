@@ -332,6 +332,7 @@ enum class WeatherOp : uint8_t
    Set,   ///< The weather the next Apply shows (the game's numbering).
    Reset,   ///< Back to the map's own weather.
    Apply,   ///< Show it.
+   Wait,   ///< C28: a game may hold the script until its weather change completes (a `wait_state` waits).
    NUM_WEATHER_OPS   ///< Number of kinds.
 };
 
@@ -368,6 +369,8 @@ enum class SoundOp : uint8_t
    Se,   ///< A sound effect.
    Fanfare,   ///< A fanfare (the music pauses).
    Cry,   ///< A cry (species, mode).
+   FadeMap,   ///< C28: fade the map's music out at the game's speed (a game may hold the script until it stops: a `wait_state` waits).
+   SeRepeat,   ///< C28: a sound effect now, then again every `frames` frames until it has played `times` times (se, times, frames); the script goes on.
    NUM_SOUND_OPS   ///< Number of kinds.
 };
 

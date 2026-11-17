@@ -1296,6 +1296,11 @@
      "name": "Apply",
      "doc": "Show it.",
      "word": "apply"
+    },
+    {
+     "name": "Wait",
+     "doc": "C28: a game may hold the script until its weather change completes (a `wait_state` waits).",
+     "word": "wait"
     }
    ],
    "count": {
@@ -1434,6 +1439,18 @@
      "doc": "A cry (species, mode).",
      "word": "cry",
      "operands": 2
+    },
+    {
+     "name": "FadeMap",
+     "doc": "C28: fade the map's music out at the game's speed (a game may hold the script until it stops: a `wait_state` waits).",
+     "word": "fade_map",
+     "operands": 0
+    },
+    {
+     "name": "SeRepeat",
+     "doc": "C28: a sound effect now, then again every `frames` frames until it has played `times` times (se, times, frames); the script goes on.",
+     "word": "se_repeat",
+     "operands": 3
     }
    ],
    "count": {

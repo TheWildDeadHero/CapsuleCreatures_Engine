@@ -2932,7 +2932,7 @@ void test_port_statements()
    char want[256];
    std::snprintf(want, sizeof want,
                  "lockall;route 2 5 0;remove 2;visible 2 0;template 2 0 3 4;door 0 1 2;weather 0 3;fade 0 0 0;"
-                 "metatile 1 2 5 1;metatiles 7 8 1;flicker 3 4 10 11 5 6 1;respawn 4;setwarp 1 %08X 1 2;sound 6 1 9;mart 0 2;releaseall;",
+                 "metatile 1 2 5 1;metatiles 7 8 1;flicker 3 4 10 11 5 6 1;respawn 4;setwarp 1 %08X 1 2;sound 6 1 9;sound 9 0 -1;sound 10 3 9;weather 3 0;mart 0 2;releaseall;",
                  static_cast<unsigned>(asset::key_v1("map:TOWN")));
    CHECK(std::strcmp(g_world.log, want) == 0);
    if (std::strcmp(g_world.log, want) != 0)
