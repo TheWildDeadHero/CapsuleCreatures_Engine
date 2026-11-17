@@ -161,6 +161,23 @@ CAPSULE_WEAK void set_metatile(int16_t x, int16_t y, int32_t tile, bool solid)
    (void)solid;
 }
 
+CAPSULE_WEAK void set_metatiles(int32_t behavior, int32_t tile, bool solid)
+{
+   (void)behavior;
+   (void)tile;
+   (void)solid;
+}
+
+CAPSULE_WEAK void flicker_metatile(const Flicker& f)
+{
+   // the last state: the second after an odd count of flips, the first after an even one (or none)
+   constexpr int32_t kParity = 2;
+   if (f.times > 0)
+   {
+      set_metatile(f.x, f.y, f.times % kParity != 0 ? f.second : f.first, f.solid);
+   }
+}
+
 CAPSULE_WEAK void set_respawn(int32_t value)
 {
    (void)value;

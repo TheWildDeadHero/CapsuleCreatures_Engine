@@ -931,6 +931,22 @@
    "doc": "C25: ask the game to save (its save dialog) and wait for the answer.",
    "bytes": "var16",
    "does": "C25: port::save_open(), then port::save_poll() each frame while it waits; var = 1 saved, 0 not"
+  },
+  {
+   "id": 110,
+   "name": "SetMetatiles",
+   "kind": "generic",
+   "doc": "C27: change every cell of the shown map with a behavior.",
+   "bytes": "operand (behavior), operand (metatile), operand (solid)",
+   "does": "C27: world::set_metatiles(): until the next map, without drawing"
+  },
+  {
+   "id": 111,
+   "name": "FlickerMetatile",
+   "kind": "generic",
+   "doc": "C27: flip a cell between two metatiles in the background, the view drawn each time.",
+   "bytes": "operand x, operand y, operand (first), operand (second), operand (times), operand (frames), operand (solid)",
+   "does": "C27: world::flicker_metatile(); the script goes on at once"
   }
  ],
  "enums": [

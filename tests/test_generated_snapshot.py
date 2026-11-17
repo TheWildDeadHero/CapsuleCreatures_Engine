@@ -1337,6 +1337,12 @@ CAMERA_FLOORS_REASON = "The test scripts gain C26's silent camera shake and the 
 CAMERA_FLOORS_CHANGES = {"test_script.cpp": CAMERA_FLOORS_REASON}
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in CAMERA_FLOORS_CHANGES.items()})
+## Why the script outputs changed (C27: `set_metatiles` and `flicker_metatile`).
+METATILES_REASON = "The test scripts gain C27's `set_metatiles` and `flicker_metatile`"
+## The files C27 changed, and why.
+METATILES_CHANGES = {"test_script.cpp": METATILES_REASON}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in METATILES_CHANGES.items()})
 
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).

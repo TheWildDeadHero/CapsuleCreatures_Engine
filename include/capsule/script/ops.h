@@ -111,6 +111,8 @@
 /// | Boxes | kind8 (BoxesOp), var16 | C16: var = boxes::hatched() / free() / current() |
 /// | Dex | kind8 (DexOp), regional8 (1: the regional list), [not EnableNational: var16], [SeenSpecies / CaughtSpecies: operand (species)] | C21: dex::count() / species() / complete() / national() into var; EnableNational: dex::enable_national() |
 /// | Save | var16 | C25: port::save_open(), then port::save_poll() each frame while it waits; var = 1 saved, 0 not |
+/// | SetMetatiles | operand (behavior), operand (metatile), operand (solid) | C27: world::set_metatiles(): until the next map, without drawing |
+/// | FlickerMetatile | operand x, operand y, operand (first), operand (second), operand (times), operand (frames), operand (solid) | C27: world::flicker_metatile(); the script goes on at once |
 #pragma once
 
 #include <cstdint>
@@ -232,6 +234,8 @@ enum class Op : uint8_t
    Boxes,   ///< C16: ask the storage boxes for the records that are not eggs, the free slots or the current box.
    Dex,   ///< C21: the dex's counts, a species' record, completion and national mode, through the game's dex port.
    Save,   ///< C25: ask the game to save (its save dialog) and wait for the answer.
+   SetMetatiles,   ///< C27: change every cell of the shown map with a behavior.
+   FlickerMetatile,   ///< C27: flip a cell between two metatiles in the background, the view drawn each time.
    NUM_OPS   ///< Number of opcodes.
 };
 

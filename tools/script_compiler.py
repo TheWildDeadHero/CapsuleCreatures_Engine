@@ -678,10 +678,13 @@ LOOSE_WORD = "loose"
 WARP_NOWAIT_WORD = "nowait"
 ## Warp facing byte bit: the script goes on at once (capsule::script::kWarpNoWait).
 WARP_NOWAIT = VM.constants["kWarpNoWait"]
+## C27: `set_metatiles <behavior> <metatile> <solid>;` and `flicker_metatile <x> <y> <first> <second> <times> <frames>
+## <solid>;`: their operands.
+SET_METATILES_OPERANDS, FLICKER_OPERANDS = 3, 7
 ## Statement words of the script ports that are no keywords.
 PORT_WORDS = ("lock", "release", "wait_msg", "remove", "visible", "set_template", "door", "weather", "fade",
             "set_metatile", "respawn", "set_warp", "sound", "wait_sound", "mart", "wait_state", "override", "prop",
-            "order", "menu", "name", "counter", "stat")
+            "order", "menu", "name", "counter", "stat", "set_metatiles", "flicker_metatile")
 ## The override statement's kinds (`override apply NAME;` / `override clear NAME;`) and their apply byte.
 OVERRIDE_KINDS = ("clear", "apply")
 ## C2: the prop statement's kinds (capsule::script::PropOp, in order).
@@ -2854,6 +2857,14 @@ class Parser:
          x, y, mid, solid = self.operand(), self.operand(), self.operand(), self.operand()
          self.expect(";")
          return Node("set_metatile", t, x=x, y=y, id=mid, solid=solid)
+      if w == "set_metatiles":   # C27: set_metatiles <behavior> <metatile> <solid>;
+         args = [self.operand() for _ in range(SET_METATILES_OPERANDS)]
+         self.expect(";")
+         return Node("set_metatiles", t, args=args)
+      if w == "flicker_metatile":   # C27: flicker_metatile <x> <y> <first> <second> <times> <frames> <solid>;
+         args = [self.operand() for _ in range(FLICKER_OPERANDS)]
+         self.expect(";")
+         return Node("flicker_metatile", t, args=args)
       if w == "respawn":
          value = self.operand()
          self.expect(";")
@@ -4616,6 +4627,11 @@ class Compiler:
          e.op("SetMetatile")
          for part in ("x", "y", "id", "solid"):
             self.emit_operand(e, s[part])
+         return True
+      if k in ("set_metatiles", "flicker_metatile"):   # C27: their operands in order
+         e.op("SetMetatiles" if k == "set_metatiles" else "FlickerMetatile")
+         for a in s["args"]:
+            self.emit_operand(e, a)
          return True
       if k == "respawn":
          e.op("Respawn")
