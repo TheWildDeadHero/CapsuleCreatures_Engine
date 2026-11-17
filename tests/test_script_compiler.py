@@ -1385,6 +1385,7 @@ script s {
    set_metatile 1 2 0x200 1;
    set_metatiles 7 8 1; flicker_metatile 3 4 10 11 5 6 1;
    respawn 5;
+   warp to hole fall; warp to next;
    sound se 5; wait_sound se;
    sound fade_map; sound se_repeat 9 3 35; weather wait;
    mart shop;
@@ -1432,6 +1433,9 @@ map_scripts Here { on_resume -> other; on_warp_into var(v) == 1 -> other; }
       kinds = list(sc.SOUND_KINDS)   # C28: the map music's fade, the repeated sound effect, the weather's wait
       self.assertIn(bytes([op["Sound"], kinds.index("fade_map"), 0, op["Sound"], kinds.index("se_repeat"), 3, c8, 9,
                            c8, 3, c8, 35, op["Weather"], sc.WEATHER_KINDS.index("wait")]), code)
+      slots = list(sc.SET_WARP_KINDS)   # C29: the slot, then the transition (0xFF the default)
+      self.assertIn(bytes([op["WarpTo"], slots.index("hole"), sc.TRANSITIONS.index("fall"), op["WarpTo"],
+                           slots.index("next"), sc.TRANSITION_DEFAULT]), code)
       self.assertIn(bytes([op["WaitState"], op["SetFlag"], 0, 0]), code)   # the glitch off: the fix (flag f is 0)
       other = comp.script_ids["other"]
       self.assertIn(bytes([op["CallLoose"], other, 0]), code)
@@ -1455,6 +1459,7 @@ map_scripts Here { on_resume -> other; on_warp_into var(v) == 1 -> other; }
                "script s { set_metatiles 7 8; }": "expected",
                "script s { flicker_metatile 3 4 10 11 5 6; }": "expected",
                "script s { sound fade_map 1; }": "expected",
+               "script s { warp to hole sideways; }": "expected",
                "script s { remove camera; }": "remove takes a map object",
                "script s { route 1 nothing; }": "unknown movement",
                "script s { mart nothing; }": "unknown mart",

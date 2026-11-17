@@ -113,6 +113,7 @@
 /// | Save | var16 | C25: port::save_open(), then port::save_poll() each frame while it waits; var = 1 saved, 0 not |
 /// | SetMetatiles | operand (behavior), operand (metatile), operand (solid) | C27: world::set_metatiles(): until the next map, without drawing |
 /// | FlickerMetatile | operand x, operand y, operand (first), operand (second), operand (times), operand (frames), operand (solid) | C27: world::flicker_metatile(); the script goes on at once |
+/// | WarpTo | kind8 (WarpSlot), transition8 (Transition, 0xFF the default) | C29: world::warp_to(); waits until the new map is shown (world::warping()), or goes on when nothing is remembered |
 #pragma once
 
 #include <cstdint>
@@ -236,6 +237,7 @@ enum class Op : uint8_t
    Save,   ///< C25: ask the game to save (its save dialog) and wait for the answer.
    SetMetatiles,   ///< C27: change every cell of the shown map with a behavior.
    FlickerMetatile,   ///< C27: flip a cell between two metatiles in the background, the view drawn each time.
+   WarpTo,   ///< C29: move the player to the destination a slot remembers, with a transition (the game picks the cell where the slot keeps none).
    NUM_OPS   ///< Number of opcodes.
 };
 

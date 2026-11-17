@@ -371,8 +371,8 @@ NO_CANCEL = VM.constants["kNoCancel"]
 DEP_VAR = 0x8000
 ## Opcodes that make a script wait.
 WAITING_STATEMENTS = {"msg", "msgbox", "wait_button", "yesno", "choice", "delay", "move", "route", "wait_moves",
-                      "input_number", "wait_key", "warp", "scroll", "open_bag", "shop", "open_boxes", "transform",
-                      "menu"}
+                      "input_number", "wait_key", "warp", "warp_to", "scroll", "open_bag", "shop", "open_boxes",
+                      "transform", "menu"}
 ## The bag statements: name -> {"op": opcode, "counted": takes a count, "result": needs a result variable, and C7's
 ## queries their ItemQueryOp word: "query"}.
 ITEM_STATEMENTS = {"give_item": {"op": "ItemGive", "counted": True, "result": False},
@@ -656,6 +656,8 @@ DEFAULT_FADE_SPEED = 0
 ## `set_warp` kinds in capsule::script::WarpSlot order: the next warp, the dynamic warp, the dive / emerge, the hole,
 ## the escape warp.
 SET_WARP_KINDS = VM.words("WarpSlot")
+## C29: `warp to <slot> [<transition>];` (WarpTo): the destination a slot remembers.
+WARP_TO_WORD = "to"
 ## `sound` kinds in capsule::script::SoundOp order -> the operands they take.
 SOUND_KINDS = VM.word_values("SoundOp", "operands")
 ## `wait_sound` kinds in capsule::script::SoundWait order.
@@ -2612,6 +2614,12 @@ class Parser:
          self.expect(";")
          return Node("msg_pos", t, pos=pos)
       if self.accept("warp"):
+         if self.at(WARP_TO_WORD) and self.peek(1).text in SET_WARP_KINDS:
+            self.take()   # C29: `warp to <slot> [<transition>];`
+            slot = self.direction(SET_WARP_KINDS)
+            trans = self.take().text if self.peek().text in TRANSITIONS else "default"
+            self.expect(";")
+            return Node("warp_to", t, kind=slot, transition=trans)
          m = self.name("a map name")
          x = self.operand()
          y = self.operand()
@@ -4121,6 +4129,12 @@ class Compiler:
       if k == "msg_pos":
          e.op("MessagePos")
          e.u8(MSG_POSITIONS.index(s["pos"]))
+         return True
+      if k == "warp_to":   # C29: the slot, then the transition
+         e.op("WarpTo")
+         e.u8(SET_WARP_KINDS.index(s["kind"]))
+         e.u8(TRANSITION_DEFAULT if s["transition"] == "default" else TRANSITIONS.index(s["transition"]))
+         ctx["waits"] = True
          return True
       if k == "warp":
          known = self.map_names
