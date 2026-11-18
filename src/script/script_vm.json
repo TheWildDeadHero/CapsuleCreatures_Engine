@@ -947,6 +947,14 @@
    "doc": "C27: flip a cell between two metatiles in the background, the view drawn each time.",
    "bytes": "operand x, operand y, operand (first), operand (second), operand (times), operand (frames), operand (solid)",
    "does": "C27: world::flicker_metatile(); the script goes on at once"
+  },
+  {
+   "id": 112,
+   "name": "WarpTo",
+   "kind": "generic",
+   "doc": "C29: move the player to the destination a slot remembers, with a transition (the game picks the cell where the slot keeps none).",
+   "bytes": "kind8 (WarpSlot), transition8 (Transition, 0xFF the default)",
+   "does": "C29: world::warp_to(); waits until the new map is shown (world::warping()), or goes on when nothing is remembered"
   }
  ],
  "enums": [

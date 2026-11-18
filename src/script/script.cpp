@@ -40,6 +40,7 @@ constexpr int kChoiceHeaderBytes = 4;   ///< Choice: result variable, cancel ind
 constexpr int kMenuPlaceBytes = 2;      ///< C3: Menu: x and y.
 constexpr int kSelfSwitchBytes = 2;     ///< SelfSwitch: letter and on.
 constexpr int kWarpTailBytes = 2;       ///< Warp: facing and transition, after the position.
+constexpr int kWarpToBytes = 2;         ///< C29 WarpTo: the slot and the transition.
 constexpr int kFadeKindAt = 0;          ///< Fade: offset of its kind.
 constexpr int kFadeSpeedAt = 1;         ///< Fade: offset of its speed.
 constexpr int kFadeFlagsAt = 2;         ///< Fade: offset of its flags.
@@ -1040,6 +1041,21 @@ Outcome execute_port(Context& c, Op op, const uint8_t* p, const uint8_t* base)
       world::set_warp(slot, map, x, y);
       return Outcome::Continue;
    }
+   case Op::WarpTo:
+   {
+      // C29: kind8 (WarpSlot), transition8; waits as Warp does when a warp started
+      const auto slot = static_cast<WarpSlot>(p[0]);
+      const uint8_t transition = p[1];
+      p += kWarpToBytes;
+      next();
+      if (!world::warp_to(slot, transition))
+      {
+         return Outcome::Continue;   // nothing remembered in the slot
+      }
+      c.self = kNoSelf;   // the object stays behind on the old map
+      c.wait = Wait::Warp;
+      return Outcome::Waiting;
+   }
    case Op::Sound:
    {
       const auto kind = static_cast<SoundOp>(p[0]);
@@ -1775,6 +1791,7 @@ Outcome execute(Context& c)
    case Op::FlickerMetatile:
    case Op::Respawn:
    case Op::SetWarp:
+   case Op::WarpTo:
    case Op::Sound:
    case Op::WaitSound:
    case Op::WaitState:

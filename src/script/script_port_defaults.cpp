@@ -202,6 +202,13 @@ CAPSULE_WEAK int32_t warp_map(WarpSlot slot)
    return kNoWarpMap;
 }
 
+CAPSULE_WEAK bool warp_to(WarpSlot slot, uint8_t transition)
+{
+   (void)slot;
+   (void)transition;
+   return false;
+}
+
 CAPSULE_WEAK uint8_t spotters(uint8_t* objects, uint16_t* scripts, uint8_t max)
 {
    const field::SpotterGroup& group = field::spotters();

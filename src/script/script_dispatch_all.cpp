@@ -120,6 +120,7 @@ const OpHandler kModuleOps[kOpCount] = {
    nullptr,           // 109 Save
    nullptr,           // 110 SetMetatiles
    nullptr,           // 111 FlickerMetatile
+   nullptr,           // 112 WarpTo
 };
 
 /// The module waits by wait kind (nullptr: not a module wait, or one no op of the table sets).

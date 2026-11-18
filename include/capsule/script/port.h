@@ -507,6 +507,14 @@ inline constexpr int32_t kNoWarpMap = 0xFFFF;
 /// @return the map's index (world_ids.h MAP_...), or kNoWarpMap
 int32_t warp_map(WarpSlot slot);
 
+/// C29: moves the player to the destination a slot remembers (`warp to <slot>`), with a transition; the game picks
+/// the cell where the slot keeps none (a hole's: the player's). The VM then waits while warping(). The default
+/// answers false, as the engine keeps no warp slots of its own (set_warp() is the game's).
+/// @param slot        WarpSlot
+/// @param transition  Transition, or kTransitionDefault
+/// @return true when a warp started; false: nothing remembered, the script goes on
+bool warp_to(WarpSlot slot, uint8_t transition);
+
 /// C1b: the spotter group the field last formed (the spotters that saw the walker together, in approach order;
 /// encounter load reads it; the default: field::spotters()).
 /// @param objects  receives up to max local IDs

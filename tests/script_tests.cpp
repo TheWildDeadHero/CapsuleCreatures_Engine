@@ -226,10 +226,13 @@ int8_t key_poll()
 namespace
 {
 
+/// The test world's call log (C29: the port statements' log outgrew 256 bytes).
+constexpr size_t kWorldLogBytes = 512;
+
 /// What the test world saw.
 struct World
 {
-   char log[256];     ///< Calls, as text.
+   char log[kWorldLogBytes];   ///< Calls, as text.
    int walking;       ///< Frames the current walk keeps going.
    bool missing;      ///< Object 9 does not exist.
    bool blocked;      ///< path_clear() says a step is blocked.
@@ -951,6 +954,22 @@ void set_warp(WarpSlot slot, AssetKey map, int32_t x, int32_t y)
    std::snprintf(b, sizeof b, "setwarp %u %08X %d %d;", static_cast<unsigned>(slot), static_cast<unsigned>(map),
                  static_cast<int>(x), static_cast<int>(y));
    log(b);
+}
+/// C29: records a warp to a slot; the escape slot remembers nothing (the script goes on), the others take two frames.
+/// @param slot        WarpSlot
+/// @param transition  transition
+/// @return whether a warp started
+bool warp_to(WarpSlot slot, uint8_t transition)
+{
+   char b[32];
+   std::snprintf(b, sizeof b, "warpto %u %u;", static_cast<unsigned>(slot), static_cast<unsigned>(transition));
+   log(b);
+   if (slot == WarpSlot::Escape)
+   {
+      return false;
+   }
+   g_world.walking = 2;
+   return true;
 }
 /// C1b: the test's spotter group: objects 7, 4 and 5 with scripts spotter_one, spotter_none, spotter_two.
 /// @param objects  receives the local IDs
@@ -2929,10 +2948,11 @@ void test_port_statements()
    script::start(c, SCRIPT_PORTS);
    run(c, 200);
    CHECK(!script::running(c));
-   char want[256];
+   char want[kWorldLogBytes];
    std::snprintf(want, sizeof want,
                  "lockall;route 2 5 0;remove 2;visible 2 0;template 2 0 3 4;door 0 1 2;weather 0 3;fade 0 0 0;"
-                 "metatile 1 2 5 1;metatiles 7 8 1;flicker 3 4 10 11 5 6 1;respawn 4;setwarp 1 %08X 1 2;sound 6 1 9;sound 9 0 -1;sound 10 3 9;weather 3 0;mart 0 2;releaseall;",
+                 "metatile 1 2 5 1;metatiles 7 8 1;flicker 3 4 10 11 5 6 1;respawn 4;setwarp 1 %08X 1 2;"
+                 "warpto 3 9;warpto 4 255;sound 6 1 9;sound 9 0 -1;sound 10 3 9;weather 3 0;mart 0 2;releaseall;",
                  static_cast<unsigned>(asset::key_v1("map:TOWN")));
    CHECK(std::strcmp(g_world.log, want) == 0);
    if (std::strcmp(g_world.log, want) != 0)

@@ -1351,6 +1351,13 @@ SOUND_WEATHER_CHANGES = {"test_script.cpp": SOUND_WEATHER_REASON}
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in SOUND_WEATHER_CHANGES.items()})
 
+## Why the C29 outputs changed.
+WARP_TO_REASON = "The test scripts gain C29's `warp to <slot>`"
+## The files C29 changed, and why.
+WARP_TO_CHANGES = {"test_script.cpp": WARP_TO_REASON}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in WARP_TO_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

@@ -225,6 +225,8 @@ script ports {
     flicker_metatile 3 4 10 11 5 6 1;
     respawn 4;
     set_warp dynamic town 1 2;
+    warp to hole fall;
+    warp to escape;
     sound se 9;
     sound fade_map;
     sound se_repeat 9 3 35;
