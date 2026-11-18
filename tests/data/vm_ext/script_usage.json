@@ -1,0 +1,4 @@
+{
+ "schema": "capsule.usage/1",
+ "used": {"script.op": {"End": 3, "Native": 4}, "script.native": {"spin_wheel": 2, "light_beacon": 1, "ring_bell": 1}}
+}

@@ -44,4 +44,9 @@ endfunction()
 
 if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
    add_test(NAME vm_ext_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_vm_ext.py)
+   # D-36 package 2 step D: the field script VM's ops, with a sample game's natives table and its scripts' usage
+   set(script_natives_data ${CAPSULE_ROOT}/tests/data/vm_ext)
+   capsule_vm_ext_check(script_vm_manifest_check MANIFESTS ${CAPSULE_ROOT}/src/script/script_vm.json
+                        ${script_natives_data}/script_natives_vm_ext.json
+                        USAGE ${script_natives_data}/script_usage.json)
 endif()

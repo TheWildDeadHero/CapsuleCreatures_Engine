@@ -28,6 +28,16 @@ BATTLE = DATA / "battle_alias_vm_ext.json"
 ANIM = DATA / "anim_alias_vm_ext.json"
 ## The sandbox's manifest.
 SANDBOX = ROOT / "apps" / "sandbox_battle_vm" / "data" / "sandbox_vm_ext.json"
+## Step D: the field script VM's opcode manifest.
+SCRIPT_VM = ROOT / "src" / "script" / "script_vm.json"
+## Step D: a sample game's script natives (simple test content) and the script compiler's usage record of it.
+SCRIPT_NATIVES = DATA / "script_natives_vm_ext.json"
+## The usage record.
+SCRIPT_USAGE = DATA / "script_usage.json"
+## A native id past the opcode range (the Native op's id16).
+WIDE_NATIVE_ID = 300
+## The sample's wheels and beacons packages' bytes in a listing (hex sizes in nm -S output).
+WHEELS_BYTES, BEACONS_BYTES = 0x40 + 0x10, 0x20
 
 
 def raw_battle() -> dict[str, Any]:
@@ -148,6 +158,70 @@ class CheckTests(unittest.TestCase):
       ms = vm_ext.load_all([BATTLE])
       errors, _ = vm_ext.check(ms, usage={"battle": {"goto": 1, "warp": 2}})
       self.assertEqual(errors, ["usage: battle op 'warp' is emitted by a bank but not declared"])
+
+
+class ScriptVmTests(unittest.TestCase):
+   """!Step D: the field script VM's ops and a game's natives table."""
+
+   def test_script_vm_loads(self) -> None:
+      """!The engine's script VM manifest declares generic ops only, and passes the checks."""
+      ms = vm_ext.load_all([SCRIPT_VM])
+      self.assertTrue(all(op.kind == "generic" for op in ms[0].ops.values()))
+      self.assertEqual(vm_ext.check(ms), ([], []))
+
+   def test_natives_table(self) -> None:
+      """!The natives table takes 16-bit ids, a native's symbol defaults to its name, and opcode tables stay 8-bit."""
+      m = vm_ext.load(SCRIPT_NATIVES)
+      self.assertEqual(m.key, "script:native")
+      self.assertEqual(m.ops[WIDE_NATIVE_ID].symbol, "ring_bell")
+      self.assertFalse(m.ops[1].implemented)
+      raw = raw_battle()
+      raw["ops"][0]["id"] = WIDE_NATIVE_ID
+      ManifestTests().refused(raw, "an op needs a name and an id 0-255")
+
+   def test_usage_and_sources(self) -> None:
+      """!The script compiler's usage record is read per table; the natives pass the checks against their sources."""
+      usage = vm_ext.read_usage([SCRIPT_USAGE])
+      self.assertEqual(usage["script:native"], {"spin_wheel": 2, "light_beacon": 1, "ring_bell": 1})
+      ms = vm_ext.load_all([SCRIPT_VM, SCRIPT_NATIVES])
+      self.assertEqual(vm_ext.check(ms, usage=usage), ([], []))
+      usage["script:native"]["call_ferry"] = 1
+      errors, _ = vm_ext.check(ms, usage=usage)
+      self.assertEqual(errors, ["usage: script:native op 'call_ferry' is emitted by a bank but not declared"])
+
+   def test_implementation_both_ways(self) -> None:
+      """!An implemented native no source refers to, and a referenced native marked not implemented, are errors."""
+      with tempfile.TemporaryDirectory() as tmp:
+         src = Path(tmp) / "x.cpp"
+         src.write_text("case NATIVE_LIGHT_BEACON:\n", encoding="utf-8")
+         errors, _ = vm_ext.check(vm_ext.load_all([SCRIPT_NATIVES]), [src])
+      # the manifest's own sources win over the ones given: copy it beside the new source
+      self.assertEqual(errors, [])
+      raw = json.loads(SCRIPT_NATIVES.read_text(encoding="utf-8"))
+      raw["dispatch"]["sources"] = ["x.cpp"]
+      with tempfile.TemporaryDirectory() as tmp:
+         (Path(tmp) / "x.cpp").write_text("case NATIVE_LIGHT_BEACON:\n", encoding="utf-8")
+         path = Path(tmp) / "m.json"
+         path.write_text(json.dumps(raw), encoding="utf-8")
+         errors, _ = vm_ext.check(vm_ext.load_all([path]))
+      self.assertEqual(len(errors), 3)
+      self.assertIn("spin_wheel (0) is marked implemented, but no source refers to it", errors[0])
+      self.assertIn("light_beacon (1) is referenced in the sources, but marked not implemented", errors[1])
+
+   def test_owner_sizes(self) -> None:
+      """!A script native's size is its owner's namespaces' code."""
+      with tempfile.TemporaryDirectory() as tmp:
+         nm = Path(tmp) / "nm.txt"
+         nm.write_text("08000000 00000040 T sample::wheels::run(int)\n"
+                       "08000040 00000010 t sample::wheels::(anonymous namespace)::spin()\n"
+                       "08000050 00000020 T sample::beacons::run(int)\n"
+                       "08000070 00000008 D sample::wheels::g\n", encoding="utf-8")
+         rows = vm_ext.report(vm_ext.load_all([SCRIPT_NATIVES]), vm_ext.read_sizes(nm),
+                              vm_ext.read_namespace_sizes(nm))
+      by_name = {r["name"]: r for r in rows}
+      self.assertEqual(by_name["spin_wheel"]["owner_bytes"], WHEELS_BYTES)
+      self.assertEqual(by_name["light_beacon"]["owner_bytes"], BEACONS_BYTES)
+      self.assertEqual((by_name["light_beacon"]["implemented"], by_name["light_beacon"]["milestone"]), (False, "M6"))
 
 
 class DispatchTests(unittest.TestCase):
