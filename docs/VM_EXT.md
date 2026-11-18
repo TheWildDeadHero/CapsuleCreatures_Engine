@@ -108,7 +108,25 @@ this per step (tests/battle_vm_alias_tests.cpp, tests/anim_alias_tests.cpp: the 
 of the same layouts, compared after every step or frame); a game proves its conversions the same way and with its
 own parity scenarios, then removes the native and lets the check confirm no stray implementation is left.
 
-## 5. The other VMs (later: D-36 §6)
+## 5. The field script VM (D-36 package 2 step D)
+
+- **Its ops** are `src/script/script_vm.json` (vm `script`, the main table): generic ops only, the VM's own
+  opcodes (tools/script_vm.py writes `include/capsule/script/ops.h` and the dispatch from it).
+- **A game's natives** are a second manifest of the same VM, table `native`. Its ids are the Native op's 16-bit ids
+  (0-65535; every other table keeps 0-255). Each entry is a `native` with a `reason`, an `owner` (the game's package
+  that runs it) and `implemented` (false: the game's generic stand-in covers it). `uses` and `milestone` are kept for
+  the report and the studio.
+- **The symbol** of a script native is its reference in the game's sources, its name unless given: an id constant
+  `NATIVE_<NAME>` or the name as a string literal (a package's name table). `check` with sources requires it both
+  ways: an implemented native is referenced, and a referenced native is implemented.
+- **Usage:** `check --usage` reads the script compiler's record (capsule.usage/1) as the script VM's: `script.op`
+  for the ops, `script.native` for the natives table.
+- **Sizes:** a script native is a case inside its package, so `report --sizes` gives its owner's code (the
+  namespaces the manifest's `dispatch.owners` names, with the namespaces inside them) as `owner_bytes`.
+- **The engine's check** (`script_vm_manifest_check`) runs on the ops with a sample natives table and usage record
+  (`tests/data/vm_ext`, simple test content).
+
+## 6. The other VMs (later: D-36 §6)
 
 The schema already names every VM (`script`, `effect`, `seq`, `screen-task`); `vm_ext.py` loads and checks their
 manifests and refuses to generate their dispatch until each VM has its generic step runner. What each needs:
@@ -123,7 +141,8 @@ manifests and refuses to generate their dispatch until each VM has its generic s
   `"handler"` and their waits a poll (`"polls"`): they run through a dispatch table (`src/script/script_dispatch.h`)
   that each game writes from its scripts' usage record with `tools/script_vm.py dispatch --usage <scripts.json>`,
   listing only the ops its scripts use, so a module none of them reaches is not linked.
-  `src/script/script_dispatch_all.cpp` is the default table with every op. Its natives go through one `game::native(id, args, argc, result)` switch with
+  `src/script/script_dispatch_all.cpp` is the default table with every op. Its natives are declared and checked
+  as a `native` table since step D (§5), and still go through one `game::native(id, args, argc, result)` switch with
   evaluated `int32_t` arguments, not operand bytes. A manifest entry per native id (name, argument count, `waits`,
   `reason`) can replace the switch with a generated table of function pointers; aliases there are natives whose
   body is a variable read / write, a flag test or a plain wait, run as the VM's own expressions. Needs: a

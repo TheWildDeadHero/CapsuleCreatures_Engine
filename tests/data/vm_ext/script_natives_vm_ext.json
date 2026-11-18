@@ -1,0 +1,20 @@
+{
+ "schema": "capsule.vm-ext/1",
+ "vm": "script",
+ "table": "native",
+ "name": "sample_script_natives",
+ "owner": "sample",
+ "tier": 3,
+ "dispatch": {
+  "sources": ["script_natives_sources.cpp"],
+  "owners": {"wheels": "sample::wheels", "beacons": "sample::beacons"}
+ },
+ "ops": [
+  {"id": 0, "name": "spin_wheel", "kind": "native", "owner": "wheels", "implemented": true, "waits": true,
+   "args": 1, "uses": 2, "milestone": "M2", "reason": "game-specific rule of one map: no generic meaning"},
+  {"id": 1, "name": "light_beacon", "kind": "native", "owner": "beacons", "implemented": false, "args": 0,
+   "uses": 1, "milestone": "M6", "reason": "not implemented until M6 (beacons): timed_wait"},
+  {"id": 300, "name": "ring_bell", "kind": "native", "owner": "wheels", "implemented": true, "args": 0,
+   "uses": 1, "milestone": "M2", "reason": "stand-in until M3: the bell's frames, no sound yet"}
+ ]
+}

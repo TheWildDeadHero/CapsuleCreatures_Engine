@@ -15,6 +15,12 @@ checks §3.3 names:
     vm_ext.py layouts MANIFEST... --out FILE.h --cpp [--namespace NS]   (the layouts as a C++ header)
     vm_ext.py report MANIFEST... [--sizes NM.txt]     (native ops with their reasons, owners and sizes)
 
+The field script VM (D-36 package 2 step D) declares its generic ops in src/script/script_vm.json and a game's
+natives in a `native` table (the Native op's 16-bit ids). A script native is implemented or not (the game's generic
+stand-in covers it); its "symbol" is its reference in the game's sources (`NATIVE_<NAME>` or its name as a string),
+checked both ways. The script compiler's usage record (capsule.usage/1, `script.op` and `script.native`) is read as
+the script VM's usage.
+
 Generated files are written with LF line ends and only when their bytes change; paths written into them are posix
 and relative to the output's folder.
 """
@@ -44,6 +50,16 @@ MAIN_TABLE = "main"
 DISPATCH_VMS = ("battle", "anim")
 ## The largest opcode id.
 OPCODE_MAX = 0xFF
+## D-36 step D: the field script VM's natives table (the Native op's id16: ids 0-NATIVE_ID_MAX).
+NATIVE_TABLE = "native"
+## The largest native id of the script VM's natives table.
+NATIVE_ID_MAX = 0xFFFF
+## The script compiler's usage record (tools/usage.py RECORD_SCHEMA) and its categories -> table_key().
+SCRIPT_USAGE_SCHEMA = "capsule.usage/1"
+## The categories of that record the script VM's tables count.
+SCRIPT_USAGE_TABLES = {"script.op": "script", "script.native": "script:native"}
+## How a script native is referenced in a game's sources: its id constant's prefix (the importer's script ids).
+SCRIPT_NATIVE_ID_PREFIX = "NATIVE_"
 ## The animation player's first game opcode (include/capsule/anim/bank.h kFirstGameOpcode).
 ANIM_FIRST_GAME_OPCODE = 0x40
 ## Op kinds: a generic op the VM itself runs (the field script VM's own opcodes, tools/script_vm.py), an alias, a
@@ -221,6 +237,8 @@ class Op:
    override: bool = False
    ## A native's alias candidate parity state ("" when it has none).
    parity: str = ""
+   ## Step D: a script native the game runs (False: its generic stand-in covers it); other natives are implemented.
+   implemented: bool = True
 
 
 @dataclass
@@ -249,6 +267,23 @@ class Manifest:
    raw: dict[str, Any]
    ## Its command table's name (table_key() of its VM and table).
    key: str = ""
+
+
+def id_max(vm: str, table: str) -> int:
+   """!The largest id of a VM's command table.
+   @param vm     the VM
+   @param table  its table
+   @return NATIVE_ID_MAX for the script VM's natives (the Native op's id16), else OPCODE_MAX
+   """
+   return NATIVE_ID_MAX if (vm, table) == ("script", NATIVE_TABLE) else OPCODE_MAX
+
+
+def is_script_natives(m: "Manifest") -> bool:
+   """!Whether a manifest declares the field script VM's natives (step D).
+   @param m  the manifest
+   @return true for vm script, table native
+   """
+   return (m.vm, m.table) == ("script", NATIVE_TABLE)
 
 
 def make_ref(kind: str | int, ident: int = 0, offset: int = 0) -> int:
@@ -300,8 +335,9 @@ def _op(raw: dict[str, Any], manifest: Manifest, where: str) -> Op:
    """
    name = raw.get("name")
    ident = raw.get("id")
-   if not isinstance(name, str) or not name or not isinstance(ident, int) or not 0 <= ident <= OPCODE_MAX:
-      raise ManifestError(f"{where}: an op needs a name and an id 0-{OPCODE_MAX} ({raw!r})")
+   limit = id_max(manifest.vm, manifest.table)
+   if not isinstance(name, str) or not name or not isinstance(ident, int) or not 0 <= ident <= limit:
+      raise ManifestError(f"{where}: an op needs a name and an id 0-{limit} ({raw!r})")
    label = f"{where}: op {name} ({ident:#04x})"
    kind = raw.get("kind")
    if kind not in KINDS:
@@ -315,8 +351,10 @@ def _op(raw: dict[str, Any], manifest: Manifest, where: str) -> Op:
       if manifest.vm not in GENERIC_VMS:
          raise ManifestError(f"{label}: only the {', '.join(GENERIC_VMS)} VM's manifests declare generic ops")
    elif kind == "native":
-      op.symbol = raw.get("symbol")
+      # a script native's symbol is its reference in the game's sources: its name unless given
+      op.symbol = raw.get("symbol", name if is_script_natives(manifest) else None)
       op.reason = str(raw.get("reason", "")).strip()
+      op.implemented = bool(raw.get("implemented", True))
       if not isinstance(op.symbol, str) or not IDENT.match(op.symbol):
          raise ManifestError(f"{label}: a native needs its C++ symbol")
       if not op.reason:
@@ -350,8 +388,9 @@ def _manifest_from(raw: dict[str, Any], path: Path) -> Manifest:
    if vm not in VMS:
       raise ManifestError(f"{where}: vm must be one of {', '.join(VMS)}")
    space = raw.get("space", {})
-   first, last = space.get("first", 0), space.get("last", OPCODE_MAX)
-   if not 0 <= first <= last <= OPCODE_MAX:
+   limit = id_max(vm, str(raw.get("table", MAIN_TABLE)))
+   first, last = space.get("first", 0), space.get("last", limit)
+   if not 0 <= first <= last <= limit:
       raise ManifestError(f"{where}: opcode space {first}-{last} out of range")
    # named references: a number (the animation player's game numbering) or a battle reference {kind, id, offset}
    refs = {str(k): make_ref(v.get("kind", "variable"), v.get("id", 0), v.get("offset", 0)) if isinstance(v, dict)
@@ -609,13 +648,19 @@ def read_usage(paths: Iterable[Path]) -> dict[str, dict[str, int]]:
    """!Reads usage records.
    @param paths  the files
    @return table_key() -> op name -> total count
-   @throws ManifestError on a record of another schema
+   @throws ManifestError on a record of another schema (capsule.vm-usage/1, or the script compiler's capsule.usage/1)
    """
    out: dict[str, dict[str, int]] = {}
    for p in paths:
       raw = json.loads(p.read_text(encoding="utf-8"))
+      if raw.get("schema") == SCRIPT_USAGE_SCHEMA:   # step D: the script compiler's record
+         for category, key in SCRIPT_USAGE_TABLES.items():
+            ops = out.setdefault(key, {})
+            for name, n in raw.get("used", {}).get(category, {}).items():
+               ops[name] = ops.get(name, 0) + int(n)
+         continue
       if raw.get("schema") != USAGE_SCHEMA:
-         raise ManifestError(f"{p.name}: schema must be {USAGE_SCHEMA}")
+         raise ManifestError(f"{p.name}: schema must be {USAGE_SCHEMA} or {SCRIPT_USAGE_SCHEMA}")
       ops = out.setdefault(table_key(raw["vm"], raw.get("table", MAIN_TABLE)), {})
       for name, n in raw.get("ops", {}).items():
          ops[name] = ops.get(name, 0) + int(n)
@@ -687,6 +732,10 @@ def check(manifests: Sequence[Manifest], sources: Sequence[Path] = (),
       # the manifest's own sources (dispatch.sources, relative to it), else the ones given
       own = [m.path.parent / s for s in m.dispatch.get("sources", [])]
       files = own or list(sources)
+      if is_script_natives(m):
+         if files:
+            errors += _check_script_natives(m, files)
+         continue
       if files:
          prefix = str(m.dispatch.get("native_prefix", ""))
          defined = _defined_functions(files, prefix, m.vm)
@@ -708,6 +757,42 @@ def check(manifests: Sequence[Manifest], sources: Sequence[Path] = (),
             if name not in names:
                errors.append(f"usage: {key} op {name!r} is emitted by a bank but not declared")
    return errors, warnings
+
+
+def referenced_natives(sources: Iterable[Path]) -> set[str]:
+   """!Step D: the script natives a game's sources refer to: `NATIVE_<NAME>` tokens (upper case) and string
+   literals (a package's name table).
+   @param sources  the files
+   @return the upper-case id names (without the prefix) and the literals
+   """
+   token = re.compile(r"\b" + SCRIPT_NATIVE_ID_PREFIX + r"(\w+)")
+   literal = re.compile(r'"(\w+)"')
+   found: set[str] = set()
+   for path in sources:
+      text = path.read_text(encoding="utf-8", errors="replace")
+      found |= {SCRIPT_NATIVE_ID_PREFIX + t for t in token.findall(text)}
+      found |= set(literal.findall(text))
+   return found
+
+
+def _check_script_natives(m: "Manifest", sources: Sequence[Path]) -> list[str]:
+   """!Step D: a script natives manifest against the game's sources, both ways: an implemented native is
+   referenced (its id constant or its name as a string), and a referenced one is marked implemented.
+   @param m        the manifest (is_script_natives())
+   @param sources  the game's sources
+   @return the errors
+   """
+   found = referenced_natives(sources)
+   errors = []
+   for op in sorted(m.ops.values(), key=lambda o: o.id):
+      symbol = op.symbol or op.name
+      referenced = SCRIPT_NATIVE_ID_PREFIX + symbol.upper() in found or symbol in found
+      if op.implemented and not referenced:
+         errors.append(f"{m.path.name}: native {op.name} ({op.id}) is marked implemented, but no source refers to it")
+      elif referenced and not op.implemented:
+         errors.append(f"{m.path.name}: native {op.name} ({op.id}) is referenced in the sources, but marked not "
+                       "implemented")
+   return errors
 
 
 # --- dispatch ------------------------------------------------------------------------------------------------
@@ -942,19 +1027,58 @@ def read_sizes(path: Path) -> dict[str, int]:
    return out
 
 
-def report(manifests: Sequence[Manifest], sizes: dict[str, int] | None = None) -> list[dict[str, Any]]:
+def read_namespace_sizes(path: Path) -> dict[str, int]:
+   """!Step D: code sizes by namespace from `nm --size-sort -S -C` output (a GBA build's): a script native is a case
+   inside its package, so its package's size is what can be measured.
+   @param path  the nm listing
+   @return namespace ("a::b", anonymous namespaces dropped; "" for global functions) -> bytes
+   """
+   out: dict[str, int] = {}
+   for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+      parts = line.split(maxsplit=NM_NAME)
+      if len(parts) == NM_FIELDS and parts[NM_TYPE].lower() in NM_CODE_TYPES:
+         qualified = parts[NM_NAME].replace(ANONYMOUS_NAMESPACE + "::", "").split("(")[0]
+         namespace = "::".join(qualified.split("::")[:-1])
+         out[namespace] = out.get(namespace, 0) + int(parts[NM_SIZE], HEX_BASE)
+   return out
+
+
+def owner_bytes(m: "Manifest", owner: str, namespaces: dict[str, int]) -> int | None:
+   """!Step D: a script native owner's code size: its namespaces (the manifest's dispatch "owners": owner -> a
+   namespace or a list), each with the namespaces inside it.
+   @param m           the manifest
+   @param owner       the owner
+   @param namespaces  read_namespace_sizes()'s result
+   @return bytes, or None when the manifest names no namespace for the owner
+   """
+   named = m.dispatch.get("owners", {}).get(owner)
+   if not named:
+      return None
+   roots = [named] if isinstance(named, str) else list(named)
+   return sum(n for ns, n in namespaces.items() if any(ns == r or ns.startswith(r + "::") for r in roots))
+
+
+def report(manifests: Sequence[Manifest], sizes: dict[str, int] | None = None,
+           namespaces: dict[str, int] | None = None) -> list[dict[str, Any]]:
    """!Every op with its kind, reason, owner and (natives) size on the GBA.
-   @param manifests  the manifests
-   @param sizes      read_sizes()'s result, or None
-   @return one row per op
+   @param manifests   the manifests
+   @param sizes       read_sizes()'s result, or None
+   @param namespaces  read_namespace_sizes()'s result (step D: script natives' owners), or None
+   @return one row per op (a script native's: its implemented flag, uses and milestone, and its owner's bytes)
    """
    rows = []
    for m in manifests:
       for _, op in sorted(m.ops.items()):
-         rows.append({"vm": m.vm, "manifest": m.name, "id": op.id, "name": op.name, "kind": op.kind,
-                      "symbol": op.symbol, "reason": op.reason, "owner": op.owner, "tier": op.tier,
-                      "waits": op.waits, "parity": op.parity, "size": op.size,
-                      "gba_bytes": (sizes or {}).get(op.symbol or "") if op.kind == "native" else None})
+         row = {"vm": m.vm, "manifest": m.name, "id": op.id, "name": op.name, "kind": op.kind,
+                "symbol": op.symbol, "reason": op.reason, "owner": op.owner, "tier": op.tier,
+                "waits": op.waits, "parity": op.parity, "size": op.size,
+                "gba_bytes": (sizes or {}).get(op.symbol or "") if op.kind == "native" else None}
+         if is_script_natives(m):
+            row["gba_bytes"] = None   # a case inside its package: owner_bytes instead
+            row.update({"table": m.table, "implemented": op.implemented, "uses": op.raw.get("uses"),
+                        "milestone": op.raw.get("milestone"),
+                        "owner_bytes": owner_bytes(m, op.owner, namespaces) if namespaces else None})
+         rows.append(row)
    return rows
 
 
@@ -1018,10 +1142,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"warning: {w}")
          for e in errors:
             print(f"error: {e}")
-         ops = sum(len(m.ops) for m in manifests)
-         aliases = sum(1 for m in manifests for op in m.ops.values() if op.kind == "alias")
-         print(f"vm_ext: {len(manifests)} manifests, {ops} ops ({aliases} aliases, {ops - aliases} natives), "
-               f"{len(errors)} errors, {len(warnings)} warnings")
+         kinds = {k: sum(1 for m in manifests for op in m.ops.values() if op.kind == k) for k in KINDS}
+         print(f"vm_ext: {len(manifests)} manifests, {sum(kinds.values())} ops ({kinds['generic']} generic, "
+               f"{kinds['alias']} aliases, {kinds['native']} natives), {len(errors)} errors, {len(warnings)} warnings")
          return 1 if errors or (warnings and args.warnings_as_errors) else 0
       if args.action == "dispatch":
          usage = read_usage(args.usage) if args.usage else None
@@ -1040,12 +1163,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             write_if_changed(args.out, _json_text({"schema": "capsule.script-bank/1",
                                                    "commands": script_bank_commands(manifests)}))
          return 0
-      rows = report(manifests, read_sizes(args.sizes) if args.sizes else None)
+      rows = report(manifests, read_sizes(args.sizes) if args.sizes else None,
+                    read_namespace_sizes(args.sizes) if args.sizes else None)
       if args.json:
          print(_json_text(rows), end="")
       else:
          for row in rows:
-            size = f"{row['gba_bytes']} B" if row["gba_bytes"] is not None else "-"
+            measured = row["gba_bytes"] if row["gba_bytes"] is not None else row.get("owner_bytes")
+            size = f"{measured} B" if measured is not None else "-"
             print(f"{row['vm']:6} {row['id']:#04x} {row['name']:32} {row['kind']:6} {size:>8}  {row['reason']}")
    except (ManifestError, OSError, KeyError, json.JSONDecodeError) as e:
       print(f"vm_ext: {e}", file=sys.stderr)
