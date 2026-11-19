@@ -520,6 +520,8 @@ class PartyStatements(unittest.TestCase):
       self.assertEqual(self.code("item_room(3) -> var(v);"), self.code("item_room(3, 1) -> var(v);"))
       self.code("item_room(3, 0) -> var(v);")   # room for none more: allowed (an imported game asks it)
       self.assertEqual(self.code("item_pocket(3) -> var(v);")[:2], bytes([op, k.index("pocket")]))
+      self.assertEqual(self.code("item_pc(3, 2) -> var(v);")[:2], bytes([op, k.index("pc")]))   # C30
+      self.assertEqual(self.code("item_pc(3) -> var(v);"), self.code("item_pc(3, 1) -> var(v);"))
 
    def test_refusals(self) -> None:
       """A count or find without its variable, a find without `move`, a query without its result."""
@@ -850,8 +852,8 @@ class MapRefs(unittest.TestCase):
       self.assertTrue(errors(self.compiled("var(v) = map(Town);", None)))
 
    def test_queries(self) -> None:
-      """respawn, vehicle and C26's dynamic_warp_map are object-free queries."""
-      for word in ("respawn", "vehicle", "dynamic_warp_map"):
+      """respawn, vehicle, C26's dynamic_warp_map and C30's player_id are object-free queries."""
+      for word in ("respawn", "vehicle", "dynamic_warp_map", "player_id"):
          self.assertIn(word, sc.QUERIES)
          self.assertFalse(sc.QUERIES[word])
          self.assertEqual(errors(compile_text(f"var v : u16;\nscript s {{ if {word} == 1 {{ var(v) = 0; }} }}")),

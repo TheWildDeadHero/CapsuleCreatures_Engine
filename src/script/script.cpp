@@ -2188,14 +2188,26 @@ Outcome op_item_count(Context& c, [[maybe_unused]] Op op, const uint8_t* p, cons
 Outcome op_item_query(Context& c, [[maybe_unused]] Op op, const uint8_t* p, const uint8_t* base)
 {
    Frame& f = c.stack[c.depth - 1];
-   // kind8, var16, operand (item), [Room: operand (n)]
+   // kind8, var16, operand (item), [Room, Pc: operand (n)]
    const auto kind = static_cast<ItemQueryOp>(*p++);
    const VarId v{load_le16(p)};
    p += kU16Bytes;
    const auto item = static_cast<uint16_t>(clamp_to<int32_t>(operand(p), 0, kMaxItemId));
-   const int32_t n = kind == ItemQueryOp::Room ? operand(p) : 0;
+   const bool counted = kind == ItemQueryOp::Room || kind == ItemQueryOp::Pc;
+   const int32_t n = counted ? operand(p) : 0;
    advance(f, p, base);
-   set_var(v, kind == ItemQueryOp::Room ? (items::room(item, n) ? 1 : 0) : items::pocket(item));
+   switch (kind)
+   {
+   case ItemQueryOp::Room:
+      set_var(v, items::room(item, n) ? 1 : 0);
+      break;
+   case ItemQueryOp::Pc:   // C30: the PC's item storage, through the game's port
+      set_var(v, items::in_pc(item, n) ? 1 : 0);
+      break;
+   default:
+      set_var(v, items::pocket(item));
+      break;
+   }
    return Outcome::Continue;
 }
 

@@ -816,9 +816,9 @@
    "id": 96,
    "name": "ItemQuery",
    "kind": "generic",
-   "doc": "C7: whether the bag takes more of an item, or an item's pocket.",
-   "bytes": "kind8 (ItemQueryOp), var16, operand (item), [Room: operand (n)]",
-   "does": "C7: var = items::room() (1 when the bag takes n more) or items::pocket()",
+   "doc": "C7: whether the bag takes more of an item, or an item's pocket; C30: whether the PC's item storage holds n of it.",
+   "bytes": "kind8 (ItemQueryOp), var16, operand (item), [Room, Pc: operand (n)]",
+   "does": "C7: var = items::room() (1 when the bag takes n more) or items::pocket(); C30: items::in_pc() (1 when the PC holds n)",
    "module": "items",
    "handler": "op_item_query"
   },
@@ -1055,6 +1055,12 @@
      "name": "DynamicWarpMap",
      "doc": "C26: the dynamic warp's map index (world::warp_map(); 65535 for none).",
      "word": "dynamic_warp_map",
+     "object": false
+    },
+    {
+     "name": "PlayerId",
+     "doc": "C30: the player's id number (world::player_id(); 0 by default, as the engine keeps none of its own).",
+     "word": "player_id",
      "object": false
     }
    ],
@@ -2176,6 +2182,11 @@
      "name": "Pocket",
      "doc": "The item's pocket.",
      "word": "pocket"
+    },
+    {
+     "name": "Pc",
+     "doc": "C30: 1 when the player's PC item storage holds n of the item (items::in_pc(); the default: none).",
+     "word": "pc"
     }
    ],
    "count": {

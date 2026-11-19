@@ -196,6 +196,13 @@ CAPSULE_WEAK int32_t pocket(uint16_t item)
    return i != nullptr ? i->pocket : inventory::kNoPocket;
 }
 
+CAPSULE_WEAK bool in_pc(uint16_t item, int32_t n)
+{
+   (void)item;
+   (void)n;
+   return false;
+}
+
 void bag_open()
 {
    int total = 0;

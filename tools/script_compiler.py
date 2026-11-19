@@ -140,7 +140,8 @@ Statements: `label:`, `goto l;`, `call s;`, `call var(x) of [a, b];`,
 the manifest's `battle` as a string, or an operand holding its id; n
 defaults to 1; ok is 1 when all of them moved), C7 `item_room(<item>[, <n>])
 -> var(v);` (1 when the bag takes n more) and `item_pocket(<item>) -> var(v);`
-(its pocket), `open_bag -> var(v);` (the
+(its pocket), C30 `item_pc(<item>[, <n>]) -> var(v);` (1 when the PC's item
+storage holds n), `open_bag -> var(v);` (the
 bag menu through the script port: the chosen item's id, 0 for none; waits),
 `shop "Name" money var(coins);` (a shop list of the battle manifest's
 `shops` through the script port, paid from the variable; waits),
@@ -379,7 +380,8 @@ ITEM_STATEMENTS = {"give_item": {"op": "ItemGive", "counted": True, "result": Fa
                    "take_item": {"op": "ItemTake", "counted": True, "result": False},
                    "count_item": {"op": "ItemCount", "counted": False, "result": True},
                    "item_room": {"op": "ItemQuery", "counted": True, "result": True, "query": "room"},
-                   "item_pocket": {"op": "ItemQuery", "counted": False, "result": True, "query": "pocket"}}
+                   "item_pocket": {"op": "ItemQuery", "counted": False, "result": True, "query": "pocket"},
+                   "item_pc": {"op": "ItemQuery", "counted": True, "result": True, "query": "pc"}}   # C30
 ## C7: the item queries' kinds (capsule::script::ItemQueryOp, in order).
 ITEM_QUERY_KINDS = VM.words("ItemQueryOp")
 ## The box statements that move a record: name -> opcode (the operand: a party member / a storage slot).

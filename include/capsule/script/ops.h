@@ -97,7 +97,7 @@
 /// | Counter | kind8 (CounterOp), box8 (the manifest's counters index), var16 (its variable), [Show: x8, y8 (cells), label text ref] | C5: world::counter() with the variable's current value (the default: the text layer's banner) |
 /// | Stat | stat8 (the manifest's stats index), operand (the amount) | C6: world::add_stat() (the default does nothing: only a manifest with stats_port emits the op) |
 /// | Party | kind8 (PartyOp), [Count: hatched8, var16], [Find: var16 (slot), var16 (species, or kNoVar), operand (move)], [Give: var16, operand (species), operand (level), operand (item)], [GiveEgg: var16, operand (species)], [Lead: var16], [CountAlive: var16, operand (slot left out, or kNoMember)], [HasType: var16, operand (type)], [FindSpecies: var16 (slot), operand (species)] | C7: party::heal() / stash() / restore(); var = party::count(); slot var = party::find_move() (the party's size when none), species var = its species; C8: var = party::give() / give_egg() (kGivenParty, kGivenBoxes, kGivenNone); C13: var = party::lead() / count_alive() / has_type(); C15: slot var = party::find_species() (the party's size when none) |
-/// | ItemQuery | kind8 (ItemQueryOp), var16, operand (item), [Room: operand (n)] | C7: var = items::room() (1 when the bag takes n more) or items::pocket() |
+/// | ItemQuery | kind8 (ItemQueryOp), var16, operand (item), [Room, Pc: operand (n)] | C7: var = items::room() (1 when the bag takes n more) or items::pocket(); C30: items::in_pc() (1 when the PC holds n) |
 /// | MapView | kind8 (MapViewOp), [Layout: operand (map)] | C9: world::redraw_map() / world::set_layout(); C12: world::show_map_banner() |
 /// | Animation | kind8 (AnimationOp), [Arg: operand (index), operand (value)], [Start, Wait: operand (animation)] | C9: world::animation_arg() / animation_start(); Wait waits while world::animation_done() is false |
 /// | Camera | kind8 (CameraOp), [Shake, ShakeSilent: operand (vertical), operand (horizontal), operand (count), operand (delay)] | C9: world::camera_detach() / camera_attach() / camera_shake() (C26: its sound flag) |
@@ -221,7 +221,7 @@ enum class Op : uint8_t
    Counter,   ///< C5: show, update or hide a counter box (a variable's value beside the messages: money, coins).
    Stat,   ///< C6: add to a game statistic the game's port holds (a stat bound to a variable compiles to AddVar instead).
    Party,   ///< C7: heal, stash or restore the party, count its members, or find one knowing a move; C8: give a creature or an egg.; C13: the lead's slot, count the living members, ask about a type.
-   ItemQuery,   ///< C7: whether the bag takes more of an item, or an item's pocket.
+   ItemQuery,   ///< C7: whether the bag takes more of an item, or an item's pocket; C30: whether the PC's item storage holds n of it.
    MapView,   ///< C9: redraw the shown view, or show the shown map with another map's terrain; C12: show the map's name banner.
    Animation,   ///< C9: set a visual field animation's argument, start one, or wait for its end.
    Camera,   ///< C9: the camera follows an invisible mover or the walker again, or shakes.
@@ -264,6 +264,7 @@ enum class Query : uint8_t
    Respawn,   ///< C18: the respawn point in the game's numbering (world::respawn(); 0 for none).
    Vehicle,   ///< C18: the walker's vehicle class index (0 on foot; the index `vehicle N;` sets).
    DynamicWarpMap,   ///< C26: the dynamic warp's map index (world::warp_map(); 65535 for none).
+   PlayerId,   ///< C30: the player's id number (world::player_id(); 0 by default, as the engine keeps none of its own).
    NUM_QUERIES   ///< Number of queries.
 };
 
@@ -582,6 +583,7 @@ enum class ItemQueryOp : uint8_t
 {
    Room,   ///< 1 when the bag takes n more of the item.
    Pocket,   ///< The item's pocket.
+   Pc,   ///< C30: 1 when the player's PC item storage holds n of the item (items::in_pc(); the default: none).
    NUM_ITEM_QUERY_OPS   ///< Number of kinds.
 };
 

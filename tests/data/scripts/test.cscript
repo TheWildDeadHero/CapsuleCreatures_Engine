@@ -495,6 +495,12 @@ script item_queries {
     item_room(3, 200) -> var(answer);
     item_pocket(9) -> var(v16);
 }
+script story_queries {
+    var(v16) = player_id;
+    var(v16) %= 10;
+    item_pc(3, 2) -> var(v8);
+    item_pc(3, 9) -> var(answer);
+}
 script lone_battle {
     battle unowned 25 5 -> var(answer);
     battle scripted 3;
