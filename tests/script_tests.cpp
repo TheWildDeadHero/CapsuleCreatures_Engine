@@ -450,6 +450,7 @@ const text::Code* text_buffer(int32_t index)
 constexpr int32_t kStubRespawn = 15;   ///< C18: the respawn the stub's query answers.
 constexpr int32_t kStubWarpMap = 6;    ///< C26: the dynamic warp's map the stub's query answers.
 constexpr int32_t kStubVehicle = 2;    ///< C18: the vehicle class the stub's query answers.
+constexpr int32_t kStubPlayerId = 987;   ///< C30: the player id the stub's query answers (within var(v16)'s range).
 
 /// Queries: x = 10 + obj, y = 20 + obj, facing 3, map 7, steps 99, C18: respawn 15, vehicle 2, timer 5.
 /// @param q    query
@@ -475,6 +476,8 @@ int32_t query(Query q, uint8_t obj)
       return kStubWarpMap;
    case Query::Vehicle:
       return kStubVehicle;
+   case Query::PlayerId:
+      return kStubPlayerId;
    default:
       return 5;
    }
@@ -1491,6 +1494,8 @@ int g_bag_polls = 0;                  ///< bag_poll() calls since bag_open().
 constexpr int32_t kStubRoom = 99;     ///< C7: the most of one item the stub's bag holds.
 constexpr uint16_t kItemsPerPocket = 4; ///< C7: item ids per stub pocket.
 constexpr int32_t kPocketItem = 9;    ///< C7: the item test.cscript's item_pocket asks about.
+constexpr int32_t kStubPcCount = 5;   ///< C30: how many of each item the stub's PC holds.
+constexpr int32_t kDecimalBase = 10;  ///< C30: the player id's ones digit (test.cscript's `%= 10`).
 } // namespace
 
 namespace capsule::script::items
@@ -1556,6 +1561,15 @@ bool room(uint16_t item, int32_t n)
 int32_t pocket(uint16_t item)
 {
    return item / kItemsPerPocket;
+}
+
+/// C30: the stub's PC holds kStubPcCount of each item it counts.
+/// @param item  id
+/// @param n     how many
+/// @return true when it holds n
+bool in_pc(uint16_t item, int32_t n)
+{
+   return item < kStubItems && n <= kStubPcCount;
 }
 
 /// Starts the stub menu.
@@ -2767,6 +2781,17 @@ void test_item_queries()
    CHECK(script::var(VAR_V16) == kPocketItem / kItemsPerPocket);
 }
 
+/// C30: the player id query and the PC item query (2 held: yes; 9: no).
+void test_story_queries()
+{
+   script::clear_all();
+   script::Context c{};
+   script::start(c, SCRIPT_STORY_QUERIES);
+   CHECK(run(c) == 0);
+   CHECK(script::var(VAR_V16) == script::world::kStubPlayerId % kDecimalBase);
+   CHECK(script::var(VAR_V8) == 1 && script::var(VAR_ANSWER) == 0);
+}
+
 /// C6: game statistics: one bound to a variable is added there, kept in its range (no port call); one the port holds
 /// reaches world::add_stat() with 1 by default or the operand's value.
 void test_stats()
@@ -3016,6 +3041,7 @@ int main()
    test_plot_hooks();
    test_save_game();
    test_item_queries();
+   test_story_queries();
    test_names();
    test_menus();
    test_menus_shown();

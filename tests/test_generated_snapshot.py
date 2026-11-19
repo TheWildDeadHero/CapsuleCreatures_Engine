@@ -1358,6 +1358,13 @@ WARP_TO_CHANGES = {"test_script.cpp": WARP_TO_REASON}
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in WARP_TO_CHANGES.items()})
 
+## Why the C30 outputs changed.
+STORY_QUERIES_REASON = "The test scripts gain C30's `player_id` query and `item_pc` (a new script: its id)"
+## The files C30 changed, and why.
+STORY_QUERIES_CHANGES = {"test_script.cpp": STORY_QUERIES_REASON, "test_script_ids.h": STORY_QUERIES_REASON}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in STORY_QUERIES_CHANGES.items()})
+
 ## The platform the battle and transfer compiles are checked for, as CMake passes CAPSULE_PLATFORM to each of them
 ## (the host build whose ctest runs this test; the outputs do not depend on it, the limit checks do).
 SNAPSHOT_PLATFORM = "headless"

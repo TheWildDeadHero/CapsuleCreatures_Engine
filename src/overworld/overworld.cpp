@@ -1381,6 +1381,8 @@ int32_t query(Query q, uint8_t obj)
       return field::walker().vehicle_class;
    case Query::DynamicWarpMap:   // C26: the game's remembered dynamic warp, through its port
       return warp_map(WarpSlot::Dynamic);
+   case Query::PlayerId:   // C30: the game's player id number, through its port
+      return player_id();
    case Query::NUM_QUERIES:
       break;
    }

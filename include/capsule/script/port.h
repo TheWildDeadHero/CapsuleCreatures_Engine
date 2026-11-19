@@ -485,6 +485,10 @@ void set_respawn(int32_t value);
 /// @return the game's numbering, 0 for none
 int32_t respawn();
 
+/// C30: the player's id number (the `player_id` query; the default answers 0, as the engine keeps none of its own).
+/// @return the game's id
+int32_t player_id();
+
 /// C19: a text the game builds at run time (a `buffer(N)` text: kTextBuffer). The default (src/script/script.cpp)
 /// answers the empty text, as the engine keeps no buffers of its own.
 /// @param index  the game's buffer number
@@ -736,6 +740,13 @@ bool room(uint16_t item, int32_t n);
 /// @param item  item id
 /// @return the pocket
 int32_t pocket(uint16_t item);
+
+/// C30: whether the player's PC item storage holds n of an item (ItemQuery Pc). The default answers false, as the
+/// engine keeps no PC storage of its own.
+/// @param item  item id
+/// @param n     how many
+/// @return true when it holds n
+bool in_pc(uint16_t item, int32_t n);
 
 /// Opens the bag menu (BagOpen).
 void bag_open();
