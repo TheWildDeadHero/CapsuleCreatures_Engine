@@ -104,9 +104,10 @@ class ExcludeTests(unittest.TestCase):
 
       def fake_nm(nm: str, files: list[str]) -> str | None:
          """!Lists LISTING's lines of the files given, refusing a run that includes bad.o."""
-         if bad in files:
+         given = [f.replace("\\", "/") for f in files]   # str(Path) uses backslashes on Windows
+         if bad in given:
             return None
-         return "".join(line + "\n" for line in LISTING.splitlines() if line.split(":")[0] in files)
+         return "".join(line + "\n" for line in LISTING.splitlines() if line.split(":")[0] in given)
 
       real = ux.run_nm
       ux.run_nm = fake_nm
