@@ -1,0 +1,18 @@
+{
+  "schema": "capsule.project/1",
+  "name": "exclude_build",
+  "exclude": "reference/exclude.json",
+  "editor": {
+    "notes": "D-36 package 3: the script test app built with every excludable engine module left out (tests/exclude_build)."
+  },
+  "rom": {
+    "title": "EXCLUDE TEST",
+    "code": "CTEX",
+    "maker": "00"
+  },
+  "sources": [
+    "../../../apps/test_script/src/test_script.cpp",
+    "src/cut_points.cpp"
+  ],
+  "scripts": "../../../apps/test_script/data/scripts.json"
+}

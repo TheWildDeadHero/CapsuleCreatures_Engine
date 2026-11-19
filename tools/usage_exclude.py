@@ -17,7 +17,8 @@ generic script op the game's scripts do not emit. `check()` compares a manifest 
 - suggestion: an item nothing uses that the manifest does not exclude.
 
 Run by tools/usage.py (`exclude`, `exclude-check`) and by the script compiler (`--exclude`: an excluded op a script
-emits is an error at that statement). Step 3A: nothing is compiled out yet; the manifest is written and checked.
+emits is an error at that statement). A parent build that sets CAPSULE_EXCLUDE to the manifest compiles the excluded
+modules out of the engine library (step 3B, cmake/exclude.cmake).
 """
 from __future__ import annotations
 
@@ -39,8 +40,9 @@ KEYS = frozenset({"schema", "game", "generated_from", "about", "modules", "scrip
 ITEM_LISTS = ("modules", "script_ops")
 ## An item's keys.
 ITEM_KEYS = frozenset({"name", "reason"})
-## The engine modules a game can exclude (package 3: the modules the link comparison found linked but unused; step 3B
-## gives each its cut points in the always-compiled code).
+## The engine modules a game can exclude (package 3: the modules the link comparison found linked but unused). Step 3B
+## leaves them out of the library (cmake/exclude.cmake CAPSULE_EXCLUDABLE_MODULES, the same list) and cuts the
+## always-compiled code that reaches them (capsule/exclude_config.h).
 EXCLUDABLE_MODULES = ("combine", "growth", "monster", "seq", "storage")
 ## The script VM's manifest (its generic ops).
 SCRIPT_VM = usage.ENGINE_SOURCES / "script" / "script_vm.json"
