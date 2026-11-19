@@ -4,7 +4,7 @@ script bank (capsule::script::kBank, B-1, B-2, B-4).
 
     script_compiler.py <scripts.json> <out.cpp> [--ids <script_ids.h>]
                        [--depfile <out.d>] [--debug-names] [--code-page <page.json>]
-                       [--usage <usage/GAME/scripts.json>]
+                       [--usage <usage/GAME/scripts.json>] [--exclude <exclude.json>]
 
 The manifest names the sources and the build settings:
 
@@ -82,6 +82,9 @@ Inline texts are encoded with the game's code page (tools/text_encoder.py;
 --usage writes a usage record (capsule.usage/1, tools/usage.py): the opcodes the
 compile emitted, the natives its scripts call and the move routes' steps
 (script.op, script.native, route.op).
+
+--exclude reads the game's exclusion manifest (capsule.exclude/1, tools/usage_exclude.py):
+an opcode it leaves out is an error at the statement that emits it.
 
 Field placeholders (optional): names the game's field texts
 may use, each bound to a name slot, a variable, a term or a party record
@@ -290,7 +293,7 @@ import json
 import re
 import struct
 import sys
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from os import PathLike
 from pathlib import Path
 from typing import Any
@@ -3032,14 +3035,17 @@ class Parser:
 class Emitter:
    """!Bytecode of one script, with labels and fixups."""
 
-   def __init__(self, counts: dict[str, int] | None = None) -> None:
+   def __init__(self, counts: dict[str, int] | None = None, hook: Callable[[str], None] | None = None) -> None:
       """!Creates an empty script.
       @param counts  opcode name -> times emitted, counted on (a usage record's script.op), or None
+      @param hook    called with each opcode emitted (the compiler's exclusion check), or None
       """
       ## Bytes.
       self.code = bytearray()
       ## Opcode name -> times emitted (shared by a compile's scripts), or None.
       self.counts = counts
+      ## Called with each opcode emitted, or None.
+      self.hook = hook
       ## Label name -> offset.
       self.labels = {}
       ## (position of a 16-bit operand, label name, node) to patch.
@@ -3071,6 +3077,8 @@ class Emitter:
       self.code.append(OP[name])
       if self.counts is not None:
          self.counts[name] = self.counts.get(name, 0) + 1
+      if self.hook is not None:
+         self.hook(name)
 
    def replace_op(self, pos: int, name: str) -> None:
       """!Turns the opcode at @p pos into another (its count moves with it).
@@ -3082,6 +3090,8 @@ class Emitter:
          old = OPS[self.code[pos]]
          self.counts[old] -= 1
          self.counts[name] = self.counts.get(name, 0) + 1
+      if self.hook is not None:
+         self.hook(name)
       self.code[pos] = OP[name]
 
    def u8(self, v: int) -> None:
@@ -3121,7 +3131,7 @@ class Compiler:
    def __init__(self, manifest: JsonDict, base: str | PathLike[str] | None = None,
                 sources: Mapping[str, str] | None = None, asset_keys: Mapping[int, str | None] | None = None,
                 map_names: Collection[str] | None = None, *,
-                codepage: text_encoder.CodePage = text_encoder.DEFAULT) -> None:
+                codepage: text_encoder.CodePage = text_encoder.DEFAULT, excluded_ops: Collection[str] = ()) -> None:
       """!Prepares a compile.
       @param manifest    parsed capsule.scripts/1 manifest
       @param base        directory the manifest's paths are relative to
@@ -3129,9 +3139,17 @@ class Compiler:
       @param asset_keys  {key: kind} of the game's assets for text:key checks, or None (no check)
       @param map_names   set of map names for map_scripts checks, or None (no check)
       @param codepage    code page of the inline texts (the game's language)
+      @param excluded_ops  opcodes the game's exclusion manifest leaves out (D-36 package 3): emitting one is an
+                           error at its statement
       """
       ## The manifest.
       self.manifest = manifest
+      ## Opcodes the game's exclusion manifest leaves out.
+      self.excluded_ops = frozenset(excluded_ops)
+      ## The statement being emitted (where an excluded opcode is reported), or None.
+      self.at_statement = None   # type: Node | None
+      ## (opcode, file, line) of the excluded opcodes reported (once each).
+      self.excluded_sites = set()   # type: set[tuple[str, str, int]]
       ## Code page of the inline texts.
       self.codepage = codepage
       ## Path base.
@@ -3769,8 +3787,35 @@ class Compiler:
          live = self.statement(e, s, ctx)
       return live
 
+   def note_op(self, name: str) -> None:
+      """!The emitters' hook: an opcode the exclusion manifest leaves out is an error at the statement emitting it.
+      @param name  the opcode
+      @return None
+      """
+      if name not in self.excluded_ops:
+         return
+      node = self.at_statement or {}
+      site = (name, node.get("file", ""), node.get("line", 0))
+      if site not in self.excluded_sites:
+         self.excluded_sites.add(site)
+         self.err(f"script op {name} is excluded by the game's exclusion manifest", self.at_statement)
+
    def statement(self, e: Emitter, s: Node, ctx: dict[str, Any]) -> bool:
-      """!Emits one statement.
+      """!Emits one statement, remembering it as the place an excluded opcode is reported.
+      @param e    emitter
+      @param s    statement node
+      @param ctx  per-script state (see statements())
+      @return true when control continues after it
+      """
+      outer = self.at_statement
+      self.at_statement = s
+      try:
+         return self.statement_ops(e, s, ctx)
+      finally:
+         self.at_statement = outer
+
+   def statement_ops(self, e: Emitter, s: Node, ctx: dict[str, Any]) -> bool:
+      """!Emits one statement's opcodes.
       @param e    emitter
       @param s    statement node
       @param ctx  per-script state (see statements())
@@ -4974,7 +5019,7 @@ class Compiler:
       @param node  declaration node
       @return (bytes, calls, waits_directly, uses_self_switches); the scripts it jumps to are in self.jumps
       """
-      e = Emitter(self.op_counts)
+      e = Emitter(self.op_counts, self.note_op)
       ctx = {"calls": set(), "waits": False, "loose": set()}
       self.uses_self = False
       jumps = set()
@@ -5215,7 +5260,7 @@ class Compiler:
                         f"natives); it must run to its end at once", t)
             if t["kind"] in CONDITION_KINDS:
                on_frame += 1 if t["kind"] == "on_frame" else 0
-               e = Emitter(self.op_counts)
+               e = Emitter(self.op_counts, self.note_op)
                false = e.new_label()
                self.jump(e, t["cond"], false, False)
                e.op("TriggerTrue")
@@ -5811,11 +5856,13 @@ def load_world_uses(path: str | PathLike[str]) -> tuple[set[tuple[str, str]], li
 
 
 def compile_file(path: str | PathLike[str], sources: Mapping[str, str] | None = None, *,
-                 codepage: text_encoder.CodePage = text_encoder.DEFAULT) -> Compiler:
+                 codepage: text_encoder.CodePage = text_encoder.DEFAULT,
+                 excluded_ops: Collection[str] = ()) -> Compiler:
    """!Compiles a manifest file (the editor's entry point).
    @param path      manifest path
    @param sources   {relative path: text} overriding files, or None
    @param codepage  code page of the inline texts
+   @param excluded_ops  opcodes the game's exclusion manifest leaves out (Compiler)
    @return the Compiler (diags, result)
    """
    path = Path(path)
@@ -5836,7 +5883,7 @@ def compile_file(path: str | PathLike[str], sources: Mapping[str, str] | None = 
          c = Compiler(manifest, path.parent, sources, codepage=codepage)
          c.err(f"cannot read world manifest: {e}")
          return c
-   comp = Compiler(manifest, path.parent, sources, assets, maps, codepage=codepage)
+   comp = Compiler(manifest, path.parent, sources, assets, maps, codepage=codepage, excluded_ops=excluded_ops)
    read = []
    if manifest.get("world"):
       try:
@@ -5885,9 +5932,18 @@ def main(argv: list[str]) -> int:
       return None
 
    manifest, out = args[0], args[1]
+   excluded_ops: list[str] = []
+   exclude = option("--exclude")
+   if exclude:   # D-36 package 3: the game's exclusion manifest (tools/usage_exclude.py)
+      usage_exclude = usage.sibling("usage_exclude")
+      try:
+         excluded_ops = usage_exclude.names(usage_exclude.load(Path(exclude)), "script_ops")
+      except usage_exclude.ExcludeError as e:
+         print(f"error: {e}", file=sys.stderr)
+         return 1
    try:
       with usage.collecting() as shared:   # the route steps the scripts' move routes emit
-         comp = compile_file(manifest, codepage=codepage)
+         comp = compile_file(manifest, codepage=codepage, excluded_ops=excluded_ops)
    except (OSError, ValueError) as e:
       print(f"{manifest}: error: {e}", file=sys.stderr)
       return 1
