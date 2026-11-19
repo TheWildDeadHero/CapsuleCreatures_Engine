@@ -1,0 +1,12 @@
+{
+ "schema": "capsule.exclude/1",
+ "game": "starter_battle",
+ "generated_from": "usage/starter_battle.json",
+ "modules": [
+  {
+   "name": "seq",
+   "reason": "no compiler records it; the game's code does not call it"
+  }
+ ],
+ "script_ops": []
+}

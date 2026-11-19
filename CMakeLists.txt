@@ -440,6 +440,18 @@ function(capsule_game dir)
    target_link_libraries(${target} PRIVATE capsule_engine)
    target_include_directories(${target} PRIVATE ${gen})
    set_property(TARGET ${target} PROPERTY CAPSULE_USAGE_RECORDS)
+   # D-36 package 3: the game's own objects, read for its references to engine modules (capsule_usage_objects() adds
+   # more), and its exclusion manifest (capsule.exclude/1, tools/usage_exclude.py), when the project names one
+   set_property(TARGET ${target} PROPERTY CAPSULE_USAGE_OBJECTS $<TARGET_OBJECTS:${target}>)
+   capsule_project_get(exclude "${json}" exclude)
+   set(exclude_args)
+   set(exclude_file)
+   if(exclude)
+      set(exclude_file ${dir}/${exclude})
+      set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${exclude_file})
+      set_property(TARGET ${target} PROPERTY CAPSULE_EXCLUDE ${exclude_file})
+      set(exclude_args --exclude ${exclude_file})
+   endif()
    # (EVAL: a deferred call's arguments are expanded when it runs, so the names are put in now)
    cmake_language(EVAL CODE "cmake_language(DEFER CALL capsule_usage_report [[${target}]] [[${name}]])")
    if(CAPSULE_PLATFORM STREQUAL "desktop" AND WIN32 AND NOT CAPSULE_WINDOWS_CONSOLE)
@@ -515,6 +527,8 @@ function(capsule_game dir)
          string(JSON lib GET "${json}" libraries ${i})
          target_link_libraries(${target} PRIVATE capsule_${lib})
          set_property(TARGET ${target} APPEND PROPERTY CAPSULE_USAGE_LIBRARIES ${lib})
+         # the kit's code calls engine modules no compiler records (D-36 package 3: read by the exclusion step)
+         set_property(TARGET ${target} APPEND PROPERTY CAPSULE_USAGE_OBJECTS $<TARGET_FILE:capsule_${lib}>)
       endforeach()
    endif()
 
@@ -648,9 +662,9 @@ function(capsule_game dir)
          OUTPUT  ${gen}/scripts.cpp ${gen}/script_ids.h ${usage}/scripts.json
          COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/script_compiler.py ${dir}/${scripts}
                ${gen}/scripts.cpp --ids ${gen}/script_ids.h --depfile ${gen}/scripts.d ${script_args} ${page_args}
-               --usage ${usage}/scripts.json
+               --usage ${usage}/scripts.json ${exclude_args}
          DEPENDS ${CAPSULE_ROOT}/tools/script_compiler.py ${CAPSULE_ROOT}/tools/route_compiler.py
-               ${CAPSULE_ROOT}/tools/usage.py
+               ${CAPSULE_ROOT}/tools/usage.py ${CAPSULE_ROOT}/tools/usage_exclude.py ${exclude_file}
                ${CAPSULE_ROOT}/tools/asset_compiler.py
                ${CAPSULE_ROOT}/tools/sequence_compiler.py ${CAPSULE_TEXT_DEPENDS} ${dir}/${scripts} ${page}
          DEPFILE ${gen}/scripts.d   # the sources the manifest names
@@ -1104,6 +1118,8 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
    add_test(NAME usage_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage.py)
    # D-42: the GBA memory by owner, the memory budgets and the link launcher (tools/usage_memory.py, gba_link.py)
    add_test(NAME usage_memory_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage_memory.py)
+   # D-36 package 3: the exclusion manifest (tools/usage_exclude.py) and the script compiler's --exclude
+   add_test(NAME usage_exclude_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage_exclude.py)
    # D-36 package 2: the field script VM's opcode table (src/script/script_vm.json, tools/script_vm.py)
    add_test(NAME script_vm_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_script_vm.py)
    # RP: the sample projects (apps/*/sample.json) stay copyable: paths out of an app lead only to the files

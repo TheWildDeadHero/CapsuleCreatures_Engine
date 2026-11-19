@@ -3,6 +3,7 @@
 # target capsule_<game>_usage (part of ALL) merges them into usage/<game>.json (capsule.usage-report/1) with the
 # engine libraries the project links, the platform and the HAL sources of the engine library. capsule_game() sets it
 # up; a caller that compiles more for a game (its banks, its audio table) adds the records with capsule_usage_add().
+# After the report, the exclusion step (package 3) writes usage/<game>.exclude.json and checks the game's manifest.
 # Included from CMakeLists.txt before capsule_game().
 
 # The folder a game's usage records go to.
@@ -58,6 +59,56 @@ function(capsule_usage_report target game)
       DEPENDS ${CAPSULE_ROOT}/tools/usage.py ${records}
       COMMENT "Merging the usage report of ${game}"
       VERBATIM)
-   add_custom_target(${target}_usage ALL DEPENDS ${out})
+
+   # D-36 package 3 (tools/usage_exclude.py): the exclusion manifest of what the game can leave out, from the report
+   # and the game's own objects (their references to engine modules, which no compiler records), and, when the
+   # game's project names one ("exclude"), its check: an excluded item the game uses fails the build
+   get_target_property(objects ${target} CAPSULE_USAGE_OBJECTS)
+   get_target_property(exclude ${target} CAPSULE_EXCLUDE)
+   capsule_usage_nm(nm)
+   set(suggested ${CMAKE_BINARY_DIR}/usage/${game}.exclude.json)
+   set(outputs ${suggested})
+   set(check_command)
+   if(exclude)
+      set(findings ${CMAKE_BINARY_DIR}/usage/${game}.exclude-check.txt)
+      list(APPEND outputs ${findings})
+      set(check_command COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/usage.py exclude-check ${exclude} ${out}
+                              --objects ${objects} --nm ${nm} --out ${findings})
+   else()
+      set(exclude)
+   endif()
+   add_custom_command(
+      OUTPUT  ${outputs}
+      COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/usage.py exclude ${out} --objects ${objects} --nm ${nm}
+            --out ${suggested}
+      ${check_command}
+      DEPENDS ${CAPSULE_ROOT}/tools/usage.py ${CAPSULE_ROOT}/tools/usage_exclude.py
+            ${CAPSULE_ROOT}/src/script/script_vm.json ${out} ${exclude} ${target}
+      COMMENT "Checking what ${game} can exclude"
+      COMMAND_EXPAND_LISTS
+      VERBATIM)
+   add_custom_target(${target}_usage ALL DEPENDS ${out} ${outputs})
    add_dependencies(${target}_usage ${target})   # the records are written while the game's sources are generated
+endfunction()
+
+# Adds object files or archives the exclusion step reads for a game's references to engine modules (besides the
+# game target's own objects, which capsule_game() adds): a library of the game's own code that it links.
+# @param target  the game's target (capsule_<name>)
+# @param ARGN    the files (generator expressions allowed, such as $<TARGET_FILE:lib>)
+function(capsule_usage_objects target)
+   set_property(TARGET ${target} APPEND PROPERTY CAPSULE_USAGE_OBJECTS ${ARGN})
+endfunction()
+
+# The nm the exclusion step runs: the compiler's gcc-nm beside its gcc-ar when there is one (it reads link-time
+# optimized objects), else CMAKE_NM.
+# @param out  the variable to set
+function(capsule_usage_nm out)
+   set(nm ${CMAKE_NM})
+   if(CMAKE_CXX_COMPILER_AR MATCHES "gcc-ar[^/]*$")
+      string(REGEX REPLACE "gcc-ar([^/]*)$" "gcc-nm\\1" gcc_nm "${CMAKE_CXX_COMPILER_AR}")
+      if(EXISTS ${gcc_nm})
+         set(nm ${gcc_nm})
+      endif()
+   endif()
+   set(${out} ${nm} PARENT_SCOPE)
 endfunction()

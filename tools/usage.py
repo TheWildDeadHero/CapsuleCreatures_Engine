@@ -16,6 +16,8 @@ The VM bank tools' records (capsule.vm-usage/1, tools/vm_ext.py) are read too: a
     usage.py linkmap REPORT.json MAP|NM [--json] [--out FILE]
     usage.py memory NM [--project project.json] [--stack-reserve BYTES] [--game NAME] [--out FILE] [--json] [--check]
                        [--demangler C++FILT]
+    usage.py exclude REPORT.json [--objects OBJ...] [--nm NM] [--out FILE]
+    usage.py exclude-check MANIFEST REPORT.json [--objects OBJ...] [--nm NM] [--out FILE]
 
 `merge` writes the game's **usage report** (capsule.usage-report/1): every category summed over the records, the
 records it read, the engine libraries the project links, the platform and its HAL sources, and per engine module
@@ -26,7 +28,9 @@ mangled namespaces) and lists the modules that link code while the report says n
 (capsule.usage-linkmap/1). `memory` reads a GBA program's listing and prints what each owner (its first two
 namespaces) holds in IWRAM and EWRAM, checked against the regions and the game's budgets (tools/usage_memory.py,
 capsule.usage-memory/1); with --check it fails when one is passed, naming the largest contributors. Generated files
-are written with LF line ends and only when their bytes change.
+are written with LF line ends and only when their bytes change. `exclude` writes the exclusion manifest of what the
+game can leave out (capsule.exclude/1, tools/usage_exclude.py) from its report and its own object files, and
+`exclude-check` compares a game's manifest with them (it fails on an error; the build runs both).
 """
 from __future__ import annotations
 
@@ -54,6 +58,8 @@ VM_MAIN_TABLE = "main"
 VM_CATEGORY = "vm"
 ## The tools' folder (memory_command() imports its siblings from it; the compilers that import this module need not).
 TOOLS = Path(__file__).resolve().parent
+## The nm the exclusion commands run by default.
+DEFAULT_NM = "nm"
 ## The memory command's default stack reserve (tools/usage_memory.py DEFAULT_STACK_RESERVE; CMake's
 ## CAPSULE_GBA_STACK_RESERVE).
 DEFAULT_STACK_RESERVE = 2048
@@ -662,6 +668,37 @@ def memory_command(args: argparse.Namespace) -> int:
    return 1 if args.check and result["over"] else 0
 
 
+def exclude_command(args: argparse.Namespace) -> int:
+   """!The `exclude` and `exclude-check` commands (tools/usage_exclude.py).
+   @param args  their arguments
+   @return 1 when the check finds an error, else 0
+   @throws UsageError when a file does not read or nm does not run; OSError when a file cannot be written
+   """
+   usage_exclude = sibling("usage_exclude")
+   report = read_report(args.report)
+   try:
+      ops = usage_exclude.script_ops()
+      refs = usage_exclude.read_references(args.objects, args.nm, list(report.get("modules", {})))
+      if args.command == "exclude":
+         manifest = usage_exclude.generate(report, refs, ops, f"{args.report.parent.name}/{args.report.name}")
+         text = usage_exclude.manifest_text(manifest)
+         print(f"exclude: {len(manifest['modules'])} modules and {len(manifest['script_ops'])} script ops can be "
+               f"excluded")
+         failed = False
+      else:
+         found = usage_exclude.check(usage_exclude.load(args.manifest), report, refs, ops)
+         text = usage_exclude.findings_text(found)
+         sys.stdout.write(text)
+         failed = bool(found.errors)
+   except usage_exclude.ExcludeError as e:
+      raise UsageError(str(e)) from None
+   if args.out is not None:
+      # always written: the build's step compares its time with its inputs'
+      args.out.parent.mkdir(parents=True, exist_ok=True)
+      args.out.write_text(text, encoding="utf-8", newline="\n")
+   return 1 if failed else 0
+
+
 def main(argv: Sequence[str]) -> int:
    """!Command line; see the module docstring.
    @param argv  the arguments (without the program)
@@ -694,6 +731,14 @@ def main(argv: Sequence[str]) -> int:
    me.add_argument("--json", action="store_true")
    me.add_argument("--check", action="store_true", help="exit 1 when a region or a budget is passed")
    me.add_argument("--demangler", help="a c++filt for readable names")
+   ex = sub.add_parser("exclude", help="write the exclusion manifest of what a game can leave out")
+   ck = sub.add_parser("exclude-check", help="check a game's exclusion manifest against its report and objects")
+   ck.add_argument("manifest", type=Path)
+   for cmd in (ex, ck):
+      cmd.add_argument("report", type=Path)
+      cmd.add_argument("--objects", nargs="*", type=Path, default=[], help="the game's object files (or archives)")
+      cmd.add_argument("--nm", default=DEFAULT_NM, help="the nm to run on them (a gcc-nm for LTO objects)")
+      cmd.add_argument("--out", type=Path, help="write the manifest (exclude) or the findings (exclude-check) here")
    try:
       args = ap.parse_args(list(argv))
    except SystemExit as e:
@@ -707,6 +752,8 @@ def main(argv: Sequence[str]) -> int:
          sys.stdout.write(as_json(report) if args.json else summary(report))
       elif args.command == "memory":
          return memory_command(args)
+      elif args.command in ("exclude", "exclude-check"):
+         return exclude_command(args)
       else:
          report = read_report(args.report)
          result = compare(report, read_linked(args.map.read_text(encoding="utf-8", errors="replace")))

@@ -2,8 +2,8 @@
 
 Every game build records what it uses: the compilers write **usage records**, one build step merges them into the
 game's **usage report**, and a GBA link can be compared against the report to find code that is linked but that
-nothing in the game's data uses. This is the first step of the exclusion manifest (D-36 §5): a later step will
-generate `capsule.exclude/1` from these reports so unused engine parts are never compiled.
+nothing in the game's data uses. From the report and the game's own object files, the build writes the game's
+**exclusion manifest** (`capsule.exclude/1`, D-36 §5, below) and checks the one the game keeps.
 
 Nothing here changes what a game builds: the generated sources are the same with and without the records.
 
@@ -15,6 +15,8 @@ Nothing here changes what a game builds: the generated sources are the same with
 | `usage/<game>.json` | the merged report (`capsule.usage-report/1`), target `capsule_<game>_usage` (part of the default build) |
 | `capsule_<game>.map`, `capsule_<game>.nm` | GBA only: the linker map and the sized symbol listing beside the ROM |
 | `usage/<game>.memory.json` | GBA only: the program's memory by owner (`capsule.usage-memory/1`), written at every link |
+| `usage/<game>.exclude.json` | what the game can exclude (`capsule.exclude/1`), written after the report |
+| `usage/<game>.exclude-check.txt` | the findings of the game's own manifest's check, when its project names one |
 
 `capsule_game()` passes `--usage` to every compiler it runs and merges the records at the end of the calling folder,
 so a caller that compiles more for a game after `capsule_game()` (its audio table, its VM banks) adds its records with
@@ -99,3 +101,48 @@ checks it again. When the link fails because the program does not fit, the launc
 without `cmake/gba_memory.ld` and with `--noinhibit-exec`, into `capsule_<game>.does_not_fit.elf` (and its `.map`),
 prints that program's table with the largest contributors and exits with the first link's failure. That program is
 for measuring only; no ROM is made from it.
+
+## Exclusion manifest
+
+A game names the engine parts it does not build in `capsule.exclude/1`, kept in its repository and reviewed like any
+manifest. Its project names it:
+
+```json
+{"schema": "capsule.project/1", "name": "starter_battle", "exclude": "reference/exclude.json", ...}
+```
+
+```json
+{"schema": "capsule.exclude/1", "game": "starter_battle", "generated_from": "usage/starter_battle.json",
+ "modules": [{"name": "seq", "reason": "no compiler records it; the game's code does not call it"}],
+ "script_ops": [{"name": "Nursery", "reason": "no script emits it"}]}
+```
+
+**Items:** engine `modules` (only those `EXCLUDABLE_MODULES` in `tools/usage_exclude.py` lists: `combine`, `growth`,
+`monster`, `seq`, `storage`) and the script VM's generic `script_ops` (`src/script/script_vm.json`). Each has a name
+and a reason. A missing file excludes nothing.
+
+**Generated, then reviewed.** After a game's report is merged, the build writes `usage/<game>.exclude.json`: every
+excludable module that no record names **and that none of the game's own object files references** (their undefined
+symbols, by mangled namespace; this is how a game's C++ that calls an engine module directly is seen, which no
+compiler records), and every script op its scripts do not emit (none for a game without scripts). Copy it to the
+game's manifest, or take the lines you want, and review the diff.
+
+    python3 tools/usage.py exclude build/usage/<game>.json [--objects OBJ...] [--nm NM] [--out FILE]
+    python3 tools/usage.py exclude-check MANIFEST build/usage/<game>.json [--objects OBJ...] [--nm NM] [--out FILE]
+
+**Checked at every build** of a game whose project names a manifest (`usage/<game>.exclude-check.txt`):
+
+| Finding | Level |
+|---|---|
+| an excluded module a record names or one of the game's objects references (the object and its first symbol) | error |
+| an excluded script op the scripts emit (the script compiler's `--exclude` reports it at the statement first) | error |
+| a module that cannot be excluded, an item listed twice | error |
+| a module or op this engine does not have | warning (a stale exclusion) |
+| an excludable item nothing uses that the manifest does not exclude | note (a suggestion) |
+
+`capsule_game()` reads the game target's objects; a game that links a library of its own code adds it with
+`capsule_usage_objects(capsule_<game> $<TARGET_FILE:lib>)`. The nm is the compiler's `gcc-nm` when it has one (it
+reads link-time optimized objects), else `CMAKE_NM`.
+
+**Package 3 step 3A:** the manifest is written and checked; nothing is compiled out yet, so a game builds the same
+bytes with and without it. Step 3B compiles the excluded modules and ops out.
