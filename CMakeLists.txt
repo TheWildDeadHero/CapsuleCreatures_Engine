@@ -131,6 +131,8 @@ set(CAPSULE_VRAM_STREAMING_SLOTS "" CACHE STRING "VRAM queue: streaming slots fo
 set(CAPSULE_VRAM_BUDGET_CYCLES "" CACHE STRING "VRAM queue: cycles per VBlank for every game (default 83776 - 16384)")
 set(CAPSULE_GBA_WAITCNT "" CACHE STRING "GBA: WAITCNT for every game (default 0x4014: prefetch, ROM 3/1)")
 set(CAPSULE_SCREEN_ARENA_BYTES "" CACHE STRING "Screens: bytes of the screen arena for every game (default 32768)")
+# D-36 package 3: CAPSULE_EXCLUDE, the modules this build folder's library leaves out (capsule/exclude_config.h)
+include(cmake/exclude.cmake)
 # Cache overrides as tools/build_settings.py --set arguments, and as compile
 # definitions for the tests that build the queue themselves.
 set(CAPSULE_BUILD_SETTING_ARGS)
@@ -451,6 +453,20 @@ function(capsule_game dir)
       set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${exclude_file})
       set_property(TARGET ${target} PROPERTY CAPSULE_EXCLUDE ${exclude_file})
       set(exclude_args --exclude ${exclude_file})
+   endif()
+   # step 3B: the library leaves out what CAPSULE_EXCLUDE lists, so the game must be the one that manifest is for
+   if(CAPSULE_EXCLUDE)
+      get_filename_component(library_manifest ${CAPSULE_EXCLUDE} REALPATH)
+      get_filename_component(game_manifest "${exclude_file}" REALPATH)
+      if(NOT exclude_file OR NOT library_manifest STREQUAL game_manifest)
+         get_property(left_out GLOBAL PROPERTY CAPSULE_EXCLUDED_MODULES)
+         if(NOT exclude_file)
+            set(exclude_file "no manifest")
+         endif()
+         message(FATAL_ERROR "capsule_game(${dir}): this build folder's engine library leaves out ${left_out} "
+                             "(CAPSULE_EXCLUDE ${CAPSULE_EXCLUDE}), but the game's project names ${exclude_file}; "
+                             "every game of the build folder names the library's manifest")
+      endif()
    endif()
    # (EVAL: a deferred call's arguments are expanded when it runs, so the names are put in now)
    cmake_language(EVAL CODE "cmake_language(DEFER CALL capsule_usage_report [[${target}]] [[${name}]])")
@@ -1120,6 +1136,19 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
    add_test(NAME usage_memory_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage_memory.py)
    # D-36 package 3: the exclusion manifest (tools/usage_exclude.py) and the script compiler's --exclude
    add_test(NAME usage_exclude_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage_exclude.py)
+   # step 3B: a headless build of the engine with every excludable module left out (tests/exclude_build): its game
+   # reaches the code with cut points, so the link fails if one is missing; it builds on the host, so only the
+   # headless configuration runs it (one more engine library build)
+   if(CAPSULE_PLATFORM STREQUAL "headless")
+      add_test(NAME exclude_build
+               COMMAND ${CMAKE_CTEST_COMMAND} --build-and-test ${CAPSULE_ROOT}/tests/exclude_build
+                       ${CMAKE_BINARY_DIR}/exclude_build --build-generator ${CMAKE_GENERATOR}
+                       --build-options -DCAPSULE_PLATFORM=headless -DCAPSULE_ENGINE_DIR=${CAPSULE_ROOT}
+                                       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                                       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                                       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
+      set_tests_properties(exclude_build PROPERTIES TIMEOUT 1800)
+   endif()
    # D-36 package 2: the field script VM's opcode table (src/script/script_vm.json, tools/script_vm.py)
    add_test(NAME script_vm_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_script_vm.py)
    # RP: the sample projects (apps/*/sample.json) stay copyable: paths out of an app lead only to the files

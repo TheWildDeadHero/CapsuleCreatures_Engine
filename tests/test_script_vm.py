@@ -76,6 +76,25 @@ class Table(unittest.TestCase):
          for absent in ("op_combine", "op_transform", "op_role_get", "poll_transform", "poll_shop"):
             self.assertNotIn(absent, text)
 
+   def test_dispatch_exclude(self) -> None:
+      """--exclude leaves out an exclusion manifest's script ops (D-36 package 3), the waits only they set with them;
+      a file that is not a manifest fails."""
+      with tempfile.TemporaryDirectory() as tmp:
+         manifest = Path(tmp) / "exclude.json"
+         manifest.write_text(json.dumps({"schema": script_vm.EXCLUDE_SCHEMA,
+                                         "script_ops": [{"name": "Combine"}, {"name": "Transform"}]}),
+                             encoding="utf-8")
+         out = Path(tmp) / "script_dispatch.cpp"
+         self.assertEqual(script_vm.main(["dispatch", "--exclude", str(manifest), "--out", str(out)]), 0)
+         text = out.read_text(encoding="utf-8")
+         self.assertIn("op_bag_open,", text)
+         self.assertIn("op_nursery,", text)
+         for absent in ("op_combine", "op_transform", "poll_transform"):
+            self.assertNotIn(absent, text)
+         manifest.write_text("{}", encoding="utf-8")
+         self.assertEqual(script_vm.main(["dispatch", "--exclude", str(manifest), "--out", str(out)]),
+                          script_vm.EXIT_STALE)
+
    def test_stale_header(self) -> None:
       """--check reports a header that differs from the manifest's."""
       with tempfile.TemporaryDirectory() as tmp:

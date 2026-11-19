@@ -1,0 +1,401 @@
+{
+ "schema": "capsule.exclude/1",
+ "game": "exclude_build",
+ "about": "every excludable module, and the script ops the test app's scripts do not emit (tests/exclude_build)",
+ "modules": [
+  {
+   "name": "combine",
+   "reason": "the fixture leaves every excludable module out"
+  },
+  {
+   "name": "growth",
+   "reason": "the fixture leaves every excludable module out"
+  },
+  {
+   "name": "monster",
+   "reason": "the fixture leaves every excludable module out"
+  },
+  {
+   "name": "seq",
+   "reason": "the fixture leaves every excludable module out"
+  },
+  {
+   "name": "storage",
+   "reason": "the fixture leaves every excludable module out"
+  }
+ ],
+ "script_ops": [
+  {
+   "name": "Return",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Random",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ObjectMove",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ObjectFace",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ObjectShow",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ObjectHide",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Route",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "WaitMoves",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "SelfSwitch",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "IfSelfSet",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "IfSelfClear",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "VarOp",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "InputNumber",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "WaitKey",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "MessagePos",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Warp",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Place",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Scroll",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Tint",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Flash",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Shake",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "TimerStart",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "TimerStop",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Encounters",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Vehicle",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "RoleGet",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "RoleSet",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ItemGive",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ItemTake",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ItemCount",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "BagOpen",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Shop",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "TimeOfDay",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "BoxCount",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "BoxDeposit",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "BoxWithdraw",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "BoxesOpen",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Transform",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "FieldEffect",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Darkness",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Flight",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Escape",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "FieldAction",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ObjectMoveChecked",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Combine",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Nursery",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Jump",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Lock",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Release",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "MessageEx",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "WaitMessage",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "WaitObject",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ObjectRemove",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ObjectVisible",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ObjectTemplate",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Door",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Weather",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Fade",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "SetMetatile",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Respawn",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "SetWarp",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Sound",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "WaitSound",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Mart",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "CallLoose",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "WaitState",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Override",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Encounter",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Battle",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Prop",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ObjectOrder",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Menu",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Name",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Counter",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Stat",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Party",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "ItemQuery",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "MapView",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Animation",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Camera",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "DarknessFade",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "BattleSetup",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Picture",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Screen",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Member",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Clock",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Plot",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Boxes",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Dex",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "Save",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "SetMetatiles",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "FlickerMetatile",
+   "reason": "no script emits it"
+  },
+  {
+   "name": "WarpTo",
+   "reason": "no script emits it"
+  }
+ ]
+}

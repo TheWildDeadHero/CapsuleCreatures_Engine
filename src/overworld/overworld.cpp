@@ -7,6 +7,7 @@
 #include "capsule/core/memory.h"
 #include "capsule/core/saturate.h"
 #include "capsule/encounter/encounter.h"
+#include "capsule/exclude_config.h"
 #include "capsule/field/doors.h"
 #include "capsule/field/field.h"
 #include "capsule/script/field_actions.h"
@@ -170,7 +171,8 @@ struct State
 };
 CAPSULE_EWRAM_BSS State g{};   ///< The runner (D-42: EWRAM, the main loop's).
 /// The location preview's player (about 1 KB, used only while a preview
-/// plays): EWRAM, as battle::presenter_view keeps its own.
+/// plays): EWRAM, as battle::presenter_view keeps its own. A build that leaves the sequence module out (D-36
+/// package 3) uses it only in discarded statements, so it is not emitted.
 CAPSULE_EWRAM_BSS seq::Player g_preview;
 
 /// The location of a map.
@@ -219,6 +221,10 @@ void mark_visited(uint8_t loc)
 /// @return the sequence, or nullptr
 const seq::Sequence* preview_of(uint8_t loc)
 {
+   if constexpr (exclude::kSeq)
+   {
+      return nullptr;   // D-36 package 3: no sequence module, no previews (the check refuses a game that has them)
+   }
    const Location& l = kLocations.locations[loc];
    if (l.preview_count == 0 || (l.rule == PreviewRule::FirstVisit && visited(loc)))
    {
@@ -676,16 +682,19 @@ void swap()
       pv = preview_of(to);
       mark_visited(to);
    }
-   if (pv != nullptr)
+   if constexpr (!exclude::kSeq)   // the cut point of the sequence module (D-36 package 3)
    {
-      field::leave();   // the map and its objects go; the next enter() still clears its map flags
-      video::set_mosaic(0);
-      video::set_windows(false, false, false);
-      seq::presenter::reset();
-      t.held = hal::input::held();   // a key still held from the warp is not a press
-      seq::start(g_preview, *pv);
-      t.phase = Phase::Preview;
-      return;
+      if (pv != nullptr)
+      {
+         field::leave();   // the map and its objects go; the next enter() still clears its map flags
+         video::set_mosaic(0);
+         video::set_windows(false, false, false);
+         seq::presenter::reset();
+         t.held = hal::input::held();   // a key still held from the warp is not a press
+         seq::start(g_preview, *pv);
+         t.phase = Phase::Preview;
+         return;
+      }
    }
    arrive();
 }
@@ -807,25 +816,26 @@ void update_transition()
       }
       break;
    case Phase::Preview:
-   {
-      const hal::input::KeyBits now = hal::input::held();
-      const auto pressed = static_cast<hal::input::KeyBits>(now & ~t.held);
-      t.held = now;
-      const seq::Status st = seq::step(g_preview, now, pressed);
-      seq::presenter::frame();
-      if (st == seq::Status::Exited)
+      if constexpr (!exclude::kSeq)   // never entered without the sequence module (D-36 package 3)
       {
-         seq::presenter::reset();
-         text::layer::reset();
-         g.fade_coef = kNoFade;   // the preview set fades of its own
-         arrive();
-         if (t.phase == Phase::None)
+         const hal::input::KeyBits now = hal::input::held();
+         const auto pressed = static_cast<hal::input::KeyBits>(now & ~t.held);
+         t.held = now;
+         const seq::Status st = seq::step(g_preview, now, pressed);
+         seq::presenter::frame();
+         if (st == seq::Status::Exited)
          {
-            finish();
+            seq::presenter::reset();
+            text::layer::reset();
+            g.fade_coef = kNoFade;   // the preview set fades of its own
+            arrive();
+            if (t.phase == Phase::None)
+            {
+               finish();
+            }
          }
       }
       break;
-   }
    case Phase::In:
       if (t.t > 0)
       {

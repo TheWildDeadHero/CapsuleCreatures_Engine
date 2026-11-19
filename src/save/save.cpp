@@ -11,6 +11,7 @@
 #include "capsule/save/save.h"
 
 #include "capsule/core/memory.h"
+#include "capsule/exclude_config.h"
 #include "capsule/hal/save.h"
 #include "capsule/script/data.h"
 
@@ -188,6 +189,80 @@ bool newer(uint32_t a, uint32_t b)
 uint32_t used_bytes(uint32_t slots)
 {
    return storage::used_bytes_for(slots);
+}
+
+// -- the storage module's cut point (D-36 package 3: a build that leaves storage out saves an empty storage, the
+// -- same bytes as a game without boxes, so the image does not change)
+
+/// The box geometry the codec writes and reads.
+/// @return the build's (storage::kStorage), or no boxes when the storage module is left out
+const storage::StorageData& box_shape()
+{
+   static constexpr storage::StorageData kNoBoxes = {};
+   if constexpr (exclude::kStorage)
+   {
+      return kNoBoxes;
+   }
+   else
+   {
+      return storage::kStorage;
+   }
+}
+
+/// Slots of every box (storage::slot_count() of box_shape()).
+/// @return the count
+uint32_t box_slots()
+{
+   return static_cast<uint32_t>(box_shape().box_count * box_shape().box_size);   // as slot_count()
+}
+
+/// Whether a slot holds a record (storage::used()).
+/// @param st    the storage
+/// @param slot  slot index
+/// @return true if used; never without the storage module
+bool slot_used(const storage::Storage& st, int slot)
+{
+   if constexpr (exclude::kStorage)
+   {
+      return false;
+   }
+   else
+   {
+      return storage::used(st, slot);
+   }
+}
+
+/// Empties every box (storage::clear(): the used bits and the current box).
+/// @param st  the storage
+void clear_boxes(storage::Storage& st)
+{
+   if constexpr (exclude::kStorage)
+   {
+      for (uint16_t k = 0; k < st.used_capacity; ++k)
+      {
+         st.used[k] = 0;
+      }
+      st.current = 0;
+   }
+   else
+   {
+      storage::clear(st);
+   }
+}
+
+/// Whether the build's boxes fit a storage (storage::fits()).
+/// @param st  the storage
+/// @return true if they fit; always without the storage module (no boxes)
+bool boxes_fit(const storage::Storage& st)
+{
+   if constexpr (exclude::kStorage)
+   {
+      return true;
+   }
+   else
+   {
+      return storage::fits(st);
+   }
 }
 
 // -- streams -----------------------------------------------------------------------------------------------------
@@ -813,8 +888,15 @@ void decode_plots(Source& s, plots::PlotRecord* dst)
 /// @return 0 to combine::kMaxNurserySlots
 uint8_t nursery_slots()
 {
-   const uint8_t n = combine::kCombine.nursery.slots;
-   return n < combine::kMaxNurserySlots ? n : static_cast<uint8_t>(combine::kMaxNurserySlots);
+   if constexpr (exclude::kCombine)
+   {
+      return 0;   // D-36 package 3: without the combination module the nursery is empty (combine_empty.cpp's)
+   }
+   else
+   {
+      const uint8_t n = combine::kCombine.nursery.slots;
+      return n < combine::kMaxNurserySlots ? n : static_cast<uint8_t>(combine::kMaxNurserySlots);
+   }
 }
 
 /// The nursery: record hash and bytes, its slots, the used bits, whether a result waits, then each used slot's
@@ -956,24 +1038,24 @@ void set_bit(uint8_t* used, uint32_t slot)
 /// @param st  the storage, or nullptr: empty boxes
 void encode_boxes(Sink& s, const storage::Storage* st)
 {
-   const uint32_t slots = static_cast<uint32_t>(storage::slot_count());
+   const uint32_t slots = box_slots();
    put_le(s, monster::kLayout.record_hash, kU32Bytes);
    put_le(s, monster::kLayout.record_bytes, kU16Bytes);
-   put(s, storage::kStorage.box_count);
-   put_le(s, storage::kStorage.box_size, kU16Bytes);
+   put(s, box_shape().box_count);
+   put_le(s, box_shape().box_size, kU16Bytes);
    put(s, st != nullptr ? st->current : 0);
    for (uint32_t b = 0; b < used_bytes(slots); ++b)
    {
       uint8_t v = 0;
       for (uint32_t k = 0; st != nullptr && k < kByteBits && b * kByteBits + k < slots; ++k)
       {
-         v = static_cast<uint8_t>(v | (storage::used(*st, static_cast<int>(b * kByteBits + k)) ? 1u << k : 0u));
+         v = static_cast<uint8_t>(v | (slot_used(*st, static_cast<int>(b * kByteBits + k)) ? 1u << k : 0u));
       }
       put(s, v);
    }
    for (uint32_t k = 0; st != nullptr && k < slots; ++k)
    {
-      if (storage::used(*st, static_cast<int>(k)))
+      if (slot_used(*st, static_cast<int>(k)))
       {
          put_block(s, st->bytes + k * monster::kLayout.record_bytes, monster::kLayout.record_bytes);
       }
@@ -1005,8 +1087,8 @@ Status decode_boxes(Source& s, storage::Storage* st, Notes* notes)
    {
       old_used[b] = next(s);
    }
-   const uint32_t boxes = storage::kStorage.box_count;
-   const uint32_t size = storage::kStorage.box_size;
+   const uint32_t boxes = box_shape().box_count;
+   const uint32_t size = box_shape().box_size;
    const uint32_t slots = boxes * size;
    uint32_t records = 0;
    for (uint32_t k = 0; k < old_slots; ++k)
@@ -1019,7 +1101,7 @@ Status decode_boxes(Source& s, storage::Storage* st, Notes* notes)
    }
    if (st != nullptr)
    {
-      storage::clear(*st);
+      clear_boxes(*st);
       st->current = static_cast<uint8_t>(boxes == 0 ? 0 : (current < boxes ? current : boxes - 1));
       // the records that keep their place first, so a moved one cannot take it
       for (uint32_t k = 0; k < old_slots; ++k)
@@ -1522,7 +1604,7 @@ void load_empty(Section id, const Sources& dst)
       *dst.party = monster::Party{};
       break;
    case Section::Boxes:
-      storage::clear(*dst.storage);
+      clear_boxes(*dst.storage);
       break;
    case Section::Nursery:
       *dst.nursery = combine::nursery::State{};
@@ -1596,7 +1678,7 @@ uint32_t section_size(Section s)
       return kPartyHeadBytes + static_cast<uint32_t>(monster::kLayout.party_size) * monster::kLayout.record_bytes;
    case Section::Boxes:
    {
-      const uint32_t slots = static_cast<uint32_t>(storage::slot_count());
+      const uint32_t slots = box_slots();
       return slots == 0 ? 0 : kBoxesHeadBytes + used_bytes(slots) + slots * monster::kLayout.record_bytes;
    }
    case Section::Nursery:
@@ -1798,7 +1880,7 @@ Status read(const Sources& dst, Notes* notes, const Stage& stage)
    {
       return Status::MediumError;
    }
-   if (dst.storage != nullptr && !storage::fits(*dst.storage))
+   if (dst.storage != nullptr && !boxes_fit(*dst.storage))
    {
       return Status::NoRoom;
    }

@@ -145,5 +145,23 @@ game's manifest, or take the lines you want, and review the diff.
 `capsule_usage_objects(capsule_<game> $<TARGET_FILE:lib>)`. The nm is the compiler's `gcc-nm` when it has one (it
 reads link-time optimized objects), else `CMAKE_NM`.
 
-**Package 3 step 3A:** the manifest is written and checked; nothing is compiled out yet, so a game builds the same
-bytes with and without it. Step 3B compiles the excluded modules and ops out.
+**Compiling out (step 3B).** A parent build that builds one game sets `CAPSULE_EXCLUDE` to that game's manifest
+before `add_subdirectory()` of the engine (an importer building one game does this). The engine library
+then leaves out every excluded module's sources (`src/<module>/`, `cmake/exclude.cmake`), and the always-compiled code
+that reaches them reads `capsule/exclude_config.h` (generated: `capsule::exclude::kSeq`, `kStorage`, ...) with
+`if constexpr`:
+
+| Cut point | With the module left out |
+|---|---|
+| the save codec's boxes section (`src/save/save.cpp`) | an empty storage: the bytes of a game without boxes |
+| the overworld's location preview (`src/overworld/overworld.cpp`) | no preview plays |
+| the party role port (`src/script/script_port_hal.cpp`) | a role reads 0, a write is dropped |
+| the save codec's nursery section (`src/save/save.cpp`) | an empty nursery: the bytes of a game without one |
+| the library's default script dispatch | written by `tools/script_vm.py dispatch --exclude` without the manifest's script ops (a game's own table, from its scripts, takes its place at link as before) |
+
+Without `CAPSULE_EXCLUDE` every constant is false, the cut points compile to the code they replaced, and the library
+is the whole engine. The library serves one game:
+`capsule_game()` refuses a game whose `"exclude"` is not that manifest. A link that still needs a left-out module
+fails with an undefined reference in its namespace (`capsule::seq::...`): the game's code calls it where no record or
+object scan saw it, or the engine has a new reference that needs a cut point. The ctest `exclude_build` (headless
+builds) builds `tests/exclude_build` with all five modules out: a game, and a program on the default dispatch.

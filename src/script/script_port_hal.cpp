@@ -35,6 +35,7 @@
 
 #include "capsule/core/assert.h"
 #include "capsule/core/memory.h"
+#include "capsule/exclude_config.h"
 #include "capsule/hal/input.h"
 #include "capsule/script/data.h"
 #include "capsule/text/text_layer.h"
@@ -603,20 +604,30 @@ void attach(monster::Party* records)
 int32_t role_get(uint8_t slot, uint8_t role, uint8_t element)
 {
    const monster::Record* rec = record_of(slot);
-   if (rec == nullptr)
+   if constexpr (exclude::kMonster)
    {
-      return 0;
+      return 0;   // D-36 package 3: no record module, no roles (RoleGet is excluded with it)
    }
-   const uint32_t v = monster::get(*rec, role, element);
-   return static_cast<int32_t>(v > kMaxScriptValue ? kMaxScriptValue : v);
+   else
+   {
+      if (rec == nullptr)
+      {
+         return 0;
+      }
+      const uint32_t v = monster::get(*rec, role, element);
+      return static_cast<int32_t>(v > kMaxScriptValue ? kMaxScriptValue : v);
+   }
 }
 
 void role_set(uint8_t slot, uint8_t role, uint8_t element, int32_t value)
 {
    monster::Record* rec = record_of(slot);
-   if (rec != nullptr)
+   if constexpr (!exclude::kMonster)   // D-36 package 3: without the record module a write is dropped
    {
-      monster::set(*rec, role, element, value < 0 ? 0u : static_cast<uint32_t>(value));
+      if (rec != nullptr)
+      {
+         monster::set(*rec, role, element, value < 0 ? 0u : static_cast<uint32_t>(value));
+      }
    }
 }
 

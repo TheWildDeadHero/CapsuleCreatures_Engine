@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import io
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -121,6 +122,13 @@ class ExcludeTests(unittest.TestCase):
       warnings = ux.check({"schema": ux.SCHEMA}, report(), found, OPS, unreadable).warnings
       self.assertEqual(len(warnings), 1)
       self.assertIn("could not read 1 object file(s) (first: src/bad.o)", warnings[0])
+
+   def test_cmake_list(self) -> None:
+      """!cmake/exclude.cmake's CAPSULE_EXCLUDABLE_MODULES is EXCLUDABLE_MODULES (step 3B compiles them out)."""
+      text = (ROOT / "cmake" / "exclude.cmake").read_text(encoding="utf-8")
+      found = re.search(r"^set\(CAPSULE_EXCLUDABLE_MODULES ([^)]*)\)", text, re.MULTILINE)
+      self.assertIsNotNone(found)
+      self.assertEqual(tuple(found[1].split()), ux.EXCLUDABLE_MODULES)
 
    def test_validate(self) -> None:
       """!The schema, the keys and the items' shape."""
