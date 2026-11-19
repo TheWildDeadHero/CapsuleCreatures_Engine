@@ -138,6 +138,7 @@ game's manifest, or take the lines you want, and review the diff.
 | an excluded script op the scripts emit (the script compiler's `--exclude` reports it at the statement first) | error |
 | a module that cannot be excluded, an item listed twice | error |
 | a module or op this engine does not have | warning (a stale exclusion) |
+| an object file the nm cannot read (Xcode's nm refuses LTO bitcode in a universal file): its references are not seen | warning |
 | an excludable item nothing uses that the manifest does not exclude | note (a suggestion) |
 
 `capsule_game()` reads the game target's objects; a game that links a library of its own code adds it with

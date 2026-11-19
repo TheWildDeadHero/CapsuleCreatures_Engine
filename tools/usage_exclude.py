@@ -122,26 +122,56 @@ def parse_references(text: str, modules: Iterable[str]) -> dict[str, dict[str, s
    return refs
 
 
-def read_references(objects: Sequence[Path], nm: str, modules: Iterable[str]) -> dict[str, dict[str, str]]:
+def run_nm(nm: str, files: Sequence[str]) -> str | None:
+   """!One nm run.
+   @param nm     the nm
+   @param files  the files it lists
+   @return its listing, or None when it cannot read one of them
+   @throws ExcludeError when nm does not start
+   """
+   try:
+      done = subprocess.run([nm, "-A", "-P", "-u", *files], capture_output=True, text=True, check=False)
+   except OSError as e:
+      raise ExcludeError(f"{nm}: {e}") from None
+   return done.stdout if done.returncode == 0 else None
+
+
+def read_references(objects: Sequence[Path], nm: str, modules: Iterable[str],
+                    unreadable: list[str] | None = None) -> dict[str, dict[str, str]]:
    """!Runs nm over the game's object files (or archives) and reads the engine modules they reference.
-   @param objects  the files
-   @param nm       the nm to run (a gcc-nm for link-time optimized objects)
-   @param modules  the engine's modules
-   @return parse_references()'s result
-   @throws ExcludeError when nm does not run
+   @param objects     the files
+   @param nm          the nm to run (a gcc-nm for link-time optimized objects)
+   @param modules     the engine's modules
+   @param unreadable  receives the files nm cannot read (such as an LLVM bitcode object in a macOS universal file,
+                      which Xcode's nm refuses): their references are not seen, which the check warns about
+   @return parse_references()'s result for the files it read
+   @throws ExcludeError when nm does not start
    """
    text = []
    files = [str(p) for p in objects]
    for start in range(0, len(files), NM_BATCH):
-      try:
-         done = subprocess.run([nm, "-A", "-P", "-u", *files[start:start + NM_BATCH]], capture_output=True,
-                               text=True, check=False)
-      except OSError as e:
-         raise ExcludeError(f"{nm}: {e}") from None
-      if done.returncode != 0:
-         raise ExcludeError(f"{nm} failed: {done.stderr.strip()}")
-      text.append(done.stdout)
+      batch = files[start:start + NM_BATCH]
+      listing = run_nm(nm, batch)
+      if listing is not None:
+         text.append(listing)
+         continue
+      # one file it cannot read fails the run: list the batch's files one at a time
+      for one in batch:
+         listing = run_nm(nm, [one])
+         if listing is not None:
+            text.append(listing)
+         elif unreadable is not None:
+            unreadable.append(object_label(one))
    return parse_references("".join(text), modules)
+
+
+def unreadable_warning(unreadable: Sequence[str]) -> str:
+   """!The warning about object files nm could not read.
+   @param unreadable  read_references()'s list
+   @return it
+   """
+   return (f"nm could not read {len(unreadable)} object file(s) (first: {unreadable[0]}): the engine modules they "
+           f"reference are not seen, so an excluded module they use is not found and their modules may be suggested")
 
 
 def used_ops(report: Mapping[str, Any]) -> dict[str, int] | None:
@@ -225,15 +255,18 @@ def duplicates(items: Sequence[str]) -> list[str]:
 
 
 def check(manifest: Mapping[str, Any], report: Mapping[str, Any], refs: Mapping[str, Mapping[str, str]],
-          ops: Sequence[str]) -> Findings:
+          ops: Sequence[str], unreadable: Sequence[str] = ()) -> Findings:
    """!A manifest against a game's usage report and object files.
-   @param manifest  the manifest
-   @param report    the usage report
-   @param refs      parse_references() of the game's objects
-   @param ops       the script VM's generic ops
+   @param manifest    the manifest
+   @param report      the usage report
+   @param refs        parse_references() of the game's objects
+   @param ops         the script VM's generic ops
+   @param unreadable  the objects nm could not read (a warning)
    @return the findings
    """
    found = Findings()
+   if unreadable:
+      found.warnings.append(unreadable_warning(unreadable))
    reported = report.get("modules", {})
    modules = names(manifest, "modules")
    excluded_ops = names(manifest, "script_ops")

@@ -98,6 +98,29 @@ class ExcludeTests(unittest.TestCase):
       clean = ux.generate(report({"End": 1}), refs(), OPS)
       self.assertEqual(ux.check(clean, report({"End": 1}), refs(), OPS).errors, [])
 
+   def test_unreadable(self) -> None:
+      """!An object nm cannot read (Xcode's nm and LTO bitcode) is listed, the others are read, and the check warns."""
+      game, bad = "build/CMakeFiles/capsule_demo.dir/src/game.cpp.o", "build/CMakeFiles/capsule_demo.dir/src/bad.o"
+
+      def fake_nm(nm: str, files: list[str]) -> str | None:
+         """!Lists LISTING's lines of the files given, refusing a run that includes bad.o."""
+         if bad in files:
+            return None
+         return "".join(line + "\n" for line in LISTING.splitlines() if line.split(":")[0] in files)
+
+      real = ux.run_nm
+      ux.run_nm = fake_nm
+      try:
+         unreadable: list[str] = []
+         found = ux.read_references([Path(game), Path(bad)], "nm", list(report()["modules"]), unreadable)
+      finally:
+         ux.run_nm = real
+      self.assertEqual(unreadable, ["src/bad.o"])
+      self.assertEqual(sorted(found), ["core", "seq"])
+      warnings = ux.check({"schema": ux.SCHEMA}, report(), found, OPS, unreadable).warnings
+      self.assertEqual(len(warnings), 1)
+      self.assertIn("could not read 1 object file(s) (first: src/bad.o)", warnings[0])
+
    def test_validate(self) -> None:
       """!The schema, the keys and the items' shape."""
       for bad in ({"schema": "x"}, {"schema": ux.SCHEMA, "extra": 1}, {"schema": ux.SCHEMA, "modules": "seq"},

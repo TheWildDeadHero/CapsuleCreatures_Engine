@@ -678,15 +678,18 @@ def exclude_command(args: argparse.Namespace) -> int:
    report = read_report(args.report)
    try:
       ops = usage_exclude.script_ops()
-      refs = usage_exclude.read_references(args.objects, args.nm, list(report.get("modules", {})))
+      unreadable: list[str] = []
+      refs = usage_exclude.read_references(args.objects, args.nm, list(report.get("modules", {})), unreadable)
       if args.command == "exclude":
          manifest = usage_exclude.generate(report, refs, ops, f"{args.report.parent.name}/{args.report.name}")
          text = usage_exclude.manifest_text(manifest)
+         if unreadable:
+            print(f"warning: {usage_exclude.unreadable_warning(unreadable)}", file=sys.stderr)
          print(f"exclude: {len(manifest['modules'])} modules and {len(manifest['script_ops'])} script ops can be "
                f"excluded")
          failed = False
       else:
-         found = usage_exclude.check(usage_exclude.load(args.manifest), report, refs, ops)
+         found = usage_exclude.check(usage_exclude.load(args.manifest), report, refs, ops, unreadable)
          text = usage_exclude.findings_text(found)
          sys.stdout.write(text)
          failed = bool(found.errors)

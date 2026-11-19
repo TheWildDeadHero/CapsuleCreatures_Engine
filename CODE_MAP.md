@@ -2222,7 +2222,7 @@ How to use it: find the file here, run `python3 tools/ci/code_map.py find NAME` 
 - **`test_usage_exclude.py`**: Tests for tools/usage_exclude.py (D-36 package 3, the exclusion manifest): the engine modules an nm listing's objects reference, the manifest generated from a report and those references, its check (errors, stale items, suggestions), its shape, the command line, and the script compiler's --exclude (small invented reports and listings; the test script app's scripts).
    - class: `CompilerTests, ExcludeTests`
    - function: `refs, report`
-   - method: `CompilerTests.test_excluded_op, CompilerTests.test_option, ExcludeTests.test_check, ExcludeTests.test_command_line, ExcludeTests.test_generate, ExcludeTests.test_references, ExcludeTests.test_validate`
+   - method: `CompilerTests.test_excluded_op, CompilerTests.test_option, ExcludeTests.test_check, ExcludeTests.test_command_line, ExcludeTests.test_generate, ExcludeTests.test_references, ExcludeTests.test_unreadable, ExcludeTests.test_validate`
    - constant: `LISTING, OPS, ROOT, TEST_SCRIPTS`
 - **`test_usage_memory.py`**: Tests for the GBA memory report (D-42 §4.6): owners from mangled names (tools/usage_memory.py), a small invented symbol listing measured and checked against the regions and the budgets, `usage.py memory`, the memory budgets of tools/build_settings.py and the link launcher (tools/gba_link.py) with a stand-in linker and nm.
    - class: `Budgets, Command, Launcher, Owners, Report`
@@ -2471,7 +2471,7 @@ How to use it: find the file here, run `python3 tools/ci/code_map.py find NAME` 
    - constant: `_ACTIVE, ARCHIVE_MEMBER, BASE_MODULES, CATEGORY_MODULES, DEFAULT_NM, DEFAULT_STACK_RESERVE, ENGINE_ARCHIVE_PREFIX, ENGINE_SCOPE, ENGINE_SOURCE_FOLDER, ENGINE_SOURCES, EXIT_USAGE, GAME_MODULE, HEX, JSON_INDENT, LINKED_SECTIONS, LINKMAP_SCHEMA, LISTED_IN_TEXT, LISTED_ITEMS, MANGLED_START, MAP_LINE, MAP_SECTION_ONLY, MAP_START, MAP_SYMBOL, MODULE_SCOPE, NAME_MODULES, NAMESPACE_MODULES, NM_LINE, NM_SKIPPED_KINDS, OBJECT_SUFFIXES, OTHER_MODULE, RECORD_SCHEMA, REPORT_SCHEMA, SOURCE_SUFFIXES, TOOLCHAIN_MODULE, TOOLS, VM_CATEGORY, VM_MAIN_TABLE, VM_RECORD_SCHEMA`
 - **`usage_exclude.py`**: The exclusion manifest (D-36 §5, package 3; docs/USAGE.md "Exclusion manifest"): the engine modules and script ops a game does not build, generated from its usage report and its own object files, and checked against them.
    - class: `ExcludeError, Findings`
-   - function: `check, duplicates, findings_text, generate, load, manifest_text, names, object_label, parse_references, read_references, script_ops, used_ops, validate`
+   - function: `check, duplicates, findings_text, generate, load, manifest_text, names, object_label, parse_references, read_references, run_nm, script_ops, unreadable_warning, used_ops, validate`
    - constant: `EXCLUDABLE_MODULES, GENERIC_KIND, ITEM_KEYS, ITEM_LISTS, JSON_INDENT, KEYS, MODULE_REASON, NM_BATCH, NM_LINE, OBJECT_FOLDER, OP_REASON, SCHEMA, SCRIPT_OP_CATEGORY, SCRIPT_VM, UNDEFINED`
 - **`usage_memory.py`**: GBA memory by owner (D-42 §4.6; docs/USAGE.md): what each namespace of a linked GBA program holds in IWRAM (code and data) and EWRAM, read from its sized symbol listing (`nm -S --defined-only`, the build's capsule_<game>.nm), and the check of the program against the regions' limits and the game's budgets ("build": {"memory_budgets": ...} of its reference/project.json, tools/build_settings.py).
    - class: `Symbol`
