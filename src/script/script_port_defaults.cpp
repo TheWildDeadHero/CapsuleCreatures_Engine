@@ -28,6 +28,7 @@
 #include "capsule/field/field.h"
 #include "capsule/map/map.h"
 #include "capsule/script/script.h"
+#include "capsule/stats/stats.h"
 
 namespace capsule::script::port
 {
@@ -266,8 +267,10 @@ CAPSULE_WEAK void set_order(uint8_t obj, bool fixed, uint8_t order)
    field::set_fixed_order(obj, fixed, order);
 }
 
-CAPSULE_WEAK void add_stat(uint8_t, int32_t)
+// G2: the engine holds the manifest's stats without a variable (capsule/stats/stats.h)
+CAPSULE_WEAK void add_stat(uint8_t stat, int32_t amount)
 {
+   capsule::stats::add(stat, amount);
 }
 
 // C9: the engine has no visual field animations and draws its cell edits at once.

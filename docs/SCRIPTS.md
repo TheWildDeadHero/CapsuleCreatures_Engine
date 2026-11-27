@@ -81,6 +81,20 @@ trigger conditions that could wait; constants outside a variable's range
   `script::party::attach()`. Natives are `script::game::native()`, which the
   game defines.
 
+**Game statistics** (C6; D-36 §3.1 G2, `capsule/stats/stats.h`): the
+manifest's `"stats"` number a game's counters, `{"steps": {"var": "v16"},
+"visits": {}, "wins": {"max": 999}}`; `stat add NAME [n];` adds to one. A stat
+bound to a variable is that variable's (the statement is its add, kept in its
+range). A stat without one is the engine's: a 32-bit counter in the bank
+(`StatInfo` per stat, `stat_values`), kept within 0 and its `"max"` (default
+0xFFFFFFFF), cleared by `clear_all()` and saved in the image's **Stats**
+section by its key (FNV-1a 32 of `stat:NAME`: a manifest reordered or grown
+keeps the saved values; a stat removed since is dropped and counted in
+`save::Notes::dropped_stats`). The statement reaches it through
+`world::add_stat()`, whose default is `stats::add()`; `"stats_port": true`
+says the game's port replaces it (the game may keep its own rules over
+`stats::get()` / `set()`).
+
 Map events (B-3) run scripts from the field: see ["Map events"](DATA_FORMATS.md#map-events-b-3)
 under Overworld maps. Map objects (B-21) add `move`, `face`, `hide` and `show`
 (see ["Map objects"](DATA_FORMATS.md#map-objects-b-21-pages-d-17)); flags and variables used only by map events and

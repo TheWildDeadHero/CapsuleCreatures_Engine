@@ -26,6 +26,7 @@
 #include "capsule/monster/monster.h"
 #include "capsule/save/save.h"
 #include "capsule/script/data.h"
+#include "capsule/stats/stats.h"
 #include "capsule/storage/storage.h"
 
 #include "battle_ids.h"
@@ -206,6 +207,10 @@ constexpr uint32_t kGoodsMax = 5;      ///< The goods pocket's quantity_max.
 constexpr uint32_t kRecordSlot = 4;    ///< current.bin's boxed record.
 constexpr uint32_t kCoins = 5;         ///< current.bin's coins.
 constexpr uint32_t kOldCoins = 700;    ///< script.bin's coins.
+constexpr uint32_t kWins = 3;          ///< G2: current.bin's wins (tests/test_save_migration.py CURRENT_STATS).
+constexpr uint32_t kWalks = 40;        ///< G2: current.bin's walks.
+constexpr uint32_t kWalksMax = 500;    ///< G2: walks' max (stats.bin's 600 loads as this).
+constexpr uint32_t kHeldStats = 2;     ///< G2: the fixture's statistics the engine holds (wins, walks).
 constexpr uint32_t kWalkedMax = 500;   ///< walked's range top (script.bin holds 900).
 constexpr uint32_t kOldMood = 7;       ///< script.bin's mood.
 constexpr uint8_t kHeroCodes = 4;      ///< The name slot's capacity (script.bin held six codes).
@@ -391,6 +396,7 @@ void test_current()
    CHECK(storage::count(g_boxes) == 1 && storage::used(g_boxes, kRecordSlot) && g_boxes.current == 1);
    CHECK(flag_bit(script_ids::FLAG_LIT) && flag_bit(script_ids::FLAG_MET) && !flag_bit(script_ids::FLAG_FRESH));
    CHECK(var_value(script_ids::VAR_COINS) == kCoins);
+   CHECK(stats::get(script_ids::STAT_WINS) == kWins && stats::get(script_ids::STAT_WALKS) == kWalks);   // G2
    CHECK(notes.dropped_items == 0 && notes.clamped_items == 0 && notes.moved_records == 0);
    CHECK(notes.migrated_banks == 0 && notes.reset_banks == 0);
    wipe();
@@ -442,6 +448,31 @@ void test_migrations()
    CHECK(var_value(script_ids::VAR_MOOD) == kOldMood && var_value(script_ids::VAR_DOOR) == 0);
    const uint8_t* hero = script::kBank.names;
    CHECK(hero[0] == kHeroCodes && hero[1] == 'A' && hero[kHeroCodes] == 'D');
+}
+
+/// G2: the statistics load by key: a value past a stat's max is kept within it, a stat this build does not hold is
+/// dropped (noted), one the image lacks starts at 0; an image without a Stats section (an older build's, format
+/// version 2) leaves every stat at 0.
+void test_stats()
+{
+   save::Notes notes{};
+   stats::set(script_ids::STAT_WINS, kWins);
+   put_image("stats.bin");
+   CHECK(read_all(&notes) == Status::Ok && notes.dropped_stats == 1);
+   CHECK(stats::get(script_ids::STAT_WALKS) == kWalksMax && stats::get(script_ids::STAT_WINS) == 0);
+   stats::set(script_ids::STAT_WINS, kWins);
+   put_image("items.bin");
+   CHECK(read_all(&notes) == Status::Ok && notes.dropped_stats == 0);
+   CHECK(stats::get(script_ids::STAT_WINS) == 0 && stats::get(script_ids::STAT_WALKS) == 0);
+   // a round trip through this build's image
+   stats::set(script_ids::STAT_WINS, kWins);
+   stats::set(script_ids::STAT_WALKS, kWalks);
+   wipe();
+   CHECK(save::write(all()) == Status::Ok);
+   stats::clear();
+   CHECK(read_all(&notes) == Status::Ok);
+   CHECK(stats::get(script_ids::STAT_WINS) == kWins && stats::get(script_ids::STAT_WALKS) == kWalks);
+   CHECK(save::section_size(save::Section::Stats) == save::kStatsHeadBytes + kHeldStats * save::kStatEntryBytes);
 }
 
 /// What cannot migrate is refused and nothing changes.
@@ -718,6 +749,7 @@ int main(int argc, char** argv)
    CHECK(save::copy_count() == 2 && storage::fits(g_boxes));
    test_current();
    test_migrations();
+   test_stats();
    test_refusals();
    test_copy_through();
    test_torn_writes();

@@ -458,17 +458,32 @@ class Stats(unittest.TestCase):
       self.assertEqual(self.code("stat add visits;"), bytes([sc.OP["Stat"], 1]) + amount + bytes([sc.OP["End"]]))
 
    def test_refusals(self) -> None:
-      """An undeclared stat, a missing add, a port's stat without stats_port, malformed stats."""
+      """An undeclared stat, a missing add, malformed stats (G2: a max on a bound stat, or out of 32 bits)."""
       for body, text in (("stat add jumps;", "no statistic"), ("stat steps;", "expected 'add'")):
          errs = errors(compile_text(f"var v : u16;\nscript s {{ {body} }}", **self.MANIFEST))
          self.assertTrue(any(text in e for e in errs), (body, errs))
-      with self.assertRaises(sc.ScriptError):
-         sc.game_stats({"visits": {}}, False)
-      for bad in ({"Steps": {"var": "v"}}, {"steps": {"var": "v", "max": 9}}, ["steps"]):
+      for bad in ({"Steps": {"var": "v"}}, {"steps": {"var": "v", "max": 9}}, ["steps"], {"steps": {"cap": 9}},
+                  {"steps": {"max": 0}}, {"steps": {"max": sc.U32_MASK + 1}}, {"steps": {"max": True}}):
          with self.assertRaises(sc.ScriptError):
             sc.game_stats(bad, True)
       with self.assertRaises(sc.ScriptError):
          sc.game_stats({}, "yes")
+
+   def test_engine_held(self) -> None:
+      """G2: a stat without a variable needs no stats_port (the engine holds it); the bank's table: a bound stat has
+      no key and is not held, a held one has the key of "stat:NAME" and its max (default 32 bits)."""
+      self.assertEqual(sc.game_stats({"visits": {}}, False), {"visits": None})
+      raw = {"steps": {"var": "v"}, "visits": {}, "wins": {"max": 999}}
+      self.assertEqual(sc.stat_table(raw), [(0, 0, 0), (sc.asset_key("stat:visits", "stat"), sc.U32_MASK, sc.STAT_HELD),
+                                            (sc.asset_key("stat:wins", "stat"), 999, sc.STAT_HELD)])
+      comp = compile_text("var v : u16;\nscript s { stat add visits; stat add wins 2; }", stats=raw)
+      self.assertEqual(errors(comp), [])
+      cpp = comp.emit_cpp("test.cscript")
+      self.assertIn("const StatInfo kStats[] = {", cpp)
+      self.assertIn("uint32_t g_stat_values[3];", cpp)
+      self.assertIn("kStats, g_stat_values, 3,", cpp)
+      plain = compile_text("var v : u16;\nscript s { var(v) += 1; }")
+      self.assertNotIn("kStats", plain.emit_cpp("test.cscript"), "a bank without stats keeps its initializer")
 
 
 class PartyStatements(unittest.TestCase):

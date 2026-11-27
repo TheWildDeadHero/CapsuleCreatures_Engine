@@ -250,6 +250,25 @@ struct FieldEffectInfo
 CAPSULE_POD(FieldEffectInfo, 12);
 ///@}
 
+/// @name Game statistics (D-36 §3.1 G2; capsule/stats/stats.h)
+/// The scripts manifest's `stats` without a variable: counters the engine holds (Bank::stat_values) and saves (the
+/// image's Stats section, by key). A stat bound to a variable is that variable's and has no entry here.
+///@{
+
+/// StatInfo::flags: the engine holds the stat (it has no variable).
+inline constexpr uint8_t kStatHeld = 1;
+
+/// One game statistic (ROM), by its manifest index (the Stat op's stat8).
+struct StatInfo
+{
+   uint32_t key;          ///< Its save key: FNV-1a 32 of "stat:NAME" (0 for a stat the engine does not hold).
+   uint32_t max;          ///< Its most (the manifest's "max"; adding stops there).
+   uint8_t flags;         ///< kStatHeld.
+   uint8_t reserved[kPadAfterOneByte];   ///< 0.
+};
+CAPSULE_POD(StatInfo, 12);
+///@}
+
 /// @name Step effects (D-27 section 4, package F3; capsule/script/step_effects.h)
 /// The structure manifest's `step_effects` (a poison-like status hurting on the walk, a friendship-like role
 /// growing, ...): every StepEffectInfo::every steps the engine runs the effect-logic hook `steps` on each party
@@ -460,6 +479,10 @@ struct Bank
    uint8_t object_base = 0;                        ///< First local ID of the scripts' object numbering (0 or 1).
    // C10 (a bank with the engine's default VM leaves it out of its initializer)
    uint8_t vm_flags = 0;                           ///< kVm... bits: how the VM runs (the manifest's "vm").
+   // G2 (a bank without stats leaves these out of its initializer)
+   const StatInfo* stats = nullptr;                ///< stat_count entries by manifest index, or nullptr.
+   uint32_t* stat_values = nullptr;                ///< Their counters (RAM; a stat the engine does not hold: 0).
+   uint8_t stat_count = 0;                         ///< Statistics (0 to kMaxStats).
 };
 
 /// @name Bank::vm_flags (C10: the scripts manifest's "vm" object; 0 is the engine's own behaviour)

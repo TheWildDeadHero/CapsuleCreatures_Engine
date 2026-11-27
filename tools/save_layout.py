@@ -3,7 +3,8 @@ same sections as capsule/save/save.h (src/save/save.cpp), worked out at build ti
 platform's save medium, and the same bytes (image(): the studio's test saves, the tests' older-shape images).
 
 Sections (most bytes; each section carries its own shape, so a save survives manifest changes: save.h):
-  - Bag: 2 (entry count), then 6 per manifest slot (the item's stable key and count; written: the filled ones);
+  - Bag (G1: version 2): 1 (pocket count), then per pocket 2 (its slot count) and 6 per slot (the item's stable key
+    and count, in place; written: up to its last filled slot);
   - Party: 7 (record hash: the layout's without its party size, C7; record bytes, count), then party_size records
     of the layout's record bytes;
   - Boxes (G3): 10 (record hash, record bytes, box count, box size, current box), a bit per slot (low bit first),
@@ -18,8 +19,11 @@ Sections (most bytes; each section carries its own shape, so a save survives man
     absent unless the world declares a clock (--world);
   - Plots (M6a K2): 2 (record count), then 10 per plot place (the planting time, the crop, the watering bits, the
     cycle, the stages planted ahead, the modifier); absent unless the world declares plots the engine keeps
-    (--world; "storage": "game" keeps none).
-The image adds a 32-byte header and 12 bytes per section in its table.
+    (--world; "storage": "game" keeps none);
+  - Stats (G2): 1 (stat count), then 8 per statistic the engine holds (its key, FNV-1a 32 of "stat:NAME", and its
+    value); absent unless the scripts manifest has stats without a variable (--scripts).
+The image adds a 32-byte header and 12 bytes per section in its table (G2: format version 3, up to 12 sections;
+version 2 images, up to 8, still read).
 
 Media (C6, review4 finding 4): "gba" is the cartridge's 64 KB flash (4 KB sectors, each copy whole sectors),
 "gba_sram" its 32 KB SRAM (byte units; CMake CAPSULE_GBA_SAVE_SRAM), every other platform its max_save_bytes in
@@ -85,9 +89,10 @@ SUB_BANK_HEAD_BYTES = 7
 ## Bits per byte of the storage's used bits (capsule::storage::kUsedBitsPerByte).
 USED_BITS_PER_BYTE = 8
 ## Section names in id order (capsule::save::Section).
-SECTIONS = ("bag", "party", "boxes", "script", "nursery", "game", "clock", "plots")
+SECTIONS = ("bag", "party", "boxes", "script", "nursery", "game", "clock", "plots", "stats")
 ## Each section's version (src/save/save.cpp k*Version).
-SECTION_VERSIONS = {"bag": 2, "party": 1, "boxes": 1, "script": 1, "nursery": 1, "game": 1, "clock": 2, "plots": 1}
+SECTION_VERSIONS = {"bag": 2, "party": 1, "boxes": 1, "script": 1, "nursery": 1, "game": 1, "clock": 2, "plots": 1,
+                    "stats": 1}
 ## M6a K1: the Clock section's bytes (capsule::save::kClockBytes).
 CLOCK_BYTES = 18
 ## M6a K2: the Plots section's head (capsule::save::kPlotsHeadBytes: the record count).
@@ -96,6 +101,10 @@ PLOTS_HEAD_BYTES = 2
 PLOT_RECORD_BYTES = 10
 ## M6a K2: the plots' storage that keeps no engine records (world.json "plots" "storage").
 PLOTS_GAME_STORAGE = "game"
+## G2: the Stats section's head (capsule::save::kStatsHeadBytes: the stat count).
+STATS_HEAD_BYTES = 1
+## G2: bytes per statistic (kStatEntryBytes: its key 4, its value 4).
+STAT_ENTRY_BYTES = 8
 ## N3: the Game section's head: the game's version of its block (2) and its bytes (4).
 GAME_HEAD_BYTES = 6
 ## Copies the medium keeps at most.
@@ -171,15 +180,16 @@ def script_bytes(banks: Sequence[Mapping[str, Any]]) -> int:
 
 
 def sections_of(compiled: Mapping[str, Any], banks: Sequence[Mapping[str, Any]] = (),
-                game_bytes: int = 0, clock: bool = False, plots: int = 0) -> dict[str, int]:
+                game_bytes: int = 0, clock: bool = False, plots: int = 0, stats: int = 0) -> dict[str, int]:
    """!The most bytes of each section of a compiled battle and its scripts.
    @param compiled    bc.compile_battle() result
    @param banks       script_banks() result
    @param game_bytes  N3: the game's block (capsule::save::game_block_bytes()), 0 without one
    @param clock       M6a K1: the world declares a clock
    @param plots       M6a K2: the world's plot places the engine keeps records for (0: none)
+   @param stats       G2: the statistics the engine holds (held_stats(); 0: none)
    @return {section: bytes} in id order (0: no such section; "game" only with a game block, "clock" only with a
-           clock, "plots" only with engine plot records)
+           clock, "plots" only with engine plot records, "stats" only with held statistics)
    """
    inv = compiled["inventory"]
    lay = compiled["layout"]
@@ -194,7 +204,17 @@ def sections_of(compiled: Mapping[str, Any], banks: Sequence[Mapping[str, Any]] 
       out["clock"] = CLOCK_BYTES
    if plots:
       out["plots"] = PLOTS_HEAD_BYTES + plots * PLOT_RECORD_BYTES
+   if stats:
+      out["stats"] = STATS_HEAD_BYTES + stats * STAT_ENTRY_BYTES
    return out
+
+
+def held_stats(comp: Any) -> list[int]:
+   """!G2: the save keys of the statistics the engine holds (a compiled scripts manifest's stats without a variable).
+   @param comp  compile_scripts() result, or None
+   @return their keys in the manifest's order
+   """
+   return [key for key, _most, flags in getattr(comp, "stat_table", []) if flags & STAT_HELD]
 
 
 def world_has_clock(world: str | Path | None) -> bool:
@@ -287,7 +307,8 @@ def layout(battle: str | Path, scripts: str | Path | None = None, platform: str 
    comp = compile_scripts(scripts) if scripts is not None else None
    banks = save_shape.shapes(comp) if comp is not None else []
    unrecorded = save_shape.unrecorded(comp, comp.save_history) if comp is not None else []
-   sections = sections_of(compiled, banks, clock=world_has_clock(world), plots=world_plot_places(world))
+   sections = sections_of(compiled, banks, clock=world_has_clock(world), plots=world_plot_places(world),
+                          stats=len(held_stats(comp)))
    size = image_bytes(sections)
    copies = copies_of(size, budget, unit)
    needed = 1 if single_copy else REQUIRED_COPIES
@@ -298,8 +319,12 @@ def layout(battle: str | Path, scripts: str | Path | None = None, platform: str 
 
 ## "CCSV" as the header's first word (capsule::save::kMagic).
 MAGIC = 0x56534343
-## Image format version (kVersion).
-VERSION = 2
+## Image format version (kVersion; G2: up to 12 sections).
+VERSION = 3
+## G2: the version before (kVersionEightSections: up to 8 sections; such images still read).
+VERSION_EIGHT_SECTIONS = 2
+## G2: capsule::script::kStatHeld (a stat the engine holds).
+STAT_HELD = 1
 ## Offset of the header's checksum field (the one header field its checksum leaves out).
 CHECKSUM_OFFSET = 16
 ## Bytes of the checksum field.
@@ -510,6 +535,14 @@ def script_values(banks: Sequence[Mapping[str, Any]], values: Mapping[str, int])
    return {k: bytes(v) for k, v in out.items()}
 
 
+def stats_payload(values: Sequence[tuple[int, int]]) -> bytes:
+   """!G2: the Stats section: the held statistics' keys and values.
+   @param values  (key, value) per held stat, in the manifest's order (held_stats() keys)
+   @return the bytes (empty without stats: no section)
+   """
+   return bytes([len(values)]) + b"".join(u32(k) + u32(v) for k, v in values) if values else b""
+
+
 def game_payload(block: bytes, version: int) -> bytes:
    """!N3: the Game section: the game's version of its block, its size and its bytes.
    @param block    the game's block
@@ -519,12 +552,14 @@ def game_payload(block: bytes, version: int) -> bytes:
    return u16(version) + u32(len(block)) + block if block else b""
 
 
-def assemble(payloads: Mapping[str, bytes], sequence: int = 1, versions: Mapping[str, int] | None = None) -> bytes:
+def assemble(payloads: Mapping[str, bytes], sequence: int = 1, versions: Mapping[str, int] | None = None,
+             format_version: int = VERSION) -> bytes:
    """!One copy of an image from its section bytes (an empty payload: no such section).
-   @param payloads  {section name: bytes}, in any order (written in id order)
-   @param sequence  the image's sequence number
-   @param versions  {section name: version} where a payload is an older version's (G1: an older build's bag,
-                    bag_entries_payload()), or None: this build's (SECTION_VERSIONS)
+   @param payloads        {section name: bytes}, in any order (written in id order)
+   @param sequence        the image's sequence number
+   @param versions        {section name: version} where a payload is an older version's (G1: an older build's bag,
+                          bag_entries_payload()), or None: this build's (SECTION_VERSIONS)
+   @param format_version  the image's format version (G2: VERSION_EIGHT_SECTIONS for an older build's image)
    @return the bytes
    """
    present = [(k, name) for k, name in enumerate(SECTIONS) if payloads.get(name)]
@@ -532,7 +567,7 @@ def assemble(payloads: Mapping[str, bytes], sequence: int = 1, versions: Mapping
    table = b"".join(bytes([k, chosen[name]]) + bytes(ENTRY_RESERVED) + u32(len(payloads[name])) +
                     u32(fnv(payloads[name])) for k, name in present)
    body = b"".join(payloads[name] for _k, name in present)
-   head = u32(MAGIC) + u16(VERSION) + bytes([len(present)]) + bytes(HEADER_RESERVED_BYTE) + u32(sequence)
+   head = u32(MAGIC) + u16(format_version) + bytes([len(present)]) + bytes(HEADER_RESERVED_BYTE) + u32(sequence)
    head += u32(len(table) + len(body))
    tail = bytes(HEADER_RESERVED_TAIL)
    checksum = fnv(table, fnv(tail, fnv(head)))
