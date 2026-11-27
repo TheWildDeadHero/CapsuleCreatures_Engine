@@ -262,11 +262,13 @@ class SaveLayoutTests(unittest.TestCase):
    """!tools/save_layout.py: the save image's sizes (capsule/save/save.h)."""
 
    def test_fixture(self) -> None:
-      """!Bag 9 slots of 6 bytes after its count, party 3 records of 44 bytes after its head, no boxes, no scripts
-      (tests/inventory_tests.cpp checks the same sizes in C++): the sections present take a table entry each."""
+      """!Bag (G1: version 2) a pocket count, 3 pockets' slot counts and 9 slots of 6 bytes, party 3 records of 44
+      bytes after its head, no boxes, no scripts (tests/inventory_tests.cpp checks the same sizes in C++): the sections
+      present take a table entry each."""
       r = save_layout.layout(FIXTURE, platform="headless")
-      self.assertEqual(r["sections"], {"bag": 2 + 9 * 6, "party": 7 + 3 * 44, "boxes": 0, "script": 0, "nursery": 0})
-      self.assertEqual(r["image"], save_layout.HEADER_BYTES + 2 * save_layout.SECTION_ENTRY_BYTES + 56 + 139)
+      self.assertEqual(r["sections"], {"bag": 1 + 3 * 2 + 9 * 6, "party": 7 + 3 * 44, "boxes": 0, "script": 0,
+                                       "nursery": 0})
+      self.assertEqual(r["image"], save_layout.HEADER_BYTES + 2 * save_layout.SECTION_ENTRY_BYTES + 61 + 139)
       self.assertEqual((r["budget"], r["copies"]), (build_settings.platform_limits("headless")["max_save_bytes"], 2))
       self.assertTrue(r["ok"])
 

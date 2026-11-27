@@ -276,7 +276,8 @@ void test_teach()
 void test_save()
 {
    using save::Status;
-   CHECK(save::section_size(save::Section::Bag) == save::kBagHeadBytes + kBagSlots * save::kBagEntryBytes);
+   CHECK(save::section_size(save::Section::Bag) ==
+         save::kBagHeadBytes + kPockets * save::kBagPocketBytes + kBagSlots * save::kBagEntryBytes);
    CHECK(save::section_size(save::Section::Party) ==
          save::kPartyHeadBytes + monster::kLayout.party_size * monster::kLayout.record_bytes);
    CHECK(save::section_size(save::Section::Boxes) == 0 && save::section_size(save::Section::Script) == 0);

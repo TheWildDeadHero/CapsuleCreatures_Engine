@@ -702,10 +702,33 @@ emitted as `capsule::inventory::kInventory` beside the battle tables;
   holds only holdable items. `shops`: what the script statement `shop`
   offers, at the items' prices (each needs a price and a pocket).
 
+- **A pocket's rules** (D-36 §3.1 G1; all off by default): `"stacks": "many"`
+  lets one item fill several slots (adding fills its slots up to
+  `quantity_max`, then takes free ones; default `"one"`); `"close_up": false`
+  keeps an emptied slot where it is (item 0) until `compact()`, a new item
+  taking the first free slot (default `true`: the pocket packs at once);
+  `"store": true` makes a container any item may go into, which no item
+  names as its pocket (a PC's item storage).
+
 **The bag** (`capsule/inventory/bag.h`, `src/inventory/bag.cpp`): fixed
 `kMaxBagSlots` storage laid out at run time by `kInventory`; `add()` /
 `remove()` are all or nothing (no pocket, a full pocket, past quantity_max),
-`count()`, `room_for()`, `sort()` / `sort_all()`, `valid()`. No heap.
+`count()`, `room_for()`, `sort()` / `sort_all()`, `valid()`. No heap. G1:
+`add_to()`, `remove_from()` (from a start slot, e.g. a menu's cursor, then in
+order), `count_in()`, `room_in()` address any pocket or store; `compact()`,
+`move()` (a player's reorder), `item_pocket()`, `accepts()`. The save image's
+Bag section (version 2) keeps every slot in place; version 1 images load by
+adding their entries.
+
+**An inventory without battle data:** a game whose bag its own code uses
+names a `capsule.inventory/1` file in its `project.json` (`"inventory":
+"data/inventory.json"`: `schema`, `pockets` as above, `items` in id order with
+`name`, `pocket`, `price`, `holdable`, `consumed`, `key`; no use: there is no
+effect logic). `capsule_game()` compiles it with `tools/inventory_compiler.py`
+into `kInventory` and `inventory_ids.h` (`POCKET_<NAME>`), checked against the
+platform's limits; it replaces the engine's empty default
+(`src/inventory/inventory_empty.cpp`). A game names either `"battle"` or
+`"inventory"`, not both.
 
 **Item use out of battle** (`capsule/inventory/use.h`): a `FieldUse` scope
 opens a field context (`capsule/battle/field_context.h`: the party member's

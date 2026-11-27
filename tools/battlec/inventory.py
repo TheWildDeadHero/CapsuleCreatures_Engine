@@ -2,7 +2,9 @@
 use fields and the shop lists, emitted as capsule::inventory::kInventory (include/capsule/inventory/data.h) next
 to the battle tables.
 
-  - structure "pockets": [{name, label, capacity, quantity_max, sort}] (sort: added | index | name); the
+  - structure "pockets": [{name, label, capacity, quantity_max, sort, stacks, close_up, store}] (sort: added |
+    index | name; D-36 §3.1 G1, a pocket's rules: stacks "one" (default) | "many", close_up true (default) | false,
+    store false (default) | true: a container any item may go into, which no item names as its pocket); the
     pockets' capacities are the bag's slots, at most the platform's max_bag_slots, at most max_pockets pockets;
   - battle.json items gain pocket (a pocket's name), price, use (none | field | battle | both), consumed,
     holdable, key (never consumed or sold) and target (none | member | move_slot | battler); a use names the
@@ -30,6 +32,10 @@ SORT_RULES = ["added", "index", "name"]
 DEFAULT_SORT = "added"
 ## Default most of one item a pocket slot holds.
 DEFAULT_QUANTITY_MAX = 99
+## G1: how many slots one item may fill, in a pocket's "stacks" (the first is the default).
+POCKET_STACKS = ["one", "many"]
+## G1: the pocket flag bits (capsule::inventory::kPocketManyStacks / kPocketKeepsEmpty / kPocketStore).
+POCKET_FLAG_BITS = {"many_stacks": 1, "keeps_empty": 2, "store": 4}
 ## Most of one item a slot holds (a 16-bit count).
 MAX_QUANTITY = U16_MAX
 ## Item uses, in capsule::inventory::Use order.
@@ -75,7 +81,7 @@ POCKET_PREFIX = "POCKET"
 SHOP_PREFIX = "SHOP"
 
 register_keys({
-   "pocket": {"name", "label", "capacity", "quantity_max", "sort"},
+   "pocket": {"name", "label", "capacity", "quantity_max", "sort", "stacks", "close_up", "store"},
    "item": {"name", "announce", "handlers", *ITEM_FIELDS},
    "shop": {"name", "items"},
 })
@@ -87,7 +93,8 @@ def compile_pockets(src: Json, limits: Mapping[str, int], where: str, enc: Texts
    @param limits  the platform's limits (build_settings.platform_limits(): max_pockets, max_bag_slots)
    @param where   location (the structure manifest)
    @param enc     this compile's text encoders
-   @return [{"name", "label" (codes), "label_text", "capacity", "quantity_max", "sort", "sort_id", "first"}]
+   @return [{"name", "label" (codes), "label_text", "capacity", "quantity_max", "sort", "sort_id", "first",
+           "stacks", "close_up", "store", "flags" (G1: capsule::inventory::PocketData::flags)}]
    @throws ManifestError for a malformed pocket, a name given twice or more slots than the platform holds
    """
    src = [] if src is None else src
@@ -110,8 +117,21 @@ def compile_pockets(src: Json, limits: Mapping[str, int], where: str, enc: Texts
       sort = p.get("sort", DEFAULT_SORT)
       if sort not in SORT_RULES:
          raise ManifestError(f"{w}.sort: one of {', '.join(SORT_RULES)}, got {sort!r}")
+      stacks = p.get("stacks", POCKET_STACKS[0])
+      if stacks not in POCKET_STACKS:
+         raise ManifestError(f"{w}.stacks: one of {', '.join(POCKET_STACKS)}, got {stacks!r}")
+      rules = {}
+      for word, default in (("close_up", True), ("store", False)):
+         v = p.get(word, default)
+         if not isinstance(v, bool):
+            raise ManifestError(f"{w}.{word}: true or false, got {v!r}")
+         rules[word] = v
+      flags = ((POCKET_FLAG_BITS["many_stacks"] if stacks == "many" else 0) |
+               (0 if rules["close_up"] else POCKET_FLAG_BITS["keeps_empty"]) |
+               (POCKET_FLAG_BITS["store"] if rules["store"] else 0))
       out.append({"name": name, "label": enc.text(label, f"{w}.label"), "label_text": label, "capacity": capacity,
-                  "quantity_max": qmax, "sort": sort, "sort_id": SORT_RULES.index(sort), "first": first})
+                  "quantity_max": qmax, "sort": sort, "sort_id": SORT_RULES.index(sort), "first": first,
+                  "stacks": stacks, "close_up": rules["close_up"], "store": rules["store"], "flags": flags})
       first += capacity
    if first > limits["max_bag_slots"]:
       raise ManifestError(f"{w0}: {first} slots in all, this platform's bag holds {limits['max_bag_slots']} "
@@ -134,6 +154,9 @@ def item_fields(entry: Mapping[str, Any], pockets: Sequence[Mapping[str, Any]], 
    pocket_name = entry.get("pocket")
    if pocket_name is None:
       pocket = NO_POCKET
+   elif pocket_name in names and pockets[names.index(pocket_name)].get("store"):
+      raise ManifestError(f"{where}.pocket: {pocket_name!r} is a store (any item goes into it; it is no item's "
+                          f"pocket)")
    elif pocket_name in names:
       pocket = names.index(pocket_name)
    else:
@@ -303,10 +326,11 @@ def emit_inventory(inv: Mapping[str, Any]) -> list[str]:
       L.append(f"const text::Code kPocketLabel{i}[] = {{{', '.join(f'0x{x:02X}' for x in p['label'])}}};")
    for i, s in enumerate(inv["shops"]):
       L.append(f"const text::Code kShopName{i}[] = {{{', '.join(f'0x{x:02X}' for x in s['label'])}}};")
-   # PocketData {label, first slot, capacity, quantity max, sort rule, reserved}
+   # PocketData {label, first slot, capacity, quantity max, sort rule, flags (G1: the pocket's rules)}
    L.append("const PocketData kPockets[] = {")
    L += [f"    {{kPocketLabel{i}, {p['first']}, {p['capacity']}, {p['quantity_max']}, "
-         f"static_cast<SortRule>({p['sort_id']}), 0}},   // {p['name']}" for i, p in enumerate(inv["pockets"])]
+         f"static_cast<SortRule>({p['sort_id']}), {p.get('flags', 0)}}},   // {p['name']}"
+         for i, p in enumerate(inv["pockets"])]
    if not inv["pockets"]:
       L.append("    {nullptr, 0, 0, 0, SortRule::Added, 0},")
    L.append("};")

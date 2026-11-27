@@ -10,3 +10,19 @@ capsule_battle_test(inventory_tests ${CAPSULE_ROOT}/tests/data/inventory/battle.
                     ARGS ${CAPSULE_ROOT}/tests/data/inventory/save_image.bin)
 add_test(NAME battle_inventory_tests
          COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_battle_inventory.py)
+
+# D-36 §3.1 G1: the pockets' rules and stores on an inventory-only fixture (tests/data/bag_rules, compiled by
+# tools/inventory_compiler.py) and the save image's Bag version 2, against the engine library (its RAM medium)
+add_custom_command(
+   OUTPUT  ${CAPSULE_GENERATED_DIR}/bag_rules_inventory.cpp ${CAPSULE_GENERATED_DIR}/bag_rules_ids.h
+   COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/inventory_compiler.py
+         ${CAPSULE_ROOT}/tests/data/bag_rules/inventory.json ${CAPSULE_GENERATED_DIR}/bag_rules_inventory.cpp
+         --ids ${CAPSULE_GENERATED_DIR}/bag_rules_ids.h --platform ${CAPSULE_PLATFORM}
+   DEPENDS ${CAPSULE_ROOT}/tools/inventory_compiler.py ${CAPSULE_ROOT}/tools/battlec/inventory.py
+         ${CAPSULE_ROOT}/tests/data/bag_rules/inventory.json
+   COMMENT "Compiling the bag rules fixture's inventory")
+add_executable(capsule_bag_rules_tests tests/bag_rules_tests.cpp ${CAPSULE_GENERATED_DIR}/bag_rules_inventory.cpp
+               ${CAPSULE_GENERATED_DIR}/bag_rules_ids.h)
+target_include_directories(capsule_bag_rules_tests PRIVATE ${CAPSULE_GENERATED_DIR})
+target_link_libraries(capsule_bag_rules_tests PRIVATE capsule_engine)
+add_test(NAME bag_rules_tests COMMAND capsule_bag_rules_tests)

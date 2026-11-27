@@ -1,0 +1,80 @@
+{
+ "schema": "capsule.inventory/1",
+ "editor": {
+  "notes": "D-36 \u00a73.1 G1 fixture (tests/bag_rules_tests.cpp): one pocket per rule set: loose (many stacks, keeps empty slots), single (one stack, keeps empty slots), sorted (many stacks, closes up, by index), plain (the engine's first rules) and a store any item goes into. Invented items."
+ },
+ "pockets": [
+  {
+   "name": "loose",
+   "label": "Loose",
+   "capacity": 5,
+   "quantity_max": 9,
+   "stacks": "many",
+   "close_up": false
+  },
+  {
+   "name": "single",
+   "label": "Single",
+   "capacity": 3,
+   "quantity_max": 9,
+   "close_up": false
+  },
+  {
+   "name": "sorted",
+   "label": "Sorted",
+   "capacity": 4,
+   "quantity_max": 9,
+   "stacks": "many",
+   "sort": "index"
+  },
+  {
+   "name": "plain",
+   "label": "Plain",
+   "capacity": 2,
+   "quantity_max": 3
+  },
+  {
+   "name": "chest",
+   "label": "Chest",
+   "capacity": 4,
+   "quantity_max": 99,
+   "stacks": "many",
+   "close_up": false,
+   "store": true
+  }
+ ],
+ "items": [
+  {
+   "name": "Pebble",
+   "pocket": "loose"
+  },
+  {
+   "name": "Shell",
+   "pocket": "loose"
+  },
+  {
+   "name": "Seed",
+   "pocket": "single"
+  },
+  {
+   "name": "Twig",
+   "pocket": "single"
+  },
+  {
+   "name": "Acorn",
+   "pocket": "sorted"
+  },
+  {
+   "name": "Bead",
+   "pocket": "sorted"
+  },
+  {
+   "name": "Charm",
+   "pocket": "plain",
+   "key": true
+  },
+  {
+   "name": "Lost Note"
+  }
+ ]
+}

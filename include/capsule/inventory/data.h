@@ -70,6 +70,16 @@ inline constexpr uint8_t kItemKey = 4;        ///< A key item: never consumed or
 inline constexpr uint8_t kItemEggs = 8;       ///< It may be used on an egg (B2; default refused).
 ///@}
 
+/// @name PocketData::flags (D-36 §3.1 G1: a pocket's rules; 0 keeps the engine's first rules: one slot per item, a
+/// pocket that closes up at once, only its own items)
+///@{
+inline constexpr uint8_t kPocketManyStacks = 1;   ///< An item may fill several slots: adding fills its slots up to
+                                                  ///< quantity_max, then takes free ones.
+inline constexpr uint8_t kPocketKeepsEmpty = 2;   ///< An emptied slot stays where it is (item 0) until compact();
+                                                  ///< a new item takes the first free slot.
+inline constexpr uint8_t kPocketStore = 4;        ///< A store: any item may go in; no item names it as its pocket.
+///@}
+
 /// One pocket: a slice of the bag's slots.
 struct PocketData
 {
@@ -78,7 +88,7 @@ struct PocketData
    uint16_t capacity;         ///< Slots it has (distinct items it holds).
    uint16_t quantity_max;     ///< Most of one item a slot holds (1 to kMaxQuantity).
    SortRule sort;             ///< How its slots are ordered.
-   uint8_t reserved;          ///< 0.
+   uint8_t flags;             ///< kPocket* bits (G1; 0: the engine's first rules).
 };
 
 /// One item's bag and use fields.
