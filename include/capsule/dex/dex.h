@@ -1,6 +1,6 @@
 /// @file
 /// D-36 §3.1 G3: the dex's records. Two bit sets, seen and caught, over a game's dex entries 1 to N (the game numbers
-/// its species: Emerald by national number). N comes from the project file (`"dex": {"entries": N}`), which
+/// its species, for example in a national order). N comes from the project file (`"dex": {"entries": N}`), which
 /// capsule_game() turns into data() and the two sets (EWRAM, sized by the build); without it data() is nullptr and
 /// every query answers 0. Saved in the image's Dex section (capsule/save/save.h). The Dex statement's port
 /// (capsule/script/port.h, capsule::script::dex) answers from them by default; a game's own rules (a regional list,
