@@ -1,6 +1,7 @@
 /// @file
 /// The engine's default battle data: no types, moves, creatures or formats,
-/// no record roles, no generation list, and placeholder formulas and pipelines. A build with battle data links
+/// no generation list, and placeholder formulas and pipelines (the default record layout, no roles, is
+/// layout_empty.cpp's, so a game with a layout and no battle data replaces it alone). A build with battle data links
 /// its generated table (tools/battle_compiler.py) instead, which defines
 /// every symbol in this file and so keeps it out of the link.
 #include "capsule/battle/data.h"
@@ -23,22 +24,6 @@ const RecruitData kRecruit = {nullptr, 0, kNone8, 0, 0, kNone8, 0,
 const FieldRules kFieldRules = {kNoLeadRule, 0, 0, kNoActionRule, 0, 0, kNoLeadRule, 0};
 
 } // namespace capsule::battle
-
-namespace capsule::monster
-{
-
-namespace
-{
-/// No roles held.
-constexpr uint16_t kNoOffsets[static_cast<int>(Role::NUM_ROLES)] = {
-   kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent,
-   kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent, kAbsent};
-static_assert(sizeof(kNoOffsets) / sizeof(kNoOffsets[0]) == static_cast<int>(Role::NUM_ROLES));
-} // namespace
-
-const Layout kLayout = {kNoOffsets, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0, 0, {0}, 0};
-
-} // namespace capsule::monster
 
 namespace capsule::rules
 {

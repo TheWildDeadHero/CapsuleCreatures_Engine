@@ -25,6 +25,14 @@ game's numbers by default, D-22 decision 8). An entry is:
 - a retired engine role's name (RETIRED_ROLES, A10), read as the custom role of
   that name and its registry shape (old manifests keep compiling).
 
+D-36 §3.1 G0, the party part: a role entry (an engine role's object form or a
+custom role) may give "party": true. Such roles are packed after every other
+role, from the next 32-bit word: the record's first box_bytes bytes (the box
+part) are what storage keeps, the party part only a party member has (battle
+stats, a level or status a game keeps only in the party). A layout without party
+roles has box_bytes == bytes. Each party role folds HASH_PARTY_ROLE_TAG before
+itself into the hash, so layouts without them keep their hash.
+
 The v2 object may also give "status_bits": "auto" (default) or a number: the
 bits of the primary_status role that hold the status id, the rest holding its
 counter (Battler::status_counter). "auto" takes half the role (4 of 8 bits)
@@ -131,6 +139,8 @@ HASH_CUSTOM_TAG = 0x400
 HASH_PARTY_SIZE_TAG = 0x500
 ## Hash tag of a primary-status id width other than DEFAULT_STATUS_BITS.
 HASH_STATUS_BITS_TAG = 0x600
+## Hash tag before each role of the party part (G0: a layout without party roles keeps its hash).
+HASH_PARTY_ROLE_TAG = 0x700
 ## Status id bits of the primary_status role before E5 (the "auto" choice while the statuses fit: half the role).
 DEFAULT_STATUS_BITS = 4
 ## Widest status id (capsule::battle::kMaxStatusBits: 63 statuses).
@@ -157,8 +167,8 @@ CUSTOM_NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
 
 register_keys({
    "layout": {"party_size", "move_slots", "roles", "transfer_defaults", "status_bits"},
-   "layout_role": {"role", "width", "count"},
-   "layout_custom": {"custom", "width", "count", "default", "stored"},
+   "layout_role": {"role", "width", "count", "party"},
+   "layout_custom": {"custom", "width", "count", "default", "stored", "party"},
 })
 
 
@@ -317,6 +327,22 @@ def _custom_entry(entry: Json, w: str) -> tuple[str, int, int, int, bool]:
    return name, width, count, default, stored
 
 
+def _party_entry(entry: Json, w: str) -> bool:
+   """!Whether a role entry belongs to the party part (G0: "party": true).
+   @param entry  the role entry
+   @param w      location
+   @return True for a party role
+   """
+   if not isinstance(entry, dict) or "party" not in entry:
+      return False
+   party = entry["party"]
+   if not isinstance(party, bool):
+      raise ManifestError(f"{w}.party: true (only party members hold it) or false")
+   if party and entry.get("stored", True) is False:
+      raise ManifestError(f"{w}: an unstored role takes no record bits, so it has no part")
+   return party
+
+
 def status_id_bits(choice: Json, status_count: int, where: str) -> int:
    """!The bits of the primary_status role that hold the status id (the rest hold its counter).
    @param choice        the layout's status_bits: "auto" (half the role while the ids fit, else as few as fit)
@@ -356,7 +382,7 @@ def require_counts(roles: Json, where: str) -> None:
 
 def compile_layout(roles: Json, where: str, max_record_bytes: int | None = None,
                    stat_count: int = DEFAULT_STAT_COUNT, max_party_size: int | None = None,
-                   status_count: int = 0) -> dict[str, Any]:
+                   status_count: int = 0, battle: bool = True) -> dict[str, Any]:
    """!Packs the monster layout.
    @param roles             the role entries in order (see the module docstring), or the v2 object
    @param where             location
@@ -364,12 +390,14 @@ def compile_layout(roles: Json, where: str, max_record_bytes: int | None = None,
    @param stat_count        stats of the manifest (elements of each per-stat role)
    @param max_party_size    largest party (default MAX_PARTY_SIZE; the driver passes its platform's)
    @param status_count      statuses of the manifest (status_bits "auto" fits their ids)
+   @param battle            the layout serves battles (REQUIRED_ROLES); False for a layout-only compile (G0:
+                            capsule.project/1 "monster_layout", records a game reads through its own code)
    @return dict with offsets, widths and counts (per engine role), custom (per stored custom role: name, id,
            offset, width, count, default, name_hash, transfer_key), unstored (per unstored custom role: name, id,
            width, count, default, name_hash; E13a), custom_ids / unstored_ids and ids (name -> role ID, unstored
            ones too), bytes, hash, record_hash (C7: the hash without the party size), bits, roles (held names in
            order), stat_count, move_slots, party_size, status_bits, transfer_defaults ({stat name: {per-stat role:
-           value}})
+           value}}), box_bytes (G0: the box part's bytes; bytes without party roles), party_roles (their names)
    """
    party_limit = MAX_PARTY_SIZE if max_party_size is None else max_party_size
    move_slots, party_size = DEFAULT_MOVE_SLOTS, DEFAULT_PARTY_SIZE
@@ -395,9 +423,18 @@ def compile_layout(roles: Json, where: str, max_record_bytes: int | None = None,
    unstored = []
    bit = 0
    seen = []
+   party_roles: list[str] = []
+   box_bytes = None
    h = FNV_OFFSET_BASIS
-   for i, entry in enumerate(roles):
+   # G0: the box part's roles first, then the party part's, each in the manifest's order
+   flagged = [(i, entry, _party_entry(entry, f"{where}[{i}]")) for i, entry in enumerate(roles)]
+   ordered = [f for f in flagged if not f[-1]] + [f for f in flagged if f[-1]]   # f[-1]: its party flag
+   for i, entry, party in ordered:
       w = f"{where}[{i}]"
+      if party and box_bytes is None:
+         # the party part starts at a word: the box part is a whole record of its own
+         box_bytes = (bit + BITS_PER_WORD - 1) // BITS_PER_WORD * BYTES_PER_WORD
+         bit = box_bytes * BITS_PER_BYTE
       name, width, count, default, is_custom, stored = entry, None, None, 0, False, True
       if isinstance(entry, dict) and "custom" in entry:
          name, width, count, default, stored = _custom_entry(entry, w)
@@ -424,6 +461,9 @@ def compile_layout(roles: Json, where: str, max_record_bytes: int | None = None,
                           "name_hash": name_hash(name)})
          continue
       seen.append(name)
+      if party:
+         party_roles.append(name)
+         h = _fold(h, HASH_PARTY_ROLE_TAG)
 
       if is_custom:
          size = width * count
@@ -475,7 +515,7 @@ def compile_layout(roles: Json, where: str, max_record_bytes: int | None = None,
    if status_bits != DEFAULT_STATUS_BITS:
       h = _fold(h, HASH_STATUS_BITS_TAG | status_bits)
       record_h = _fold(record_h, HASH_STATUS_BITS_TAG | status_bits)
-   missing = [r for r in REQUIRED_ROLES if r not in seen]
+   missing = [r for r in REQUIRED_ROLES if r not in seen] if battle else []
    if missing:
       raise ManifestError(f"{where}: battles need the role(s) {', '.join(missing)}")
 
@@ -484,6 +524,8 @@ def compile_layout(roles: Json, where: str, max_record_bytes: int | None = None,
    limit = MAX_RECORD_BYTES if max_record_bytes is None else max_record_bytes
    if nbytes > limit:
       raise ManifestError(f"{where}: the record needs {nbytes} bytes, the engine stores at most {limit}")
+   if box_bytes is None:
+      box_bytes = nbytes
    check_key_collisions([c["name"] for c in custom], role_key, "custom roles", where)
    defaults = _transfer_defaults(transfer_defaults, widths, offsets, defaults_where)
    custom_ids = {c["name"]: c["id"] for c in custom}
@@ -497,7 +539,42 @@ def compile_layout(roles: Json, where: str, max_record_bytes: int | None = None,
            "unstored": unstored, "unstored_ids": unstored_ids,
            "ids": ids, "bytes": nbytes, "hash": h, "record_hash": record_h, "bits": bit, "roles": list(seen),
            "stat_count": stat_count, "move_slots": move_slots, "party_size": party_size, "status_bits": status_bits,
-           "transfer_defaults": defaults}
+           "transfer_defaults": defaults, "box_bytes": box_bytes, "party_roles": party_roles}
+
+
+def emit_layout_definition(lay: dict[str, Any]) -> list[str]:
+   """!The C++ definition of the build's layout, capsule::monster::kLayout, and its tables (the battle compiler's
+   generated data and G0's layout-only compile, tools/layout_compiler.py).
+   @param lay  compile_layout()'s result
+   @return lines, from the namespace's opening to its closing
+   """
+   L = ["namespace capsule::monster {", "", "namespace {",
+        f"const uint16_t kOffsets[] = {{{', '.join(f'0x{x:04X}' for x in lay['offsets'])}}};",
+        "static_assert(sizeof(kOffsets) / sizeof(kOffsets[0]) == static_cast<int>(Role::NUM_ROLES));",
+        f"const uint8_t kWidths[] = {{{', '.join(str(x) for x in lay['widths'])}}};",
+        "static_assert(sizeof(kWidths) / sizeof(kWidths[0]) == static_cast<int>(Role::NUM_ROLES));",
+        f"const uint8_t kCounts[] = {{{', '.join(str(x) for x in lay['counts'])}}};",
+        "static_assert(sizeof(kCounts) / sizeof(kCounts[0]) == static_cast<int>(Role::NUM_ROLES));"]
+   slots = lay["custom"] + lay["unstored"]
+   if slots:
+      # custom roles (D-22 decision 2): RoleSlot {name hash, initial value, offset, width, count}; the unstored ones
+      # (E13a) after the stored ones, without bits (offset kAbsent: computed on read)
+      L.append("const RoleSlot kCustom[] = {")
+      for cr in slots:
+         offset = cr["offset"] if "offset" in cr else f"0x{ROLE_ABSENT:04X}"
+         L.append(f"    {{0x{cr['name_hash']:08X}u, {cr['default']}u, {offset}, {cr['width']}, {cr['count']}}},"
+                  f"   // {cr['name']} (role 0x{cr['id']:02X}{'' if 'offset' in cr else ', unstored'})")
+      L.append("};")
+      L.append("static_assert(sizeof(kCustom) / sizeof(kCustom[0]) <= kMaxCustomRoles);")
+   L += [f"static_assert({lay['bytes']} <= kMaxRecordBytes, \"a larger record than this platform's engine holds\");",
+         f"static_assert({lay['party_size']} <= kMaxPartySize, \"a larger party than this platform's engine holds\");",
+         f"static_assert({lay['move_slots']} <= kMaxMoveSlots);",
+         "} // namespace", "",
+         f"const Layout kLayout = {{kOffsets, kWidths, kCounts, {'kCustom' if slots else 'nullptr'}, "
+         f"0x{lay['hash']:08X}u, {lay['bytes']}, {lay['box_bytes']}, {lay['stat_count']}, {lay['move_slots']}, "
+         f"{lay['party_size']}, {len(lay['custom'])}, {len(lay['unstored'])}, {{0}}, 0x{lay['record_hash']:08X}u}};",
+         "", "} // namespace capsule::monster"]
+   return L
 
 
 def check_layout_fits(layout: dict[str, Any], needs: dict[str, int], where: str) -> None:

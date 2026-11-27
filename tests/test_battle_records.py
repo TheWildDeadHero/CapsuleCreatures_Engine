@@ -198,7 +198,8 @@ class RecordFeatureTests(unittest.TestCase):
       self.assertEqual(without["layout"]["bytes"], lay["bytes"])
       out = bc.emit("records.json", self.c)
       self.assertIn("{0xC5F847A1u, 0u, 0xFFFF, 1, 1},   // marked (role 0x83, unstored)", out)
-      self.assertIn(f"0x{lay['hash']:08X}u, {lay['bytes']}, 3, 2, 3, 3, 1, {{0}}, 0x{lay['record_hash']:08X}u}};", out)
+      self.assertIn(f"0x{lay['hash']:08X}u, {lay['bytes']}, {lay['bytes']}, 3, 2, 3, 3, 1, {{0}}, "
+                    f"0x{lay['record_hash']:08X}u}};", out)
 
    def test_unstored_refusals(self) -> None:
       """!An unstored role needs exactly one derived or constant entry; stored must be a bool."""

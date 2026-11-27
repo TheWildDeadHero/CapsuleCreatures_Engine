@@ -168,7 +168,8 @@ def emit_cpp(src_name: str, info: Mapping[str, Any], namespace: str | None = Non
       L += ["/// The fixture's layout.",
             f"const Layout kLayout = {{kOffsets, kWidths, kCounts, "
             f"{'kCustom' if lay['custom'] or lay.get('unstored') else 'nullptr'}, "
-            f"0x{lay['hash']:08X}u, {lay['bytes']}, {lay['stat_count']}, {lay['move_slots']}, {lay['party_size']}, "
+            f"0x{lay['hash']:08X}u, {lay['bytes']}, {lay['box_bytes']}, {lay['stat_count']}, {lay['move_slots']}, "
+            f"{lay['party_size']}, "
             f"{len(lay['custom'])}, {len(lay.get('unstored', []))}, {{0}}, "
             f"0x{lay['record_hash']:08X}u}};", ""]
    L += ["/// The layout's transfer table.",

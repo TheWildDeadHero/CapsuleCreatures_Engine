@@ -24,7 +24,7 @@ from .growth import emit_growth, growth_ids, reads_fields as growth_reads_fields
 from .inventory import emit_inventory, inventory_ids
 from .recruit import emit_recruit
 from .storage import emit_storage, storage_ids
-from .layout import ROLE_ABSENT
+from .layout import emit_layout_definition
 from .pipelines import point_handled
 
 ## Prefix of a record role's ID constant in the ids header (role_get / role_set).
@@ -385,33 +385,8 @@ def emit(src_name: str, c: Mapping[str, Any]) -> str:
          "};", "",
          # G3: the recruit rules (battlec/recruit.py; their own symbol, not a kData field)
          *emit_recruit(c.get("recruit")), "",
-         "} // namespace capsule::battle", "", "namespace capsule::monster {", "", "namespace {",
-         f"const uint16_t kOffsets[] = {{{', '.join(f'0x{x:04X}' for x in c['layout']['offsets'])}}};",
-         "static_assert(sizeof(kOffsets) / sizeof(kOffsets[0]) == static_cast<int>(Role::NUM_ROLES));",
-         f"const uint8_t kWidths[] = {{{', '.join(str(x) for x in c['layout']['widths'])}}};",
-         "static_assert(sizeof(kWidths) / sizeof(kWidths[0]) == static_cast<int>(Role::NUM_ROLES));",
-         f"const uint8_t kCounts[] = {{{', '.join(str(x) for x in c['layout']['counts'])}}};",
-         "static_assert(sizeof(kCounts) / sizeof(kCounts[0]) == static_cast<int>(Role::NUM_ROLES));"]
-   lay = c["layout"]
-   slots = lay["custom"] + lay["unstored"]
-   if slots:
-      # custom roles (D-22 decision 2): RoleSlot {name hash, initial value, offset, width, count}; the unstored ones
-      # (E13a) after the stored ones, without bits (offset kAbsent: computed on read)
-      L.append("const RoleSlot kCustom[] = {")
-      for cr in slots:
-         offset = cr["offset"] if "offset" in cr else f"0x{ROLE_ABSENT:04X}"
-         L.append(f"    {{0x{cr['name_hash']:08X}u, {cr['default']}u, {offset}, {cr['width']}, {cr['count']}}},"
-                  f"   // {cr['name']} (role 0x{cr['id']:02X}{'' if 'offset' in cr else ', unstored'})")
-      L.append("};")
-      L.append(f"static_assert(sizeof(kCustom) / sizeof(kCustom[0]) <= kMaxCustomRoles);")
-   L += [f"static_assert({lay['bytes']} <= kMaxRecordBytes, \"a larger record than this platform's engine holds\");",
-         f"static_assert({lay['party_size']} <= kMaxPartySize, \"a larger party than this platform's engine holds\");",
-         f"static_assert({lay['move_slots']} <= kMaxMoveSlots);",
-         "} // namespace", "",
-         f"const Layout kLayout = {{kOffsets, kWidths, kCounts, {'kCustom' if slots else 'nullptr'}, "
-         f"0x{lay['hash']:08X}u, {lay['bytes']}, {lay['stat_count']}, {lay['move_slots']}, {lay['party_size']}, "
-         f"{len(lay['custom'])}, {len(lay['unstored'])}, {{0}}, 0x{lay['record_hash']:08X}u}};",
-         "", "} // namespace capsule::monster", "", "namespace capsule::rules {", ""]
+         "} // namespace capsule::battle", "", *emit_layout_definition(c["layout"]),
+         "", "namespace capsule::rules {", ""]
    formulas = [st["formula"] for st in c["stats"]]
    L += rc.emit_functions(c["ruleset"], formulas)
    L += [""] + rc.emit_stat_dispatch(formulas)

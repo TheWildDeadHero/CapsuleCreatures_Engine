@@ -29,6 +29,13 @@
 /// (IDs never move) and no layout holds them as engine roles; a custom role of
 /// the same name and shape keeps the layout hash they gave.
 ///
+/// **The party part** (D-36 §3.1 G0): a layout may mark roles as held only by
+/// party members (battle stats, a level or status a game keeps only in its
+/// party). They are packed after every other role, from the next 32-bit word:
+/// a record's first Layout::box_bytes bytes are its box part, what storage
+/// keeps; the rest is the party part. A layout without party roles has
+/// box_bytes == record_bytes.
+///
 /// **Unstored custom roles** (E13a): a custom role the layout declares with
 /// "stored": false has a RoleSlot (name hash, width, count, initial) but no
 /// bits (RoleSlot::offset kAbsent): has() is false, get() reads 0 and set()
@@ -217,13 +224,15 @@ struct Layout
                               ///< from the registry, each custom role as (name hash, width, count), and the party
                               ///< size where it differs from kDefaultPartySize.
    uint16_t record_bytes;     ///< Bytes per record (<= kMaxRecordBytes).
+   uint16_t box_bytes;        ///< G0: bytes of the box part (the roles not marked "party"; a whole number of words),
+                              ///< what storage keeps; record_bytes when the layout has no party roles.
    uint8_t stat_count;        ///< Elements of each per-stat role (the game's stats).
    uint8_t move_slots;        ///< Elements of each per-move-slot role (1 to kMaxMoveSlots).
    uint8_t party_size;        ///< Members a party holds (1 to kMaxPartySize).
    uint8_t custom_count;      ///< Stored custom roles (0 to kMaxCustomRoles).
    uint8_t unstored_count;    ///< Unstored custom roles after them (E13a; custom_count + unstored_count <=
                               ///< kMaxCustomRoles).
-   uint8_t reserved[kPadAfterThreeBytes];   ///< Padding; 0.
+   uint8_t reserved[kPadAfterOneByte];   ///< Padding; 0.
    uint32_t record_hash;      ///< The record's shape alone: hash without the party size (C7; what the save image's
                               ///< party and boxes sections check, so a party that grows or shrinks keeps its saves).
 };

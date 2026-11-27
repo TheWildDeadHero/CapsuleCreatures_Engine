@@ -1405,6 +1405,23 @@ PLAIN_NAMES_CHANGES = {name: PLAIN_NAMES_SCRIPTS if name.startswith("test_script
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in PLAIN_NAMES_CHANGES.items()})
 
+## Why every layout output changed in D-36 §3.1 G0 (the party part of a record layout).
+LAYOUT_BOX_BYTES = ("kLayout gains box_bytes after record_bytes (the box part's bytes; the record's bytes without "
+                    "party roles); every table, hash and record size unchanged")
+## The G0 changes, appended to each output's history.
+LAYOUT_CHANGES = {name: LAYOUT_BOX_BYTES for name in (
+   "battle_conditions/test_battle.cpp", "battle_gaps/test_battle.cpp", "battle_moves/test_battle.cpp",
+   "battle_passives/test_battle.cpp", "battle_presenters/test_battle.cpp", "battle_progress/test_battle.cpp",
+   "battle_records/test_battle.cpp", "battle_resources/test_battle.cpp", "battle_slots2/test_battle.cpp",
+   "battle_stats3/test_battle.cpp", "battle_tiers/test_battle.cpp", "battle_turn/test_battle.cpp",
+   "battle_vm/test_battle.cpp", "combine/test_battle.cpp", "field/test_battle.cpp", "growth/test_battle.cpp",
+   "inventory/test_battle.cpp", "recruit/test_battle.cpp", "sandbox_map/battle.cpp", "sandbox_party/battle.cpp",
+   "starter/test_battle.cpp", "starter_battle/battle.cpp", "steps/test_battle.cpp", "test_battle/battle.cpp",
+   "transfer/transfer_four.cpp", "transfer/transfer_shuffled.cpp", "transfer/transfer_six.cpp",
+   "transfer/transfer_twin.cpp")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in LAYOUT_CHANGES.items()})
+
 def sequence_symbol(name: str) -> str:
    """Symbol CMakeLists.txt gives a test sequence: kSeq + the CamelCased file name.
    @param name  file name without .json
