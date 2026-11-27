@@ -26,6 +26,8 @@
 #include "capsule/monster/monster.h"
 #include "capsule/save/save.h"
 #include "capsule/script/data.h"
+#include "capsule/dex/dex.h"
+#include "capsule/script/port.h"
 #include "capsule/stats/stats.h"
 #include "capsule/storage/storage.h"
 
@@ -35,6 +37,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iterator>
 
 namespace capsule::hal::system
 {
@@ -180,6 +183,23 @@ bool commit()
 namespace
 {
 
+constexpr uint16_t kTestDexEntries = 20;   ///< G3: this build's dex (a project's "dex": {"entries": 20}).
+uint8_t g_dex_seen[capsule::dex::set_bytes(kTestDexEntries)] = {};     ///< Its seen set.
+uint8_t g_dex_caught[capsule::dex::set_bytes(kTestDexEntries)] = {};   ///< Its caught set.
+const capsule::dex::Data kTestDex = {kTestDexEntries, g_dex_seen, g_dex_caught};   ///< The build's dex.
+
+} // namespace
+
+/// G3: this build's dex, as capsule_game() writes it for a project's "dex" (replacing src/save/save.cpp's default).
+/// @return it
+const capsule::dex::Data* capsule::dex::data()
+{
+   return &kTestDex;
+}
+
+namespace
+{
+
 using namespace capsule;
 using namespace battle_ids;
 using save::Status;
@@ -211,6 +231,11 @@ constexpr uint32_t kWins = 3;          ///< G2: current.bin's wins (tests/test_s
 constexpr uint32_t kWalks = 40;        ///< G2: current.bin's walks.
 constexpr uint32_t kWalksMax = 500;    ///< G2: walks' max (stats.bin's 600 loads as this).
 constexpr uint32_t kHeldStats = 2;     ///< G2: the fixture's statistics the engine holds (wins, walks).
+constexpr uint16_t kDexEntries = kTestDexEntries;   ///< G3: this build's dex (tests/test_save_migration.py DEX_ENTRIES).
+constexpr uint16_t kCurrentSeen[] = {1, 9, 20};   ///< G3: current.bin's seen entries.
+constexpr uint16_t kCurrentCaught = 9;            ///< G3: its caught entry.
+constexpr uint16_t kSeenKept = 3;                 ///< G3: dex_more.bin's seen entry within this build's.
+constexpr uint16_t kCaughtKept = 4;               ///< G3: dex_fewer.bin's caught entry.
 constexpr uint32_t kWalkedMax = 500;   ///< walked's range top (script.bin holds 900).
 constexpr uint32_t kOldMood = 7;       ///< script.bin's mood.
 constexpr uint8_t kHeroCodes = 4;      ///< The name slot's capacity (script.bin held six codes).
@@ -397,6 +422,12 @@ void test_current()
    CHECK(flag_bit(script_ids::FLAG_LIT) && flag_bit(script_ids::FLAG_MET) && !flag_bit(script_ids::FLAG_FRESH));
    CHECK(var_value(script_ids::VAR_COINS) == kCoins);
    CHECK(stats::get(script_ids::STAT_WINS) == kWins && stats::get(script_ids::STAT_WALKS) == kWalks);   // G2
+   for (const uint16_t e : kCurrentSeen)   // G3
+   {
+      CHECK(dex::seen(e));
+   }
+   CHECK(dex::count(false, 1, kDexEntries) == std::size(kCurrentSeen) && dex::caught(kCurrentCaught) &&
+         dex::count(true, 1, kDexEntries) == 1);
    CHECK(notes.dropped_items == 0 && notes.clamped_items == 0 && notes.moved_records == 0);
    CHECK(notes.migrated_banks == 0 && notes.reset_banks == 0);
    wipe();
@@ -473,6 +504,49 @@ void test_stats()
    CHECK(read_all(&notes) == Status::Ok);
    CHECK(stats::get(script_ids::STAT_WINS) == kWins && stats::get(script_ids::STAT_WALKS) == kWalks);
    CHECK(save::section_size(save::Section::Stats) == save::kStatsHeadBytes + kHeldStats * save::kStatEntryBytes);
+}
+
+/// G3: the dex piece over this build's 20 entries: entry 0 and past N read 0 and take nothing; set and clear; counts
+/// over a range; the port's defaults count and read the sets; the Dex section from a build with more entries (the
+/// entry past this build's dropped, noted) and one with fewer (the rest clear); an older image leaves the dex empty.
+void test_dex()
+{
+   constexpr uint16_t kLast = kDexEntries;
+   constexpr uint16_t kPast = kDexEntries + 1;
+   constexpr uint16_t kSome = 7;
+   dex::clear();
+   CHECK(dex::entries() == kDexEntries && !dex::seen(dex::kNoEntry) && !dex::seen(kPast));
+   dex::set_seen(dex::kNoEntry);
+   dex::set_seen(kPast);
+   CHECK(dex::count(false, 0, dex::kMaxEntries) == 0);
+   dex::set_seen(1);
+   dex::set_seen(kLast);
+   dex::set_caught(kSome);
+   CHECK(dex::seen(1) && dex::seen(kLast) && !dex::seen(kSome) && dex::caught(kSome) && !dex::caught(1));
+   CHECK(dex::count(false, 1, kLast) == 2 && dex::count(false, 2, kLast) == 1 && dex::count(true, 1, kPast) == 1);
+   CHECK(script::dex::count(false, true) == 2 && script::dex::count(true, false) == 1);   // the port's defaults
+   CHECK(script::dex::species(true, kSome) == 1 && script::dex::species(false, kSome) == 0 &&
+         script::dex::species(false, 0) == 0 && script::dex::complete(true) == 0 && script::dex::national() == 0);
+   dex::set_seen(kLast, false);
+   CHECK(!dex::seen(kLast) && dex::count(false, 1, kLast) == 1);
+   save::Notes notes{};
+   put_image("dex_more.bin");
+   CHECK(read_all(&notes) == Status::Ok && notes.dropped_dex == 1);
+   CHECK(dex::seen(kSeenKept) && dex::count(false, 1, kLast) == 1 && dex::count(true, 1, kLast) == 0);
+   put_image("dex_fewer.bin");
+   CHECK(read_all(&notes) == Status::Ok && notes.dropped_dex == 0);
+   CHECK(dex::caught(kCaughtKept) && dex::count(true, 1, kLast) == 1 && dex::count(false, 1, kLast) == 0);
+   put_image("items.bin");
+   CHECK(read_all(&notes) == Status::Ok && dex::count(true, 1, kLast) == 0);
+   // a round trip through this build's image
+   dex::set_seen(kSome);
+   dex::set_caught(kLast);
+   wipe();
+   CHECK(save::write(all()) == Status::Ok);
+   dex::clear();
+   CHECK(read_all(&notes) == Status::Ok && dex::seen(kSome) && dex::caught(kLast) && dex::count(false, 1, kLast) == 1);
+   CHECK(save::section_size(save::Section::Dex) ==
+         save::kDexHeadBytes + save::kDexSets * dex::set_bytes(kDexEntries));
 }
 
 /// What cannot migrate is refused and nothing changes.
@@ -750,6 +824,7 @@ int main(int argc, char** argv)
    test_current();
    test_migrations();
    test_stats();
+   test_dex();
    test_refusals();
    test_copy_through();
    test_torn_writes();

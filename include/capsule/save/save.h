@@ -121,6 +121,8 @@ inline constexpr uint32_t kClockBytesNoEvents = 14;   ///< M6a K4: a version-1 C
 inline constexpr uint32_t kPlotsHeadBytes = 2;      ///< M6a K2: Plots: the record count.
 inline constexpr uint32_t kStatsHeadBytes = 1;      ///< G2: Stats: the stat count.
 inline constexpr uint32_t kStatEntryBytes = 8;      ///< G2: Stats: per stat its key (4) and value (4).
+inline constexpr uint32_t kDexHeadBytes = 2;        ///< G3: Dex: the entry count (then the seen set, the caught set).
+inline constexpr uint32_t kDexSets = 2;             ///< G3: Dex: its sets (seen, caught).
 ///@}
 
 /// The save budget of this platform (build_settings PLATFORM_LIMITS max_save_bytes; tools/save_layout.py media).
@@ -144,6 +146,7 @@ enum class Section : uint8_t
    Clock,        ///< M6a K1: the clock's saved state (absent when the world declares no clock: clock::settings()).
    Plots,        ///< M6a K2: the plots' records (absent without engine plot records: plots::data()).
    Stats,        ///< G2: the game statistics the engine holds (absent without them: capsule/stats/stats.h).
+   Dex,          ///< G3: the dex's seen and caught sets (absent without a dex: capsule/dex/dex.h).
    NUM_SECTIONS  ///< Number of sections.
 };
 /// Number of sections.
@@ -203,6 +206,7 @@ struct Notes
    uint16_t dropped_flags;    ///< Set flags a remap dropped (renamed or removed since; C7).
    uint16_t dropped_vars;     ///< Non-zero variables and non-empty name slots a remap dropped (C7).
    uint8_t dropped_stats;     ///< G2: non-zero statistics this build does not hold (renamed or removed since).
+   uint16_t dropped_dex;      ///< G3: seen or caught entries past this build's dex (a build with fewer entries).
 };
 
 /// Room the caller lends a read for the sections past the built-in stage (C7; GBA: the storage boxes, about the

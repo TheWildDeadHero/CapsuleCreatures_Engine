@@ -842,8 +842,9 @@ int32_t poll();
 
 } // namespace capsule::script::boxes
 
-/// C21: the species records, which the game owns (the Dex statement). The defaults (the end of src/script/script.cpp)
-/// answer none: the engine keeps no records yet. "Regional" and "complete" are the game's own rules.
+/// C21: the species records (the Dex statement). G3: the defaults (src/script/script_dex.cpp) answer from the
+/// engine's records (capsule/dex/dex.h: every entry for both counts, the id as the entry); "regional", "complete"
+/// and the national mode are the game's own rules (0 and nothing by default).
 namespace capsule::script::dex
 {
 

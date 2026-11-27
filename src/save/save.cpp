@@ -11,10 +11,13 @@
 #include "capsule/save/save.h"
 
 #include "capsule/core/memory.h"
+#include "capsule/dex/dex.h"
 #include "capsule/exclude_config.h"
 #include "capsule/hal/save.h"
 #include "capsule/script/data.h"
 #include "capsule/stats/stats.h"
+
+#include <initializer_list>
 
 namespace capsule::save
 {
@@ -52,6 +55,7 @@ constexpr uint8_t kClockVersion = 2;      ///< M6a K1: the clock's saved state (
 constexpr uint8_t kClockVersionNoEvents = 1;   ///< M6a K4: the Clock section before the last events day (loads).
 constexpr uint8_t kPlotsVersion = 1;      ///< M6a K2: the plots' records.
 constexpr uint8_t kStatsVersion = 1;      ///< G2: the game statistics by key.
+constexpr uint8_t kDexVersion = 1;        ///< G3: the dex's two sets.
 ///@}
 /// Copies of the image a medium keeps at most (the older one takes the next write).
 constexpr int kMaxCopies = 2;
@@ -1035,6 +1039,60 @@ void decode_stats(Source& s, bool store, Notes* notes)
    }
 }
 
+// -- Dex (G3) ------------------------------------------------------------------------------------------------------
+
+/// The entry count, then the seen set, then the caught set (each dex::set_bytes(entries) bytes).
+/// @param s  the sink
+void encode_dex(Sink& s)
+{
+   const dex::Data* d = dex::data();
+   put_le(s, d->entries, kU16Bytes);
+   for (const uint8_t* set : {d->seen, d->caught})
+   {
+      for (uint32_t i = 0; i < dex::set_bytes(d->entries); ++i)
+      {
+         put_le(s, set[i], 1);
+      }
+   }
+}
+
+/// Loads (or only checks) the two sets: entries past this build's are dropped (noted when set), entries past the
+/// image's stay clear.
+/// @param s      the source over the section
+/// @param store  false: only checked
+/// @param notes  what migrating changed, or nullptr
+void decode_dex(Source& s, bool store, Notes* notes)
+{
+   if (store)
+   {
+      dex::clear();
+   }
+   const auto saved = static_cast<uint16_t>(next_le(s, kU16Bytes));
+   for (const bool caught : {false, true})
+   {
+      for (uint32_t i = 0; i < dex::set_bytes(saved); ++i)
+      {
+         const auto byte = static_cast<uint8_t>(next_le(s, 1));
+         for (uint32_t b = 0; b < dex::kBitsPerByte && store; ++b)
+         {
+            const uint32_t entry = i * dex::kBitsPerByte + b + 1;   // entries start at 1
+            if ((byte & (1u << b)) == 0 || entry > saved)
+            {
+               continue;
+            }
+            if (entry <= dex::entries())
+            {
+               dex::mark(caught, static_cast<uint16_t>(entry), true);
+            }
+            else if (notes != nullptr)
+            {
+               ++notes->dropped_dex;
+            }
+         }
+      }
+   }
+}
+
 // -- Nursery (B2) --------------------------------------------------------------------------------------------------
 
 /// The build's nursery slots (its data only: a program that saves needs no nursery code).
@@ -1636,6 +1694,8 @@ uint8_t version_of(Section id)
       return kPlotsVersion;
    case Section::Stats:
       return kStatsVersion;
+   case Section::Dex:
+      return kDexVersion;
    default:
       return kScriptVersion;
    }
@@ -1672,6 +1732,9 @@ void encode(Sink& s, Section id, const Sources& src)
       break;
    case Section::Stats:
       encode_stats(s);   // G2: the script bank's, as the Script section is
+      break;
+   case Section::Dex:
+      encode_dex(s);     // G3: the build's dex (dex::data())
       break;
    default:
       encode_script(s);
@@ -1747,6 +1810,9 @@ Status decode(Source& s, Section id, const Sources& dst, bool store, Notes* note
    case Section::Stats:
       decode_stats(s, store, notes);
       return Status::Ok;
+   case Section::Dex:
+      decode_dex(s, store, notes);
+      return Status::Ok;
    default:
       return decode_script(s, store, notes);
    }
@@ -1788,6 +1854,9 @@ void load_empty(Section id, const Sources& dst)
       break;
    case Section::Stats:
       stats::clear();   // G2: a save from before the stats: every one at 0
+      break;
+   case Section::Dex:
+      dex::clear();     // G3: a save from before the dex: nothing seen or caught
       break;
    default:
    {
@@ -1871,6 +1940,9 @@ uint32_t section_size(Section s)
       const uint32_t held = held_stats();   // G2: only a build whose scripts manifest has stats without a variable
       return held == 0 ? 0 : kStatsHeadBytes + held * kStatEntryBytes;
    }
+   case Section::Dex:
+      // G3: only a build whose project declares a dex
+      return dex::entries() == 0 ? 0 : kDexHeadBytes + kDexSets * dex::set_bytes(dex::entries());
    case Section::Script:
    {
       uint32_t n = 0;
@@ -2206,6 +2278,14 @@ CAPSULE_WEAK const capsule::clock::Settings* capsule::clock::settings()
 /// here, with the save, like clock::settings()).
 /// @return nullptr
 CAPSULE_WEAK const capsule::plots::Data* capsule::plots::data()
+{
+   return nullptr;
+}
+
+/// D-36 §3.1 G3: the engine's default: no dex (a project whose project.json declares "dex" defines it, capsule_game();
+/// here, with the save, like plots::data()).
+/// @return nullptr
+CAPSULE_WEAK const capsule::dex::Data* capsule::dex::data()
 {
    return nullptr;
 }

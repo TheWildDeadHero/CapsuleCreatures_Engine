@@ -15,7 +15,8 @@ add_custom_command(
    DEPFILE ${CAPSULE_GENERATED_DIR}/save_script.d
    COMMENT "Compiling the save fixture's scripts")
 capsule_battle_test(save_tests ${CAPSULE_ROOT}/tests/data/recruit/battle.json
-                    SOURCES tests/save_tests.cpp src/save/save.cpp ${CAPSULE_GENERATED_DIR}/save_script.cpp
+                    SOURCES tests/save_tests.cpp src/save/save.cpp src/script/script_dex.cpp
+                            ${CAPSULE_GENERATED_DIR}/save_script.cpp
                             ${CAPSULE_GENERATED_DIR}/save_script_ids.h
                     DIR save
                     ARGS ${CAPSULE_ROOT}/tests/data/save)
@@ -24,7 +25,8 @@ add_test(NAME save_migration_tests
          COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_save_migration.py)
 # C7: the same tests with a small built-in stage (64 bytes: the bag fits, the other sections need the caller's
 # Stage), as on the GBA where the storage boxes do not fit its 2 KB stage
-add_executable(capsule_save_stage_tests tests/save_tests.cpp src/save/save.cpp ${CAPSULE_GENERATED_DIR}/save_script.cpp
+add_executable(capsule_save_stage_tests tests/save_tests.cpp src/save/save.cpp src/script/script_dex.cpp
+               ${CAPSULE_GENERATED_DIR}/save_script.cpp
                ${CAPSULE_GENERATED_DIR}/save_script_ids.h)
 target_link_libraries(capsule_save_stage_tests PRIVATE capsule_save_tests_data)
 target_include_directories(capsule_save_stage_tests PRIVATE ${CAPSULE_GENERATED_DIR})

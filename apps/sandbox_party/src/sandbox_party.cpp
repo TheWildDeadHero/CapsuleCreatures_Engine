@@ -19,6 +19,7 @@
 #include "capsule/core/clock.h"
 #include "capsule/core/memory.h"
 #include "capsule/core/random.h"
+#include "capsule/dex/dex.h"
 #include "capsule/gfx/background.h"
 #include "capsule/gfx/palette.h"
 #include "capsule/gfx/sprites.h"
@@ -207,9 +208,13 @@ void fresh_state()
 {
    g_party = monster::Party{};
    rng::Stream r{kRecordSeed};
+   dex::clear();
    for (int k = 0; k < kMembers; ++k)
    {
       bt::make_monster(g_party.members[k], kSpecies[k], kLevels[k], r);
+      // G3: the project's dex numbers the sample's species from 1 (species index + 1); a member is seen and caught
+      dex::set_seen(static_cast<uint16_t>(kSpecies[k] + 1));
+      dex::set_caught(static_cast<uint16_t>(kSpecies[k] + 1));
    }
    g_party.count = kMembers;
    monster::Record& lead = g_party.members[kLead];
