@@ -21,7 +21,9 @@ Sections (most bytes; each section carries its own shape, so a save survives man
     cycle, the stages planted ahead, the modifier); absent unless the world declares plots the engine keeps
     (--world; "storage": "game" keeps none);
   - Stats (G2): 1 (stat count), then 8 per statistic the engine holds (its key, FNV-1a 32 of "stat:NAME", and its
-    value); absent unless the scripts manifest has stats without a variable (--scripts).
+    value); absent unless the scripts manifest has stats without a variable (--scripts);
+  - Dex (G3): 2 (entry count), then the seen set and the caught set (one bit per entry, rounded up to bytes each);
+    absent unless the project declares a dex (--dex N: project.json "dex": {"entries": N}).
 The image adds a 32-byte header and 12 bytes per section in its table (G2: format version 3, up to 12 sections;
 version 2 images, up to 8, still read).
 
@@ -38,7 +40,7 @@ Script save shapes (C7): with --scripts, a game that keeps a save history must h
 sub-bank's shape (tools/save_shape.py unrecorded()); the build fails otherwise.
 
 Usage:
-  save_layout.py battle.json [--scripts scripts.json] [--world world.json] [--platform P] [--single-copy]
+  save_layout.py battle.json [--scripts scripts.json] [--world world.json] [--dex N] [--platform P] [--single-copy]
                  [--out report.txt]
 prints (and writes) the report; exit status 1 when the image is over the medium, the medium keeps fewer than two
 copies without --single-copy, a script save shape is not recorded in the game's save history, or a manifest is
@@ -89,10 +91,10 @@ SUB_BANK_HEAD_BYTES = 7
 ## Bits per byte of the storage's used bits (capsule::storage::kUsedBitsPerByte).
 USED_BITS_PER_BYTE = 8
 ## Section names in id order (capsule::save::Section).
-SECTIONS = ("bag", "party", "boxes", "script", "nursery", "game", "clock", "plots", "stats")
+SECTIONS = ("bag", "party", "boxes", "script", "nursery", "game", "clock", "plots", "stats", "dex")
 ## Each section's version (src/save/save.cpp k*Version).
 SECTION_VERSIONS = {"bag": 2, "party": 1, "boxes": 1, "script": 1, "nursery": 1, "game": 1, "clock": 2, "plots": 1,
-                    "stats": 1}
+                    "stats": 1, "dex": 1}
 ## M6a K1: the Clock section's bytes (capsule::save::kClockBytes).
 CLOCK_BYTES = 18
 ## M6a K2: the Plots section's head (capsule::save::kPlotsHeadBytes: the record count).
@@ -105,6 +107,12 @@ PLOTS_GAME_STORAGE = "game"
 STATS_HEAD_BYTES = 1
 ## G2: bytes per statistic (kStatEntryBytes: its key 4, its value 4).
 STAT_ENTRY_BYTES = 8
+## G3: the Dex section's head (capsule::save::kDexHeadBytes: the entry count).
+DEX_HEAD_BYTES = 2
+## G3: its sets (kDexSets: seen, caught).
+DEX_SETS = 2
+## G3: entries per byte of a set (capsule::dex::kBitsPerByte).
+DEX_BITS_PER_BYTE = 8
 ## N3: the Game section's head: the game's version of its block (2) and its bytes (4).
 GAME_HEAD_BYTES = 6
 ## Copies the medium keeps at most.
@@ -180,7 +188,8 @@ def script_bytes(banks: Sequence[Mapping[str, Any]]) -> int:
 
 
 def sections_of(compiled: Mapping[str, Any], banks: Sequence[Mapping[str, Any]] = (),
-                game_bytes: int = 0, clock: bool = False, plots: int = 0, stats: int = 0) -> dict[str, int]:
+                game_bytes: int = 0, clock: bool = False, plots: int = 0, stats: int = 0,
+                dex: int = 0) -> dict[str, int]:
    """!The most bytes of each section of a compiled battle and its scripts.
    @param compiled    bc.compile_battle() result
    @param banks       script_banks() result
@@ -188,8 +197,10 @@ def sections_of(compiled: Mapping[str, Any], banks: Sequence[Mapping[str, Any]] 
    @param clock       M6a K1: the world declares a clock
    @param plots       M6a K2: the world's plot places the engine keeps records for (0: none)
    @param stats       G2: the statistics the engine holds (held_stats(); 0: none)
+   @param dex         G3: the project's dex entries (0: none)
    @return {section: bytes} in id order (0: no such section; "game" only with a game block, "clock" only with a
-           clock, "plots" only with engine plot records, "stats" only with held statistics)
+           clock, "plots" only with engine plot records, "stats" only with held statistics, "dex" only with a
+           dex)
    """
    inv = compiled["inventory"]
    lay = compiled["layout"]
@@ -206,7 +217,17 @@ def sections_of(compiled: Mapping[str, Any], banks: Sequence[Mapping[str, Any]] 
       out["plots"] = PLOTS_HEAD_BYTES + plots * PLOT_RECORD_BYTES
    if stats:
       out["stats"] = STATS_HEAD_BYTES + stats * STAT_ENTRY_BYTES
+   if dex:
+      out["dex"] = DEX_HEAD_BYTES + DEX_SETS * dex_set_bytes(dex)
    return out
+
+
+def dex_set_bytes(entries: int) -> int:
+   """!G3: the bytes one dex set takes (capsule::dex::set_bytes()).
+   @param entries  the dex's entries
+   @return its bytes
+   """
+   return (entries + DEX_BITS_PER_BYTE - 1) // DEX_BITS_PER_BYTE
 
 
 def held_stats(comp: Any) -> list[int]:
@@ -288,13 +309,14 @@ def medium(platform: str) -> tuple[str, int, int]:
 
 
 def layout(battle: str | Path, scripts: str | Path | None = None, platform: str | None = None,
-           single_copy: bool = False, world: str | Path | None = None) -> dict[str, Any]:
+           single_copy: bool = False, world: str | Path | None = None, dex: int = 0) -> dict[str, Any]:
    """!The save image of a game for one save platform.
    @param battle       the battle manifest
    @param scripts      the scripts manifest, or None
    @param platform     a save platform (medium(); None: the GBA's flash)
    @param single_copy  the game opts in to one copy
    @param world        M6a K1: the world manifest (its clock; M6a K2: its plots), or None
+   @param dex          G3: the project's dex entries (0: none)
    @return {"sections": {name: bytes}, "image": bytes, "budget": the medium's bytes, "unit": its erase unit,
            "slot": a copy's slot, "copies": copies it holds, "platform": name, "single_copy", "unrecorded": the
            script sub-banks whose save shape the game's save history lacks (C7), "ok": the image fits, enough
@@ -308,7 +330,7 @@ def layout(battle: str | Path, scripts: str | Path | None = None, platform: str 
    banks = save_shape.shapes(comp) if comp is not None else []
    unrecorded = save_shape.unrecorded(comp, comp.save_history) if comp is not None else []
    sections = sections_of(compiled, banks, clock=world_has_clock(world), plots=world_plot_places(world),
-                          stats=len(held_stats(comp)))
+                          stats=len(held_stats(comp)), dex=dex)
    size = image_bytes(sections)
    copies = copies_of(size, budget, unit)
    needed = 1 if single_copy else REQUIRED_COPIES
@@ -543,6 +565,22 @@ def stats_payload(values: Sequence[tuple[int, int]]) -> bytes:
    return bytes([len(values)]) + b"".join(u32(k) + u32(v) for k, v in values) if values else b""
 
 
+def dex_payload(entries: int, seen: Sequence[int], caught: Sequence[int]) -> bytes:
+   """!G3: the Dex section: the entry count, then the seen and caught sets.
+   @param entries  the dex's entries
+   @param seen     the entries seen (1 to entries)
+   @param caught   the entries caught
+   @return the bytes
+   """
+   out = u16(entries)
+   for marked in (seen, caught):
+      bits = bytearray(dex_set_bytes(entries))
+      for e in marked:
+         bits[(e - 1) // DEX_BITS_PER_BYTE] |= 1 << ((e - 1) % DEX_BITS_PER_BYTE)
+      out += bytes(bits)
+   return out
+
+
 def game_payload(block: bytes, version: int) -> bytes:
    """!N3: the Game section: the game's version of its block, its size and its bytes.
    @param block    the game's block
@@ -622,7 +660,7 @@ def main(argv: Sequence[str]) -> int:
    if single:
       args.remove("--single-copy")
    opts: dict[str, str] = {}
-   for flag in ("--scripts", "--platform", "--out", "--world"):
+   for flag in ("--scripts", "--platform", "--out", "--world", "--dex"):
       if flag in args:
          i = args.index(flag)
          if i + 1 >= len(args):
@@ -634,8 +672,9 @@ def main(argv: Sequence[str]) -> int:
       print(__doc__)
       return EXIT_USAGE
    try:
-      result = layout(args[0], opts.get("--scripts"), opts.get("--platform"), single, opts.get("--world"))
-   except (bc.ManifestError, build_settings.SettingsError, OSError, json.JSONDecodeError) as e:
+      result = layout(args[0], opts.get("--scripts"), opts.get("--platform"), single, opts.get("--world"),
+                      int(opts.get("--dex", "0")))
+   except (ValueError, bc.ManifestError, build_settings.SettingsError, OSError, json.JSONDecodeError) as e:
       print(f"error: {e}", file=sys.stderr)
       return EXIT_FAILED
    text = report(result, Path(args[0]).name)

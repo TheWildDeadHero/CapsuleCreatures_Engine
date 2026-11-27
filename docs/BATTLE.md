@@ -730,6 +730,19 @@ platform's limits; it replaces the engine's empty default
 (`src/inventory/inventory_empty.cpp`). A game names either `"battle"` or
 `"inventory"`, not both.
 
+**The dex** (D-36 §3.1 G3, `capsule/dex/dex.h`): a project declares its dex
+in its `project.json` (`"dex": {"entries": N}`, 1 to 65535): two bit sets,
+seen and caught, over entries 1 to N (the game numbers its species).
+`capsule_game()` writes their source (`capsule_dex_source()`: `dex::data()`
+and the sets in EWRAM); without it `data()` is nullptr and every query answers
+0. `seen()`, `caught()`, `set_seen()`, `set_caught()` (caught does not imply
+seen), `count(caught, first, last)`, `clear()` (a new game). The save image's
+Dex section holds the entry count and both sets: an image from a build with
+more entries drops the ones past this build's (`Notes::dropped_dex`), one with
+fewer leaves the rest clear. The Dex statement's port defaults
+(`src/script/script_dex.cpp`) count and read the sets; a regional list, a
+completion rule and the national mode are the game's own (it replaces them).
+
 **Item use out of battle** (`capsule/inventory/use.h`): a `FieldUse` scope
 opens a field context (`capsule/battle/field_context.h`: the party member's
 record as battler 0 of a one-battler State the game lends, its held item and

@@ -2,7 +2,7 @@
   "schema": "capsule.project/1",
   "name": "sandbox_party",
   "editor": {
-    "notes": "The inventory's sandbox (G2, D-26 section 2): the Starter sample's party and bag with a minimal presentation (the test kit's console, bars of plain cells): pools and status per member, the bag's pockets with item use out of battle (the use_field hook in a field context), the Starter's shops, and the engine save image on the platform's medium (GBA flash, a desktop file). Laid out like a game: engine (linked), this reference manifest, the sample's battle data by relative path, src/ (scene code)."
+    "notes": "The inventory's sandbox (G2, D-26 section 2): the Starter sample's party and bag with a minimal presentation (the test kit's console, bars of plain cells): pools and status per member, the bag's pockets with item use out of battle (the use_field hook in a field context), the Starter's shops, and the engine save image on the platform's medium (GBA flash, a desktop file). G3: a dex of the sample's 19 species (numbered species index + 1), its members seen and caught, saved in the Dex section. Laid out like a game: engine (linked), this reference manifest, the sample's battle data by relative path, src/ (scene code)."
   },
   "rom": {
     "title": "PARTY",
@@ -15,5 +15,6 @@
   "libraries": [
     "test_kit"
   ],
-  "battle": "../../samples/starter/battle.json"
+  "battle": "../../samples/starter/battle.json",
+  "dex": {"entries": 19}
 }

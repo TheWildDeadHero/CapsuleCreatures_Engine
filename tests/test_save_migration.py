@@ -189,6 +189,22 @@ def range_script_payload() -> bytes:
    return bytes([1, labels.index("vars.permanent")]) + sl.u32(h) + sl.u16(len(variables)) + variables
 
 
+## G3: the save tests' dex entries (tests/save_tests.cpp kDexEntries).
+DEX_ENTRIES = 20
+## G3: current.bin's seen entries (kCurrentSeen) and caught ones (kCurrentCaught).
+CURRENT_SEEN = (1, 9, 20)
+## G3: likewise caught.
+CURRENT_CAUGHT = (9,)
+## G3: dex_more.bin's build had more entries; one seen entry it kept and one past this build's (dropped).
+MORE_DEX_ENTRIES = 30
+## G3: dex_more.bin's kept seen entry (kSeenKept).
+SEEN_KEPT = 3
+## G3: its seen entry past this build's entries.
+SEEN_PAST = 25
+## G3: dex_fewer.bin's build had fewer entries; its caught entry (kCaughtKept).
+FEWER_DEX_ENTRIES = 10
+## G3: likewise caught.
+CAUGHT_KEPT = 4
 ## G2: current.bin's statistics (wins, walks; tests/save_tests.cpp kWins / kWalks).
 CURRENT_STATS = (3, 40)
 ## G2: stats.bin's walks, past its max of 500 (it loads as 500).
@@ -232,7 +248,8 @@ def images() -> dict[str, bytes]:
       "party": sl.party_payload(current, [rec]),
       "boxes": sl.boxes_payload(current, {4: rec}, 1),
       "script": sl.script_payload(script_banks(), {"flags.permanent": bytes([0b011]), "vars.permanent": sl.u32(5)}),
-      "stats": sl.stats_payload(list(zip(stat_keys(), CURRENT_STATS)))})
+      "stats": sl.stats_payload(list(zip(stat_keys(), CURRENT_STATS))),
+      "dex": sl.dex_payload(DEX_ENTRIES, CURRENT_SEEN, CURRENT_CAUGHT)})
    # items reordered, Beacon added since, a Relic removed since
    old = variant(old_items, edit_logic=without_beacon)
    out["items.bin"] = older_image({"bag": sl.bag_entries_payload(old, bag_of(old, {
@@ -306,6 +323,9 @@ def images() -> dict[str, bytes]:
    # (0)
    _wins, walks = stat_keys()
    out["stats.bin"] = sl.assemble({"stats": sl.stats_payload([(walks, WALKS_PAST_MAX), (REMOVED_STAT_KEY, 1)])})
+   # G3: a build with more entries wrote it (one seen past this build's: dropped, noted), and one with fewer
+   out["dex_more.bin"] = sl.assemble({"dex": sl.dex_payload(MORE_DEX_ENTRIES, (SEEN_KEPT, SEEN_PAST), ())})
+   out["dex_fewer.bin"] = sl.assemble({"dex": sl.dex_payload(FEWER_DEX_ENTRIES, (), (CAUGHT_KEPT,))})
    # C7: the sequence wrap: 0 follows 0xFFFFFFFF
    out["wrap_old.bin"] = older_image({"party": sl.party_payload(current, [bytes([0x61] * size)])}, LAST_SEQUENCE)
    out["wrap_new.bin"] = older_image({"party": sl.party_payload(current, [bytes([0x62] * size)])}, 0)
@@ -328,7 +348,7 @@ class ImageTests(unittest.TestCase):
    def test_current_sizes(self) -> None:
       """!The current image is within the build's most bytes (the engine's image_size())."""
       current = bc.compile_battle(RECRUIT / "battle.json", platform=PLATFORM)
-      sections = sl.sections_of(current, script_banks(), stats=len(stat_keys()))
+      sections = sl.sections_of(current, script_banks(), stats=len(stat_keys()), dex=DEX_ENTRIES)
       self.assertLessEqual(len(images()["current.bin"]), sl.image_bytes(sections))
       self.assertEqual(sections["script"], 1 + 5 * 7 + 1 + 1 + 7 + 1 + 5)
 

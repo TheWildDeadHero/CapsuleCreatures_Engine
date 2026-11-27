@@ -3714,41 +3714,7 @@ CAPSULE_WEAK const text::Code* text_buffer(int32_t index)
 
 } // namespace capsule::script::world
 
-namespace capsule::script::dex
-{
-
-// C21: the engine keeps no dex records yet, so the defaults answer none; a game with records defines these
-
-CAPSULE_WEAK int32_t count(bool caught, bool regional)
-{
-   (void)caught;
-   (void)regional;
-   return 0;
-}
-
-CAPSULE_WEAK int32_t species(bool caught, int32_t id)
-{
-   (void)caught;
-   (void)id;
-   return 0;
-}
-
-CAPSULE_WEAK int32_t complete(bool regional)
-{
-   (void)regional;
-   return 0;
-}
-
-CAPSULE_WEAK int32_t national()
-{
-   return 0;
-}
-
-CAPSULE_WEAK void enable_national()
-{
-}
-
-} // namespace capsule::script::dex
+// G3: the dex port's defaults are src/script/script_dex.cpp (the engine's records) and script_dex_none.cpp
 
 namespace capsule::script::port
 {
