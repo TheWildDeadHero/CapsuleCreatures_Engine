@@ -196,6 +196,8 @@ def images() -> dict[str, bytes]:
    current = bc.compile_battle(RECRUIT / "battle.json", platform=PLATFORM)
    size = current["layout"]["bytes"]
    out = {}
+   # G1: images of older builds keep their version-1 bag (entries); the current shapes write version 2
+   v1 = {"bag": sl.BAG_VERSION_ENTRIES}
    # the current shapes: every section, the Python bytes are the engine's
    rec = bytes(range(1, size + 1))
    out["current.bin"] = sl.assemble({
@@ -205,8 +207,8 @@ def images() -> dict[str, bytes]:
       "script": sl.script_payload(script_banks(), {"flags.permanent": bytes([0b011]), "vars.permanent": sl.u32(5)})})
    # items reordered, Beacon added since, a Relic removed since
    old = variant(old_items, edit_logic=without_beacon)
-   out["items.bin"] = sl.assemble({"bag": sl.bag_payload(old, bag_of(old, {
-      "goods": [("Ether", 3), ("Salve", 2), ("Relic", 1)], "key": [("Badge", 1)]}))})
+   out["items.bin"] = sl.assemble({"bag": sl.bag_entries_payload(old, bag_of(old, {
+      "goods": [("Ether", 3), ("Salve", 2), ("Relic", 1)], "key": [("Badge", 1)]}))}, versions=v1)
    # the orbs pocket added since: Lure and Snare were goods
    def no_orbs(structure: JsonDict) -> None:
       """!The pockets before orbs."""
@@ -218,8 +220,8 @@ def images() -> dict[str, bytes]:
          if i.get("pocket") == "orbs":
             i["pocket"] = "goods"
    old = variant(orbs_in_goods, no_orbs)
-   out["pockets.bin"] = sl.assemble({"bag": sl.bag_payload(old, bag_of(old, {
-      "goods": [("Salve", 1), ("Lure", 2), ("Snare", 1)]}))})
+   out["pockets.bin"] = sl.assemble({"bag": sl.bag_entries_payload(old, bag_of(old, {
+      "goods": [("Salve", 1), ("Lure", 2), ("Snare", 1)]}))}, versions=v1)
    # goods held up to 20 before: 12 Salves clamp to today's 5 (review4 finding 2)
    def more_goods(structure: JsonDict) -> None:
       """!goods quantity_max 20."""
@@ -227,7 +229,8 @@ def images() -> dict[str, bytes]:
          if p["name"] == "goods":
             p["quantity_max"] = 20
    old = variant(edit_structure=more_goods)
-   out["quantity.bin"] = sl.assemble({"bag": sl.bag_payload(old, bag_of(old, {"goods": [("Salve", 12)]}))})
+   out["quantity.bin"] = sl.assemble({"bag": sl.bag_entries_payload(old, bag_of(old, {"goods": [("Salve", 12)]}))},
+                                     versions=v1)
    # three boxes of two before (today two of three): slot 0 stays, slot 3 (box 1, place 1) stays in its box and
    # place, slot 5 (box 2) moves to the first free slot; the current box 2 is box 1 now
    def boxes_3x2(structure: JsonDict) -> None:
@@ -242,8 +245,8 @@ def images() -> dict[str, bytes]:
       structure["storage"] = {"box_count": 4, "box_size": 3, "names": "Old {n}"}
    old = variant(edit_structure=boxes_4x3)
    out["boxes_full.bin"] = sl.assemble({
-      "bag": sl.bag_payload(old, bag_of(old, {"goods": [("Salve", 4)]})),
-      "boxes": sl.boxes_payload(old, {k: bytes([k] * size) for k in range(7)}, 0)})
+      "bag": sl.bag_entries_payload(old, bag_of(old, {"goods": [("Salve", 4)]})),
+      "boxes": sl.boxes_payload(old, {k: bytes([k] * size) for k in range(7)}, 0)}, versions=v1)
    # the script banks of older shapes (recorded remaps, a transient bank without one)
    out["script.bin"] = sl.assemble({"script": old_script_payload()})
    # a permanent bank of a shape nobody recorded: refused

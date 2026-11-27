@@ -9,12 +9,17 @@
 ///   - the section table (kSectionEntryBytes each: id, the section's own version, size, checksum over its bytes);
 ///   - the sections in table order. Each section carries the shape it was written in, so a build whose manifests
 ///     changed still reads it (C6: per-section migration; a section is refused only when it cannot be migrated):
-///     - Bag: the entry count, then per filled slot its item's stable key (capsule/inventory/data.h item_keys) and
-///       count, pocket by pocket. Loading adds each entry to an empty bag: an item the build does not have is
-///       dropped, a count over its pocket's quantity_max is clamped, an entry its pocket has no room for is dropped
-///       (Notes counts each); items may be added, removed or reordered and pockets added, removed or resized. Keys
-///       are FNV-1a 32 of the item's name (no item has key 0: a build error, C7); a removed item's key equals a
-///       new item's with a chance of about one in 2^32 per pair, and its old entries then load as the new item;
+///     - Bag (version 2, D-36 §3.1 G1): the pocket count, then per pocket (stores included, in table order) its
+///       slot count and each slot as it is: its item's stable key (capsule/inventory/data.h item_keys; 0 for an
+///       empty slot a pocket keeps) and count, so repeated items and kept empty slots load in place (a pocket's
+///       trailing empty slots are left out). Loading puts each slot back in its pocket; an item the build does not
+///       have is dropped, a count over its pocket's quantity_max is clamped, a slot its pocket no longer takes or
+///       has no room for goes to the item's own pocket or is dropped, a pocket the build no longer has gives its
+///       items to their own pockets (Notes counts each); a pocket sorted by index or name is sorted again. Version 1
+///       (the entry count, then per filled slot its key and count, pocket by pocket) still loads by adding each
+///       entry. Keys are FNV-1a 32 of the item's name (no item has key 0: a build error, C7); a removed item's key
+///       equals a new item's with a chance of about one in 2^32 per pair, and its old entries then load as the new
+///       item;
 ///     - Party: the record hash (C7: monster::Layout::record_hash, the layout's without its party size; images
 ///       before C7 hold the full layout hash, also read), the record bytes, the member count, then the members'
 ///       records. A party that grew or shrank loads; it is refused (OtherShape) for another record shape or more
@@ -94,8 +99,9 @@ inline constexpr uint16_t kVersion = 2;               ///< Image format version 
 inline constexpr uint32_t kHeaderBytes = 32;          ///< Header bytes.
 inline constexpr uint32_t kSectionEntryBytes = 12;    ///< Bytes per section table entry.
 inline constexpr int kMaxSections = 8;                ///< Section table entries an image may have.
-inline constexpr uint32_t kBagHeadBytes = 2;          ///< Bag: the entry count.
-inline constexpr uint32_t kBagEntryBytes = 6;         ///< Bag: per entry its item key (4) and count (2).
+inline constexpr uint32_t kBagHeadBytes = 1;          ///< Bag (G1: version 2): the pocket count.
+inline constexpr uint32_t kBagPocketBytes = 2;        ///< Bag: per pocket its slot count.
+inline constexpr uint32_t kBagEntryBytes = 6;         ///< Bag: per slot its item key (4) and count (2).
 inline constexpr uint32_t kPartyHeadBytes = 7;        ///< Party: layout hash (4), record bytes (2), count (1).
 inline constexpr uint32_t kBoxesHeadBytes = 10;       ///< Boxes: layout hash (4), record bytes (2), box count (1),
                                                       ///< box size (2), current box (1).

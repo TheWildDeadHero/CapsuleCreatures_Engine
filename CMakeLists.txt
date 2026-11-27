@@ -673,6 +673,26 @@ function(capsule_game dir)
       target_sources(${target} PRIVATE ${gen}/layout.cpp)
    endif()
 
+   # D-36 §3.1 G1: a project's own inventory (capsule.inventory/1, tools/inventory_compiler.py: pockets, stores and
+   # items) for a bag its own code uses, in a game without battle data; it defines kInventory in place of the engine's
+   # empty default (src/inventory/inventory_empty.cpp) and writes the pockets' indices (inventory_ids.h)
+   capsule_project_get(inventory "${json}" inventory)
+   if(inventory)
+      if(battle)
+         message(FATAL_ERROR "${dir}: project.json names both \"battle\" (whose manifests give the pockets and "
+                             "items) and \"inventory\"")
+      endif()
+      add_custom_command(
+         OUTPUT  ${gen}/inventory.cpp ${gen}/inventory_ids.h
+         COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/inventory_compiler.py ${dir}/${inventory}
+               ${gen}/inventory.cpp --ids ${gen}/inventory_ids.h --platform ${CAPSULE_PLATFORM} ${page_args}
+         DEPENDS ${CAPSULE_ROOT}/tools/inventory_compiler.py ${CAPSULE_ROOT}/tools/battlec/inventory.py
+               ${CAPSULE_ROOT}/tools/battlec/common.py ${CAPSULE_ROOT}/tools/build_settings.py
+               ${CAPSULE_TEXT_DEPENDS} ${dir}/${inventory} ${page}
+         COMMENT "Compiling the inventory of ${name}")
+      target_sources(${target} PRIVATE ${gen}/inventory.cpp ${gen}/inventory_ids.h)
+   endif()
+
    # A game whose structure has no combination methods (or no eggs and nursery), or no battle data at all,
    # links the statements' empty ports (src/script/script_combine_none.cpp, script_nursery_none.cpp) instead of the
    # engine library's defaults, which keep their state in EWRAM (the configure step reads the structure manifest
@@ -1160,6 +1180,8 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
    add_test(NAME usage_exclude_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage_exclude.py)
    # D-36 §3.1 G0: the party part of a record layout and the layout-only compile (tools/layout_compiler.py)
    add_test(NAME layout_compiler_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_layout_compiler.py)
+   # D-36 §3.1 G1: the pockets' rules, stores and the inventory-only compile (tools/inventory_compiler.py)
+   add_test(NAME inventory_compiler_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_inventory_compiler.py)
    # step 3B: a headless build of the engine with every excludable module left out (tests/exclude_build): its game
    # reaches the code with cut points, so the link fails if one is missing; it builds on the host, so only the
    # headless configuration runs it (one more engine library build)

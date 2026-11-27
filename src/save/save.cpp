@@ -40,7 +40,8 @@ constexpr uint32_t kEntryChecksum = 8;    ///< Checksum of its bytes.
 ///@}
 /// @name Section versions this build writes and reads
 ///@{
-constexpr uint8_t kBagVersion = 1;        ///< Bag entries by item key.
+constexpr uint8_t kBagVersion = 2;        ///< G1: the bag's slots as they are, pocket by pocket.
+constexpr uint8_t kBagVersionEntries = 1;   ///< The bag's filled slots as entries (loads by adding them).
 constexpr uint8_t kPartyVersion = 1;      ///< Party with its layout hash.
 constexpr uint8_t kBoxesVersion = 1;      ///< Boxes with their geometry.
 constexpr uint8_t kScriptVersion = 1;     ///< Script sub-banks with their shape hashes.
@@ -616,68 +617,151 @@ int newest_copy(Table& t, Status& why)
 
 // -- Bag -----------------------------------------------------------------------------------------------------------
 
-/// The bag's entries: per pocket its filled slots, as item key and count.
+/// An item's stable key (0 for no item or one past the table).
+/// @param item  item id
+/// @return its key
+uint32_t key_of(uint16_t item)
+{
+   using inventory::kInventory;
+   return kInventory.item_keys != nullptr && item != 0 && item < kInventory.item_count ? kInventory.item_keys[item]
+                                                                                       : 0;
+}
+
+/// The bag (version 2, G1): per pocket its slots as they are, item key and count, up to its last filled slot.
 /// @param s    the sink
 /// @param bag  the bag, or nullptr: none
 void encode_bag(Sink& s, const inventory::Bag* bag)
 {
    using inventory::kInventory;
-   uint32_t n = 0;
-   for (uint8_t p = 0; bag != nullptr && p < kInventory.pocket_count; ++p)
+   const uint8_t pockets = bag != nullptr ? kInventory.pocket_count : 0;
+   put(s, pockets);
+   for (uint8_t p = 0; p < pockets; ++p)
    {
-      n += bag->used[p];
-   }
-   put_le(s, n, kU16Bytes);
-   for (uint8_t p = 0; bag != nullptr && p < kInventory.pocket_count; ++p)
-   {
-      const inventory::PocketData& pd = kInventory.pockets[p];
-      for (uint16_t k = 0; k < bag->used[p]; ++k)
+      int span = 0;
+      const inventory::BagSlot* slots = inventory::pocket_slots(*bag, p, span);
+      // a pocket's trailing empty slots are left out (a pocket keeping empty slots spans its capacity)
+      while (span > 0 && slots[span - 1].item == 0)
       {
-         const inventory::BagSlot& slot = bag->slots[pd.first + k];
-         const uint32_t key = kInventory.item_keys != nullptr && slot.item < kInventory.item_count
-                            ? kInventory.item_keys[slot.item] : 0;
-         put_le(s, key, kU32Bytes);
-         put_le(s, slot.count, kU16Bytes);
+         --span;
+      }
+      put_le(s, static_cast<uint32_t>(span), kU16Bytes);
+      for (int k = 0; k < span; ++k)
+      {
+         put_le(s, key_of(slots[k].item), kU32Bytes);
+         put_le(s, slots[k].count, kU16Bytes);
       }
    }
 }
 
-/// Loads bag entries into an empty bag (dropping unknown items and entries without room, clamping counts).
+/// One loaded entry into its own pocket (version 1, and a slot version 2 cannot keep in place).
+/// @param bag    the bag
+/// @param item   item id (0: an item the build does not have)
+/// @param count  how many
+/// @param notes  what migrating changed, or nullptr
+void add_entry(inventory::Bag& bag, uint16_t item, uint32_t count, Notes* notes)
+{
+   using inventory::kInventory;
+   const uint8_t pocket = inventory::item_pocket(item);
+   const uint16_t most = pocket != inventory::kNoPocket ? kInventory.pockets[pocket].quantity_max : 0;
+   bool clamped = false;
+   if (count > most)
+   {
+      count = most;   // review4 finding 2: a lowered quantity_max
+      clamped = true;
+   }
+   const bool added = count != 0 && inventory::add(bag, item, count);
+   if (notes != nullptr)
+   {
+      notes->dropped_items = static_cast<uint16_t>(notes->dropped_items + (added ? 0 : 1));
+      notes->clamped_items = static_cast<uint16_t>(notes->clamped_items + (added && clamped ? 1 : 0));
+   }
+}
+
+/// Loads version 1 bag entries into an empty bag (dropping unknown items and entries without room, clamping counts).
 /// @param s      the source over the section
 /// @param bag    the bag, or nullptr: only read
 /// @param notes  what migrating changed, or nullptr
-void decode_bag(Source& s, inventory::Bag* bag, Notes* notes)
+void decode_bag_entries(Source& s, inventory::Bag* bag, Notes* notes)
 {
-   using inventory::kInventory;
-   if (bag != nullptr)
-   {
-      inventory::clear(*bag);
-   }
    const uint32_t n = next_le(s, kU16Bytes);
    for (uint32_t k = 0; k < n; ++k)
    {
       const uint32_t key = next_le(s, kU32Bytes);
-      uint32_t count = next_le(s, kU16Bytes);
-      if (bag == nullptr)
+      const uint32_t count = next_le(s, kU16Bytes);
+      if (bag != nullptr)
       {
-         continue;
+         add_entry(*bag, inventory::item_of_key(key), count, notes);
       }
-      const uint16_t item = inventory::item_of_key(key);
-      const inventory::ItemInfo* in = inventory::info(item);
-      const bool pocketed = in != nullptr && in->pocket < kInventory.pocket_count;
-      const uint16_t most = pocketed ? kInventory.pockets[in->pocket].quantity_max : 0;
-      bool clamped = false;
-      if (count > most)
+   }
+}
+
+/// Loads a version 2 bag: each slot back in place where its pocket still takes it, else through its own pocket.
+/// @param s      the source over the section
+/// @param bag    the bag, or nullptr: only read
+/// @param notes  what migrating changed, or nullptr
+void decode_bag_slots(Source& s, inventory::Bag* bag, Notes* notes)
+{
+   using inventory::kInventory;
+   const uint8_t pockets = next(s);
+   for (uint8_t p = 0; p < pockets; ++p)
+   {
+      const uint32_t n = next_le(s, kU16Bytes);
+      const bool kept = bag != nullptr && p < kInventory.pocket_count;
+      const inventory::PocketData* pd = kept ? &kInventory.pockets[p] : nullptr;
+      const bool in_place = pd != nullptr && (pd->flags & inventory::kPocketKeepsEmpty) != 0;
+      for (uint32_t k = 0; k < n; ++k)
       {
-         count = most;   // review4 finding 2: a lowered quantity_max
-         clamped = true;
+         const uint32_t key = next_le(s, kU32Bytes);
+         uint32_t count = next_le(s, kU16Bytes);
+         if (bag == nullptr || key == 0)
+         {
+            continue;   // only read, or a kept empty slot (already empty)
+         }
+         const uint16_t item = inventory::item_of_key(key);
+         if (pd == nullptr || !inventory::accepts(p, item))
+         {
+            add_entry(*bag, item, count, notes);   // a pocket the build no longer has, or no longer takes it
+            continue;
+         }
+         const bool clamped = count > pd->quantity_max;
+         count = clamped ? pd->quantity_max : count;
+         bool placed = false;
+         if (in_place && k < pd->capacity && count != 0)
+         {
+            bag->slots[pd->first + k] = inventory::BagSlot{item, static_cast<uint16_t>(count)};
+            placed = true;
+         }
+         else if (!in_place)
+         {
+            placed = count != 0 && inventory::add_to(*bag, p, item, count);   // in saved order (appended or sorted)
+         }
+         if (notes != nullptr)
+         {
+            notes->dropped_items = static_cast<uint16_t>(notes->dropped_items + (placed ? 0 : 1));
+            notes->clamped_items = static_cast<uint16_t>(notes->clamped_items + (placed && clamped ? 1 : 0));
+         }
       }
-      const bool added = count != 0 && inventory::add(*bag, item, count);
-      if (notes != nullptr)
-      {
-         notes->dropped_items = static_cast<uint16_t>(notes->dropped_items + (added ? 0 : 1));
-         notes->clamped_items = static_cast<uint16_t>(notes->clamped_items + (added && clamped ? 1 : 0));
-      }
+   }
+}
+
+/// Loads a bag section of either version into an empty bag.
+/// @param s        the source over the section
+/// @param bag      the bag, or nullptr: only read
+/// @param notes    what migrating changed, or nullptr
+/// @param version  the section's version (kBagVersion or kBagVersionEntries)
+void decode_bag(Source& s, inventory::Bag* bag, Notes* notes, uint8_t version)
+{
+   if (bag != nullptr)
+   {
+      inventory::clear(*bag);
+   }
+   if (version == kBagVersionEntries)
+   {
+      decode_bag_entries(s, bag, notes);
+   }
+   else
+   {
+      decode_bag_slots(s, bag, notes);
    }
 }
 
@@ -1554,7 +1638,8 @@ bool has_source(Section id, const Sources& src)
 /// @return true when it loads
 bool accepted_version(Section id, uint8_t version)
 {
-   return version == version_of(id) || (id == Section::Clock && version == kClockVersionNoEvents);
+   return version == version_of(id) || (id == Section::Clock && version == kClockVersionNoEvents) ||
+          (id == Section::Bag && version == kBagVersionEntries);
 }
 
 /// Decodes a section (store: into its destination; else only checks that it loads).
@@ -1570,7 +1655,7 @@ Status decode(Source& s, Section id, const Sources& dst, bool store, Notes* note
    switch (id)
    {
    case Section::Bag:
-      decode_bag(s, store ? dst.bag : nullptr, notes);
+      decode_bag(s, store ? dst.bag : nullptr, notes, version);
       return Status::Ok;
    case Section::Party:
       return decode_party(s, store ? dst.party : nullptr);
@@ -1673,7 +1758,8 @@ uint32_t section_size(Section s)
    switch (s)
    {
    case Section::Bag:
-      return kBagHeadBytes + kInventory.slot_count * kBagEntryBytes;
+      return kBagHeadBytes + static_cast<uint32_t>(kInventory.pocket_count) * kBagPocketBytes +
+             kInventory.slot_count * kBagEntryBytes;
    case Section::Party:
       return kPartyHeadBytes + static_cast<uint32_t>(monster::kLayout.party_size) * monster::kLayout.record_bytes;
    case Section::Boxes:

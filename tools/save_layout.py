@@ -57,10 +57,16 @@ import save_shape  # noqa: E402
 HEADER_BYTES = 32
 ## Bytes per section table entry (kSectionEntryBytes).
 SECTION_ENTRY_BYTES = 12
-## Bag: bytes of the entry count (kBagHeadBytes).
-BAG_HEAD_BYTES = 2
-## Bag: bytes per entry (kBagEntryBytes: item key 4, count 2).
+## Bag: bytes of the pocket count (kBagHeadBytes; G1: version 2).
+BAG_HEAD_BYTES = 1
+## Bag: bytes of each pocket's slot count (kBagPocketBytes).
+BAG_POCKET_BYTES = 2
+## Bag: bytes per slot (kBagEntryBytes: item key 4, count 2).
 BAG_ENTRY_BYTES = 6
+## Bag version 1: bytes of the entry count (older images; bag_entries_payload()).
+BAG_ENTRIES_HEAD_BYTES = 2
+## The Bag section's version 1 (entries by item key; older images still load).
+BAG_VERSION_ENTRIES = 1
 ## Party: bytes before the records (kPartyHeadBytes: record hash 4 (C7: the layout's record_hash, no party
 ## size), record bytes 2, count 1).
 PARTY_HEAD_BYTES = 7
@@ -81,7 +87,7 @@ USED_BITS_PER_BYTE = 8
 ## Section names in id order (capsule::save::Section).
 SECTIONS = ("bag", "party", "boxes", "script", "nursery", "game", "clock", "plots")
 ## Each section's version (src/save/save.cpp k*Version).
-SECTION_VERSIONS = {"bag": 1, "party": 1, "boxes": 1, "script": 1, "nursery": 1, "game": 1, "clock": 2, "plots": 1}
+SECTION_VERSIONS = {"bag": 2, "party": 1, "boxes": 1, "script": 1, "nursery": 1, "game": 1, "clock": 2, "plots": 1}
 ## M6a K1: the Clock section's bytes (capsule::save::kClockBytes).
 CLOCK_BYTES = 18
 ## M6a K2: the Plots section's head (capsule::save::kPlotsHeadBytes: the record count).
@@ -177,7 +183,7 @@ def sections_of(compiled: Mapping[str, Any], banks: Sequence[Mapping[str, Any]] 
    """
    inv = compiled["inventory"]
    lay = compiled["layout"]
-   out = {"bag": BAG_HEAD_BYTES + inv["slot_count"] * BAG_ENTRY_BYTES,
+   out = {"bag": BAG_HEAD_BYTES + len(inv.get("pockets", ())) * BAG_POCKET_BYTES + inv["slot_count"] * BAG_ENTRY_BYTES,
           "party": PARTY_HEAD_BYTES + lay["party_size"] * lay["bytes"],
           "boxes": boxes_bytes(compiled),
           "script": script_bytes(banks),
@@ -360,7 +366,28 @@ def pocket_order(compiled: Mapping[str, Any], pocket: int, slots: Sequence[tuple
 
 
 def bag_payload(compiled: Mapping[str, Any], bag: Mapping[int, Sequence[tuple[int, int]]]) -> bytes:
-   """!The Bag section: the entries pocket by pocket (each pocket ordered by pocket_order()) as item key and count.
+   """!The Bag section (version 2, G1): per pocket its slots as they are, item key and count (key 0 for an empty
+   slot a pocket keeps), its trailing empty slots left out; a pocket that closes up ordered by pocket_order().
+   @param compiled  bc.compile_battle() result
+   @param bag       {pocket index: [(item id, count)]} (item 0: an empty slot, in a pocket keeping them)
+   @return the bytes
+   """
+   inv = compiled["inventory"]
+   items = inv["items"]
+   out = bytes([len(inv["pockets"])])
+   for k, pocket in enumerate(inv["pockets"]):
+      slots = list(bag.get(k, []))
+      if pocket.get("close_up", True):
+         slots = pocket_order(compiled, k, slots)
+      while slots and slots[-1][0] == 0:
+         slots.pop()
+      out += u16(len(slots)) + b"".join(u32(items[i]["save_key"] if i else 0) + u16(n) for i, n in slots)
+   return out
+
+
+def bag_entries_payload(compiled: Mapping[str, Any], bag: Mapping[int, Sequence[tuple[int, int]]]) -> bytes:
+   """!The Bag section as older builds wrote it (version 1: the entries pocket by pocket, each pocket ordered by
+   pocket_order(), as item key and count); assemble() with versions={"bag": BAG_VERSION_ENTRIES}.
    @param compiled  bc.compile_battle() result
    @param bag       {pocket index: [(item id, count)]}
    @return the bytes
@@ -492,14 +519,17 @@ def game_payload(block: bytes, version: int) -> bytes:
    return u16(version) + u32(len(block)) + block if block else b""
 
 
-def assemble(payloads: Mapping[str, bytes], sequence: int = 1) -> bytes:
+def assemble(payloads: Mapping[str, bytes], sequence: int = 1, versions: Mapping[str, int] | None = None) -> bytes:
    """!One copy of an image from its section bytes (an empty payload: no such section).
    @param payloads  {section name: bytes}, in any order (written in id order)
    @param sequence  the image's sequence number
+   @param versions  {section name: version} where a payload is an older version's (G1: an older build's bag,
+                    bag_entries_payload()), or None: this build's (SECTION_VERSIONS)
    @return the bytes
    """
    present = [(k, name) for k, name in enumerate(SECTIONS) if payloads.get(name)]
-   table = b"".join(bytes([k, SECTION_VERSIONS[name]]) + bytes(ENTRY_RESERVED) + u32(len(payloads[name])) +
+   chosen = {**SECTION_VERSIONS, **(versions or {})}
+   table = b"".join(bytes([k, chosen[name]]) + bytes(ENTRY_RESERVED) + u32(len(payloads[name])) +
                     u32(fnv(payloads[name])) for k, name in present)
    body = b"".join(payloads[name] for _k, name in present)
    head = u32(MAGIC) + u16(VERSION) + bytes([len(present)]) + bytes(HEADER_RESERVED_BYTE) + u32(sequence)
