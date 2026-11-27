@@ -348,6 +348,23 @@ and its hash:
 A record is at most 100 bytes on the GBA and 256 elsewhere. A role a layout
 leaves out reads as 0.
 
+**The party part** (D-36 §3.1 G0): a role entry may give `"party": true` for a
+field only party members hold (battle stats, a level or status a game keeps
+only in its party). Those roles are packed after all the others, from the
+next 32-bit word: the record's first `Layout::box_bytes` bytes are the box
+part, what storage keeps; a layout without party roles has `box_bytes` equal
+to the record's bytes and keeps its hash (each party role folds a tag into
+the hash).
+
+**A layout without battle data:** a game whose records are read by its own
+code names a `capsule.record-layout/1` file in its `project.json`
+(`"monster_layout": "data/layout.json"`: `schema`, `stats` (the stat names,
+in the per-stat roles' order), `monster_layout`). `capsule_game()` compiles
+it with `tools/layout_compiler.py` into the game's `kLayout`, checked against
+the platform's limits and without the roles a battle needs; it replaces the
+engine's empty default (`src/battle/layout_empty.cpp`). A game names either
+`"battle"` or `"monster_layout"`, not both.
+
 #### Record transfer (v2)
 
 `include/capsule/monster/transfer.h` moves a record between games whose

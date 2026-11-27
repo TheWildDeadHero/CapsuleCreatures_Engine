@@ -246,6 +246,7 @@ add_library(capsule_engine STATIC
    ${CAPSULE_INVENTORY_SOURCES}
    ${CAPSULE_GROWTH_SOURCES}
    src/battle/battle_empty.cpp
+   src/battle/layout_empty.cpp
    src/battle/encounter_lead.cpp
    src/battle/field_actions.cpp
    src/battle/step_effects.cpp
@@ -650,6 +651,26 @@ function(capsule_game dir)
          DEPENDS ${CAPSULE_ROOT}/tools/save_layout.py ${save_depends} ${field_depends}
          COMMENT "Sizing the save image of ${name}")
       target_sources(${target} PRIVATE ${gen}/save_layout.txt)
+   endif()
+
+   # D-36 §3.1 G0: a project's own record layout (capsule.record-layout/1, tools/layout_compiler.py) for records its
+   # own code reads, in a game without battle data; it defines kLayout in place of the engine's empty default
+   # (src/battle/layout_empty.cpp). A game with battle data takes its layout from its structure manifest.
+   capsule_project_get(monster_layout "${json}" monster_layout)
+   if(monster_layout)
+      if(battle)
+         message(FATAL_ERROR "${dir}: project.json names both \"battle\" (whose structure manifest gives the record "
+                             "layout) and \"monster_layout\"")
+      endif()
+      add_custom_command(
+         OUTPUT  ${gen}/layout.cpp
+         COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/layout_compiler.py ${dir}/${monster_layout}
+               ${gen}/layout.cpp --platform ${CAPSULE_PLATFORM}
+         DEPENDS ${CAPSULE_ROOT}/tools/layout_compiler.py ${CAPSULE_ROOT}/tools/battlec/layout.py
+               ${CAPSULE_ROOT}/tools/battlec/common.py ${CAPSULE_ROOT}/tools/build_settings.py
+               ${dir}/${monster_layout}
+         COMMENT "Compiling the record layout of ${name}")
+      target_sources(${target} PRIVATE ${gen}/layout.cpp)
    endif()
 
    # A game whose structure has no combination methods (or no eggs and nursery), or no battle data at all,
@@ -1083,6 +1104,7 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
       src/asset/asset.cpp
       src/asset/asset_table_empty.cpp
       src/battle/battle_empty.cpp
+      src/battle/layout_empty.cpp
       # the roll battle_empty.cpp draws with and the streams it reads (lld and ld64 need them even when unused)
       src/battle/pipeline_roll.cpp
       ${CAPSULE_TEST_RNG_SOURCES}
@@ -1136,6 +1158,8 @@ if(CAPSULE_ENGINE_TESTS AND CAPSULE_PLATFORM MATCHES "^(desktop|headless)$")
    add_test(NAME usage_memory_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage_memory.py)
    # D-36 package 3: the exclusion manifest (tools/usage_exclude.py) and the script compiler's --exclude
    add_test(NAME usage_exclude_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_usage_exclude.py)
+   # D-36 §3.1 G0: the party part of a record layout and the layout-only compile (tools/layout_compiler.py)
+   add_test(NAME layout_compiler_tests COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tests/test_layout_compiler.py)
    # step 3B: a headless build of the engine with every excludable module left out (tests/exclude_build): its game
    # reaches the code with cut points, so the link fails if one is missing; it builds on the host, so only the
    # headless configuration runs it (one more engine library build)
