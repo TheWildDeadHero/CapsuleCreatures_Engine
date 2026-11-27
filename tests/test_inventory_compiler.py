@@ -68,6 +68,10 @@ class CompileTests(unittest.TestCase):
       """!An item naming a store, an unknown stacks rule, a non-boolean rule, an item use, a repeated name, the
       schema and an unknown key."""
       def edited(change: Any) -> dict[str, Any]:
+         """!The fixture with one change.
+         @param change  callable(file contents)
+         @return the changed contents
+         """
          data = fixture()
          change(data)
          return data

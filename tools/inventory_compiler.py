@@ -118,6 +118,7 @@ def write_if_changed(path: Path, text: str) -> None:
    """!Writes a file only when its text changes (so the sources that include it rebuild only then).
    @param path  the file
    @param text  its text
+   @return None
    """
    if not path.exists() or path.read_text(encoding="utf-8") != text:
       path.parent.mkdir(parents=True, exist_ok=True)
