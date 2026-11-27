@@ -22,6 +22,7 @@ script welcome {
 // A hidden item: a sign on an open cell, gone once its flag is set.
 script hidden_berry {
     var(berries) += 1;
+    stat add berries_found;
     msgbox "{player} found a berry\nhidden in the ground!{prompt}\nBerries: {berries}";
     close_msg;
     set flag(found_berry);

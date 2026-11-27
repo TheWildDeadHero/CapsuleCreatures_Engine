@@ -800,7 +800,7 @@
    "kind": "generic",
    "doc": "C6: add to a game statistic the game's port holds (a stat bound to a variable compiles to AddVar instead).",
    "bytes": "stat8 (the manifest's stats index), operand (the amount)",
-   "does": "C6: world::add_stat() (the default does nothing: only a manifest with stats_port emits the op)"
+   "does": "C6: world::add_stat() (G2: the default adds to the engine's counter, capsule/stats/stats.h)"
   },
   {
    "id": 95,

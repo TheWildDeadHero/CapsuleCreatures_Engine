@@ -14,6 +14,7 @@
 #include "capsule/script/menu.h"
 #include "capsule/script/port.h"
 #include "capsule/script/script.h"
+#include "capsule/stats/stats.h"
 
 #include "test_script_ids.h"
 
@@ -2805,6 +2806,28 @@ void test_stats()
    char want[64];
    std::snprintf(want, sizeof want, "stat %u 1;stat %u 3;", STAT_VISITS, STAT_VISITS);
    CHECK(std::strcmp(g_world.log, want) == 0);
+   // G2: the engine's counters (this test's port replaces add_stat(), so the statement did not reach them): a stat
+   // bound to a variable is not held; a held one stays within 0 and its max (wins: 999; visits: 32 bits)
+   constexpr uint32_t kWinsMax = 999;          // the manifest's max of wins
+   constexpr int32_t kPastMax = 1000;          // more than it holds
+   constexpr uint32_t kSome = 7;               // a value within it
+   constexpr uint32_t kNearTop = 0xFFFFFFFEu;  // one below a 32-bit counter's most
+   CHECK(stats::count() == 3 && !stats::held(STAT_STEPS) && stats::held(STAT_VISITS) && stats::held(STAT_WINS));
+   CHECK(stats::get(STAT_VISITS) == 0 && stats::get(STAT_WINS) == 0);
+   stats::add(STAT_WINS, kPastMax);
+   CHECK(stats::get(STAT_WINS) == kWinsMax);
+   stats::add(STAT_WINS, -kPastMax);
+   CHECK(stats::get(STAT_WINS) == 0);
+   stats::set(STAT_WINS, kWinsMax + 1);
+   CHECK(stats::get(STAT_WINS) == kWinsMax);
+   stats::set(STAT_VISITS, kNearTop);
+   stats::add(STAT_VISITS, kPastMax);
+   CHECK(stats::get(STAT_VISITS) == UINT32_MAX);
+   stats::set(STAT_STEPS, kSome);   // not held: left alone, and the variable keeps its value
+   CHECK(stats::get(STAT_STEPS) == 0 && script::var(VAR_V16) == kV16Max);
+   stats::add(STAT_VISITS + stats::count(), 1);   // no such stat: nothing
+   script::clear_all();
+   CHECK(stats::get(STAT_VISITS) == 0 && stats::get(STAT_WINS) == 0);
 }
 
 /// C4: name slots: a text asset, a list entry by index, a number, a kind through game::name_text() (a game's own kind

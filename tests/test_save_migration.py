@@ -18,7 +18,7 @@ import re
 import sys
 import tempfile
 import unittest
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 from unittest import mock
@@ -189,6 +189,32 @@ def range_script_payload() -> bytes:
    return bytes([1, labels.index("vars.permanent")]) + sl.u32(h) + sl.u16(len(variables)) + variables
 
 
+## G2: current.bin's statistics (wins, walks; tests/save_tests.cpp kWins / kWalks).
+CURRENT_STATS = (3, 40)
+## G2: stats.bin's walks, past its max of 500 (it loads as 500).
+WALKS_PAST_MAX = 600
+## G2: the key of a statistic this build does not hold (stats.bin: dropped).
+REMOVED_STAT_KEY = 0x0BADC0DE
+
+
+def stat_keys() -> list[int]:
+   """!G2: the save fixture's held statistics' keys, in its manifest's order (wins, walks).
+   @return them
+   """
+   return sl.held_stats(sl.compile_scripts(SAVE / "scripts.json"))
+
+
+def older_image(payloads: Mapping[str, bytes], sequence: int = 1,
+                versions: Mapping[str, int] | None = None) -> bytes:
+   """!G2: an image an older build wrote: the format version before (up to 8 sections).
+   @param payloads  {section name: bytes}
+   @param sequence  the image's sequence number
+   @param versions  older section versions (sl.assemble())
+   @return the bytes
+   """
+   return sl.assemble(payloads, sequence, versions, format_version=sl.VERSION_EIGHT_SECTIONS)
+
+
 def images() -> dict[str, bytes]:
    """!Every image the C++ test loads (see its test_migrations()).
    @return {file name: bytes}
@@ -196,7 +222,8 @@ def images() -> dict[str, bytes]:
    current = bc.compile_battle(RECRUIT / "battle.json", platform=PLATFORM)
    size = current["layout"]["bytes"]
    out = {}
-   # G1: images of older builds keep their version-1 bag (entries); the current shapes write version 2
+   # G1: images of older builds keep their version-1 bag (entries); the current shapes write version 2. G2: they
+   # keep the format version before too (up to 8 sections); current.bin and newer.bin are this build's
    v1 = {"bag": sl.BAG_VERSION_ENTRIES}
    # the current shapes: every section, the Python bytes are the engine's
    rec = bytes(range(1, size + 1))
@@ -204,10 +231,11 @@ def images() -> dict[str, bytes]:
       "bag": sl.bag_payload(current, bag_of(current, {"goods": [("Salve", 2), ("Ether", 1)], "key": [("Badge", 1)]})),
       "party": sl.party_payload(current, [rec]),
       "boxes": sl.boxes_payload(current, {4: rec}, 1),
-      "script": sl.script_payload(script_banks(), {"flags.permanent": bytes([0b011]), "vars.permanent": sl.u32(5)})})
+      "script": sl.script_payload(script_banks(), {"flags.permanent": bytes([0b011]), "vars.permanent": sl.u32(5)}),
+      "stats": sl.stats_payload(list(zip(stat_keys(), CURRENT_STATS)))})
    # items reordered, Beacon added since, a Relic removed since
    old = variant(old_items, edit_logic=without_beacon)
-   out["items.bin"] = sl.assemble({"bag": sl.bag_entries_payload(old, bag_of(old, {
+   out["items.bin"] = older_image({"bag": sl.bag_entries_payload(old, bag_of(old, {
       "goods": [("Ether", 3), ("Salve", 2), ("Relic", 1)], "key": [("Badge", 1)]}))}, versions=v1)
    # the orbs pocket added since: Lure and Snare were goods
    def no_orbs(structure: JsonDict) -> None:
@@ -220,7 +248,7 @@ def images() -> dict[str, bytes]:
          if i.get("pocket") == "orbs":
             i["pocket"] = "goods"
    old = variant(orbs_in_goods, no_orbs)
-   out["pockets.bin"] = sl.assemble({"bag": sl.bag_entries_payload(old, bag_of(old, {
+   out["pockets.bin"] = older_image({"bag": sl.bag_entries_payload(old, bag_of(old, {
       "goods": [("Salve", 1), ("Lure", 2), ("Snare", 1)]}))}, versions=v1)
    # goods held up to 20 before: 12 Salves clamp to today's 5 (review4 finding 2)
    def more_goods(structure: JsonDict) -> None:
@@ -229,7 +257,7 @@ def images() -> dict[str, bytes]:
          if p["name"] == "goods":
             p["quantity_max"] = 20
    old = variant(edit_structure=more_goods)
-   out["quantity.bin"] = sl.assemble({"bag": sl.bag_entries_payload(old, bag_of(old, {"goods": [("Salve", 12)]}))},
+   out["quantity.bin"] = older_image({"bag": sl.bag_entries_payload(old, bag_of(old, {"goods": [("Salve", 12)]}))},
                                      versions=v1)
    # three boxes of two before (today two of three): slot 0 stays, slot 3 (box 1, place 1) stays in its box and
    # place, slot 5 (box 2) moves to the first free slot; the current box 2 is box 1 now
@@ -237,46 +265,50 @@ def images() -> dict[str, bytes]:
       """!Three boxes of two."""
       structure["storage"] = {"box_count": 3, "box_size": 2, "names": "Old {n}"}
    old = variant(edit_structure=boxes_3x2)
-   out["boxes.bin"] = sl.assemble({"boxes": sl.boxes_payload(old, {0: bytes([1] * size), 3: bytes([3] * size),
+   out["boxes.bin"] = older_image({"boxes": sl.boxes_payload(old, {0: bytes([1] * size), 3: bytes([3] * size),
                                                                   5: bytes([5] * size)}, 2)})
    # four boxes of three holding seven records: today's six slots cannot take them (refused, nothing changes)
    def boxes_4x3(structure: JsonDict) -> None:
       """!Four boxes of three."""
       structure["storage"] = {"box_count": 4, "box_size": 3, "names": "Old {n}"}
    old = variant(edit_structure=boxes_4x3)
-   out["boxes_full.bin"] = sl.assemble({
+   out["boxes_full.bin"] = older_image({
       "bag": sl.bag_entries_payload(old, bag_of(old, {"goods": [("Salve", 4)]})),
       "boxes": sl.boxes_payload(old, {k: bytes([k] * size) for k in range(7)}, 0)}, versions=v1)
    # the script banks of older shapes (recorded remaps, a transient bank without one)
-   out["script.bin"] = sl.assemble({"script": old_script_payload()})
+   out["script.bin"] = older_image({"script": old_script_payload()})
    # a permanent bank of a shape nobody recorded: refused
    labels = save_shape.sub_bank_names()
    unknown = bytes([1, labels.index("flags.permanent")]) + sl.u32(save_shape.shape_hash(save_shape.FLAGS, ["x"]))
-   out["script_refused.bin"] = sl.assemble({"script": unknown + sl.u16(1) + bytes([1])})
+   out["script_refused.bin"] = older_image({"script": unknown + sl.u16(1) + bytes([1])})
    # a party of another record layout: refused
    party = bytearray(sl.party_payload(current, [rec]))
    party[0] ^= 1
-   out["party_layout.bin"] = sl.assemble({"party": bytes(party)})
+   out["party_layout.bin"] = older_image({"party": bytes(party)})
    # C7: the party size is not the record's shape: a party of two grows into today's three, one of five holding
    # three members shrinks into it (with its boxes), one of five holding four is refused
    grow = variant(edit_structure=party_of(2))
-   out["party_grow.bin"] = sl.assemble({"party": sl.party_payload(grow, [bytes([0x21] * size), bytes([0x22] * size)])})
+   out["party_grow.bin"] = older_image({"party": sl.party_payload(grow, [bytes([0x21] * size), bytes([0x22] * size)])})
    five = variant(edit_structure=party_of(5))
-   out["party_shrink.bin"] = sl.assemble({
+   out["party_shrink.bin"] = older_image({
       "party": sl.party_payload(five, [bytes([0x51 + k] * size) for k in range(3)]),
       "boxes": sl.boxes_payload(five, {2: bytes([0x5B] * size)}, 0)})
-   out["party_over.bin"] = sl.assemble({"party": sl.party_payload(five, [bytes([0x51] * size)] * 4)})
+   out["party_over.bin"] = older_image({"party": sl.party_payload(five, [bytes([0x51] * size)] * 4)})
    # C7: a narrowed variable range is another shape (walked 900 of 0..900 clamps to 500)
-   out["range.bin"] = sl.assemble({"script": range_script_payload()})
+   out["range.bin"] = older_image({"script": range_script_payload()})
    # C7: a newer copy of another size than current.bin (more members, records and items), for the other slot
    out["newer.bin"] = sl.assemble({
       "bag": sl.bag_payload(current, bag_of(current, {"goods": [("Salve", 4), ("Ether", 2)], "key": [("Badge", 1)]})),
       "party": sl.party_payload(current, [bytes([0x91] * size), bytes([0x92] * size)]),
       "boxes": sl.boxes_payload(current, {0: rec, 1: rec, 5: rec}, 0),
       "script": sl.script_payload(script_banks())}, 2)
+   # G2: the statistics by key: walks past its max (kept within it), a stat removed since (dropped, noted), wins absent
+   # (0)
+   _wins, walks = stat_keys()
+   out["stats.bin"] = sl.assemble({"stats": sl.stats_payload([(walks, WALKS_PAST_MAX), (REMOVED_STAT_KEY, 1)])})
    # C7: the sequence wrap: 0 follows 0xFFFFFFFF
-   out["wrap_old.bin"] = sl.assemble({"party": sl.party_payload(current, [bytes([0x61] * size)])}, LAST_SEQUENCE)
-   out["wrap_new.bin"] = sl.assemble({"party": sl.party_payload(current, [bytes([0x62] * size)])}, 0)
+   out["wrap_old.bin"] = older_image({"party": sl.party_payload(current, [bytes([0x61] * size)])}, LAST_SEQUENCE)
+   out["wrap_new.bin"] = older_image({"party": sl.party_payload(current, [bytes([0x62] * size)])}, 0)
    return out
 
 
@@ -296,7 +328,7 @@ class ImageTests(unittest.TestCase):
    def test_current_sizes(self) -> None:
       """!The current image is within the build's most bytes (the engine's image_size())."""
       current = bc.compile_battle(RECRUIT / "battle.json", platform=PLATFORM)
-      sections = sl.sections_of(current, script_banks())
+      sections = sl.sections_of(current, script_banks(), stats=len(stat_keys()))
       self.assertLessEqual(len(images()["current.bin"]), sl.image_bytes(sections))
       self.assertEqual(sections["script"], 1 + 5 * 7 + 1 + 1 + 7 + 1 + 5)
 

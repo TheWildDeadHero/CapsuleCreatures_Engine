@@ -33,7 +33,7 @@ FIXTURE = ROOT / "tests/data/inventory/battle.json"
 FIXTURE_LOGIC = ROOT / "tests/data/inventory/logic.ceffect"
 ## The Starter sample.
 STARTER = ROOT / "samples/starter/battle.json"
-## --record: rewrite tests/data/inventory/save_image.bin from the Python image (C6: format version 2).
+## --record: rewrite tests/data/inventory/save_image.bin from the Python image (G2: format version 3).
 RECORD = "--record" in sys.argv
 if RECORD:
    sys.argv.remove("--record")

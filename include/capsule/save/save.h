@@ -95,10 +95,12 @@ namespace capsule::save
 /// @name Image layout (tools/save_layout.py mirrors them)
 ///@{
 inline constexpr uint32_t kMagic = 0x56534343u;       ///< "CCSV" read as a little-endian word.
-inline constexpr uint16_t kVersion = 2;               ///< Image format version (C6: versioned sections).
+inline constexpr uint16_t kVersion = 3;               ///< Image format version (C6: versioned sections; G2: a
+                                                      ///< table of up to kMaxSections entries).
+inline constexpr uint16_t kVersionEightSections = 2;  ///< G2: the version before (up to 8 sections; it reads).
 inline constexpr uint32_t kHeaderBytes = 32;          ///< Header bytes.
 inline constexpr uint32_t kSectionEntryBytes = 12;    ///< Bytes per section table entry.
-inline constexpr int kMaxSections = 8;                ///< Section table entries an image may have.
+inline constexpr int kMaxSections = 12;               ///< Section table entries an image may have (G2: 8 before).
 inline constexpr uint32_t kBagHeadBytes = 1;          ///< Bag (G1: version 2): the pocket count.
 inline constexpr uint32_t kBagPocketBytes = 2;        ///< Bag: per pocket its slot count.
 inline constexpr uint32_t kBagEntryBytes = 6;         ///< Bag: per slot its item key (4) and count (2).
@@ -117,6 +119,8 @@ inline constexpr uint32_t kGameHeadBytes = 6;         ///< Game (N3): the block'
 inline constexpr uint32_t kClockBytes = 18;
 inline constexpr uint32_t kClockBytesNoEvents = 14;   ///< M6a K4: a version-1 Clock section (no last events day).
 inline constexpr uint32_t kPlotsHeadBytes = 2;      ///< M6a K2: Plots: the record count.
+inline constexpr uint32_t kStatsHeadBytes = 1;      ///< G2: Stats: the stat count.
+inline constexpr uint32_t kStatEntryBytes = 8;      ///< G2: Stats: per stat its key (4) and value (4).
 ///@}
 
 /// The save budget of this platform (build_settings PLATFORM_LIMITS max_save_bytes; tools/save_layout.py media).
@@ -138,8 +142,8 @@ enum class Section : uint8_t
    Nursery,      ///< The nursery's slots and waiting result (B2; absent without a nursery).
    Game,         ///< N3: the game's own block (absent when the game has none: game_block_bytes() is 0).
    Clock,        ///< M6a K1: the clock's saved state (absent when the world declares no clock: clock::settings()).
-   Plots,        ///< M6a K2: the plots' records (absent without engine plot records: plots::data()). The table's
-                 ///< last free entry (kMaxSections).
+   Plots,        ///< M6a K2: the plots' records (absent without engine plot records: plots::data()).
+   Stats,        ///< G2: the game statistics the engine holds (absent without them: capsule/stats/stats.h).
    NUM_SECTIONS  ///< Number of sections.
 };
 /// Number of sections.
@@ -198,6 +202,7 @@ struct Notes
    uint8_t reset_banks;       ///< Transient script sub-banks reset (no remap).
    uint16_t dropped_flags;    ///< Set flags a remap dropped (renamed or removed since; C7).
    uint16_t dropped_vars;     ///< Non-zero variables and non-empty name slots a remap dropped (C7).
+   uint8_t dropped_stats;     ///< G2: non-zero statistics this build does not hold (renamed or removed since).
 };
 
 /// Room the caller lends a read for the sections past the built-in stage (C7; GBA: the storage boxes, about the

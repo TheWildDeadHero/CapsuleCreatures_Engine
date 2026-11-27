@@ -1,7 +1,8 @@
 {
   "schema": "capsule.scripts/1",
-  "editor": {"notes": "Test fixture for tests/save_tests.cpp (C6): the script banks a save image migrates."},
+  "editor": {"notes": "Test fixture for tests/save_tests.cpp (C6): the script banks a save image migrates; G2: two game statistics the engine holds (the Stats section)."},
   "sources": ["save.cscript"],
   "placeholders": {"hero": {"name": 4}},
+  "stats": {"wins": {}, "walks": {"max": 500}},
   "save_history": "save_history.json"
 }

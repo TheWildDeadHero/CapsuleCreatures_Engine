@@ -7,7 +7,7 @@
   "stack_depth": 4,
   "name_kinds": ["trophy"],
   "counters": {"gold": {"var": "v16", "label": "Gold"}, "tokens": {"var": "v8"}},
-  "stats": {"steps": {"var": "v16"}, "visits": {}},
+  "stats": {"steps": {"var": "v16"}, "visits": {}, "wins": {"max": 999}},
   "stats_port": true,
   "assets": "assets.json",
   "world": "../maps/world.json",

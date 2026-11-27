@@ -17,6 +17,7 @@
 #include "capsule/script/growth_port.h"
 #include "capsule/script/nursery_port.h"
 #include "capsule/script/port.h"
+#include "capsule/stats/stats.h"
 #include "script_dispatch.h"
 
 #include <cstring>
@@ -3365,6 +3366,7 @@ void clear_all()
    {
       bank().names[n] = 0;
    }
+   capsule::stats::clear();   // G2: the game statistics the engine holds
 }
 
 void new_day()

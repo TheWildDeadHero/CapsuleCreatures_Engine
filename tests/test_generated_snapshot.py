@@ -1422,6 +1422,16 @@ LAYOUT_CHANGES = {name: LAYOUT_BOX_BYTES for name in (
 RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
                          for name, why in LAYOUT_CHANGES.items()})
 
+## Why the script outputs changed in D-36 §3.1 G2 (the game statistics the engine holds).
+STATS_HELD = ("The bank gains its statistics table (kStats: StatInfo {key, max, flags} per stat), their counters "
+              "(g_stat_values) and the members after vm_flags (the test scripts gain an engine-held stat with a max; "
+              "the map sandbox's berries_found)")
+## The G2 changes, appended to each output's history.
+STATS_HELD_CHANGES = {name: STATS_HELD for name in (
+   "test_script.cpp", "test_script_ids.h", "sandbox_map/scripts.cpp", "sandbox_map/script_ids.h")}
+RECORDED_CHANGES.update({name: (RECORDED_CHANGES[name] + "; then " if name in RECORDED_CHANGES else "") + why
+                         for name, why in STATS_HELD_CHANGES.items()})
+
 def sequence_symbol(name: str) -> str:
    """Symbol CMakeLists.txt gives a test sequence: kSeq + the CamelCased file name.
    @param name  file name without .json

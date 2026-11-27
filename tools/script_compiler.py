@@ -18,11 +18,13 @@ variable, with an optional label (else its name): {"money": {"var": "money",
 COUNTER_<NAME> (the box world::counter() receives).
 
 "stats" (optional, C6): the game's statistics in its own numbering, each
-bound to a declared variable or held by the game's port: {"steps": {"var":
-"steps"}, "used_center": {}}; `stat add <name> [n];` adds to the variable
-(kept in its range) or calls world::add_stat(); a stat without a variable
-needs "stats_port": true (the game's port holds its stats); script_ids.h
-names each STAT_<NAME> (the stat world::add_stat() receives).
+bound to a declared variable or held without one: {"steps": {"var":
+"steps"}, "used_center": {}, "battles": {"max": 999999}}; `stat add <name>
+[n];` adds to the variable (kept in its range) or calls world::add_stat().
+G2: a stat without a variable is the engine's counter (capsule/stats/
+stats.h: 32 bits, kept within 0 and its "max", saved by name in the Stats
+section); "stats_port": true says the game's port replaces add_stat();
+script_ids.h names each STAT_<NAME> (the stat world::add_stat() receives).
 
 C10, battles (capsule/script/battle_port.h): `battle prepare <species> <level>
 [item <item>] [event];` (the opponent a later `battle scripted` fights; C22
@@ -708,6 +710,12 @@ COUNTER_KINDS = VM.words("CounterOp")
 MAX_COUNTERS, COUNTER_CELL_MAX = VM.constants["kMaxCounters"], 0xFF
 ## C6: the most game statistics a manifest declares.
 MAX_STATS = VM.constants["kMaxStats"]
+## G2: a stat's manifest keys (a variable, or the engine's counter's max).
+STAT_KEYS = frozenset({"var", "max"})
+## G2: the asset kind of a stat's save key ("stat:NAME").
+STAT_KEY_KIND = "stat"
+## G2: capsule::script::kStatHeld (StatInfo::flags: the engine holds the stat).
+STAT_HELD = 1
 ## C6: the stat statement's only kind.
 STAT_ADD_WORD = "add"
 ## C4: the name statement's sources (capsule::script::NameSource, in order).
@@ -876,26 +884,43 @@ def game_counters(raw: Any) -> dict[str, dict[str, str]]:
 
 
 def game_stats(raw: Any, port: Any) -> dict[str, str | None]:
-   """!C6: a scripts manifest's "stats": its game statistics, each bound to a variable or held by the game's port.
+   """!C6: a scripts manifest's "stats": its game statistics, each bound to a variable or held without one (G2: by the
+   engine's stats, capsule/stats/stats.h, unless the game's port replaces world::add_stat(): "stats_port": true).
    @param raw   its value
-   @param port  the manifest's "stats_port" (True: the game's port holds the stats without a variable)
-   @return name -> the variable's name, or None (the port's), in order (the stats' numbers)
-   @throws ScriptError when malformed, too many, or a stat has no variable and no port holds it
+   @param port  the manifest's "stats_port" (True: the game's port replaces the engine's default add_stat())
+   @return name -> the variable's name, or None (held without one), in order (the stats' numbers)
+   @throws ScriptError when malformed or too many
    """
    if not isinstance(raw, Mapping):
-      raise ScriptError("stats must be an object of name -> {\"var\": ...} or {}")
+      raise ScriptError("stats must be an object of name -> {\"var\": ...}, {\"max\": ...} or {}")
    if not isinstance(port, bool):
       raise ScriptError("stats_port must be true or false")
    out: dict[str, str | None] = {}
    for name, s in raw.items():
-      if not re.fullmatch(r"[a-z_][a-z0-9_]*", str(name)) or not isinstance(s, Mapping) or set(s) - {"var"} \
+      if not re.fullmatch(r"[a-z_][a-z0-9_]*", str(name)) or not isinstance(s, Mapping) or set(s) - STAT_KEYS \
             or not isinstance(s.get("var", ""), str):
-         raise ScriptError(f"stats: {name!r} needs a lower-case name and {{\"var\": NAME}} or {{}}")
-      if "var" not in s and not port:
-         raise ScriptError(f"stats: {name!r} has no variable and the manifest's stats_port is not true")
+         raise ScriptError(f"stats: {name!r} needs a lower-case name and {{\"var\": NAME}}, {{\"max\": N}} or {{}}")
+      if "max" in s and ("var" in s or not isinstance(s["max"], int) or isinstance(s["max"], bool)
+                         or not 0 < s["max"] <= U32_MASK):
+         raise ScriptError(f"stats: {name!r}'s max must be 1 to {U32_MASK} on a stat without a variable "
+                           "(a variable keeps its own range)")
       out[str(name)] = s.get("var")
    if len(out) > MAX_STATS:
       raise ScriptError(f"stats: at most {MAX_STATS}")
+   return out
+
+
+def stat_table(raw: Mapping[str, Any]) -> list[tuple[int, int, int]]:
+   """!G2: the bank's statistics table (capsule::script::StatInfo per stat, in the manifest's order).
+   @param raw  the manifest's "stats" (checked by game_stats())
+   @return (save key, max, flags) per stat: a stat bound to a variable has key 0, max 0 and no kStatHeld
+   """
+   out = []
+   for name, s in raw.items():
+      if "var" in s:
+         out.append((0, 0, 0))
+      else:
+         out.append((asset_key(f"{STAT_KEY_KIND}:{name}", "stat"), s.get("max", U32_MASK), STAT_HELD))
    return out
 
 
@@ -3234,6 +3259,8 @@ class Compiler:
       self.counters: dict[str, dict[str, str]] = {}
       ## C6: the manifest's game statistics, in order.
       self.stats: dict[str, str | None] = {}
+      ## G2: their table for the bank (save key, max, flags per stat).
+      self.stat_table: list[tuple[int, int, int]] = []
       ## The first local ID of the game's numbering (the manifest's object_base).
       self.object_base = 0
       ## capsule::script::Bank::vm_flags (the manifest's "vm").
@@ -3318,8 +3345,10 @@ class Compiler:
       self.name_kinds = game_name_kinds(m.get("name_kinds", []))
       ## C5: the manifest's counter boxes (name -> {"var", "label"}).
       self.counters = game_counters(m.get("counters", {}))
-      ## C6: the manifest's game statistics (name -> variable, or None: the game's port holds it).
+      ## C6: the manifest's game statistics (name -> variable, or None: held without one).
       self.stats = game_stats(m.get("stats", {}), m.get("stats_port", False))
+      ## G2: their table for the bank (save key, max, flags per stat).
+      self.stat_table = stat_table(m.get("stats", {}))
       self.vm_flags = vm_flags(m.get("vm", {}))
       if not isinstance(m.get("warn_unused", True), bool):
          raise ScriptError("warn_unused must be true or false")
@@ -4745,7 +4774,7 @@ class Compiler:
          if var is not None:   # bound to a variable: an add, kept in the variable's range
             e.op("AddVar")
             e.u16(self.var_id(var, s))
-         else:   # the game's port holds it
+         else:   # held without a variable: world::add_stat() (the engine's counter, or the game's port)
             e.op("Stat")
             e.u8(list(self.stats).index(s["stat"]))
          self.emit_operand(e, amount)
@@ -5590,7 +5619,8 @@ class Compiler:
             return name
          names = (strs("kScriptNames", r["names"]), strs("kFlagNames", r["flag_names"]),
                   strs("kVarNames", r["var_names"]))
-      vm_flags = [f"    {self.vm_flags},"] if self.vm_flags else []   # Bank::vm_flags
+      stats = self.stat_initializer(L)
+      vm_flags = [f"    {self.vm_flags},"] if self.vm_flags or stats else []   # Bank::vm_flags
       object_base = [f"    {self.object_base},"] if self.object_base or vm_flags else []   # Bank::object_base
       hatch = self.hatch_initializer(bool(object_base))
       step_effects = self.step_effect_initializer(L, bool(hatch))
@@ -5615,8 +5645,24 @@ class Compiler:
             *hatch,
             *object_base,
             *vm_flags,
+            *stats,
             "};", "", "} // namespace capsule::script", ""]
       return "\n".join(L)
+
+   def stat_initializer(self, out: list[str]) -> list[str]:
+      """!G2: the Bank's statistics members (the table, the counters, the count), with their arrays appended to the
+      anonymous namespace part; nothing for a bank without stats (its initializer stays as from an older version).
+      @param out  the lines so far, inside the anonymous namespace (the arrays are appended)
+      @return the initializer lines
+      """
+      if not self.stat_table:
+         return []
+      out.append("const StatInfo kStats[] = {")
+      for name, (key, most, flags) in zip(self.stats, self.stat_table):
+         out.append(f"    {{0x{key:08X}u, 0x{most:08X}u, {flags}, {{0, 0, 0}}}},   // {name}")
+      out.append("};")
+      out.append(f"CAPSULE_EWRAM_BSS uint32_t g_stat_values[{len(self.stat_table)}];")
+      return [f"    kStats, g_stat_values, {len(self.stat_table)},"]
 
    def hatch_initializer(self, forced: bool = False) -> list[str]:
       """!The Bank's nursery members (the hatch script, the egg_member variable); nothing for a bank without eggs.

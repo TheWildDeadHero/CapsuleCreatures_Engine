@@ -14,6 +14,7 @@
 #include "capsule/exclude_config.h"
 #include "capsule/hal/save.h"
 #include "capsule/script/data.h"
+#include "capsule/stats/stats.h"
 
 namespace capsule::save
 {
@@ -50,6 +51,7 @@ constexpr uint8_t kGameVersion = 1;       ///< N3: the game's block with its own
 constexpr uint8_t kClockVersion = 2;      ///< M6a K1: the clock's saved state (M6a K4: the last events day).
 constexpr uint8_t kClockVersionNoEvents = 1;   ///< M6a K4: the Clock section before the last events day (loads).
 constexpr uint8_t kPlotsVersion = 1;      ///< M6a K2: the plots' records.
+constexpr uint8_t kStatsVersion = 1;      ///< G2: the game statistics by key.
 ///@}
 /// Copies of the image a medium keeps at most (the older one takes the next write).
 constexpr int kMaxCopies = 2;
@@ -504,7 +506,9 @@ Status read_table(int k, Table& t)
    {
       return Status::Empty;
    }
-   if (get_le(head + kVersionOffset, kU16Bytes) != kVersion)
+   // G2: an image of the version before (a table of up to 8 entries) reads the same way
+   const uint32_t format = get_le(head + kVersionOffset, kU16Bytes);
+   if (format != kVersion && format != kVersionEightSections)
    {
       return Status::OtherVersion;
    }
@@ -963,6 +967,71 @@ void decode_plots(Source& s, plots::PlotRecord* dst)
    for (uint16_t i = n; dst != nullptr && i < have; ++i)
    {
       dst[i] = plots::PlotRecord{};   // places the image has no record for
+   }
+}
+
+// -- Stats (G2) ----------------------------------------------------------------------------------------------------
+
+/// The statistics the engine holds in this build.
+/// @return their count (0: no Stats section)
+uint8_t held_stats()
+{
+   uint8_t n = 0;
+   for (uint8_t k = 0; k < stats::count(); ++k)
+   {
+      n = static_cast<uint8_t>(n + (stats::held(k) ? 1 : 0));
+   }
+   return n;
+}
+
+/// The held statistics, each its key and value, in the manifest's order.
+/// @param s  the sink
+void encode_stats(Sink& s)
+{
+   put_le(s, held_stats(), 1);
+   for (uint8_t k = 0; k < stats::count(); ++k)
+   {
+      if (stats::held(k))
+      {
+         put_le(s, stats::key(k), kU32Bytes);
+         put_le(s, stats::get(k), kU32Bytes);
+      }
+   }
+}
+
+/// Loads (or only checks) the statistics by key: one this build does not hold is dropped (noted when it is not 0),
+/// one the image lacks starts at 0; a value past the stat's max is kept within it (stats::set()).
+/// @param s      the source over the section
+/// @param store  false: only checked
+/// @param notes  what migrating changed, or nullptr
+void decode_stats(Source& s, bool store, Notes* notes)
+{
+   if (store)
+   {
+      stats::clear();
+   }
+   const auto n = static_cast<uint8_t>(next_le(s, 1));
+   for (uint8_t e = 0; e < n; ++e)
+   {
+      const uint32_t key = next_le(s, kU32Bytes);
+      const uint32_t value = next_le(s, kU32Bytes);
+      if (!store)
+      {
+         continue;
+      }
+      bool found = false;
+      for (uint8_t k = 0; k < stats::count() && !found; ++k)
+      {
+         found = stats::held(k) && stats::key(k) == key;
+         if (found)
+         {
+            stats::set(k, value);
+         }
+      }
+      if (!found && value != 0 && notes != nullptr)
+      {
+         ++notes->dropped_stats;
+      }
    }
 }
 
@@ -1565,6 +1634,8 @@ uint8_t version_of(Section id)
       return kClockVersion;
    case Section::Plots:
       return kPlotsVersion;
+   case Section::Stats:
+      return kStatsVersion;
    default:
       return kScriptVersion;
    }
@@ -1598,6 +1669,9 @@ void encode(Sink& s, Section id, const Sources& src)
       break;
    case Section::Plots:
       encode_plots(s, src.plots);
+      break;
+   case Section::Stats:
+      encode_stats(s);   // G2: the script bank's, as the Script section is
       break;
    default:
       encode_script(s);
@@ -1670,6 +1744,9 @@ Status decode(Source& s, Section id, const Sources& dst, bool store, Notes* note
    case Section::Plots:
       decode_plots(s, store ? dst.plots : nullptr);
       return Status::Ok;
+   case Section::Stats:
+      decode_stats(s, store, notes);
+      return Status::Ok;
    default:
       return decode_script(s, store, notes);
    }
@@ -1708,6 +1785,9 @@ void load_empty(Section id, const Sources& dst)
       {
          dst.plots[i] = plots::PlotRecord{};   // M6a K2: a save from before the world's plots: every plot empty
       }
+      break;
+   case Section::Stats:
+      stats::clear();   // G2: a save from before the stats: every one at 0
       break;
    default:
    {
@@ -1785,6 +1865,11 @@ uint32_t section_size(Section s)
    {
       const uint32_t places = plot_places();   // M6a K2: only a world with engine plot records
       return places == 0 ? 0 : kPlotsHeadBytes + places * plots::kRecordBytes;
+   }
+   case Section::Stats:
+   {
+      const uint32_t held = held_stats();   // G2: only a build whose scripts manifest has stats without a variable
+      return held == 0 ? 0 : kStatsHeadBytes + held * kStatEntryBytes;
    }
    case Section::Script:
    {
