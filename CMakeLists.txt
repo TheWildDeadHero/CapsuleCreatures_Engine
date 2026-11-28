@@ -699,20 +699,37 @@ function(capsule_game dir)
    # own code reads, in a game without battle data; it defines kLayout in place of the engine's empty default
    # (src/battle/layout_empty.cpp). A game with battle data takes its layout from its structure manifest.
    capsule_project_get(monster_layout "${json}" monster_layout)
+   # D-36 §3.1 G4a: a project's storage boxes without battle data ("storage": {"boxes": B, "slots": S}), each slot one
+   # record's box part: kStorage with the layout, and storage_ids.h (the sizes of the game's storage::Buffer)
+   capsule_project_get(storage_boxes "${json}" storage boxes)
+   capsule_project_get(storage_slots "${json}" storage slots)
+   if((storage_boxes OR storage_slots) AND NOT monster_layout)
+      message(FATAL_ERROR "${dir}: project.json's \"storage\" keeps records: it needs \"monster_layout\" (and "
+                          "\"boxes\" and \"slots\")")
+   endif()
    if(monster_layout)
       if(battle)
          message(FATAL_ERROR "${dir}: project.json names both \"battle\" (whose structure manifest gives the record "
                              "layout) and \"monster_layout\"")
       endif()
+      set(layout_outputs ${gen}/layout.cpp)
+      set(layout_args)
+      if(storage_boxes OR storage_slots)
+         if(NOT storage_boxes OR NOT storage_slots)
+            message(FATAL_ERROR "${dir}: project.json's \"storage\" needs both \"boxes\" and \"slots\"")
+         endif()
+         list(APPEND layout_outputs ${gen}/storage_ids.h)
+         set(layout_args --storage ${storage_boxes} ${storage_slots} --ids ${gen}/storage_ids.h)
+      endif()
       add_custom_command(
-         OUTPUT  ${gen}/layout.cpp
+         OUTPUT  ${layout_outputs}
          COMMAND Python3::Interpreter ${CAPSULE_ROOT}/tools/layout_compiler.py ${dir}/${monster_layout}
-               ${gen}/layout.cpp --platform ${CAPSULE_PLATFORM}
+               ${gen}/layout.cpp --platform ${CAPSULE_PLATFORM} ${layout_args}
          DEPENDS ${CAPSULE_ROOT}/tools/layout_compiler.py ${CAPSULE_ROOT}/tools/battlec/layout.py
-               ${CAPSULE_ROOT}/tools/battlec/common.py ${CAPSULE_ROOT}/tools/build_settings.py
-               ${dir}/${monster_layout}
+               ${CAPSULE_ROOT}/tools/battlec/storage.py ${CAPSULE_ROOT}/tools/battlec/common.py
+               ${CAPSULE_ROOT}/tools/build_settings.py ${dir}/${monster_layout}
          COMMENT "Compiling the record layout of ${name}")
-      target_sources(${target} PRIVATE ${gen}/layout.cpp)
+      target_sources(${target} PRIVATE ${layout_outputs})
    endif()
 
    # D-36 §3.1 G1: a project's own inventory (capsule.inventory/1, tools/inventory_compiler.py: pockets, stores and

@@ -2,8 +2,9 @@
 (include/capsule/storage/storage.h) next to the battle tables.
 
 The section is {"box_count", "box_size", "names"}: box_count boxes of box_size slots, each slot one creature record
-(the layout's record bytes); "names" is a list of box_count display names, or one text with {n} (the box number,
-from 1) that names them all (default DEFAULT_NAMES). The platform bounds the boxes, their slots and their record
+(D-36 §3.1 G4a: the layout's box part's bytes, the whole record without party roles); "names" is a list of
+box_count display names, or one text with {n} (the box number, from 1) that names them all (default
+DEFAULT_NAMES). The platform bounds the boxes, their slots and their record
 bytes (build_settings PLATFORM_LIMITS max_boxes / max_box_slots / max_storage_bytes). A structure without the
 section has no boxes (a recruit with a full party then has no room).
 
@@ -36,14 +37,14 @@ def compile_storage(src: Json, layout: Mapping[str, Any], limits: Mapping[str, i
                     enc: Texts) -> dict[str, Any]:
    """!The structure's storage boxes.
    @param src     structure.json storage (None: no boxes)
-   @param layout  compiled layout (its record bytes)
+   @param layout  compiled layout (its box part's bytes: what a slot keeps)
    @param limits  the platform's limits (max_boxes, max_box_slots, max_storage_bytes)
    @param where   location (the structure manifest)
    @param enc     this compile's text encoders
-   @return {"box_count", "box_size", "slots", "record_bytes", "bytes" (record bytes of every slot), "names"
+   @return {"box_count", "box_size", "slots", "record_bytes" (a slot's: the box part), "bytes" (every slot's), "names"
            (texts), "name_codes"}
    """
-   record_bytes = layout["bytes"]
+   record_bytes = layout["box_bytes"]   # G4a: a slot keeps the box part
    if src is None:
       return {"box_count": 0, "box_size": 0, "slots": 0, "record_bytes": record_bytes, "bytes": 0, "names": [],
               "name_codes": []}

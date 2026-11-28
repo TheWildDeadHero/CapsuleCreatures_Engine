@@ -7,7 +7,8 @@
 /// battle_ids.h gives STORAGE_BYTES (every slot's record bytes) and STORAGE_USED_BYTES (a bit per slot), the game
 /// declares a Buffer of those sizes (no heap) and the engine works on a Storage view of it (view()), which carries
 /// its capacity so every operation checks the build's boxes against it at run time (fits()). The slots are laid out
-/// box by box, slot k's record at k x the layout's record bytes (monster::kLayout), a bit per slot says it is used,
+/// box by box, slot k's record at k x the layout's box part's bytes (monster::kLayout box_bytes: D-36 §3.1 G4a, the
+/// party roles are not kept; the whole record in a layout without them), a bit per slot says it is used,
 /// and the view keeps the box new records go to first. The save image keeps it as its Boxes section
 /// (capsule/save/save.h). A recruited creature goes here when the party is full (capsule/battle/data/recruit.h);
 /// scripts count, deposit and withdraw through the script port (capsule/script/port.h namespace boxes).
@@ -28,7 +29,7 @@ namespace capsule::storage
 #if defined(CAPSULE_PLATFORM_GBA)
 inline constexpr int kMaxBoxes = 16;                ///< Boxes.
 inline constexpr int kMaxBoxSlots = 512;            ///< Slots of every box together.
-inline constexpr int kMaxStorageBytes = 0x8000;     ///< Record bytes of every slot together (32 KB).
+inline constexpr int kMaxStorageBytes = 0x9000;     ///< Record bytes of every slot together (36 KB; G4a: 32 KB before).
 #else
 inline constexpr int kMaxBoxes = 32;                ///< Boxes.
 inline constexpr int kMaxBoxSlots = 2048;           ///< Slots of every box together.
@@ -66,7 +67,7 @@ extern const StorageData kStorage;
 /// The boxes' contents (RAM): a view over a game's Buffer (view()).
 struct Storage
 {
-   uint8_t* bytes;        ///< capacity bytes: slot k's record at k * monster::kLayout.record_bytes.
+   uint8_t* bytes;        ///< capacity bytes: slot k's box part at k * monster::kLayout.box_bytes.
    uint8_t* used;         ///< used_capacity bytes: a bit per slot, it holds a record.
    uint32_t capacity;     ///< Bytes of bytes.
    uint16_t used_capacity;   ///< Bytes of used.
@@ -148,14 +149,15 @@ int count(const Storage& st);
 /// @return the count (0 past the boxes)
 int box_count(const Storage& st, int box);
 
-/// Copies a slot's record out (the slot stays used).
+/// Copies a slot's record out (the slot stays used). G4a: its box part; the party part is 0 (a game sets it, as a
+/// creature withdrawn into the party needs: its stats, its hit points).
 /// @param st    the storage
 /// @param slot  slot index
 /// @param out   the record (written only when the slot is used)
 /// @return false for a free slot or one past the slots
 bool read(const Storage& st, int slot, monster::Record& out);
 
-/// Puts a record into a free slot.
+/// Puts a record into a free slot (G4a: its box part; the party part is not kept).
 /// @param st    the storage
 /// @param slot  slot index
 /// @param rec   the record
