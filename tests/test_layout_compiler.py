@@ -156,5 +156,125 @@ class LayoutCompilerTests(unittest.TestCase):
          self.assertEqual(done.returncode, 0, done.stderr)
 
 
+## G4a: the invented storage (boxes, slots per box).
+STORAGE_BOXES = 2
+## Its slots per box.
+STORAGE_SLOTS = 3
+## 14 boxes of 30 slots and a box part of 80 bytes: 33,600 bytes, within the GBA's 36 KB.
+GBA_FIT = (14, 30)
+## 16 boxes of 30 such slots: 38,400 bytes, past it.
+GBA_PAST = (16, 30)
+## A custom role that makes the box part 80 bytes (8 + 18 words).
+PADDING_WORDS = 18
+## A party part byte the storage must not keep (G4a: read() leaves the party part 0).
+PARTY_MARK = 0x5A
+## The program that puts a record with a party part and reads it back (G4a: only the box part is kept).
+STORAGE_PROGRAM = """
+#include "capsule/storage/storage.h"
+#include "storage_ids.h"
+#include <cstdio>
+using namespace capsule;
+storage::Buffer<storage_ids::STORAGE_BYTES, storage_ids::STORAGE_USED_BYTES> g_buffer;
+int main()
+{
+   storage::Storage st = storage::view(g_buffer);
+   monster::Record rec{};
+   for (int b = 0; b < monster::kLayout.record_bytes; ++b)
+   {
+      rec.bytes[b] = static_cast<uint8_t>(b < monster::kLayout.box_bytes ? b + 1 : %d);
+   }
+   const int last = storage::slot_count() - 1;
+   if (!storage::fits(st) || !storage::put(st, last, rec))
+   {
+      return 1;
+   }
+   monster::Record out{};
+   if (!storage::read(st, last, out))
+   {
+      return 2;
+   }
+   for (int b = 0; b < monster::kLayout.record_bytes; ++b)
+   {
+      if (out.bytes[b] != (b < monster::kLayout.box_bytes ? b + 1 : 0))
+      {
+         return 3;
+      }
+   }
+   std::printf("%%u %%d\\n", static_cast<unsigned>(st.capacity), storage::slot_count());
+   return 0;
+}
+"""
+
+
+class StorageTests(unittest.TestCase):
+   """!G4a: a project's storage boxes through tools/layout_compiler.py (--storage, --ids)."""
+
+   def write(self, folder: Path, lay: dict[str, Any]) -> Path:
+      """!Writes a record layout file.
+      @param folder  where
+      @param lay     its v2 layout object
+      @return its path
+      """
+      path = folder / "layout.json"
+      path.write_text(json.dumps({"schema": lc.SCHEMA, "stats": STATS, "monster_layout": lay}), encoding="utf-8")
+      return path
+
+   def test_sizes(self) -> None:
+      """!Each slot keeps the box part; the sizes header and kStorage say so."""
+      lay = compiled()
+      st = lc.storage_of(lay, STORAGE_BOXES, STORAGE_SLOTS)
+      self.assertEqual(st["record_bytes"], BOX_BYTES)
+      self.assertEqual(st["bytes"], STORAGE_BOXES * STORAGE_SLOTS * BOX_BYTES)
+      self.assertIn("const StorageData kStorage = {kBoxNames, 3, 2, 0};", lc.emit_cpp("layout.json", lay, st))
+      self.assertNotIn("kStorage", lc.emit_cpp("layout.json", lay))
+      ids = lc.emit_ids("layout.json", st)
+      self.assertIn(f"inline constexpr uint32_t STORAGE_BYTES = {STORAGE_BOXES * STORAGE_SLOTS * BOX_BYTES};", ids)
+      self.assertIn("inline constexpr int NUM_BOXES = 2;", ids)
+
+   def test_gba_limit(self) -> None:
+      """!420 slots of an 80-byte box part fit the GBA's 36 KB; 480 do not (the desktop takes them)."""
+      wide = layout()
+      wide["roles"].append({"custom": "padding", "width": 32, "count": PADDING_WORDS})
+      with tempfile.TemporaryDirectory() as tmp:
+         lay = lc.compile_file(self.write(Path(tmp), wide))
+      self.assertEqual(lay["box_bytes"], 80)
+      lc.storage_of(lay, *GBA_FIT)
+      lc.storage_of(lay, *GBA_PAST, "desktop")
+      with self.assertRaisesRegex(ManifestError, "max_storage_bytes"):
+         lc.storage_of(lay, *GBA_PAST)
+
+   def test_flags_together(self) -> None:
+      """!--storage without --ids (or the reverse) is refused."""
+      with tempfile.TemporaryDirectory() as tmp:
+         path = self.write(Path(tmp), layout())
+         out = str(Path(tmp) / "layout.cpp")
+         with redirect_stderr(io.StringIO()):
+            self.assertEqual(lc.main([str(path), out, "--storage", "2", "3"]), lc.EXIT_ERROR)
+            self.assertEqual(lc.main([str(path), out, "--ids", str(Path(tmp) / "ids.h")]), lc.EXIT_ERROR)
+
+   def test_program(self) -> None:
+      """!Built with the engine's storage: a record put and read back keeps its box part, its party part is 0, and
+      the buffer is every slot's box part."""
+      compiler = shutil.which("c++") or shutil.which("g++") or shutil.which("clang++")
+      if compiler is None:
+         self.skipTest("no C++ compiler")
+      with tempfile.TemporaryDirectory() as tmp:
+         folder = Path(tmp)
+         path = self.write(folder, layout())
+         self.assertEqual(lc.main([str(path), str(folder / "layout.cpp"), "--storage", str(STORAGE_BOXES),
+                                   str(STORAGE_SLOTS), "--ids", str(folder / "storage_ids.h")]), lc.EXIT_OK)
+         (folder / "main.cpp").write_text(STORAGE_PROGRAM % PARTY_MARK, encoding="utf-8")
+         exe = folder / "storage_check"
+         built = subprocess.run([compiler, "-std=c++20", "-Wall", "-Wextra", "-Werror", f"-I{ROOT / 'include'}",
+                                 f"-I{folder}", str(folder / "main.cpp"), str(folder / "layout.cpp"),
+                                 str(ROOT / "src" / "storage" / "storage.cpp"), "-o", str(exe)],
+                                capture_output=True, text=True, check=False)
+         self.assertEqual(built.returncode, 0, built.stderr)
+         ran = subprocess.run([str(exe)], capture_output=True, text=True, check=False)
+         self.assertEqual(ran.returncode, 0, ran.stdout + ran.stderr)
+         slots = STORAGE_BOXES * STORAGE_SLOTS
+         self.assertEqual(ran.stdout.split(), [str(slots * BOX_BYTES), str(slots)])
+
+
 if __name__ == "__main__":
    unittest.main()

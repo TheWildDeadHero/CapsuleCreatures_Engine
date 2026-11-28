@@ -207,7 +207,7 @@ PLATFORM_LIMITS = {"gba": {"max_stats": 10, "max_record_bytes": 100, "max_party_
                            "max_pockets": 8, "max_bag_slots": 256, "max_save_bytes": 65536,
                            # G3: the storage boxes (capsule::storage kMaxBoxes / kMaxBoxSlots / kMaxStorageBytes:
                            # 32 KB of EWRAM for the boxed records)
-                           "max_boxes": 16, "max_box_slots": 512, "max_storage_bytes": 32768,
+                           "max_boxes": 16, "max_box_slots": 512, "max_storage_bytes": 36864,
                            # B1 (D-28): the records one combination takes (capsule::combine::kMaxInputs)
                            "max_combine_inputs": 4,
                            # B2 (D-28 section 2): the nursery's slots (capsule::combine::kMaxNurserySlots)

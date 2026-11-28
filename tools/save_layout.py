@@ -8,7 +8,8 @@ Sections (most bytes; each section carries its own shape, so a save survives man
   - Party: 7 (record hash: the layout's without its party size, C7; record bytes, count), then party_size records
     of the layout's record bytes;
   - Boxes (G3): 10 (record hash, record bytes, box count, box size, current box), a bit per slot (low bit first),
-    then every slot's record (written: the used ones); absent without storage boxes;
+    then every slot's box part (G4a; the whole record without party roles; written: the used ones);
+    absent without storage boxes;
   - Script: 1 (sub-bank count), then per non-empty sub-bank 7 (index, shape hash, bytes) and its bytes
     (tools/save_shape.py); absent without script storage;
   - Nursery (B2): 9 (record hash, record bytes, slots, used bits, result waiting), then per slot 5 (its level when
@@ -286,7 +287,7 @@ def boxes_bytes(compiled: Mapping[str, Any]) -> int:
    slots = st["slots"]
    if slots == 0:
       return 0
-   return BOXES_HEAD_BYTES + bc.box_used_bytes(slots) + slots * compiled["layout"]["bytes"]
+   return BOXES_HEAD_BYTES + bc.box_used_bytes(slots) + slots * compiled["layout"]["box_bytes"]
 
 
 def image_bytes(sections: Mapping[str, int]) -> int:
@@ -464,7 +465,7 @@ def party_payload(compiled: Mapping[str, Any], party: Sequence[bytes]) -> bytes:
 def boxes_payload(compiled: Mapping[str, Any], boxes: Mapping[int, bytes], current: int) -> bytes:
    """!The Boxes section's bytes (G3): the geometry, the used bits, the used slots' records in slot order.
    @param compiled  bc.compile_battle() result
-   @param boxes     {storage slot: record bytes (the layout's record size; shorter is zero-padded)}
+   @param boxes     {storage slot: record bytes (the layout's box part, G4a; shorter is zero-padded)}
    @param current   the current box
    @return the bytes (empty without boxes)
    @throws bc.ManifestError for a slot past the boxes
@@ -474,7 +475,7 @@ def boxes_payload(compiled: Mapping[str, Any], boxes: Mapping[int, bytes], curre
    if slots == 0:
       return b""
    lay = compiled["layout"]
-   size = lay["bytes"]
+   size = lay["box_bytes"]   # G4a: a slot keeps the box part
    used = bytearray(bc.box_used_bytes(slots))
    for slot in boxes:
       if not 0 <= slot < slots:

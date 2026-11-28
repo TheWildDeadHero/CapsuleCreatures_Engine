@@ -730,6 +730,18 @@ platform's limits; it replaces the engine's empty default
 (`src/inventory/inventory_empty.cpp`). A game names either `"battle"` or
 `"inventory"`, not both.
 
+**Storage boxes without battle data** (D-36 §3.1 G4a): a project with a
+`"monster_layout"` may declare `"storage": {"boxes": B, "slots": S}` in its
+`project.json`. `capsule_game()` passes it to `tools/layout_compiler.py`
+(`--storage B S --ids`), which adds `capsule::storage::kStorage` (named
+"Box 1" ...) to the layout's source and writes `storage_ids.h` (`NUM_BOXES`,
+`BOX_SIZE`, `STORAGE_BYTES`, `STORAGE_USED_BYTES`) for the game's
+`storage::Buffer`. A storage slot keeps a record's **box part** (the roles not
+marked `"party"`; the whole record in a layout without party roles), so
+`read()` gives the party part as 0 for the game to fill, and the Boxes section
+saves the box parts. The GBA holds 36 KB of boxed records
+(`kMaxStorageBytes`).
+
 **The dex** (D-36 §3.1 G3, `capsule/dex/dex.h`): a project declares its dex
 in its `project.json` (`"dex": {"entries": N}`, 1 to 65535): two bit sets,
 seen and caught, over entries 1 to N (the game numbers its species).

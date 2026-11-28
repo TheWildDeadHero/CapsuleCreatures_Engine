@@ -1688,7 +1688,7 @@ How to use it: find the file here, run `python3 tools/ci/code_map.py find NAME` 
 
 ## `src/storage/`
 
-- **`storage.cpp`**: Storage boxes (see capsule/storage/storage.h): a game's bytes laid out slot by slot at the layout's record size, a used bit per slot, every access checked against the view's capacity.
+- **`storage.cpp`**: Storage boxes (see capsule/storage/storage.h): a game's bytes laid out slot by slot at the layout's box part's size (G4a), a used bit per slot, every access checked against the view's capacity.
    - namespace: `capsule::storage`
    - function: `box_count, clear, count, deposit, fits, free_in, in_range, mark, move, put, read, record_bytes, release, set_current, used, used_mask, valid, withdraw`
 - **`storage_empty.cpp`**: The engine's default storage rules: no boxes.
@@ -2146,10 +2146,10 @@ How to use it: find the file here, run `python3 tools/ci/code_map.py find NAME` 
    - method: `BagSectionTests.setUp, BagSectionTests.test_payload, BagSectionTests.test_versions, CompileTests.compile, CompileTests.test_fixture, CompileTests.test_platform, CompileTests.test_refusals, CompileTests.test_source`
    - constant: `FIXTURE, FIXTURE_FLAGS, ROOT`
 - **`test_layout_compiler.py`**: Tests for D-36 §3.1 G0: the party part of a record layout (tools/battlec/layout.py, "party": true) and the layout-only compile (tools/layout_compiler.py): packing, box bytes, the hash, refusals, the platform's limits, and the generated source compiling against the engine's headers.
-   - class: `LayoutCompilerTests, PartyPartTests`
+   - class: `LayoutCompilerTests, PartyPartTests, StorageTests`
    - function: `compiled, layout, roles`
-   - method: `LayoutCompilerTests.test_file, LayoutCompilerTests.test_platform_limit, LayoutCompilerTests.test_source, LayoutCompilerTests.write, PartyPartTests.test_packing, PartyPartTests.test_refusals, PartyPartTests.test_without_party_roles`
-   - constant: `BOX_BYTES, HP_BITS, PARTY_BYTES, ROOT, STATS`
+   - method: `LayoutCompilerTests.test_file, LayoutCompilerTests.test_platform_limit, LayoutCompilerTests.test_source, LayoutCompilerTests.write, PartyPartTests.test_packing, PartyPartTests.test_refusals, PartyPartTests.test_without_party_roles, StorageTests.test_flags_together, StorageTests.test_gba_limit, StorageTests.test_program, StorageTests.test_sizes, StorageTests.write`
+   - constant: `BOX_BYTES, GBA_FIT, GBA_PAST, HP_BITS, PADDING_WORDS, PARTY_BYTES, PARTY_MARK, ROOT, STATS, STORAGE_BOXES, STORAGE_PROGRAM, STORAGE_SLOTS`
 - **`test_location_compiler.py`**: Tests for locations, banner styles, previews and the default warp transition (tools/location_compiler.py through tools/map_compiler.py, D-17), on a copy of the map test world (maps plaza and garden).
    - class: `LocationTests`
    - type alias: `JsonDict`
@@ -2435,8 +2435,8 @@ How to use it: find the file here, run `python3 tools/ci/code_map.py find NAME` 
    - function: `compile_file, emit_cpp, emit_ids, main, write_if_changed`
    - constant: `EXIT_ERROR, EXIT_OK, ITEM_KEYS, SCHEMA`
 - **`layout_compiler.py`**: D-36 §3.1 G0: a game's record layout without battle data.
-   - function: `compile_file, emit_cpp, main`
-   - constant: `EXIT_ERROR, EXIT_OK, SCHEMA`
+   - function: `compile_file, emit_cpp, emit_ids, main, storage_of, write_if_changed`
+   - constant: `EXIT_ERROR, EXIT_OK, SCHEMA, STORAGE_ARGS`
 - **`location_compiler.py`**: Locations: the named places maps belong to, their name banners (a sliding name box or frame) and location previews (a full-screen sequence on entry), and the world's default warp transition.
    - class: `FieldText, LocationError`
    - type alias: `JsonDict, TilePacker`

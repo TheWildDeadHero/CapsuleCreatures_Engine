@@ -1244,14 +1244,14 @@ void set_bit(uint8_t* used, uint32_t slot)
    used[slot / kByteBits] = static_cast<uint8_t>(used[slot / kByteBits] | 1u << (slot % kByteBits));
 }
 
-/// The storage boxes: layout, geometry, current box, used bits, the used slots' records.
+/// The storage boxes: layout, geometry, current box, used bits, the used slots' records (G4a: their box parts).
 /// @param s   the sink
 /// @param st  the storage, or nullptr: empty boxes
 void encode_boxes(Sink& s, const storage::Storage* st)
 {
    const uint32_t slots = box_slots();
    put_le(s, monster::kLayout.record_hash, kU32Bytes);
-   put_le(s, monster::kLayout.record_bytes, kU16Bytes);
+   put_le(s, monster::kLayout.box_bytes, kU16Bytes);   // G4a: a slot's bytes (the box part)
    put(s, box_shape().box_count);
    put_le(s, box_shape().box_size, kU16Bytes);
    put(s, st != nullptr ? st->current : 0);
@@ -1268,7 +1268,7 @@ void encode_boxes(Sink& s, const storage::Storage* st)
    {
       if (slot_used(*st, static_cast<int>(k)))
       {
-         put_block(s, st->bytes + k * monster::kLayout.record_bytes, monster::kLayout.record_bytes);
+         put_block(s, st->bytes + k * monster::kLayout.box_bytes, monster::kLayout.box_bytes);
       }
    }
 }
@@ -1287,7 +1287,7 @@ Status decode_boxes(Source& s, storage::Storage* st, Notes* notes)
    const uint32_t old_size = next_le(s, kU16Bytes);
    const uint8_t current = next(s);
    const uint32_t old_slots = old_boxes * old_size;
-   if (!same_records(layout) || bytes != monster::kLayout.record_bytes ||
+   if (!same_records(layout) || bytes != monster::kLayout.box_bytes ||
        used_bytes(old_slots) > static_cast<uint32_t>(storage::kUsedBytes))
    {
       return Status::OtherShape;
@@ -1914,7 +1914,7 @@ uint32_t section_size(Section s)
    case Section::Boxes:
    {
       const uint32_t slots = box_slots();
-      return slots == 0 ? 0 : kBoxesHeadBytes + used_bytes(slots) + slots * monster::kLayout.record_bytes;
+      return slots == 0 ? 0 : kBoxesHeadBytes + used_bytes(slots) + slots * monster::kLayout.box_bytes;
    }
    case Section::Nursery:
    {

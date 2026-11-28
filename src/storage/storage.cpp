@@ -1,6 +1,6 @@
 /// @file
-/// Storage boxes (see capsule/storage/storage.h): a game's bytes laid out slot by slot at the layout's record size,
-/// a used bit per slot, every access checked against the view's capacity.
+/// Storage boxes (see capsule/storage/storage.h): a game's bytes laid out slot by slot at the layout's box part's
+/// size (G4a), a used bit per slot, every access checked against the view's capacity.
 #include "capsule/storage/storage.h"
 
 namespace capsule::storage
@@ -17,11 +17,12 @@ constexpr uint8_t used_mask(int slot)
    return static_cast<uint8_t>(1u << (slot % kUsedBitsPerByte));
 }
 
-/// Bytes of one stored record (the layout's record bytes).
+/// Bytes of one stored record: D-36 §3.1 G4a, the layout's box part (the roles not marked "party"; the whole record
+/// when the layout has no party roles).
 /// @return bytes
 inline uint32_t record_bytes()
 {
-   return monster::kLayout.record_bytes;
+   return monster::kLayout.box_bytes;
 }
 
 /// Whether a slot index is one of the build's slots and its record and used bit fit the storage (C6: the view's
